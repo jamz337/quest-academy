@@ -1,9 +1,14 @@
 import { BaseScene } from './BaseScene.js';
-import { C, hex, SCENES } from '../constants.js';
+import { SCENES } from '../constants.js';
+import { THEME } from '../ui/theme.js';
 import * as Cloud from '../systems/Cloud.js';
-import { T, text, FONT } from '../ui/TextStyles.js';
+import { T, text } from '../ui/TextStyles.js';
 import { button } from '../ui/Button.js';
-import { panel, background } from '../ui/Panel.js';
+import { background } from '../ui/Panel.js';
+import { modal } from '../ui/Modal.js';
+import { chip } from '../ui/Chip.js';
+import { topBar } from '../ui/TopBar.js';
+import { textInput } from '../ui/Input.js';
 import { Sfx } from '../systems/Audio.js';
 
 const ERRORS = {
@@ -18,7 +23,7 @@ const describe = (code) => ERRORS[code] || 'Could not reach the server. Check yo
 
 /** Parent account: sign in / create account, sync status, leaderboard opt-in and a link to the dashboard. */
 export class AccountScene extends BaseScene {
-  constructor() { super(SCENES.Account); }
+  constructor() { super(SCENES.Account); this.fade = true; }
 
   init() { this.state = { email: '', password: '', error: null, busy: false, notice: null }; }
 
@@ -29,36 +34,35 @@ export class AccountScene extends BaseScene {
   }
 
   build() {
-    const { w, h, ui } = this;
-    background(this, C.navy, C.panelDark, C.pink);
-    const topH = 56 * ui;
-    button(this, 40 * ui, topH / 2 + 4, 64 * ui, 40 * ui, '←', { color: C.panelDark, fontSize: 20, onClick: () => this.scene.start(SCENES.ModeSelect) });
-    text(this, w / 2, topH / 2 + 4, 'Family account', T.heading(this, C.yellow));
-    if (Cloud.isSignedIn()) this.buildSignedIn(topH); else this.buildForm(topH);
+    background(this, { accent: THEME.pink, accent2: THEME.brand });
+    const bar = topBar(this, { title: 'Family account', onBack: () => this.go(SCENES.ModeSelect) });
+    if (Cloud.isSignedIn()) this.buildSignedIn(bar.bottom); else this.buildForm(bar.bottom);
   }
 
-  buildSignedIn(topH) {
-    const { w, h, ui } = this;
+  buildSignedIn(top) {
+    const { w, ui } = this;
     const c = Cloud.info();
-    const pw = Math.min(w - 24, 480 * ui), ph = Math.min(h - topH - 24, 440 * ui);
-    const px = (w - pw) / 2, py = topH + 12;
-    panel(this, px, py, pw, ph, { color: C.panel, stroke: C.pink });
-    let y = py + 36 * ui;
-    text(this, w / 2, y, c.email || '', T.bodyBold(this)); y += 30 * ui;
-    text(this, w / 2, y, this.statusLine(c), T.small(this, c.status === 'offline' || c.status === 'unavailable' ? C.orange : C.grey)); y += 26 * ui;
-    if (this.state.notice) { text(this, w / 2, y, this.state.notice, T.small(this, C.lime)); }
-    y += 30 * ui;
-    text(this, w / 2, y, 'Progress for every player on this device is saved to your account\nand comes back on any device where you sign in.', { ...T.small(this, C.grey), wordWrap: { width: pw - 40 } }); y += 56 * ui;
-    const bw = pw - 48, bh = 48 * ui;
-    button(this, w / 2, y, bw, bh, this.state.busy ? 'Syncing…' : 'Sync now', { color: C.blue, disabled: this.state.busy, onClick: () => this.sync() }); y += bh + 12;
-    button(this, w / 2, y, bw, bh, 'Open parent dashboard', { color: C.lime, textColor: C.navy, onClick: () => window.open(Cloud.dashboardUrl(), '_blank') }); y += bh + 12;
+    const m = modal(this, { w: 480 * ui, h: 470 * ui, y: top + 8, accent: THEME.pink, dim: false });
+    let y = m.y + 40 * ui;
+    text(this, w / 2, y, c.email || '', T.bodyBold(this)); y += 32 * ui;
+    const offline = c.status === 'offline' || c.status === 'unavailable';
+    chip(this, w / 2, y, {
+      text: this.statusLine(c), originX: 0.5, shadow: 'none', fontSize: 13,
+      color: offline ? THEME.warningSoft : THEME.successSoft, textColor: offline ? THEME.warningDark : THEME.successDark
+    }); y += 30 * ui;
+    if (this.state.notice) text(this, w / 2, y, this.state.notice, T.small(this, THEME.successDark));
+    y += 28 * ui;
+    text(this, w / 2, y, 'Progress for every player on this device is saved to your account\nand comes back on any device where you sign in.', { ...T.small(this, THEME.ink2), wordWrap: { width: m.w - 40 } }); y += 56 * ui;
+    const bw = m.w - 48, bh = 48 * ui;
+    button(this, w / 2, y, bw, bh, this.state.busy ? 'Syncing…' : 'Sync now', { variant: 'primary', disabled: this.state.busy, onClick: () => this.sync() }); y += bh + 12;
+    button(this, w / 2, y, bw, bh, 'Open parent dashboard', { variant: 'secondary', onClick: () => window.open(Cloud.dashboardUrl(), '_blank') }); y += bh + 12;
     button(this, w / 2, y, bw, bh, c.leaderboard ? 'Leaderboard: shown' : 'Leaderboard: hidden', {
-      color: c.leaderboard ? C.purple : C.dark, fontSize: 17,
+      variant: 'secondary', selected: !!c.leaderboard, selectedAccent: THEME.brand, fontSize: 16,
       onClick: () => Cloud.setLeaderboard(!c.leaderboard).catch((e) => { this.state.error = e.code; this.rebuild(); })
-    }); y += bh + 12;
-    text(this, w / 2, y, 'The leaderboard only ever shows first names and avatars.', T.small(this, C.grey)); y += 26 * ui;
-    button(this, w / 2, y + 10, bw, 44 * ui, 'Sign out', { color: C.red, fontSize: 16, onClick: () => { Cloud.signOut(); this.rebuild(); } });
-    if (this.state.error) text(this, w / 2, py + ph - 20 * ui, describe(this.state.error), { ...T.small(this, C.orange), wordWrap: { width: pw - 40 } });
+    }); y += bh + 10;
+    text(this, w / 2, y, 'The leaderboard only ever shows first names and avatars.', T.small(this, THEME.ink2)); y += 26 * ui;
+    button(this, w / 2, y + 8, bw, 44 * ui, 'Sign out', { variant: 'ghost', textColor: THEME.danger, fontSize: 16, onClick: () => { Cloud.signOut(); this.rebuild(); } });
+    if (this.state.error) text(this, w / 2, m.y + m.h - 18 * ui, describe(this.state.error), { ...T.small(this, THEME.danger), wordWrap: { width: m.w - 40 } });
   }
 
   statusLine(c) {
@@ -69,40 +73,31 @@ export class AccountScene extends BaseScene {
     return 'Signed in';
   }
 
-  buildForm(topH) {
-    const { w, h, ui } = this;
+  buildForm(top) {
+    const { w, ui } = this;
     const s = this.state;
-    const pw = Math.min(w - 24, 480 * ui), ph = Math.min(h - topH - 24, 470 * ui);
-    const px = (w - pw) / 2, py = topH + 12;
-    panel(this, px, py, pw, ph, { color: C.panel, stroke: C.pink });
-    let y = py + 28 * ui;
-    text(this, w / 2, y, 'Save progress online so it follows your children\nto any phone, tablet or computer.', { ...T.small(this, C.grey), wordWrap: { width: pw - 40 } });
+    const m = modal(this, { w: 480 * ui, h: 480 * ui, y: top + 8, accent: THEME.pink, dim: false });
+    let y = m.y + 34 * ui;
+    text(this, w / 2, y, 'Save progress online so it follows your children\nto any phone, tablet or computer.', { ...T.small(this, THEME.ink2), wordWrap: { width: m.w - 40 } });
     y += 44 * ui;
     const field = (label, type, value, onInput, placeholder) => {
-      text(this, px + 24, y, label, T.small(this, C.grey)).setOrigin(0, 0.5);
-      y += 24 * ui;
-      const input = document.createElement('input');
-      input.type = type; input.value = value; input.placeholder = placeholder; input.maxLength = 200;
-      input.autocapitalize = 'none'; input.autocomplete = type === 'email' ? 'email' : 'current-password';
-      Object.assign(input.style, {
-        width: (pw - 48) + 'px', height: (42 * ui) + 'px', fontSize: Math.round(17 * ui) + 'px', borderRadius: '10px',
-        border: '3px solid ' + hex(C.pink), padding: '0 12px', boxSizing: 'border-box', fontFamily: FONT,
-        fontWeight: '600', color: hex(C.navy), background: hex(C.white), outline: 'none'
+      text(this, m.x + 24, y, label, T.caption(this)).setOrigin(0, 0.5);
+      y += 22 * ui;
+      textInput(this, w / 2, y + 22 * ui, m.w - 48, 44 * ui, {
+        value, placeholder, type, accent: THEME.pink, autocomplete: type === 'email' ? 'email' : 'current-password',
+        onInput, onEnter: () => this.submit('signIn')
       });
-      input.addEventListener('input', () => onInput(input.value));
-      input.addEventListener('keydown', (e) => { if (e.key === 'Enter') this.submit('signIn'); });
-      this.add.dom(w / 2, y + 21 * ui, input);
-      y += 42 * ui + 18 * ui;
+      y += 44 * ui + 18 * ui;
     };
-    field('Parent email', 'email', s.email, (v) => { s.email = v; }, 'you@example.com');
-    field('Password (8+ characters)', 'password', s.password, (v) => { s.password = v; }, '••••••••');
-    if (s.error) { text(this, w / 2, y, describe(s.error), { ...T.small(this, C.orange), wordWrap: { width: pw - 40 } }); }
+    field('PARENT EMAIL', 'email', s.email, (v) => { s.email = v; }, 'you@example.com');
+    field('PASSWORD (8+ CHARACTERS)', 'password', s.password, (v) => { s.password = v; }, '••••••••');
+    if (s.error) { text(this, w / 2, y, describe(s.error), { ...T.small(this, THEME.danger), wordWrap: { width: m.w - 40 } }); }
     y += 30 * ui;
-    const bw = Math.min((pw - 72) / 2, 200 * ui), bh = 48 * ui;
-    button(this, w / 2 - bw / 2 - 8, y, bw, bh, 'Sign in', { color: C.blue, disabled: s.busy, onClick: () => this.submit('signIn') });
-    button(this, w / 2 + bw / 2 + 8, y, bw, bh, 'Create account', { color: C.lime, textColor: C.navy, fontSize: 17, disabled: s.busy, onClick: () => this.submit('register') });
-    y += bh + 20 * ui;
-    text(this, w / 2, y, s.busy ? 'Please wait…' : 'You can keep playing without an account. Progress then stays on this device only.', { ...T.small(this, C.grey), wordWrap: { width: pw - 40 } });
+    const bw = Math.min((m.w - 72) / 2, 200 * ui), bh = 48 * ui;
+    button(this, w / 2 - bw / 2 - 8, y, bw, bh, 'Sign in', { variant: 'primary', disabled: s.busy, onClick: () => this.submit('signIn') });
+    button(this, w / 2 + bw / 2 + 8, y, bw, bh, 'Create account', { variant: 'secondary', fontSize: 16, disabled: s.busy, onClick: () => this.submit('register') });
+    y += bh + 22 * ui;
+    text(this, w / 2, y, s.busy ? 'Please wait…' : 'You can keep playing without an account. Progress then stays on this device only.', { ...T.small(this, THEME.ink2), wordWrap: { width: m.w - 40 } });
   }
 
   async submit(kind) {
@@ -113,7 +108,7 @@ export class AccountScene extends BaseScene {
       await (kind === 'register' ? Cloud.register(s.email, s.password) : Cloud.signIn(s.email, s.password));
       Sfx.correct();
       s.busy = false; s.password = ''; s.notice = kind === 'register' ? 'Account created. Your progress is now backed up.' : 'Welcome back!';
-      this.scene.start(SCENES.ModeSelect);
+      this.go(SCENES.ModeSelect);
     } catch (e) {
       Sfx.wrong();
       s.busy = false; s.error = e.code || 'network';

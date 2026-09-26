@@ -16,14 +16,16 @@ export class StarRow extends Phaser.GameObjects.Container {
     this.stars.forEach((s, i) => s.setTexture(i < count ? 'star' : 'star-off'));
     return this;
   }
-  /** Animate stars lighting one by one. */
+  /** Animate stars lighting one by one with a little pop and wobble. */
   reveal(count, scene, delay = 250) {
     this.set(0);
     for (let i = 0; i < count; i++) {
       scene.time.delayedCall(300 + i * delay, () => {
         const s = this.stars[i];
+        if (!s.active) return;
         s.setTexture('star');
-        scene.tweens.add({ targets: s, scale: { from: s.scale * 1.8, to: s.scale }, duration: 250, ease: 'Back.Out' });
+        const target = s.scaleX ?? s.scale;
+        scene.tweens.add({ targets: s, scaleX: { from: 0, to: target }, scaleY: { from: 0, to: target }, angle: { from: -18, to: 0 }, duration: 320, ease: 'Back.Out' });
       });
     }
   }

@@ -29,7 +29,11 @@ export function installPhaserMock() {
   vi.mock('phaser', () => {
     class Scene { constructor(key) { this.key = key; } }
     class Container {
-      constructor(scene, x, y) { Object.assign(this, stubObject({ x, y, scene, list: [] })); }
+      // Copy the inert stub onto the instance, but never shadow methods a subclass (Button, Card...) defines itself.
+      constructor(scene, x, y) {
+        const stub = stubObject({ x, y, scene, list: [] });
+        for (const k of Object.keys(stub)) if (!(k in this)) this[k] = stub[k];
+      }
     }
     return {
       default: {

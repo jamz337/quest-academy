@@ -1,25 +1,28 @@
-import { hex, C } from '../constants.js';
+import { THEME, hex } from './theme.js';
 import { uiScale } from '../systems/Layout.js';
 
 /** One font stack for every piece of text (Fredoka is bundled in public/fonts and declared in index.html). */
 export const FONT = '"Fredoka", "Baloo 2", "Nunito", system-ui, "Segoe UI", Roboto, Arial, sans-serif';
 export const WEIGHT = { normal: '500', bold: '600', heavy: '700' };
 
-function style(scene, size, color = C.white, extra = {}) {
+function style(scene, size, color = THEME.ink, extra = {}) {
   const s = uiScale(scene);
   return { fontFamily: FONT, fontSize: Math.round(size * s) + 'px', color: hex(color), fontStyle: WEIGHT.bold, align: 'center', ...extra };
 }
 
-const TITLE_SHADOW = { offsetX: 0, offsetY: 5, color: 'rgba(0,0,0,0.45)', blur: 0, stroke: true, fill: true };
-
+/** Text presets. Sizes are design pixels and scale with uiScale(). Colours default to ink on light surfaces. */
 export const T = {
-  title: (scene, color) => style(scene, 36, color ?? C.yellow, { fontStyle: WEIGHT.heavy, stroke: hex(C.navy), strokeThickness: 7, shadow: TITLE_SHADOW }),
-  heading: (scene, color) => style(scene, 24, color),
-  body: (scene, color) => style(scene, 18, color, { fontStyle: WEIGHT.normal }),
-  bodyBold: (scene, color) => style(scene, 18, color),
-  small: (scene, color) => style(scene, 14, color, { fontStyle: WEIGHT.normal }),
-  number: (scene, color) => style(scene, 30, color),
-  big: (scene, color) => style(scene, 44, color, { fontStyle: WEIGHT.heavy })
+  display: (scene, color) => style(scene, 40, color, { fontStyle: WEIGHT.heavy }),
+  title: (scene, color) => style(scene, 30, color, { fontStyle: WEIGHT.heavy }),
+  heading: (scene, color) => style(scene, 22, color),
+  body: (scene, color) => style(scene, 17, color, { fontStyle: WEIGHT.normal }),
+  bodyBold: (scene, color) => style(scene, 17, color),
+  small: (scene, color) => style(scene, 13, color, { fontStyle: WEIGHT.normal }),
+  caption: (scene, color) => style(scene, 12, color ?? THEME.ink2),
+  number: (scene, color) => style(scene, 28, color, { fontStyle: WEIGHT.heavy }),
+  big: (scene, color) => style(scene, 44, color, { fontStyle: WEIGHT.heavy }),
+  /** Any size in design pixels, for the few places that need a custom size. */
+  at: (scene, size, color, extra) => style(scene, size, color, extra)
 };
 
 /** Shorthand: add centred text. */
