@@ -18,6 +18,8 @@ import * as Store from '../systems/Store.js';
 import { ZONE_NAMES } from '../data/world/map.js';
 import { zoneQuests, activeZone, ZONE_ORDER, bossReady } from '../data/world/quests.js';
 import { bossForZone } from '../data/world/bosses.js';
+import { errandLine } from '../data/world/errands.js';
+import { flyCoins } from '../ui/Coins.js';
 
 /**
  * Overlay on top of the World scene: joystick, action button, coin counter, zone label, menu and the
@@ -27,7 +29,7 @@ export class HudScene extends BaseScene {
   constructor() { super(SCENES.Hud); }
 
   create(data) {
-    this.state = { coins: 0, zone: '', zoneId: null, dialog: null, encounter: null, menuOpen: false, menuPage: 'menu' };
+    this.state = { coins: 0, zone: '', zoneId: null, carry: null, dialog: null, encounter: null, menuOpen: false, menuPage: 'menu' };
     this.actionFlag = false;
     super.create(data);
     this.scene.bringToTop();
@@ -77,6 +79,8 @@ export class HudScene extends BaseScene {
     this.coinChip = chip(this, left, top + chipH / 2, { text: String(s.coins), icon: 'coin', height: chipH, textColor: THEME.warningDark, fontSize: 15 });
     this.zoneChip = chip(this, left, top + chipH + 8 + 13 * ui, { text: s.zone, height: 26 * ui, fontSize: 12, textColor: THEME.ink2, shadow: 'none', stroke: THEME.line });
     this.zoneChip.setVisible(!!s.zone);
+    // What the player is carrying for an errand
+    if (s.carry) chip(this, left, top + chipH + 8 + 26 * ui + 8 + 13 * ui, { text: s.carry, height: 26 * ui, fontSize: 12, color: THEME.warningSoft, textColor: THEME.warningDark, shadow: 'none' });
 
     // Top-right: menu
     iconButton(this, w - 10 - sa.right - 22 * ui, top + chipH / 2, 44 * ui, '☰', { onClick: () => this.openMenu() });
@@ -163,8 +167,8 @@ export class HudScene extends BaseScene {
     if (!e || e.picked !== null) return;
     e.picked = i; e.right = e.q.choices[i] === e.q.answer;
     if (e.right) Sfx.correct(); else Sfx.wrong();
-    if (e.onAnswer) e.onAnswer(e.right);
     this.rebuild();
+    if (e.onAnswer) e.onAnswer(e.right);   // after the rebuild so its coin animation is not wiped
   }
 
   buildActionButton(x, y, size) {
@@ -185,6 +189,25 @@ export class HudScene extends BaseScene {
   // ---- Coins / zone -------------------------------------------------------------------------
 
   setCoins(n) { this.state.coins = n; if (this.coinChip && this.coinChip.active) this.coinChip.setText(String(n)); }
+  setCarry(text) { if (this.state.carry !== text) { this.state.carry = text || null; this.rebuild(); } }
+
+  /** Coins fly from `from` (CSS px; default: screen centre) into the coin counter, which counts up as they land. */
+  awardCoins(amount, from = null) {
+    if (!amount || !this.scene.isActive()) return;
+    const target = this.state.coins;
+    this.setCoins(target - amount);
+    // Start after any rebuild triggered in the same tick (a modal opening or updating), which would destroy the
+    // coin sprites; and whatever happens to the flight, the counter shows the true total soon after.
+    this.time.delayedCall(40, () => {
+      if (!this.scene.isActive()) return;
+      const to = this.coinChip ? { x: this.coinChip.x + 16, y: this.coinChip.y } : { x: 30, y: 30 };
+      flyCoins(this, from || { x: this.w / 2, y: this.h / 2 }, to, amount, {
+        onLand: (v) => this.setCoins(Math.min(target, this.state.coins + v)),
+        onDone: () => { this.setCoins(target); if (this.coinChip && this.coinChip.active) this.tweens.add({ targets: this.coinChip, scale: 1.2, yoyo: true, duration: 120 }); }
+      });
+    });
+    this.time.delayedCall(1800, () => { if (this.state.coins < target) this.setCoins(target); });
+  }
   setZone(name, id = null) {
     this.state.zone = name || ''; this.state.zoneId = id;
     if (this.zoneChip && this.zoneChip.active) { this.zoneChip.setText(this.state.zone); this.zoneChip.setVisible(!!this.state.zone); }
@@ -296,6 +319,8 @@ export class HudScene extends BaseScene {
     const profile = Store.getProfile() || {};
     const zone = ZONE_ORDER.includes(this.state.zoneId) ? this.state.zoneId : activeZone(profile);
     const quests = zoneQuests(profile, zone);
+    const errand = errandLine(profile);
+    if (errand) quests.push({ id: 'errand', title: errand, count: 0, total: 1, done: false });   // sized into the modal below
     const boss = bossForZone(zone);
     const rowH = 34 * ui;
     const m = modal(this, { w: 400 * ui, h: 180 * ui + quests.length * rowH, title: `${ZONE_NAMES[zone]} quests`, accent: THEME.warning, depth: 600, dimAlpha: 0.45 });
@@ -306,7 +331,7 @@ export class HudScene extends BaseScene {
     text(this, w / 2, y, sub, T.small(this, THEME.ink2)).setDepth(603); y += 24 * ui;
     quests.forEach((q) => {
       const cy = y + rowH / 2;
-      const mark = q.done ? '✓' : q.id === 'boss' && !ready ? '🔒' : '○';
+      const mark = q.done ? '✓' : q.id === 'boss' && !ready ? '🔒' : q.id === 'errand' ? '📜' : '○';
       text(this, m.x + 26, cy, mark, T.bodyBold(this, q.done ? THEME.successDark : THEME.ink3)).setDepth(603);
       text(this, m.x + 48, cy, q.title, { ...T.body(this, q.done ? THEME.ink2 : THEME.ink), wordWrap: { width: m.w - 130 } }).setOrigin(0, 0.5).setDepth(603);
       text(this, m.x + m.w - 24, cy, `${q.count}/${q.total}`, T.small(this, q.done ? THEME.successDark : THEME.ink2)).setOrigin(1, 0.5).setDepth(603);

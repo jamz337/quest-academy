@@ -17,7 +17,10 @@ import { resolveLook } from '../data/avatars.js';
 import { lookSpriteTexture } from '../systems/Textures.js';
 import { sparkleSpots, grassSpots, daySeed, dayKey, rollEncounter, chestCoins, pickGift, GRASS, SURPRISE_CHANCE, SURPRISE_COOLDOWN_MS, QUIZ_REWARD, CRITTERS, CRITTER_MAX_PER_DAY } from '../data/world/encounters.js';
 import { bossQuestions } from '../generators/boss.js';
-import { effectiveGrade } from '../systems/Progression.js';
+import { effectiveGrade, houseStars, nextHouseLevel, HOUSE_LEVELS, checkBadges } from '../systems/Progression.js';
+import { errandFor, errandState, activeErrand, acceptErrand, pickUpErrand, deliverErrand, errandLine } from '../data/world/errands.js';
+import { starPop, fireworks } from '../ui/Fireworks.js';
+import { getBadge } from '../data/badges.js';
 import { weakSkills } from '../systems/Practice.js';
 import { Rng } from '../systems/Rng.js';
 import { SUBJECTS } from '../constants.js';
@@ -58,6 +61,8 @@ export class WorldScene extends Phaser.Scene {
     this.createCoins(profile);
     this.createSparkles(profile);
     this.createCritters();
+    this.createHouseStars();
+    this.createErrandItem(profile);
     this.bubble = this.add.image(0, 0, 'bubble').setScale(0.75).setDepth(20).setVisible(false);
 
     const cam = this.cameras.main;
@@ -83,6 +88,8 @@ export class WorldScene extends Phaser.Scene {
     if (typeof document !== 'undefined') document.addEventListener('visibilitychange', this.onVisibility);
     this.events.on('resume', this.onResumeBound);
     this.events.on('pause', this.onPauseBound);
+    this.onGameDone = (e) => this.afterGame(e.payload, e.result);
+    this.events.on('minigame:done', this.onGameDone);
     this.events.once('shutdown', () => this.cleanup());
   }
 
@@ -126,6 +133,7 @@ export class WorldScene extends Phaser.Scene {
       s.setScale(CHAR_SCALE * (boss.scale || 1.3)).setDepth(5).refreshBody();
       s.body.setSize(26, 26);
       s.boss = boss;
+      if (bossDefeated(Store.getProfile(), boss.zone)) this.poseDefeated(s);
       this.npcs.push(s);
       this.tweens.add({ targets: s, y: s.y - 3, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
     }
@@ -242,9 +250,9 @@ export class WorldScene extends Phaser.Scene {
       if (!p.world.critters || p.world.critters.day !== day) p.world.critters = { day, caught: 0 };
       if (p.world.critters.caught < CRITTER_MAX_PER_DAY) { p.world.critters.caught += 1; coins = def.coins; p.coins += coins; }
     });
-    if (coins) { Sfx.coin(); this.say(`${def.cry} You caught the ${def.name}: +${coins} coins`, { icon: 'coin' }); }
+    if (coins) this.say(`${def.cry} You caught the ${def.name}: +${coins} coins`, { icon: 'coin' });
     else { Sfx.pop(); this.say(`${def.cry} The critters are out of coins for today.`, { accent: THEME.ink3 }); }
-    if (hud) hud.setCoins(Store.getProfile().coins);
+    if (hud) { hud.setCoins(Store.getProfile().coins); if (coins) hud.awardCoins(coins); }
     this.time.delayedCall(def.respawnMs, () => this.spawnCritter(def));
   }
 
@@ -291,9 +299,8 @@ export class WorldScene extends Phaser.Scene {
 
   reward({ coins = 0, xp = 0 }) {
     Store.updateProfile((p) => { p.coins += coins; p.xp += xp; });
-    if (coins) Sfx.coin();
     const hud = this.hud();
-    if (hud) hud.setCoins(Store.getProfile().coins);
+    if (hud) { hud.setCoins(Store.getProfile().coins); if (coins) hud.awardCoins(coins); }
   }
 
   /**
@@ -425,6 +432,8 @@ export class WorldScene extends Phaser.Scene {
     const p = Store.getProfile();
     if (hud && p && hud.state.coins !== p.coins) hud.setCoins(p.coins);
     this.maybeSurprise(tx, ty);
+    if (hud && p) { const line = errandLine(p); if (hud.state.carry !== line) hud.setCarry(line); }
+    if (this.errandItem && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.errandItem.x, this.errandItem.y) < 22) this.pickUpItem();
   }
 
   // ---- Interactions --------------------------------------------------------------------------
@@ -451,13 +460,18 @@ export class WorldScene extends Phaser.Scene {
       if (!p.world.npcsTalked.includes(npc.id)) { p.world.npcsTalked.push(npc.id); p.coins += HELLO_COINS; firstTalk = true; }
     });
     if (!hud) return;
-    hud.showDialog({
-      name: npc.name, lines: npc.lines, prompt: npc.playPrompt,
-      onPlay: npc.gameId ? () => this.playGame(npc) : null
-    });
+    if (this.errandTalk(npc, hud)) return;
+    // Villagers run three levels of their game; the prompt says which is next and how many stars the house has.
+    const profile = Store.getProfile();
+    let prompt = npc.playPrompt;
+    if (npc.gameId && !getGame(npc.gameId)?.usesLevels) {
+      const stars = houseStars(profile, npc.gameId), level = nextHouseLevel(profile, npc.gameId);
+      prompt = stars >= HOUSE_LEVELS ? `You have all ${HOUSE_LEVELS} stars here! Play level ${HOUSE_LEVELS} again?` : `${npc.playPrompt} Level ${level} of ${HOUSE_LEVELS}${stars ? ` (${stars} star${stars > 1 ? 's' : ''} so far)` : ''}`;
+    }
+    hud.showDialog({ name: npc.name, lines: npc.lines, prompt, onPlay: npc.gameId ? () => this.playGame(npc) : null });
     if (firstTalk) {
-      Sfx.coin();
       hud.setCoins(Store.getProfile().coins);
+      hud.awardCoins(HELLO_COINS);
       hud.notify(`+${HELLO_COINS} coins for saying hello!`, { icon: 'coin' });
     }
   }
@@ -520,6 +534,118 @@ export class WorldScene extends Phaser.Scene {
     if (hud) hud.setCoins(Store.getProfile().coins);
   }
 
+  // ---- House stars, errands and after-game celebrations -----------------------------------------
+
+  /** Three small stars above every villager's house, lit as the game's levels are passed. */
+  createHouseStars() {
+    this.houseStarSprites = {};
+    for (const npc of NPCS) {
+      if (!npc.gameId) continue;
+      const spot = this.map.npcSpots[npc.id];
+      const b = spot && this.map.buildings.find((x) => x.door && x.door.tx === spot.tx && x.door.ty === spot.ty - 1);
+      if (!b) continue;
+      const cx = (b.x + b.w / 2) * TILE, cy = (b.y - 0.35) * TILE;
+      this.houseStarSprites[npc.gameId] = [0, 1, 2].map((i) => this.add.image(cx + (i - 1) * 11, cy, 'star-off').setDisplaySize(10, 10).setDepth(4));
+    }
+    this.refreshHouseStars();
+  }
+
+  refreshHouseStars() {
+    const p = Store.getProfile();
+    if (!p) return;
+    for (const [gameId, imgs] of Object.entries(this.houseStarSprites || {})) {
+      const n = houseStars(p, gameId);
+      imgs.forEach((img, i) => { if (img.active) img.setTexture(i < n ? 'star' : 'star-off'); });
+    }
+  }
+
+  /** A beaten boss lies knocked over in front of its castle. */
+  poseDefeated(sprite) { sprite.setAngle(90).setAlpha(0.7).setTint(0xb4bcc4); }
+
+  /** Back from a game: pop the new star up to the house, topple a beaten boss, announce an errand. */
+  afterGame(payload, result) {
+    if (!result || result.aborted) return;
+    const hud = this.hud();
+    if (payload.boss && result.won) {
+      const s = this.npcs.find((x) => x.boss && x.boss.id === payload.boss.id);
+      if (s) this.poseDefeated(s);
+      this.time.delayedCall(300, () => { const sc = hud && hud.scene.isActive() ? hud : this; fireworks(sc, sc.w ? sc.w / 2 : this.player.x, sc.h ? sc.h * 0.35 : this.player.y, { bursts: 4, spread: 160 }); });
+    }
+    const slots = this.houseStarSprites && this.houseStarSprites[payload.gameId];
+    if (result.newHouseStar && slots) {
+      const npc = this.npcs.find((x) => x.npc && x.npc.gameId === payload.gameId);
+      const slot = slots[Math.max(0, result.houseStars - 1)];
+      if (npc && slot) {
+        this.time.delayedCall(400, () => {
+          Sfx.unlock();
+          starPop(this, npc.x, npc.y - 22, slot.x, slot.y, 10, () => this.refreshHouseStars());
+          const left = HOUSE_LEVELS - result.houseStars;
+          this.say(left > 0 ? `⭐ Level ${result.level} passed! ${left} more to go` : `⭐ All ${HOUSE_LEVELS} levels passed here!`, { icon: 'star', accent: THEME.warning });
+        });
+      }
+    } else this.refreshHouseStars();
+    if (result.errandUnlocked) {
+      const giver = NPCS.find((n) => n.id === result.errandUnlocked.npc);
+      this.time.delayedCall(2400, () => this.say(`📜 ${giver ? giver.name : 'A villager'} has an errand for you — talk to them!`, { accent: THEME.brand }));
+    }
+  }
+
+  /** Errand talk: hand over what is carried, or offer this villager's errand. True when it handled the talk. */
+  errandTalk(npc, hud) {
+    const e = errandFor(npc.id);
+    if (!e) return false;
+    const profile = Store.getProfile();
+    const st = errandState(profile, e.id);
+    if (st === 'carrying') {
+      let reward = null, badges = [];
+      Store.updateProfile((p) => { reward = deliverErrand(p, e.id); badges = checkBadges(p); });
+      hud.setCarry(null);
+      hud.showDialog({ name: npc.name, lines: [e.thanks, `Here, take ${reward.coins} coins and ${reward.xp} XP for your trouble!`] });
+      hud.setCoins(Store.getProfile().coins);
+      hud.awardCoins(reward.coins);
+      Sfx.unlock();
+      fireworks(hud, hud.w / 2, hud.h * 0.35, { bursts: 3, spread: hud.w * 0.3 });
+      badges.forEach((id, i) => this.time.delayedCall(1500 + i * 1400, () => this.say(`New badge: ${getBadge(id)?.title || id}`, { icon: 'star', accent: THEME.brand })));
+      return true;
+    }
+    if (st === 'available' && !activeErrand(profile) && !(this.errandDeclined && this.errandDeclined[npc.id])) {
+      hud.showDialog({
+        name: npc.name, lines: [e.ask], prompt: 'Will you help?', playLabel: 'Sure!',
+        onPlay: () => {
+          Store.updateProfile((p) => acceptErrand(p, e.id));
+          this.createErrandItem(Store.getProfile());
+          hud.setCarry(errandLine(Store.getProfile()));
+          this.say(`${e.emoji} Find the ${e.item} in ${ZONE_NAMES[e.zone]}`, { accent: THEME.warning });
+        },
+        onLater: () => { this.errandDeclined = { ...(this.errandDeclined || {}), [npc.id]: true }; }
+      });
+      return true;
+    }
+    return false;
+  }
+
+  /** The item of the active errand, bobbing on its tile until the player walks over it. */
+  createErrandItem(profile) {
+    if (this.errandItem) { this.errandItem.destroy(); this.errandItem = null; }
+    const e = activeErrand(profile);
+    if (!e || errandState(profile, e.id) !== 'active') return;
+    const t = this.add.text((e.tx + 0.5) * TILE, (e.ty + 0.5) * TILE, e.emoji, { fontSize: '18px' }).setOrigin(0.5).setDepth(4);
+    this.tweens.add({ targets: t, y: t.y - 4, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+    t.errand = e;
+    this.errandItem = t;
+  }
+
+  pickUpItem() {
+    const e = this.errandItem.errand;
+    this.errandItem.destroy(); this.errandItem = null;
+    Store.updateProfile((p) => pickUpErrand(p, e.id));
+    Sfx.unlock();
+    const hud = this.hud();
+    if (hud) hud.setCarry(errandLine(Store.getProfile()));
+    const giver = NPCS.find((n) => n.id === e.npc);
+    this.say(`${e.emoji} You found the ${e.item}! Take it to ${giver ? giver.name : 'the villager'}.`, { accent: THEME.success });
+  }
+
   // ---- Lifecycle -----------------------------------------------------------------------------
 
   onResume() {
@@ -549,6 +675,7 @@ export class WorldScene extends Phaser.Scene {
     if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', this.onVisibility);
     this.events.off('resume', this.onResumeBound);
     this.events.off('pause', this.onPauseBound);
+    this.events.off('minigame:done', this.onGameDone);
     try { if (this.zoneTimer) this.zoneTimer.remove(false); } catch { /* clock already gone */ }
     try { if (this.critterTimer) this.critterTimer.remove(false); } catch { /* clock already gone */ }
     this.zoneTimer = null; this.critterTimer = null; this.critters = [];

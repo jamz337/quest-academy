@@ -14,6 +14,7 @@ import * as Launcher from '../systems/MinigameLauncher.js';
 import { getBadge } from '../data/badges.js';
 import { skillLabel } from '../data/skills.js';
 import { MASTERY_LABEL } from '../systems/Progression.js';
+import { fireworks } from '../ui/Fireworks.js';
 
 const HEADLINES = ['Keep practising!', 'Good try!', 'Great job!', 'Amazing!'];
 
@@ -27,7 +28,14 @@ export class ResultsScene extends BaseScene {
     const { result } = this.sceneData;
     if (result.stars >= 2) Sfx.fanfare(); else if (result.stars === 1) Sfx.correct(); else Sfx.wrong();
     this.announced = true;
+    // Celebrate a pass: fireworks around the stars, bigger for more stars, and the house-star news.
+    if (result.stars >= 1 || result.won) this.time.delayedCall(500, () => fireworks(this, this.w / 2, this.h * 0.3, { bursts: 2 + (result.stars || 0), spread: this.w * 0.3 }));
     let delay = 900;
+    if (result.newHouseStar) {
+      const left = (result.houseLevels || 3) - (result.houseStars || 0);
+      const msg = left > 0 ? `⭐ Level ${result.level} passed!  ${result.houseStars} of ${result.houseLevels} — ${left} more to go` : `⭐ All ${result.houseLevels} levels passed! The house shines!`;
+      this.time.delayedCall(delay, () => toast(this, msg, { icon: 'star', accent: THEME.warning })); delay += 1400;
+    }
     for (const id of result.newBadges || []) {
       const b = getBadge(id);
       if (b) this.time.delayedCall(delay, () => toast(this, `New badge: ${b.title}`, { icon: 'star', accent: THEME.brand })); delay += 1400;
@@ -57,7 +65,7 @@ export class ResultsScene extends BaseScene {
     const headline = boss ? (result.won ? boss.win : boss.lose) : HEADLINES[result.stars] || HEADLINES[0];
     const head = text(this, w / 2, y, headline, { ...T.title(this), wordWrap: { width: m.w - 40 } });
     y += 34 * ui;
-    const tag = chip(this, w / 2, y, { text: payload.title, originX: 0.5, color: subject.soft, textColor: subject.dark, shadow: 'none' });
+    const tag = chip(this, w / 2, y, { text: payload.level ? `${payload.title}  ·  Level ${payload.level} of ${result.houseLevels || 3}` : payload.title, originX: 0.5, color: subject.soft, textColor: subject.dark, shadow: 'none' });
     y += 46 * ui;
     const stars = new StarRow(this, w / 2, y, 0, 56 * ui);
     if (!this.starsShown) { this.starsShown = true; stars.reveal(result.stars, this); } else stars.set(result.stars);

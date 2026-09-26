@@ -3,6 +3,8 @@
 import { NPCS } from './npcs.js';
 import { BOSSES, bossForZone } from './bosses.js';
 import { gamesForSubject } from '../minigames.js';
+import { houseStars, HOUSE_LEVELS } from '../../systems/Progression.js';
+import { activeErrand, errandLine } from './errands.js';
 import { ZONE_NAMES, buildMap, zoneAt } from './map.js';
 
 export const ZONE_ORDER = ['math', 'words', 'code', 'bible'];
@@ -32,13 +34,13 @@ export function zoneQuests(profile, zone) {
   const villagers = NPCS.filter((n) => n.zone === zone && n.gameId);
   const talked = villagers.filter((n) => (world.npcsTalked || []).includes(n.id)).length;
   const zoneGames = gamesForSubject(SUBJECT_OF_ZONE[zone]);
-  const starred = zoneGames.filter((g) => (games[g.id]?.bestStars || 0) >= 1).length;
+  const finished = zoneGames.filter((g) => houseStars(p, g.id) >= HOUSE_LEVELS).length;
   const coins = zoneCoins(zone);
   const found = coins.filter((i) => (world.coinsCollected || []).includes(i)).length;
   const boss = bossForZone(zone);
   const quests = [
     { id: 'meet', title: `Meet the ${ZONE_NAMES[zone]} villagers`, count: talked, total: villagers.length },
-    { id: 'stars', title: 'Earn a star in each game here', count: starred, total: zoneGames.length },
+    { id: 'stars', title: `Pass all ${HOUSE_LEVELS} levels at each house`, count: finished, total: zoneGames.length },
     { id: 'coins', title: 'Find the hidden coins', count: found, total: coins.length }
   ].map((q) => ({ ...q, done: q.count >= q.total }));
   if (boss) quests.push({ id: 'boss', title: `Defeat ${boss.name}`, count: bossDefeated(p, zone) ? 1 : 0, total: 1, done: bossDefeated(p, zone) });

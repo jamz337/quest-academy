@@ -22,7 +22,7 @@ export const TUNING = {
  */
 export function tuningFor(payload) {
   const t = TUNING[payload?.band] || TUNING.A;
-  const f = 1 - 0.12 * Math.max(0, Math.min(3, payload?.mastery | 0));
+  const f = (1 - 0.12 * Math.max(0, Math.min(3, payload?.mastery | 0))) * (1 - 0.08 * Math.max(0, Math.min(2, (payload?.level | 0) - 1)));
   const questionTimeMs = payload?.timers === false ? Infinity : Math.round(t.questionTimeMs * f);
   return { ...t, questionTimeMs, parTimeMs: Math.round(t.parTimeMs * f) };
 }

@@ -70,7 +70,7 @@ describe('zone quests', () => {
     const p = newProfile({ name: 'A', grade: 3 });
     const map = buildMap();
     p.world.npcsTalked = NPCS.filter((n) => n.zone === 'math').map((n) => n.id);
-    for (const g of gamesForSubject('math')) p.games[g.id] = { bestStars: 1 };
+    for (const g of gamesForSubject('math')) p.games[g.id] = { bestStars: 1, levels: { 1: 1, 2: 1, 3: 1 } };   // all three house levels passed
     p.world.coinsCollected = map.coins.map((c, i) => (zoneAt(map, c.tx, c.ty) === 'math' ? i : -1)).filter((i) => i >= 0);
     expect(bossReady(p, 'math')).toBe(true);
     expect(bossReady(p, 'words')).toBe(false);

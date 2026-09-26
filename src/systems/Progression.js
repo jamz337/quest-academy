@@ -1,6 +1,9 @@
 // Every star, coin, XP, badge, mastery and unlock rule lives here so the games stay simple.
 import { BADGES } from '../data/badges.js';
-import { gamesForSubject } from '../data/minigames.js';
+import { gamesForSubject, getGame } from '../data/minigames.js';
+import { bandFor } from '../data/grades.js';
+import { levelsForBand } from '../data/coding/levels.js';
+import { unlockErrand } from '../data/world/errands.js';
 import { ZONE_ORDER } from '../data/world/quests.js';
 import { recordSkills } from './Practice.js';
 import { applyGoal } from './Goals.js';
@@ -61,6 +64,26 @@ export function starsForMaze({ solved, blocksUsed, par, attempts }) {
 export const subjectBestStars = (profile, subject) =>
   gamesForSubject(subject).reduce((s, g) => s + (profile.games[g.id]?.bestStars || 0), 0);
 
+// ---- House levels: every villager's game has three levels; each pass lights a star above the house ----
+export const HOUSE_LEVELS = 3;
+
+/** Stars lit above a house (0-3): levels passed, or for Robo Maze the mazes solved in the player's band. */
+export function houseStars(profile, gameId) {
+  const game = getGame(gameId);
+  if (game && game.usesLevels) {
+    const band = bandFor(effectiveGrade(profile, game.subject));
+    return Math.min(HOUSE_LEVELS, levelsForBand(band).filter((l) => (profile.coding?.levels?.[l.id]?.stars || 0) > 0).length);
+  }
+  const lv = profile.games?.[gameId]?.levels || {};
+  return Math.min(HOUSE_LEVELS, [1, 2, 3].filter((n) => (lv[n] || 0) >= 1).length);
+}
+
+/** The level to play next at a house: the first not yet passed, or 3 once all are done. */
+export function nextHouseLevel(profile, gameId) {
+  const lv = profile.games?.[gameId]?.levels || {};
+  return [1, 2, 3].find((n) => (lv[n] || 0) < 1) || HOUSE_LEVELS;
+}
+
 /** Every village is open to roam; only each zone's boss is gated, behind its quests (see quests.js bossReady). */
 export function unlockedZones() { return [...ZONE_ORDER]; }
 
@@ -112,7 +135,15 @@ export function applyResult(profile, payload, raw) {
   result.newBest = score > rec.bestScore;
   rec.bestScore = Math.max(rec.bestScore, score);
   rec.bestStars = Math.max(rec.bestStars, stars);
+  // House level: which of the three levels this was, and whether it lit a new star above the house.
+  const level = Math.max(1, Math.min(HOUSE_LEVELS, payload.level | 0 || 1));
+  rec.levels ||= {};
+  const hadStar = (rec.levels[level] || 0) >= 1;
+  rec.levels[level] = Math.max(rec.levels[level] || 0, stars);
   profile.games[payload.gameId] = rec;
+  const before = houseStars(profile, payload.gameId);   // includes this pass already; compute "new" from hadStar
+  Object.assign(result, { level, levelPassed: stars >= 1, newHouseStar: stars >= 1 && !hadStar && !isCoding, houseStars: before, houseLevels: HOUSE_LEVELS });
+  if (result.newHouseStar && level === 1) result.errandUnlocked = unlockErrand(profile, getGame(payload.gameId)?.npc);
 
   // Per-level record for coding levels
   if (raw.levelId) {
@@ -142,13 +173,18 @@ export function applyResult(profile, payload, raw) {
 function finishResult(profile, result) {
   profile.world.unlockedZones = unlockedZones();
 
-  // Badges
-  result.newBadges = [];
+  result.newBadges = checkBadges(profile, result);
+  return result;
+}
+
+/** Award any badge whose test now passes (result may be null, e.g. after an errand). Returns the new ids. */
+export function checkBadges(profile, result = null) {
+  const out = [];
   for (const b of BADGES) {
     if (profile.badges.includes(b.id)) continue;
     let ok = false;
     try { ok = b.test(profile, result); } catch { ok = false; }
-    if (ok) { profile.badges.push(b.id); result.newBadges.push(b.id); }
+    if (ok) { profile.badges.push(b.id); out.push(b.id); }
   }
-  return result;
+  return out;
 }

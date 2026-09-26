@@ -6,6 +6,7 @@ import { grid } from '../../systems/Layout.js';
 import { T, text } from '../../ui/TextStyles.js';
 import { button, speakButton } from '../../ui/Button.js';
 import { readable } from '../../ui/ReadableText.js';
+import { fireworks } from '../../ui/Fireworks.js';
 import { card } from '../../ui/Card.js';
 import { ProgressBar } from '../../ui/ProgressBar.js';
 import { enter } from '../../ui/motion.js';
@@ -47,7 +48,23 @@ export class BossBattle extends MinigameScene {
     const bc = card(this, cx, area.y + bossH / 2, area.w, bossH, { color: THEME.ink, stroke: THEME.danger, shadow: 'md' });
     const px = -area.w / 2 + 16 + 28 * ui;
     const portrait = this.add.image(px, 0, badgeTexture(this, boss.look)).setDisplaySize(56 * ui, 56 * ui);
-    if (s.hit === 'boss') this.tweens.add({ targets: portrait, x: px + 6, yoyo: true, repeat: 3, duration: 40 });
+    if (s.hit === 'boss' && !s.defeated) {
+      // A hit: the boss flinches, flashes red and a "−1" floats off the portrait.
+      this.tweens.add({ targets: portrait, x: px + 6, yoyo: true, repeat: 3, duration: 40 });
+      portrait.setTint(0xff5c6c); this.time.delayedCall(180, () => { if (portrait.active) portrait.clearTint(); });
+      const dmg = this.add.text(px + 20 * ui, -20 * ui, '−1', T.at(this, 22, THEME.danger, { fontStyle: '700' })).setOrigin(0.5);
+      bc.add(dmg);
+      this.tweens.add({ targets: dmg, y: -60 * ui, alpha: 0, duration: 700, ease: 'Cubic.easeOut' });
+    }
+    if (s.defeated) {
+      // Defeat: the boss topples out of the frame while a stamp slams down and fireworks go off.
+      this.tweens.add({ targets: portrait, angle: 95, y: 40 * ui, alpha: 0.25, duration: 750, ease: 'Cubic.easeIn' });
+      const stamp = this.add.text(cx, area.y + bossH + 70 * ui, 'DEFEATED!', T.at(this, Math.min(44, area.w / 7.5 / ui), THEME.danger, { fontStyle: '700' })).setOrigin(0.5).setAngle(-10).setScale(3).setAlpha(0).setDepth(20);
+      this.tweens.add({ targets: stamp, scale: 1, alpha: 1, duration: 320, ease: 'Back.easeOut', delay: 120 });
+      text(this, cx, area.y + bossH + 150 * ui, boss.win, { ...T.heading(this, THEME.ink), wordWrap: { width: area.w - 32 } }).setAlpha(0).setDepth(20);
+      this.tweens.add({ targets: this.children.list[this.children.list.length - 1], alpha: 1, duration: 300, delay: 500 });
+      this.time.delayedCall(250, () => fireworks(this, cx, area.y + bossH + 120 * ui, { bursts: 4, spread: area.w * 0.35 }));
+    }
     const tx = px + 40 * ui;
     bc.add([portrait,
       this.add.text(tx, -bossH / 2 + 18 * ui, boss.name, T.bodyBold(this, THEME.onAccent)).setOrigin(0, 0.5),
@@ -58,6 +75,8 @@ export class BossBattle extends MinigameScene {
     const hearts = this.add.text(area.w / 2 - 16, -bossH / 2 + 38 * ui, '♥'.repeat(s.hearts) + '♡'.repeat(s.maxHearts - s.hearts), T.at(this, 18, THEME.danger)).setOrigin(1, 0.5);
     bc.add(hearts);
     if (s.hit === 'player') this.tweens.add({ targets: hearts, scale: 1.4, yoyo: true, duration: 120 });
+
+    if (s.defeated) { enter(this, bc, { from: 'up', distance: 12 }); return; }   // no more questions once the boss is down
 
     // Question card with the timer bar.
     const gap = 12;
@@ -138,7 +157,14 @@ export class BossBattle extends MinigameScene {
 
   end(won) {
     const s = this.state;
-    if (won) Sfx.fanfare();
+    if (won && !s.defeated) {
+      // Play the defeat sequence first, then score the fight.
+      s.defeated = true; s.locked = true;
+      Sfx.fanfare();
+      this.rebuild();
+      this.time.delayedCall(2800, () => this.end(true));
+      return;
+    }
     if (s.charm) Store.updateProfile((p) => { if (p.charms) delete p.charms.extraHeart; });
     const missedSkills = Object.entries(s.missed).sort((a, b) => b[1] - a[1]).map(([k]) => k);
     this.finish({ won, hpLeft: Math.max(0, s.hp), heartsLeft: Math.max(0, s.hearts), maxHearts: s.maxHearts, correct: s.correct, total: s.idx + 1, missedSkills, delay: 300 });

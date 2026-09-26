@@ -4,7 +4,7 @@ import { getGame } from '../data/minigames.js';
 import { getBoss } from '../data/world/bosses.js';
 import { bandFor } from '../data/grades.js';
 import * as Store from './Store.js';
-import { applyResult, effectiveGrade, mastery } from './Progression.js';
+import { applyResult, effectiveGrade, mastery, nextHouseLevel } from './Progression.js';
 import * as Cloud from './Cloud.js';
 import { addFamilyStars, claimFamily } from './Goals.js';
 
@@ -21,9 +21,11 @@ export function launch(fromScene, gameId, opts = {}) {
   if (!game && !boss) throw new Error('Unknown game ' + gameId);
   const profile = Store.getProfile();
   const subject = (game || boss).subject;
-  const grade = effectiveGrade(profile, subject, boss ? 1 : 0);
+  // House level 1-3 (from the villager, or the next unpassed one): each level plays a grade higher.
+  const level = boss ? 0 : Math.max(1, Math.min(3, (opts.context && opts.context.level) || nextHouseLevel(profile, gameId)));
+  const grade = effectiveGrade(profile, subject, boss ? 1 : level - 1);
   const payload = {
-    gameId, sceneKey: game ? game.sceneKey : BOSS_SCENE, title: game ? game.title : boss.name, subject,
+    gameId, sceneKey: game ? game.sceneKey : BOSS_SCENE, title: game ? game.title : boss.name, subject, level: level || undefined,
     grade, band: bandFor(grade), mastery: mastery(profile, subject).level, boss: boss || undefined, timers: profile.timers !== 'off',
     source: opts.source || 'challenge', returnTo: fromScene.scene.key,
     context: opts.context || {}, seed: opts.seed
