@@ -35,3 +35,37 @@ describe('word highlighting', () => {
     expect(rateFor(2)).toBeLessThan(rateFor(5));
   });
 });
+
+describe('voices', () => {
+  const v = (name, lang = 'en-US') => ({ name, lang });
+  it('tells a voice\'s sex from its name and prefers natural voices', async () => {
+    const { voiceSex, voiceScore, chooseVoice, speakerTweak } = await import('../src/systems/Speech.js');
+    expect(voiceSex(v('Microsoft Aria Online (Natural) - English (United States)'))).toBe('female');
+    expect(voiceSex(v('Microsoft Guy Online (Natural) - English (United States)'))).toBe('male');
+    expect(voiceSex(v('Google UK English Female', 'en-GB'))).toBe('female');
+    expect(voiceSex(v('Google UK English Male', 'en-GB'))).toBe('male');
+    expect(voiceSex(v('Samantha'))).toBe('female');
+    expect(voiceSex(v('Daniel', 'en-GB'))).toBe('male');
+    expect(voiceSex(v('Google US English'))).toBeNull();
+    expect(voiceScore(v('Microsoft Zira Desktop - English (United States)'))).toBeLessThan(voiceScore(v('Microsoft Aria Online (Natural) - English (United States)')));
+    expect(voiceScore(v('Google Deutsch', 'de-DE'))).toBe(-Infinity);
+    expect(voiceScore(v('Bad News'))).toBeLessThan(0);
+    const t = speakerTweak('owl-librarian');
+    expect(speakerTweak('owl-librarian')).toEqual(t);
+    expect(Math.abs(t.pitch)).toBeLessThanOrEqual(0.1);
+  });
+
+  it('picks the best voice of the wanted sex, else the best English voice', async () => {
+    const { chooseVoice } = await import('../src/systems/Speech.js');
+    const voices = [
+      v('Microsoft David Desktop - English (United States)'), v('Microsoft Zira Desktop - English (United States)'),
+      v('Microsoft Guy Online (Natural) - English (United States)'), v('Microsoft Jenny Online (Natural) - English (United States)'),
+      v('Google Deutsch', 'de-DE')
+    ];
+    expect(chooseVoice(voices, 'male').name).toMatch(/Guy/);
+    expect(chooseVoice(voices, 'female').name).toMatch(/Jenny/);
+    expect(chooseVoice(voices.slice(0, 1), 'female').name).toMatch(/David/);   // nothing female: best English wins
+    expect(chooseVoice([v('Google Deutsch', 'de-DE')], 'male')).toBeNull();
+    expect(chooseVoice([], 'male')).toBeNull();
+  });
+});

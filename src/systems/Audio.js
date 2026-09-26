@@ -1,6 +1,7 @@
 // Tiny Web Audio synth. No sound files; everything is an oscillator envelope.
 let ctx = null;
 let muted = false;
+const muteListeners = new Set();
 
 function ac() {
   if (!ctx) { try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch { ctx = null; } }
@@ -9,8 +10,12 @@ function ac() {
 
 /** Call from the first user gesture so mobile browsers allow audio. */
 export function unlockAudio() { const a = ac(); if (a && a.state === 'suspended') a.resume(); }
-export function setMuted(m) { muted = !!m; }
+export function setMuted(m) { muted = !!m; for (const fn of muteListeners) { try { fn(muted); } catch { /* ignore */ } } }
 export function isMuted() { return muted; }
+/** Music and other long-running sounds subscribe here to follow the sound setting. */
+export function onMuted(fn) { muteListeners.add(fn); return () => muteListeners.delete(fn); }
+/** The shared AudioContext (null where Web Audio is unavailable). */
+export const audioContext = () => ac();
 
 function tone(freq, dur = 0.12, type = 'square', vol = 0.08, when = 0, slide = 0) {
   const a = ac(); if (!a || muted) return;

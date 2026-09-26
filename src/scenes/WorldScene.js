@@ -6,6 +6,7 @@ import * as Store from '../systems/Store.js';
 import * as Launcher from '../systems/MinigameLauncher.js';
 import { getGame } from '../data/minigames.js';
 import { bandFor } from '../data/grades.js';
+import * as Music from '../systems/Music.js';
 import { buildMap, zoneAt, isWalkable, groundUnder, TID, SOLID, ROOF_TILES, WALL_TILES, DOOR_TILES, ZONE_NAMES } from '../data/world/map.js';
 import { NPCS } from '../data/world/npcs.js';
 import { BOSSES } from '../data/world/bosses.js';
@@ -83,12 +84,13 @@ export class WorldScene extends Phaser.Scene {
 
     this.launchHud();
     this.zoneTimer = this.time.addEvent({ delay: 200, loop: true, callback: this.tick, callbackScope: this });
+    Music.play();   // relaxing lounge loop while exploring; ducked under games, stopped on leaving the world
 
     // Lifecycle
     this.onResize = () => this.applyZoom();
     this.onVisibility = () => { if (typeof document !== 'undefined' && document.hidden) this.savePosition(); };
-    this.onResumeBound = () => this.onResume();
-    this.onPauseBound = () => this.stopPlayer();
+    this.onResumeBound = () => { Music.duck(false); this.onResume(); };
+    this.onPauseBound = () => { this.stopPlayer(); Music.duck(true); };
     this.scale.on('resize', this.onResize);
     if (typeof document !== 'undefined') document.addEventListener('visibilitychange', this.onVisibility);
     this.events.on('resume', this.onResumeBound);
@@ -480,7 +482,7 @@ export class WorldScene extends Phaser.Scene {
       const at = gradeUps(profile, npc.gameId) ? ` at Grade ${gameGrade(profile, npc.gameId)}` : '';
       prompt = passed >= HOUSE_LEVELS ? `You have all ${HOUSE_LEVELS} stars here! Play level ${HOUSE_LEVELS} again?` : `${npc.playPrompt} Level ${level} of ${HOUSE_LEVELS}${at}${passed ? ` (${passed} star${passed > 1 ? 's' : ''} so far)` : ''}`;
     }
-    hud.showDialog({ name: npc.name, lines: npc.lines, prompt, onPlay: npc.gameId ? () => this.playGame(npc) : null });
+    hud.showDialog({ name: npc.name, voice: npc.voice, speaker: npc.id, lines: npc.lines, prompt, onPlay: npc.gameId ? () => this.playGame(npc) : null });
     if (firstTalk) {
       hud.setCoins(Store.getProfile().coins);
       hud.awardCoins(HELLO_COINS);
@@ -499,11 +501,11 @@ export class WorldScene extends Phaser.Scene {
     const beaten = bossDefeated(profile, boss.zone);
     if (!beaten && !bossReady(profile, boss.zone)) {
       const left = zoneQuests(profile, boss.zone).filter((q) => !q.done && q.id !== 'boss').map((q) => `• ${q.title} (${q.count}/${q.total})`);
-      hud.showDialog({ name: boss.name, lines: [...boss.locked, 'Still to do:\n' + left.join('\n')] });
+      hud.showDialog({ name: boss.name, voice: boss.voice, speaker: boss.id, lines: [...boss.locked, 'Still to do:\n' + left.join('\n')] });
       return;
     }
     hud.showDialog({
-      name: boss.name, lines: beaten ? boss.beaten : boss.intro, prompt: beaten ? 'Rematch?' : 'Fight?', playLabel: 'Fight!',
+      name: boss.name, voice: boss.voice, speaker: boss.id, lines: beaten ? boss.beaten : boss.intro, prompt: beaten ? 'Rematch?' : 'Fight?', playLabel: 'Fight!',
       onPlay: () => this.fightBoss(boss)
     });
   }
@@ -613,7 +615,7 @@ export class WorldScene extends Phaser.Scene {
       let reward = null, badges = [];
       Store.updateProfile((p) => { reward = deliverErrand(p, e.id); badges = checkBadges(p); });
       hud.setCarry(null);
-      hud.showDialog({ name: npc.name, lines: [e.thanks, `Here, take ${reward.coins} coins and ${reward.xp} XP for your trouble!`] });
+      hud.showDialog({ name: npc.name, voice: npc.voice, speaker: npc.id, lines: [e.thanks, `Here, take ${reward.coins} coins and ${reward.xp} XP for your trouble!`] });
       hud.setCoins(Store.getProfile().coins);
       hud.awardCoins(reward.coins);
       Sfx.unlock();
@@ -623,7 +625,7 @@ export class WorldScene extends Phaser.Scene {
     }
     if (st === 'available' && !activeErrand(profile) && !(this.errandDeclined && this.errandDeclined[npc.id])) {
       hud.showDialog({
-        name: npc.name, lines: [e.ask], prompt: 'Will you help?', playLabel: 'Sure!',
+        name: npc.name, voice: npc.voice, speaker: npc.id, lines: [e.ask], prompt: 'Will you help?', playLabel: 'Sure!',
         onPlay: () => {
           Store.updateProfile((p) => acceptErrand(p, e.id));
           this.createErrandItem(Store.getProfile());
@@ -738,6 +740,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   cleanup() {
+    Music.stop();
     this.savePosition();
     this.scale.off('resize', this.onResize);
     if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', this.onVisibility);

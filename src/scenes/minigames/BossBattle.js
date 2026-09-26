@@ -86,7 +86,7 @@ export class BossBattle extends MinigameScene {
     const prompt = card(this, cx, qy + promptH / 2, area.w, promptH);
     const size = lines > 3 ? 15 : q.prompt.length > 28 ? 20 : q.prompt.length > 12 ? 28 : 40;
     const question = readable(this, cx, qy + promptH / 2 - 10 * ui, q.prompt, T.at(this, size, THEME.ink, { fontStyle: lines > 3 ? '500' : '700' }), { width: area.w - 40, align: lines > 3 ? 'left' : 'center' });
-    speakButton(this, area.x + area.w - 30 * ui, qy + 26 * ui, 40 * ui, question, { rate: this.speechRate });
+    speakButton(this, area.x + area.w - 30 * ui, qy + 26 * ui, 40 * ui, question, { rate: this.speechRate, voice: this.payload.boss.voice, speaker: this.payload.boss.id });
     this.autoRead(question);
     this.timerBar = new ProgressBar(this, cx, qy + promptH - 16 * ui, area.w - 48, 8 * ui, { color: THEME.success, value: 1 });
     if (!Number.isFinite(s.timeLimit)) this.timerBar.setVisible(false);

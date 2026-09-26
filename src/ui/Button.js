@@ -141,9 +141,10 @@ export function iconButton(scene, x, y, size, glyph, opts = {}) {
  */
 export function speakButton(scene, x, y, size, source, opts = {}) {
   if (!canSpeak()) return null;
-  const { rate, ...rest } = opts;
+  const { rate, voice, speaker, pitch, ...rest } = opts;
+  const how = { rate, ...(voice ? { voice } : {}), ...(speaker ? { speaker } : {}), ...(pitch ? { pitch } : {}) };
   return iconButton(scene, x, y, size, '🔊', {
     variant: 'ghost', ...rest,
-    onClick: () => { const s = typeof source === 'function' ? source() : source; if (s && typeof s.read === 'function') s.read({ rate }); else speak(s, { rate }); }
+    onClick: () => { const s = typeof source === 'function' ? source() : source; if (s && typeof s.read === 'function') s.read(how); else speak(s, how); }
   });
 }

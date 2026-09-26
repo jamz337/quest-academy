@@ -107,9 +107,9 @@ export class HudScene extends BaseScene {
 
   get speechRate() { return rateFor(Store.getProfile()?.grade); }
   /** In "read everything" mode, a new dialog line or question is read as soon as it appears. */
-  autoRead(readableText) {
+  autoRead(readableText, how = {}) {
     if (!readableText || !this.animateEnter || Store.getProfile()?.readAloud !== 'auto') return;
-    this.time.delayedCall(350, () => { if (readableText.active) readableText.read({ rate: this.speechRate }); });
+    this.time.delayedCall(350, () => { if (readableText.active) readableText.read({ rate: this.speechRate, ...how }); });
   }
 
   // ---- The player's house ----------------------------------------------------------------------
@@ -375,8 +375,9 @@ export class HudScene extends BaseScene {
     const name = chip(this, px + 16, py + 20 * ui, { text: d.name, color: THEME.primarySoft, textColor: THEME.primaryDark, fontSize: 13, height: 26 * ui, shadow: 'none' }).setDepth(502);
     const line = last && d.prompt ? `${d.lines[d.idx]}\n${d.prompt}` : d.lines[d.idx] || '';
     const body = readable(this, px + 16, py + 40 * ui, line, T.body(this), { width: pw - 64 * ui, align: 'left' }).setOrigin(0, 0).setDepth(502);
-    const sb = speakButton(this, px + pw - 30 * ui, py + 22 * ui, 40 * ui, body, { rate: this.speechRate }); if (sb) sb.setDepth(502);
-    this.autoRead(body);
+    const how = { rate: this.speechRate, voice: d.voice || 'female', speaker: d.speaker || d.name };
+    const sb = speakButton(this, px + pw - 30 * ui, py + 22 * ui, 40 * ui, body, how); if (sb) sb.setDepth(502);
+    this.autoRead(body, how);
     if (!showButtons) {
       const hint = last ? 'Tap to close' : 'Tap to continue  ▼';
       this.add.text(px + pw - 14, py + ph - 10, hint, T.small(this, THEME.ink3)).setOrigin(1, 1).setDepth(502);

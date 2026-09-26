@@ -2,7 +2,7 @@
 // `look` follows data/avatars.js so the world sprite and the battle portrait come from the same generators.
 export const BOSSES = [
   {
-    id: 'boss-math', zone: 'math', subject: 'math', name: 'Count Chaos', title: 'Terror of the Times Tables',
+    id: 'boss-math', voice: 'male', zone: 'math', subject: 'math', name: 'Count Chaos', title: 'Terror of the Times Tables',
     look: { hair: '#2d2a4a', skin: '#b8794a', top: '#7e2553', legs: '#2d2a4a', bg: '#7e2553' },
     hp: 8, hearts: 3, questionTimeMs: 14000,
     intro: ['So YOU are the one collecting stars in my meadow.', 'Numbers obey ME here. Answer wrong and you lose a heart.', 'Beat me and the meadow is truly yours. Ready?'],
@@ -12,7 +12,7 @@ export const BOSSES = [
     win: 'Count Chaos is defeated!', lose: 'Count Chaos wins this round…', unlocks: null
   },
   {
-    id: 'boss-words', zone: 'words', subject: 'words', name: 'The Grammar Gremlin', title: 'Muddler of Sentences',
+    id: 'boss-words', voice: 'female', zone: 'words', subject: 'words', name: 'The Grammar Gremlin', title: 'Muddler of Sentences',
     look: { hair: '#2ec46a', skin: '#8fe07c', top: '#625f7e', legs: '#2d2a4a', bg: '#2f8a3a' },
     hp: 8, hearts: 3, questionTimeMs: 16000,
     intro: ['Hee hee! I mix up every word in these woods.', 'Think you can un-muddle them faster than I muddle?', 'Beat me and the woods are yours. Let us play!'],
@@ -22,7 +22,7 @@ export const BOSSES = [
     win: 'The Grammar Gremlin is defeated!', lose: 'The Grammar Gremlin muddled you…', unlocks: null
   },
   {
-    id: 'boss-code', zone: 'code', subject: 'code', name: 'Glitch the Bug King', title: 'Crasher of Programs',
+    id: 'boss-code', voice: 'male', zone: 'code', subject: 'code', name: 'Glitch the Bug King', title: 'Crasher of Programs',
     look: { hair: '#ff5c6c', skin: '#d6cfc4', top: '#2d2a4a', legs: '#625f7e', bg: '#1d2b53' },
     hp: 8, hearts: 3, questionTimeMs: 20000,
     intro: ['BZZT. A new programmer in my cove?', 'Read my programs and predict what my robots do. Get it wrong and… BZZT!', 'Beat me and you are the champion of Quest Academy. Begin!'],
@@ -32,7 +32,7 @@ export const BOSSES = [
     win: 'Glitch the Bug King is defeated!', lose: 'Glitch crashed your program…', unlocks: null
   },
   {
-    id: 'boss-bible', zone: 'bible', subject: 'bible', name: 'Goliath', title: 'Giant of Gath', scale: 1.6,
+    id: 'boss-bible', voice: 'male', zone: 'bible', subject: 'bible', name: 'Goliath', title: 'Giant of Gath', scale: 1.6,
     look: { hair: '#2d2a4a', skin: '#c98a5a', top: '#b08d3a', legs: '#6b4630', bg: '#7a4a2a' },
     hp: 8, hearts: 3, questionTimeMs: 22000,
     intro: ['WHO dares to stand before Goliath? You are only a child!', 'A shepherd boy once faced me with a sling. You will face me with what you know.', 'Answer my questions about the Book, or run home. Well?'],
