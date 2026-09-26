@@ -4,6 +4,7 @@ import { THEME, subjectOf } from '../../ui/theme.js';
 import { Rng } from '../../systems/Rng.js';
 import * as Launcher from '../../systems/MinigameLauncher.js';
 import { Sfx } from '../../systems/Audio.js';
+import { stop as stopSpeech } from '../../systems/Speech.js';
 import { safeArea } from '../../systems/Layout.js';
 import { T, text } from '../../ui/TextStyles.js';
 import { iconButton } from '../../ui/Button.js';
@@ -92,11 +93,12 @@ export class MinigameScene extends BaseScene {
   finish(raw) {
     if (this.finished) return;
     this.finished = true;
+    stopSpeech();
     const out = { timeMs: this.elapsedMs(), ...raw };
     this.time.delayedCall(raw.delay ?? 400, () => Launcher.complete(this, this.payload, out));
   }
 
-  abort() { this.finished = true; Launcher.abort(this, this.payload); }
+  abort() { this.finished = true; stopSpeech(); Launcher.abort(this, this.payload); }
 
   /** Quick screen flash for right/wrong feedback. */
   flash(color, alpha = 0.14) {

@@ -3,6 +3,7 @@ import { THEME, hex, mix, textOn, subjectOf, drawShadow } from './theme.js';
 import { Sfx } from '../systems/Audio.js';
 import { uiScale } from '../systems/Layout.js';
 import { FONT, WEIGHT } from './TextStyles.js';
+import { canSpeak, speak } from '../systems/Speech.js';
 
 const VARIANTS = {
   primary: () => ({ fill: THEME.primary, text: THEME.onAccent, stroke: null, shadow: 'sm' }),
@@ -132,4 +133,10 @@ export function button(scene, x, y, w, h, label, opts) { return new Button(scene
 export function iconButton(scene, x, y, size, glyph, opts = {}) {
   const s = uiScale(scene);
   return new Button(scene, x, y, size, size, glyph, { variant: 'secondary', radius: size / 2, fontSize: (size / s) * 0.42, ...opts });
+}
+
+/** Round 🔊 button that reads `getText()` aloud. Returns null (draws nothing) when the browser cannot speak. */
+export function speakButton(scene, x, y, size, getText, opts = {}) {
+  if (!canSpeak()) return null;
+  return iconButton(scene, x, y, size, '🔊', { variant: 'ghost', ...opts, onClick: () => speak(typeof getText === 'function' ? getText() : getText) });
 }

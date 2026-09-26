@@ -4,7 +4,7 @@ import { generateRounds } from '../../../generators/bible/quiz.js';
 import { tuningFor } from '../../../data/grades.js';
 import { grid } from '../../../systems/Layout.js';
 import { T, text } from '../../../ui/TextStyles.js';
-import { button } from '../../../ui/Button.js';
+import { button, speakButton } from '../../../ui/Button.js';
 import { card } from '../../../ui/Card.js';
 import { stripe } from '../../../ui/Panel.js';
 import { ProgressBar } from '../../../ui/ProgressBar.js';
@@ -37,6 +37,7 @@ export class BibleQuiz extends MinigameScene {
     const promptH = Math.min(area.h * 0.42, 230 * ui);
     const prompt = card(this, cx, area.y + promptH / 2, area.w, promptH);
     stripe(this, cx - 24 * ui, area.y + 10 * ui, 48 * ui, this.subject.accent, 5 * ui);
+    speakButton(this, area.x + area.w - 30 * ui, area.y + 30 * ui, 40 * ui, () => q.prompt);
     const size = q.prompt.length > 90 ? 17 : q.prompt.length > 50 ? 20 : 24;
     text(this, cx, area.y + promptH / 2 - 12 * ui, q.prompt, { ...T.at(this, size, THEME.ink, { fontStyle: '700' }), align: 'center', wordWrap: { width: area.w - 48 } });
     if (s.picked !== null && q.ref) text(this, cx, area.y + promptH - 34 * ui, q.ref, T.small(this, this.subject.dark));

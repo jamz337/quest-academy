@@ -3,7 +3,7 @@ import { SCENES } from '../constants.js';
 import { THEME } from '../ui/theme.js';
 import { safeArea, grid } from '../systems/Layout.js';
 import { T, text } from '../ui/TextStyles.js';
-import { button, iconButton } from '../ui/Button.js';
+import { button, iconButton, speakButton } from '../ui/Button.js';
 import { panel } from '../ui/Panel.js';
 import { chip } from '../ui/Chip.js';
 import { modal } from '../ui/Modal.js';
@@ -119,6 +119,7 @@ export class HudScene extends BaseScene {
     if (quiz) {
       const q = e.q;
       prompt.setPosition(w / 2, y + 8 * ui);
+      const sb = speakButton(this, m.x + m.w - 34 * ui, m.y + 40 * ui, 40 * ui, () => q.prompt); if (sb) sb.setDepth(603);
       y += prompt.height + 20 * ui;
       const cells = grid({ x: m.x + 24, y, w: m.w - 48, h: rows * bh + (rows - 1) * gap }, cols, rows, gap);
       q.choices.forEach((choice, i) => {

@@ -4,7 +4,7 @@ import { generateRounds, fillBlank } from '../../../generators/english/grammar.j
 import { skillLabel } from '../../../data/skills.js';
 import { grid } from '../../../systems/Layout.js';
 import { T, text } from '../../../ui/TextStyles.js';
-import { button } from '../../../ui/Button.js';
+import { button, speakButton } from '../../../ui/Button.js';
 import { card } from '../../../ui/Card.js';
 import { stripe } from '../../../ui/Panel.js';
 import { enter } from '../../../ui/motion.js';
@@ -33,6 +33,7 @@ export class GrammarGate extends MinigameScene {
     const prompt = card(this, cx, area.y + promptH / 2, area.w, promptH);
     stripe(this, cx - 24 * ui, area.y + 10 * ui, 48 * ui, this.subject.accent, 5 * ui);
     text(this, cx, area.y + 30 * ui, `Which word fits? (${skillLabel(r.skill)})`, T.small(this, THEME.ink2));
+    speakButton(this, area.x + area.w - 30 * ui, area.y + 30 * ui, 40 * ui, () => fillBlank(r.sentence, s.picked === null ? '____' : r.options[r.answer]));
     const shown = s.picked === null ? fillBlank(r.sentence) : fillBlank(r.sentence, r.options[r.answer]);
     const long = shown.length > 40;
     text(this, cx, area.y + promptH / 2 + 12 * ui, shown,

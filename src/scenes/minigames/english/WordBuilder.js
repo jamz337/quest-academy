@@ -4,7 +4,7 @@ import { generateRounds } from '../../../generators/english/words.js';
 import { grid } from '../../../systems/Layout.js';
 import { Sfx } from '../../../systems/Audio.js';
 import { T, text } from '../../../ui/TextStyles.js';
-import { button } from '../../../ui/Button.js';
+import { button, speakButton } from '../../../ui/Button.js';
 import { card, tile } from '../../../ui/Card.js';
 import { enter, shake } from '../../../ui/motion.js';
 
@@ -31,7 +31,8 @@ export class WordBuilder extends MinigameScene {
     if (!r) return;
     const hintH = 76 * ui;
     const hint = card(this, area.x + area.w / 2, area.y + hintH / 2, area.w, hintH);
-    text(this, area.x + area.w / 2, area.y + hintH / 2, `Hint: ${r.hint}`, { ...T.body(this), wordWrap: { width: area.w - 24 } });
+    text(this, area.x + area.w / 2 - 16 * ui, area.y + hintH / 2, `Hint: ${r.hint}`, { ...T.body(this), wordWrap: { width: area.w - 80 * ui } });
+    speakButton(this, area.x + area.w - 30 * ui, area.y + hintH / 2, 40 * ui, () => `Hint: ${r.hint}`);
     enter(this, hint, { from: 'up', distance: 12 });
 
     const n = r.word.length, gap = 6 * ui;
