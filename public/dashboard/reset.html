@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Quest Academy – Fix the app</title>
+    <!-- Plain page, no modules and no service worker: reachable even when a stale worker blanks the game. -->
+    <style>
+      body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; background: #fff8ef; color: #2d2a4a; padding: 24px 18px; line-height: 1.5; }
+      h1 { font-size: 22px; margin: 0 0 6px; }
+      p { margin: 8px 0; }
+      button { font: inherit; font-weight: 700; color: #fff; background: #3d8bff; border: 0; border-radius: 14px; padding: 14px 20px; width: 100%; margin: 10px 0; }
+      button.soft { background: #e9e2d8; color: #2d2a4a; }
+      pre { background: #fff; border-radius: 12px; padding: 12px; font-size: 12px; white-space: pre-wrap; word-break: break-word; }
+      .ok { color: #229c53; } .bad { color: #e0567a; }
+    </style>
+  </head>
+  <body>
+    <h1>Fix Quest Academy</h1>
+    <p>If the game shows a blank screen, this clears the app's old files on this phone and opens it fresh. Your saved progress is kept.</p>
+    <button id="fix">Fix the app and open it</button>
+    <button id="open" class="soft">Just open the game</button>
+    <p><b>Checks</b> (send a screenshot of this if it still does not work):</p>
+    <pre id="out">Checking…</pre>
+    <script>
+      (function () {
+        var out = document.getElementById('out');
+        var lines = [];
+        function line(label, ok, extra) { lines.push((ok ? '✔ ' : '✘ ') + label + (extra ? ': ' + extra : '')); out.textContent = lines.join('\n'); }
+        var modules = 'noModule' in document.createElement('script');
+        line('Modern browser (ES modules)', modules, navigator.userAgent);
+        var gl = null;
+        try { var c = document.createElement('canvas'); gl = c.getContext('webgl2') || c.getContext('webgl') || c.getContext('experimental-webgl'); } catch (e) {}
+        line('WebGL graphics', !!gl, gl ? 'available' : 'not available (the game falls back to canvas)');
+        var save = null;
+        try { save = localStorage.getItem('qa.save'); } catch (e) {}
+        line('Saved progress on this phone', !!save, save ? Math.round(save.length / 1024) + ' KB' : 'none found');
+        if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+          navigator.serviceWorker.getRegistrations().then(function (rs) { line('Service workers registered', true, String(rs.length)); }, function () { line('Service workers', false, 'could not read'); });
+        } else line('Service workers', true, 'not supported here');
+        if (window.caches && caches.keys) caches.keys().then(function (ks) { line('App caches', true, ks.length ? ks.join(', ') : 'none'); });
+        fetch('/', { cache: 'no-store' }).then(function (r) { return r.text(); }).then(function (html) {
+          var m = html.match(/src="([^"]*main-[^"]+\.js)"/);
+          line('Game page from server', true, m ? m[1] : 'script tag not found');
+          if (!m) return;
+          var url = m[1].replace(/^\./, '');
+          return fetch(url, { method: 'HEAD', cache: 'no-store' }).then(function (r) { line('Game script from server', r.ok, r.status + ' ' + r.statusText); });
+        }).catch(function (e) { line('Server reachable', false, String(e)); });
+
+        function reset(then) {
+          var jobs = [];
+          try { if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); })); } catch (e) {}
+          try { if (window.caches && caches.keys) jobs.push(caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); })); } catch (e) {}
+          try { sessionStorage.removeItem('qa.recovered'); } catch (e) {}
+          Promise.all(jobs).then(then, then);
+        }
+        document.getElementById('fix').onclick = function () { this.textContent = 'Clearing…'; reset(function () { location.href = '/?r=' + Date.now(); }); };
+        document.getElementById('open').onclick = function () { location.href = '/?r=' + Date.now(); };
+      })();
+    </script>
+  </body>
+</html>
