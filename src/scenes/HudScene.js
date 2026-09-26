@@ -332,7 +332,7 @@ export class HudScene extends BaseScene {
 
   /** { name, lines, onPlay?, onLater?, playLabel? } Play/Later appear after the last line. */
   showDialog(d) {
-    this.state.dialog = { name: d.name, lines: d.lines || [], idx: 0, onPlay: d.onPlay || null, onLater: d.onLater || null, playLabel: d.playLabel || 'Play', prompt: d.prompt || null };
+    this.state.dialog = { name: d.name, lines: d.lines || [], idx: 0, onPlay: d.onPlay || null, onLater: d.onLater || null, playLabel: d.playLabel || 'Play', prompt: d.prompt || null, voice: d.voice || null, pitch: d.pitch || null, rate: d.rate || null, speaker: d.speaker || null };
     this.actionFlag = false;
     if (this.joystick) this.joystick.release();
     this.rebuild();
@@ -375,7 +375,7 @@ export class HudScene extends BaseScene {
     const name = chip(this, px + 16, py + 20 * ui, { text: d.name, color: THEME.primarySoft, textColor: THEME.primaryDark, fontSize: 13, height: 26 * ui, shadow: 'none' }).setDepth(502);
     const line = last && d.prompt ? `${d.lines[d.idx]}\n${d.prompt}` : d.lines[d.idx] || '';
     const body = readable(this, px + 16, py + 40 * ui, line, T.body(this), { width: pw - 64 * ui, align: 'left' }).setOrigin(0, 0).setDepth(502);
-    const how = { rate: this.speechRate, voice: d.voice || 'female', speaker: d.speaker || d.name };
+    const how = { rate: this.speechRate * (d.rate || 1), pitch: d.pitch || 1, voice: d.voice || 'female', speaker: d.speaker || d.name };
     const sb = speakButton(this, px + pw - 30 * ui, py + 22 * ui, 40 * ui, body, how); if (sb) sb.setDepth(502);
     this.autoRead(body, how);
     if (!showButtons) {

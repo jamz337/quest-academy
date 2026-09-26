@@ -36,6 +36,20 @@ describe('word highlighting', () => {
   });
 });
 
+describe('character voices', () => {
+  it('gives every villager and boss a sex, and no two the same pitch and pace', async () => {
+    const { NPCS } = await import('../src/data/world/npcs.js');
+    const { BOSSES } = await import('../src/data/world/bosses.js');
+    const all = [...NPCS, ...BOSSES];
+    for (const c of all) expect(['male', 'female']).toContain(c.voice);
+    const keys = all.map((c) => `${c.voice}:${c.pitch}:${c.rate}`);
+    expect(new Set(keys).size).toBe(all.length);
+    const goliath = BOSSES.find((b) => b.id === 'boss-bible');
+    expect(goliath.pitch).toBeLessThan(0.7);
+    expect(goliath.rate).toBeLessThan(1);
+  });
+});
+
 describe('voices', () => {
   const v = (name, lang = 'en-US') => ({ name, lang });
   it('tells a voice\'s sex from its name and prefers natural voices', async () => {
@@ -47,6 +61,12 @@ describe('voices', () => {
     expect(voiceSex(v('Samantha'))).toBe('female');
     expect(voiceSex(v('Daniel', 'en-GB'))).toBe('male');
     expect(voiceSex(v('Google US English'))).toBeNull();
+    expect(voiceSex(v('en-us-x-tpd#male_1-local'))).toBe('male');
+    expect(voiceSex(v('en-us-x-sfg#female_2-local'))).toBe('female');
+    expect(voiceSex(v('en-gb-x-gbb-local', 'en-GB'))).toBe('male');
+    expect(voiceSex(v('en-au-x-aua-network', 'en-AU'))).toBe('female');
+    expect(voiceSex(v('Gordon', 'en-AU'))).toBe('male');
+    expect(voiceSex(v('Martha', 'en-GB'))).toBe('female');
     expect(voiceScore(v('Microsoft Zira Desktop - English (United States)'))).toBeLessThan(voiceScore(v('Microsoft Aria Online (Natural) - English (United States)')));
     expect(voiceScore(v('Google Deutsch', 'de-DE'))).toBe(-Infinity);
     expect(voiceScore(v('Bad News'))).toBeLessThan(0);

@@ -482,7 +482,7 @@ export class WorldScene extends Phaser.Scene {
       const at = gradeUps(profile, npc.gameId) ? ` at Grade ${gameGrade(profile, npc.gameId)}` : '';
       prompt = passed >= HOUSE_LEVELS ? `You have all ${HOUSE_LEVELS} stars here! Play level ${HOUSE_LEVELS} again?` : `${npc.playPrompt} Level ${level} of ${HOUSE_LEVELS}${at}${passed ? ` (${passed} star${passed > 1 ? 's' : ''} so far)` : ''}`;
     }
-    hud.showDialog({ name: npc.name, voice: npc.voice, speaker: npc.id, lines: npc.lines, prompt, onPlay: npc.gameId ? () => this.playGame(npc) : null });
+    hud.showDialog({ name: npc.name, voice: npc.voice, pitch: npc.pitch, rate: npc.rate, speaker: npc.id, lines: npc.lines, prompt, onPlay: npc.gameId ? () => this.playGame(npc) : null });
     if (firstTalk) {
       hud.setCoins(Store.getProfile().coins);
       hud.awardCoins(HELLO_COINS);
@@ -501,11 +501,11 @@ export class WorldScene extends Phaser.Scene {
     const beaten = bossDefeated(profile, boss.zone);
     if (!beaten && !bossReady(profile, boss.zone)) {
       const left = zoneQuests(profile, boss.zone).filter((q) => !q.done && q.id !== 'boss').map((q) => `• ${q.title} (${q.count}/${q.total})`);
-      hud.showDialog({ name: boss.name, voice: boss.voice, speaker: boss.id, lines: [...boss.locked, 'Still to do:\n' + left.join('\n')] });
+      hud.showDialog({ name: boss.name, voice: boss.voice, pitch: boss.pitch, rate: boss.rate, speaker: boss.id, lines: [...boss.locked, 'Still to do:\n' + left.join('\n')] });
       return;
     }
     hud.showDialog({
-      name: boss.name, voice: boss.voice, speaker: boss.id, lines: beaten ? boss.beaten : boss.intro, prompt: beaten ? 'Rematch?' : 'Fight?', playLabel: 'Fight!',
+      name: boss.name, voice: boss.voice, pitch: boss.pitch, rate: boss.rate, speaker: boss.id, lines: beaten ? boss.beaten : boss.intro, prompt: beaten ? 'Rematch?' : 'Fight?', playLabel: 'Fight!',
       onPlay: () => this.fightBoss(boss)
     });
   }
@@ -615,7 +615,7 @@ export class WorldScene extends Phaser.Scene {
       let reward = null, badges = [];
       Store.updateProfile((p) => { reward = deliverErrand(p, e.id); badges = checkBadges(p); });
       hud.setCarry(null);
-      hud.showDialog({ name: npc.name, voice: npc.voice, speaker: npc.id, lines: [e.thanks, `Here, take ${reward.coins} coins and ${reward.xp} XP for your trouble!`] });
+      hud.showDialog({ name: npc.name, voice: npc.voice, pitch: npc.pitch, rate: npc.rate, speaker: npc.id, lines: [e.thanks, `Here, take ${reward.coins} coins and ${reward.xp} XP for your trouble!`] });
       hud.setCoins(Store.getProfile().coins);
       hud.awardCoins(reward.coins);
       Sfx.unlock();
@@ -625,7 +625,7 @@ export class WorldScene extends Phaser.Scene {
     }
     if (st === 'available' && !activeErrand(profile) && !(this.errandDeclined && this.errandDeclined[npc.id])) {
       hud.showDialog({
-        name: npc.name, voice: npc.voice, speaker: npc.id, lines: [e.ask], prompt: 'Will you help?', playLabel: 'Sure!',
+        name: npc.name, voice: npc.voice, pitch: npc.pitch, rate: npc.rate, speaker: npc.id, lines: [e.ask], prompt: 'Will you help?', playLabel: 'Sure!',
         onPlay: () => {
           Store.updateProfile((p) => acceptErrand(p, e.id));
           this.createErrandItem(Store.getProfile());

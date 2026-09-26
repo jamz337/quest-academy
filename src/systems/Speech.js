@@ -53,14 +53,20 @@ export const rateFor = (grade) => ((Number(grade) || 3) <= 3 ? 0.85 : 0.95);
 
 // ---- Voice choice ------------------------------------------------------------------------------------------
 
-const FEMALE_NAMES = /\b(aria|jenny|zira|samantha|karen|moira|tessa|fiona|victoria|susan|hazel|ava|allison|emma|libby|sonia|natasha|clara|michelle|ana|olivia|abbi|bella|hollie|maisie|molly|nicole|joanna|salli|kimberly|kendra|ivy|amy|raveena|catherine|linda|heather|serena|ellen|kate|zoe|nora|freya|luna|leah|monica|sara|elizabeth|jane|ashley|cora|nancy|jenny|michelle|emily|amber|aditi|ruth|sarah|lisa|anna|siri female)\b/i;
-const MALE_NAMES = /\b(guy|davis|david|mark|daniel|alex|fred|tom|arthur|george|ryan|christopher|eric|roger|steffan|rishi|thomas|william|brandon|jason|liam|connor|oliver|noah|ethan|matthew|james|andrew|brian|kevin|justin|joey|russell|geraint|lee|oscar|jacob|elliot|ollie|alfie|richard|reed|rory|aaron|prabhat|neerja male|duke|jerry|tony|sean|adam|ben|paul|kyle|siri male)\b/i;
+const FEMALE_NAMES = /\b(aria|jenny|zira|samantha|karen|moira|tessa|fiona|victoria|susan|hazel|ava|allison|emma|libby|sonia|natasha|clara|michelle|ana|olivia|abbi|bella|hollie|maisie|molly|nicole|joanna|salli|kimberly|kendra|ivy|amy|raveena|catherine|linda|heather|serena|ellen|kate|zoe|nora|freya|luna|leah|monica|sara|elizabeth|jane|ashley|cora|nancy|emily|amber|aditi|ruth|sarah|lisa|anna|martha|nicky|shelley|flo|sandy|grandma|princess|siri female)\b/i;
+const MALE_NAMES = /\b(guy|davis|david|mark|daniel|alex|fred|tom|arthur|george|ryan|christopher|eric|roger|steffan|rishi|thomas|william|brandon|jason|liam|connor|oliver|noah|ethan|matthew|james|andrew|brian|kevin|justin|joey|russell|geraint|lee|oscar|jacob|elliot|ollie|alfie|richard|reed|rory|aaron|prabhat|neerja male|duke|jerry|tony|sean|adam|ben|paul|kyle|gordon|evan|nathan|reed|rocko|eddy|grandpa|siri male)\b/i;
 
-/** 'female' | 'male' | null from a voice's name; the explicit words win over first names. */
+// Google's Android voices carry no names, only codes: en-us-x-sfg, en-gb-x-gbb and so on.
+const GOOGLE_FEMALE = /\b(en-[a-z]{2}-x-(sfg|tpf|iog|iob|gba|gbc|fis|aua|auc|ena|ene|nda|nzc|zaa|zac|ind))\b/i;
+const GOOGLE_MALE = /\b(en-[a-z]{2}-x-(tpd|tpc|iom|gbb|gbd|rjs|aub|aud|enc|end|ndb|nzb|zab|zad|ind-m))\b/i;
+
+/** 'female' | 'male' | null from a voice's name; the explicit words win over first names and codes. */
 export function voiceSex(v) {
   const n = String(v?.name || '');
   if (/female|woman|girl/i.test(n)) return 'female';
-  if (/\bmale\b|\bman\b|\bboy\b/i.test(n)) return 'male';
+  if (/(^|[^a-z])(male|man|boy)([^a-z]|$)/i.test(n)) return 'male';
+  if (GOOGLE_FEMALE.test(n)) return 'female';
+  if (GOOGLE_MALE.test(n)) return 'male';
   if (FEMALE_NAMES.test(n)) return 'female';
   if (MALE_NAMES.test(n)) return 'male';
   return null;
@@ -105,11 +111,24 @@ if (typeof window !== 'undefined' && window.speechSynthesis && typeof window.spe
   window.speechSynthesis.addEventListener('voiceschanged', () => { chosen.female = chosen.male = chosen.any = undefined; });
 }
 
-/** Small, stable pitch/rate offsets per speaker so villagers sharing a voice still sound like different people. */
+/** Stable pitch/rate offsets per speaker so villagers sharing a voice still sound like different people. */
 export function speakerTweak(speaker) {
   if (!speaker) return { pitch: 0, rate: 0 };
   let h = 0; for (const ch of String(speaker)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
-  return { pitch: ((h % 7) - 3) * 0.03, rate: (((h >> 3) % 5) - 2) * 0.015 };
+  return { pitch: ((h % 7) - 3) * 0.05, rate: (((h >> 3) % 5) - 2) * 0.03 };
+}
+
+/** How far to bend the pitch when the device has no voice of the wanted sex (a real male voice beats any bend). */
+const SEX_BEND = { male: -0.3, female: 0.2 };
+
+let announced = false;
+function announce(s) {
+  if (announced || typeof console === 'undefined') return;
+  const voices = s.getVoices ? s.getVoices() : [];
+  if (!voices.length) return;
+  announced = true;
+  const f = chooseVoice(voices, 'female'), m = chooseVoice(voices, 'male');
+  console.info(`[read aloud] ${voices.length} voices; female: ${f ? f.name : 'none'}; male: ${m ? m.name : 'none'}`);
 }
 
 let current = null;   // { cancel } for whatever is being read, so a new reading clears the old highlight
@@ -133,11 +152,12 @@ export function speakWords(words, { rate = 0.9, pitch = 1, voice = 'female', spe
   try {
     const u = new SpeechSynthesisUtterance(spoken);
     const v = pickVoice(s, voice);
+    announce(s);
     const tweak = speakerTweak(speaker);
     // When no voice of the wanted sex exists, bend the pitch of whatever we have in that direction.
-    const bend = voice && v && voiceSex(v) !== voice ? (voice === 'male' ? -0.2 : 0.15) : 0;
+    const bend = voice && v && voiceSex(v) !== voice ? SEX_BEND[voice] || 0 : 0;
     u.lang = (v && v.lang) || 'en-US';
-    u.rate = Math.max(0.5, Math.min(1.5, rate + tweak.rate));
+    u.rate = Math.max(0.7, Math.min(1.5, rate + tweak.rate));   // never slower than a patient adult
     u.pitch = Math.max(0.5, Math.min(2, pitch + tweak.pitch + bend));
     if (v) u.voice = v;
     u.onboundary = (e) => { if (e.name && e.name !== 'word') return; sawBoundary = true; say(wordAt(ranges, e.charIndex)); };
