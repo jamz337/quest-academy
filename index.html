@@ -25,10 +25,6 @@
       #splash .name { font-weight: 700; font-size: 22px; letter-spacing: .01em; }
       #splash .spin { width: 28px; height: 28px; border-radius: 50%; border: 4px solid #e9e2d8; border-top-color: #3d8bff; animation: spin .8s linear infinite; }
       @keyframes spin { to { transform: rotate(360deg); } }
-      #update-toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #fff; color: #2d2a4a; padding: 10px 12px 10px 16px;
-        border-radius: 14px; font-weight: 600; display: none; z-index: 10; box-shadow: 0 8px 24px rgba(45,42,74,.16); white-space: nowrap; }
-      #update-toast button { margin-left: 12px; border: 0; background: #3d8bff; color: #fff; padding: 8px 14px; border-radius: 10px; font: inherit; font-weight: 600; cursor: pointer; }
-      #update-toast button:active { transform: scale(.97); }
     </style>
   </head>
   <body>
@@ -37,8 +33,45 @@
       <svg class="mark" viewBox="0 0 88 88" aria-hidden="true"><rect width="88" height="88" rx="24" fill="#3d8bff"/><path d="M44 17l8.1 16.5 18.2 2.6-13.2 12.9 3.1 18.1L44 58.5l-16.2 8.6 3.1-18.1-13.2-12.9 18.2-2.6z" fill="#fff"/></svg>
       <div class="name">Quest Academy</div>
       <div class="spin"></div>
+      <div id="splash-msg" style="display:none; max-width: 300px; text-align: center; font-size: 14px; color: #625f7e; padding: 0 16px;"></div>
+      <noscript><div style="font-size: 14px; color: #625f7e;">Quest Academy needs JavaScript switched on.</div></noscript>
     </div>
-    <div id="update-toast">Update ready <button id="update-btn">Reload</button></div>
+    <script nomodule>document.getElementById('splash-msg').style.display = 'block'; document.getElementById('splash-msg').textContent = 'This browser is too old to run Quest Academy. Please update it or try Chrome or Safari.';</script>
+    <script>
+      // Boot watchdog. If a script fails to load (a stale app cache after an update) the app is unregistered,
+      // its caches cleared and the page reloaded once. If it still cannot start, the error is shown here so it
+      // can be reported, and a tap tries again.
+      (function () {
+        var KEY = 'qa.recovered';
+        function msg(text) { var m = document.getElementById('splash-msg'); if (m) { m.style.display = 'block'; m.textContent = text; } }
+        function clearAndReload() {
+          var go = function () { location.replace(location.pathname + '?r=' + Date.now()); };
+          var jobs = [];
+          try { if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) jobs.push(navigator.serviceWorker.getRegistrations().then(function (rs) { return Promise.all(rs.map(function (r) { return r.unregister(); })); })); } catch (e) {}
+          try { if (window.caches && caches.keys) jobs.push(caches.keys().then(function (ks) { return Promise.all(ks.map(function (k) { return caches.delete(k); })); })); } catch (e) {}
+          Promise.all(jobs).then(go, go);
+        }
+        function recover(reason) {
+          var tried = false;
+          try { tried = !!sessionStorage.getItem(KEY); sessionStorage.setItem(KEY, '1'); } catch (e) {}
+          if (!tried) { msg('Refreshing…'); return clearAndReload(); }
+          msg('Could not start: ' + reason + '. Tap here to try again.');
+          var s = document.getElementById('splash');
+          if (s) s.onclick = function () { try { sessionStorage.removeItem(KEY); } catch (e) {} clearAndReload(); };
+        }
+        window.__recover = recover;
+        window.addEventListener('error', function (e) {
+          var t = e.target;
+          if (t && t !== window && (t.tagName === 'SCRIPT' || t.tagName === 'LINK')) recover('a file failed to load');
+        }, true);
+        setTimeout(function () {
+          var s = document.getElementById('splash');
+          if (!s || s.classList.contains('hide')) return;
+          var err = window.__errors && window.__errors[0];
+          if (!window.__game || err) recover(String(err || 'the game did not start').split('\n')[0].slice(0, 140));
+        }, 25000);
+      })();
+    </script>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

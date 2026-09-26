@@ -9,7 +9,7 @@ export default defineConfig({
   test: { environment: 'node', include: ['tests/**/*.test.js'] },
   plugins: [
     VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'icons/*.png', 'fonts/*.woff2'],
       manifest: {
         name: 'Quest Academy',
@@ -34,7 +34,11 @@ export default defineConfig({
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/^\/api\//, /dashboard/],
-        cleanupOutdatedCaches: true
+        cleanupOutdatedCaches: true,
+        // New builds take over on the next load instead of waiting for a tap on an update toast; a phone
+        // that kept an old bundle whose files were purged from the server would otherwise never start.
+        skipWaiting: true,
+        clientsClaim: true
       }
     })
   ]

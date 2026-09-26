@@ -18,14 +18,8 @@ if (keepRunningHidden) { game.events.off('hidden'); game.events.off('blur'); }
 const unlock = () => { unlockAudio(); window.removeEventListener('pointerdown', unlock); };
 window.addEventListener('pointerdown', unlock);
 
-// Service worker: precache the whole app; show a small toast when a new build is ready.
-const updateSW = registerSW({
-  onNeedRefresh() {
-    const el = document.getElementById('update-toast');
-    if (!el) return;
-    el.style.display = 'block';
-    document.getElementById('update-btn').onclick = () => updateSW(true);
-  }
-});
+// Service worker: precache the whole app and switch to new builds automatically (the page reloads once
+// a new worker takes control, so nobody is left on a stale bundle).
+registerSW({ immediate: true });
 
 window.__game = game;
