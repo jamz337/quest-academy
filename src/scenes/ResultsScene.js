@@ -36,6 +36,8 @@ export class ResultsScene extends BaseScene {
       const zone = SUBJECTS[z]?.zone || z;
       this.time.delayedCall(delay, () => { Sfx.unlock(); toast(this, `${zone} unlocked!`, { icon: 'coin', accent: THEME.success }); }); delay += 1400;
     }
+    if (result.goal && result.goal.done) { this.time.delayedCall(delay, () => { Sfx.coin(); toast(this, `🎯 Today's goal done!  +${result.goal.coins} coins`, { icon: 'coin', accent: THEME.warning }); }); delay += 1400; }
+    if (result.familyBonus) { this.time.delayedCall(delay, () => { Sfx.fanfare(); toast(this, `👨‍👩‍👧 Family goal reached!  +${result.familyBonus} coins`, { icon: 'star', accent: THEME.success }); }); delay += 1400; }
     const subject = SUBJECTS[this.sceneData.payload.subject]?.title || 'Your';
     if (result.masteryChange > 0) {
       this.time.delayedCall(delay, () => { Sfx.unlock(); toast(this, `Level up! ${subject} questions get harder: ${MASTERY_LABEL[result.mastery]}`, { icon: 'star', accent: THEME.brand }); });

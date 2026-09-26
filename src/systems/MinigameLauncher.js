@@ -6,6 +6,7 @@ import { bandFor } from '../data/grades.js';
 import * as Store from './Store.js';
 import { applyResult, effectiveGrade, mastery } from './Progression.js';
 import * as Cloud from './Cloud.js';
+import { addFamilyStars, claimFamily } from './Goals.js';
 
 export const BOSS_SCENE = 'MG_Boss';
 
@@ -23,7 +24,7 @@ export function launch(fromScene, gameId, opts = {}) {
   const grade = effectiveGrade(profile, subject, boss ? 1 : 0);
   const payload = {
     gameId, sceneKey: game ? game.sceneKey : BOSS_SCENE, title: game ? game.title : boss.name, subject,
-    grade, band: bandFor(grade), mastery: mastery(profile, subject).level, boss: boss || undefined,
+    grade, band: bandFor(grade), mastery: mastery(profile, subject).level, boss: boss || undefined, timers: profile.timers !== 'off',
     source: opts.source || 'challenge', returnTo: fromScene.scene.key,
     context: opts.context || {}, seed: opts.seed
   };
@@ -36,7 +37,13 @@ export function launch(fromScene, gameId, opts = {}) {
 export function complete(scene, payload, raw) {
   const profile = Store.getProfile();
   const result = applyResult(profile, payload, raw);
-  if (!result.aborted) { Store.persist(); Cloud.postResult(profile, payload, result); }
+  if (!result.aborted) {
+    // The family goal lives on the whole save: every player's stars count, and each collects the bonus once.
+    const save = Store.getSave();
+    if (save && result.stars) addFamilyStars(save, result.stars);
+    if (save) result.familyBonus = claimFamily(save, profile);
+    Store.persist(); Cloud.postResult(profile, payload, result);
+  }
   scene.scene.start(SCENES.Results, { payload, result });
   return result;
 }

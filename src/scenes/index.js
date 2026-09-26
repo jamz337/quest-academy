@@ -9,6 +9,7 @@ import { ResultsScene } from './ResultsScene.js';
 import { PauseScene } from './PauseScene.js';
 import { AccountScene } from './AccountScene.js';
 import { LeaderboardScene } from './LeaderboardScene.js';
+import { SkillsScene } from './SkillsScene.js';
 import { NumberDash } from './minigames/math/NumberDash.js';
 import { FractionPizza } from './minigames/math/FractionPizza.js';
 import { PatternBridge } from './minigames/math/PatternBridge.js';
@@ -26,5 +27,5 @@ export const scenes = [
   BootScene, ProfileScene, ModeSelectScene, WorldScene, HudScene, ChallengeMenuScene, LevelSelectScene,
   NumberDash, FractionPizza, PatternBridge, WordBuilder, GrammarGate, WordMatch,
   RoboMaze, BugHunt, PredictRobot, BossBattle, BibleQuiz,
-  ResultsScene, PauseScene, AccountScene, LeaderboardScene
+  ResultsScene, PauseScene, AccountScene, LeaderboardScene, SkillsScene
 ];

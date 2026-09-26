@@ -18,9 +18,13 @@ export default handler(['GET', 'POST'], async (req, res) => {
   const b = await readJson(req);
   if (!b.profileId || !b.gameId) return badRequest(res, 'invalid-result');
   const missed = Array.isArray(b.missedSkills) ? b.missedSkills.slice(0, 10).map(String) : [];
-  await sql`INSERT INTO results (account_id, profile_id, profile_name, game_id, band, stars, correct, total, xp, coins, time_ms, missed_skills, level_id)
+  // Per-question outcomes ({ skill, right, ms, explained }) so learning can be measured per skill over time.
+  const log = Array.isArray(b.questions)
+    ? b.questions.slice(0, 40).map((q) => ({ skill: String(q.skill || '').slice(0, 30), right: !!q.right, ms: int(q.ms), explained: !!q.explained }))
+    : null;
+  await sql`INSERT INTO results (account_id, profile_id, profile_name, game_id, band, stars, correct, total, xp, coins, time_ms, missed_skills, level_id, question_log)
             VALUES (${user.id}, ${String(b.profileId).slice(0, 40)}, ${String(b.profileName || 'Player').slice(0, 20)}, ${String(b.gameId).slice(0, 40)},
                     ${b.band ? String(b.band).slice(0, 4) : null}, ${int(b.stars, 0)}, ${int(b.correct)}, ${int(b.total)}, ${int(b.xp, 0)}, ${int(b.coins, 0)},
-                    ${int(b.timeMs)}, ${missed}, ${b.levelId ? String(b.levelId).slice(0, 20) : null})`;
+                    ${int(b.timeMs)}, ${missed}, ${b.levelId ? String(b.levelId).slice(0, 20) : null}, ${log ? JSON.stringify(log) : null}::jsonb)`;
   send(res, 201, { ok: true });
 });

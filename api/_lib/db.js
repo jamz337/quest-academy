@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS results (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS results_account_created ON results (account_id, created_at DESC);
+ALTER TABLE results ADD COLUMN IF NOT EXISTS question_log JSONB;
 `;
 
 let sqlClient = null;

@@ -13,6 +13,8 @@ import { ProgressBar } from '../ui/ProgressBar.js';
 import { enter } from '../ui/motion.js';
 import * as Cloud from '../systems/Cloud.js';
 import { claimStreak, currentStreak } from '../systems/Streak.js';
+import { dailyGoal, familyGoal } from '../systems/Goals.js';
+import { getGame } from '../data/minigames.js';
 import { toast } from '../ui/Toast.js';
 import { Sfx } from '../systems/Audio.js';
 import { resolveLook } from '../data/avatars.js';
@@ -60,9 +62,20 @@ export class ModeSelectScene extends BaseScene {
     pc.add(new ProgressBar(this, tx + 56 * ui + 55 * ui, 8 * ui, 110 * ui, 8 * ui, { value: (p.xp - lo) / (hi - lo), color: THEME.primary }));
     pc.add(chip(this, chipW / 2 - 14 * ui, 0, { text: String(p.coins), icon: 'coin', color: THEME.warningSoft, textColor: THEME.warningDark, originX: 1, shadow: 'none' }));
 
+    // Today's goal and the family's weekly goal, under the profile card
+    const goal = dailyGoal(p), game = getGame(goal.gameId);
+    const fam = familyGoal(Store.getSave());
+    const goalText = goal.done ? `🎯 Today's goal done!` : `🎯 Today: ${'★'.repeat(goal.stars)} in ${game ? game.title : goal.gameId}`;
+    const famText = `👨‍👩‍👧 Family: ${Math.min(fam.stars, fam.target)}/${fam.target} ★ this week`;
+    const gy = chipY + chipH + 18 * ui;
+    const gc = chip(this, w / 2 - 6, gy, { text: goalText, originX: 1, color: goal.done ? THEME.successSoft : THEME.warningSoft, textColor: goal.done ? THEME.successDark : THEME.warningDark, fontSize: 13, height: 26 * ui, shadow: 'none' });
+    const fc = chip(this, w / 2 + 6, gy, { text: famText, originX: 0, color: THEME.sunken, textColor: THEME.ink2, fontSize: 13, height: 26 * ui, shadow: 'none' });
+    if (this.portrait && w < 520) { gc.setX(w / 2).setY(gy); gc.originX = 0.5; fc.setVisible(false); }
+    Store.persist();   // dailyGoal / familyGoal may have created today's records
+
     // Mode buttons
     const rowH = 46 * ui, row2Y = h - 36 * ui - safeArea().bottom, row1Y = row2Y - rowH - 10;
-    const areaTop = chipY + chipH + 22 * ui, areaBottom = row1Y - rowH / 2 - 16;
+    const areaTop = chipY + chipH + 22 * ui + 22 * ui, areaBottom = row1Y - rowH / 2 - 16;
     const areaH = areaBottom - areaTop;
     const bw = Math.min(this.portrait ? w - 40 : (w - 64) / 2, this.portrait ? 380 * ui : 300 * ui);
     const bh = Math.min(this.portrait ? areaH / 2 - 12 : areaH, 140 * ui);

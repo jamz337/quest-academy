@@ -9,6 +9,7 @@ import { readable } from '../../../ui/ReadableText.js';
 import { card } from '../../../ui/Card.js';
 import { stripe } from '../../../ui/Panel.js';
 import { enter } from '../../../ui/motion.js';
+import { prioritiseWeak, weakSkills } from '../../../systems/Practice.js';
 
 const PAR_MS = 90000;
 
@@ -17,7 +18,18 @@ export class GrammarGate extends MinigameScene {
   constructor() { super('MG_GrammarGate'); }
 
   initState() {
-    return { rounds: generateRounds(this.payload.grade, this.rng, 10), idx: 0, correct: 0, locked: false, picked: null, missed: {} };
+    const grade = this.payload.grade;
+    const rounds = prioritiseWeak(generateRounds(grade, this.rng, 10), () => generateRounds(grade, this.rng, 12), weakSkills(this.profile));
+    return { rounds, idx: 0, correct: 0, locked: false, picked: null, missed: {}, introduced: {} };
+  }
+
+  /** A solved sentence of a skill the player has never met. */
+  exampleFor(skill) {
+    for (let i = 0; i < 40; i++) {
+      const r = generateRounds(this.payload.grade, this.rng, 1)[0];
+      if (r.skill === skill) return `${fillBlank(r.sentence, r.options[r.answer])}  ${this.explain({ ...r, answer: r.options[r.answer] })}`;
+    }
+    return null;
   }
 
   get round() { return this.state.rounds[this.state.idx]; }
@@ -28,6 +40,11 @@ export class GrammarGate extends MinigameScene {
   buildGame(area) {
     const s = this.state, ui = this.ui, r = this.round;
     if (!r) return;
+    if (!s.introduced[r.skill] && this.needsIntro(r.skill)) {
+      const example = this.exampleFor(r.skill);
+      s.introduced[r.skill] = true;
+      if (example) return this.introPanel(area, r.skill, example, () => this.rebuild());
+    }
     const gap = 12;
     const promptH = Math.min(area.h * 0.42, 260 * ui);
     const cx = area.x + area.w / 2;
@@ -53,6 +70,7 @@ export class GrammarGate extends MinigameScene {
       return b;
     });
     enter(this, made, { from: 'up', delay: 60, stagger: 40 });
+    if (s.picked !== null && s.picked !== r.answer) this.explanationPanel(area, { ...r, prompt: fillBlank(r.sentence), answer: r.options[r.answer] }, () => this.next());
   }
 
   pick(i) {
@@ -60,14 +78,16 @@ export class GrammarGate extends MinigameScene {
     if (s.locked) return;
     s.locked = true; s.picked = i;
     const right = i === r.answer;
+    this.logQuestion({ skill: r.skill, prompt: fillBlank(r.sentence), answer: r.options[r.answer] }, right);
     if (right) { s.correct += 1; this.correctFeedback(); }
     else { s.missed[r.skill] = (s.missed[r.skill] || 0) + 1; this.wrongFeedback(); }
     this.rebuild();
-    this.time.delayedCall(right ? 600 : 1300, () => this.next());
+    if (right) this.time.delayedCall(600, () => this.next());   // wrong answers wait for "Next" after the explanation
   }
 
   next() {
     const s = this.state;
+    if (!s.locked) return;
     s.idx += 1;
     if (s.idx >= s.rounds.length) {
       const missedSkills = Object.entries(s.missed).sort((a, b) => b[1] - a[1]).map(([k]) => k);

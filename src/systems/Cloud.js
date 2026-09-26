@@ -127,7 +127,8 @@ export function postResult(profile, payload, result) {
     body: {
       profileId: profile.id, profileName: profile.name, gameId: payload.gameId, band: payload.band,
       stars: result.stars, correct: result.correct, total: result.total, xp: result.xp, coins: result.coins,
-      timeMs: result.timeMs, missedSkills: result.missedSkills || [], levelId: result.levelId
+      timeMs: result.timeMs, missedSkills: result.missedSkills || [], levelId: result.levelId,
+      questions: Array.isArray(result.questions) ? result.questions.slice(0, 40) : undefined
     }
   }).catch(() => { /* offline: the save itself still syncs later */ });
 }

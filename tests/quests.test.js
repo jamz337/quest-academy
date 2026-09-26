@@ -18,7 +18,7 @@ describe('mastery', () => {
     expect(mastery(p, 'math')).toEqual({ level: 0, streak: 0 });
     expect(updateMastery(p, 'math', 3)).toEqual({ from: 0, to: 0 });
     expect(updateMastery(p, 'math', 2)).toEqual({ from: 0, to: 0 });   // a 2-star game resets the streak
-    updateMastery(p, 'math', 3);
+    updateMastery(p, 'math', 3); updateMastery(p, 'math', 3);
     expect(updateMastery(p, 'math', 3)).toEqual({ from: 0, to: 1 });
     updateMastery(p, 'math', 0);
     expect(updateMastery(p, 'math', 1)).toEqual({ from: 1, to: 0 });
@@ -27,7 +27,7 @@ describe('mastery', () => {
 
   it('raises the grade the generators see, within 2..8', () => {
     const p = newProfile({ name: 'A', grade: 3 });
-    for (let i = 0; i < 2 * MASTERY_MAX; i++) updateMastery(p, 'words', 3);
+    for (let i = 0; i < 3 * MASTERY_MAX; i++) updateMastery(p, 'words', 3);
     expect(mastery(p, 'words').level).toBe(MASTERY_MAX);
     expect(effectiveGrade(p, 'words')).toBe(3 + MASTERY_MAX);
     expect(effectiveGrade(p, 'math')).toBe(3);
@@ -45,7 +45,8 @@ describe('mastery', () => {
     const p = newProfile({ name: 'A', grade: 3 });
     const payload = { gameId: 'math-dash', subject: 'math', band: 'A' };
     applyResult(p, payload, { correct: 10, total: 10, timeMs: 1000 });
-    const r = applyResult(p, payload, { correct: 10, total: 10, timeMs: 1000 });
+    applyResult(p, payload, { correct: 10, total: 10, timeMs: 1000 });
+    const r = applyResult(p, payload, { correct: 10, total: 10, timeMs: 1000 });   // third strong game in a row
     expect(r.masteryChange).toBe(1);
     expect(mastery(p, 'math').level).toBe(1);
     const boss = applyResult(p, { gameId: 'boss-math', subject: 'math', band: 'A', boss: bossForZone('math') }, { won: true, heartsLeft: 3, hpLeft: 0, correct: 8, total: 8, timeMs: 1 });

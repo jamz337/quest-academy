@@ -2,6 +2,8 @@
 import { BADGES } from '../data/badges.js';
 import { gamesForSubject } from '../data/minigames.js';
 import { ZONE_ORDER } from '../data/world/quests.js';
+import { recordSkills } from './Practice.js';
+import { applyGoal } from './Goals.js';
 
 // ---- Mastery: the better a player does in a subject, the harder its games get ----------------
 export const MASTERY_MAX = 3;
@@ -20,9 +22,11 @@ export function effectiveGrade(profile, subject, extra = 0) {
   return Math.max(MIN_GRADE, Math.min(MAX_GRADE, g));
 }
 
+export const MASTERY_UP = 3, MASTERY_DOWN = 2;
+
 /**
- * Fold a result into the subject's mastery: two 3-star games in a row step it up, two weak games in a row
- * step it down, a 2-star game holds. Returns { from, to }.
+ * Fold a result into the subject's mastery: three 3-star games in a row step it up (a lucky run is not
+ * enough), two weak games in a row step it down, a 2-star game holds. Returns { from, to }.
  */
 export function updateMastery(profile, subject, stars) {
   profile.mastery ||= {};
@@ -31,8 +35,8 @@ export function updateMastery(profile, subject, stars) {
   if (stars >= 3) m.streak = Math.max(1, m.streak + 1);
   else if (stars <= 1) m.streak = Math.min(-1, m.streak - 1);
   else m.streak = 0;
-  if (m.streak >= 2 && m.level < MASTERY_MAX) { m.level += 1; m.streak = 0; }
-  if (m.streak <= -2 && m.level > 0) { m.level -= 1; m.streak = 0; }
+  if (m.streak >= MASTERY_UP && m.level < MASTERY_MAX) { m.level += 1; m.streak = 0; }
+  if (m.streak <= -MASTERY_DOWN && m.level > 0) { m.level -= 1; m.streak = 0; }
   profile.mastery[subject] = m;
   return { from, to: m.level };
 }
@@ -124,6 +128,13 @@ export function applyResult(profile, payload, raw) {
     const m = updateMastery(profile, payload.subject, stars);
     result.mastery = m.to; result.masteryChange = m.to - m.from;
   }
+  // Skill memory for spaced practice, the missed questions a parent can see, and today's goal.
+  recordSkills(profile, { seen: raw.seenSkills || [], missed: raw.missedSkills || [] });
+  if (Array.isArray(raw.missedQuestions) && raw.missedQuestions.length) {
+    const at = Date.now();
+    profile.recentMisses = [...raw.missedQuestions.slice(0, 5).map((q) => ({ ...q, gameId: payload.gameId, at })), ...(profile.recentMisses || [])].slice(0, 20);
+  }
+  result.goal = applyGoal(profile, result);
   return finishResult(profile, result);
 }
 

@@ -24,8 +24,12 @@ export function summarize(save, results = [], now = Date.now()) {
       for (const r of recent) for (const s of r.missed_skills || []) missed[s] = (missed[s] || 0) + 1;
       const practise = Object.entries(missed).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([skill, count]) => ({ skill, count }));
       const minutes = Math.round(rs.reduce((s, r) => s + (r.time_ms || 0), 0) / 60000);
+      const week = rs.filter((r) => now - new Date(r.created_at).getTime() < 7 * 86400000);
+      const weak = Object.entries(p.skills || {}).filter(([, r]) => r.missed > 0 && r.sinceMiss < 3).map(([id]) => id);
       return {
         id: p.id, name: p.name, avatar: p.avatar, look: p.look || null, grade: p.grade,
+        week: { plays: week.length, stars: week.reduce((s, r) => s + (r.stars || 0), 0), xp: week.reduce((s, r) => s + (r.xp || 0), 0), minutes: Math.round(week.reduce((s, r) => s + (r.time_ms || 0), 0) / 60000) },
+        weakSkills: weak, recentMisses: (p.recentMisses || []).slice(0, 10), mastery: p.mastery || {},
         xp: p.xp || 0, level: levelFromXp(p.xp || 0), coins: p.coins || 0, stars: totalStars(p),
         badges: p.badges || [], games: p.games || {},
         codingLevels: Object.values(p.coding?.levels || {}).filter((l) => l.stars > 0).length,

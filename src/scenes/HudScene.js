@@ -6,6 +6,7 @@ import { T, text } from '../ui/TextStyles.js';
 import { button, iconButton, speakButton } from '../ui/Button.js';
 import { readable } from '../ui/ReadableText.js';
 import { rateFor } from '../systems/Speech.js';
+import { explainQuestion } from '../data/explanations.js';
 import { panel } from '../ui/Panel.js';
 import { chip } from '../ui/Chip.js';
 import { modal } from '../ui/Modal.js';
@@ -125,7 +126,8 @@ export class HudScene extends BaseScene {
     const lines = quiz ? e.q.prompt.split('\n').length : 0;
     const prompt = quiz ? readable(this, 0, 0, e.q.prompt, T.at(this, lines > 6 ? 13 : e.q.prompt.length > 60 || lines > 3 ? 15 : 18, THEME.ink, { fontStyle: '700' }), { width: mw - 48 }).setOrigin(0.5, 0).setDepth(603) : null;
     if (prompt && e.picked === null) this.autoRead(prompt);
-    const mh = quiz ? 68 * ui + 8 * ui + prompt.height + 20 * ui + rows * bh + (rows - 1) * gap + 14 * ui + 28 * ui + 74 * ui : 250 * ui;
+    const why = quiz && e.picked !== null && !e.right ? readable(this, 0, 0, explainQuestion(e.q, e.subject), T.at(this, 14, THEME.ink2), { width: mw - 48 }).setOrigin(0.5, 0).setDepth(603) : null;
+    const mh = quiz ? 68 * ui + 8 * ui + prompt.height + 20 * ui + rows * bh + (rows - 1) * gap + 14 * ui + 28 * ui + (why ? why.height + 10 * ui : 0) + 74 * ui : 250 * ui;
     const m = modal(this, { w: mw, h: mh, title, accent, depth: 600, dimAlpha: 0.4 });
     let y = m.contentTop;
     if (quiz) {
@@ -144,6 +146,7 @@ export class HudScene extends BaseScene {
       if (e.picked !== null) {
         const msg = e.right ? `Correct!  +${e.reward.coins} coins  +${e.reward.xp} XP` : `The answer was ${q.answer}. No harm done!`;
         text(this, w / 2, y, msg, T.bodyBold(this, e.right ? THEME.successDark : THEME.ink2)).setDepth(603);
+        if (why) { why.setPosition(w / 2, y + 16 * ui); this.autoRead(why); }
       }
     } else {
       const msg = e.kind === 'chest' ? `You found ${e.coins} coins hidden in the grass!` : `${e.gift.title}\n${e.gift.desc}`;

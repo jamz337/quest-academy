@@ -17,6 +17,7 @@ import { lookSpriteTexture } from '../systems/Textures.js';
 import { sparkleSpots, grassSpots, daySeed, dayKey, rollEncounter, chestCoins, pickGift, GRASS, SURPRISE_CHANCE, SURPRISE_COOLDOWN_MS, QUIZ_REWARD, CRITTERS, CRITTER_MAX_PER_DAY } from '../data/world/encounters.js';
 import { bossQuestions } from '../generators/boss.js';
 import { effectiveGrade } from '../systems/Progression.js';
+import { weakSkills } from '../systems/Practice.js';
 import { Rng } from '../systems/Rng.js';
 import { SUBJECTS } from '../constants.js';
 
@@ -270,7 +271,10 @@ export class WorldScene extends Phaser.Scene {
       const tx = Math.floor(this.player.x / TILE), ty = Math.floor(this.player.y / TILE);
       const subject = zoneAt(this.map, tx, ty) || rng.pick(Object.keys(SUBJECTS));
       const sub = SUBJECTS[subject] ? subject : rng.pick(Object.keys(SUBJECTS));
-      const [q] = bossQuestions(sub, effectiveGrade(profile, sub), rng, 1);
+      // A handful of candidates so a skill the player has been missing can be revisited (spaced practice).
+      const weak = new Set(weakSkills(profile));
+      const cands = bossQuestions(sub, effectiveGrade(profile, sub), rng, 8);
+      const q = cands.find((c) => weak.has(c.skill)) || cands[0];
       hud.showEncounter({ kind, subject: sub, q, reward: QUIZ_REWARD, onAnswer: (right) => { if (right) this.reward(QUIZ_REWARD); } });
     } else if (kind === 'chest') {
       const coins = chestCoins(() => rng.float());

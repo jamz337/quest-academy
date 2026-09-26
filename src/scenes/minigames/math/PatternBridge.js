@@ -6,6 +6,7 @@ import { T, text } from '../../../ui/TextStyles.js';
 import { button } from '../../../ui/Button.js';
 import { card, plank } from '../../../ui/Card.js';
 import { enter } from '../../../ui/motion.js';
+import { prioritiseWeak, weakSkills } from '../../../systems/Practice.js';
 
 const PAR_MS = 90000;
 const WOOD = 0xf0b36b, POST = 0xc99a6b;
@@ -15,7 +16,18 @@ export class PatternBridge extends MinigameScene {
   constructor() { super('MG_PatternBridge'); }
 
   initState() {
-    return { rounds: generateRounds(this.payload.grade, this.rng, 8), idx: 0, correct: 0, locked: false, picked: null, missed: {} };
+    const grade = this.payload.grade;
+    const rounds = prioritiseWeak(generateRounds(grade, this.rng, 8), () => generateRounds(grade, this.rng, 10), weakSkills(this.profile));
+    return { rounds, idx: 0, correct: 0, locked: false, picked: null, missed: {}, introduced: {} };
+  }
+
+  /** A solved bridge of a pattern skill the player has never met. */
+  exampleFor(skill) {
+    for (let i = 0; i < 40; i++) {
+      const r = generateRounds(this.payload.grade, this.rng, 1)[0];
+      if (r.skill === skill) return `${r.terms.map((t, j) => (j === r.missingIndex ? `[${t}]` : t)).join(', ')}.  ${this.explain(r)}`;
+    }
+    return null;
   }
 
   get round() { return this.state.rounds[this.state.idx]; }
@@ -26,6 +38,11 @@ export class PatternBridge extends MinigameScene {
   buildGame(area) {
     const s = this.state, ui = this.ui, r = this.round;
     if (!r) return;
+    if (!s.introduced[r.skill] && this.needsIntro(r.skill)) {
+      const example = this.exampleFor(r.skill);
+      s.introduced[r.skill] = true;
+      if (example) return this.introPanel(area, r.skill, example, () => this.rebuild());
+    }
     const promptH = 56 * ui;
     const prompt = card(this, area.x + area.w / 2, area.y + promptH / 2, area.w, promptH);
     text(this, area.x + area.w / 2, area.y + promptH / 2, r.rule || 'Which number is missing from the bridge?',
@@ -50,6 +67,7 @@ export class PatternBridge extends MinigameScene {
       return b;
     });
     enter(this, made, { from: 'up', delay: 200, stagger: 40 });
+    if (s.picked !== null && r.choices[s.picked] !== r.answer) this.explanationPanel(area, { ...r, prompt: r.terms.map((t, j) => (j === r.missingIndex ? '?' : t)).join(', ') }, () => this.next());
   }
 
   /** Water, two posts, a rail and the plank row. The missing plank is a sunken slot with a "?" until answered. Returns the planks. */
@@ -91,14 +109,16 @@ export class PatternBridge extends MinigameScene {
     if (s.locked) return;
     s.locked = true; s.picked = i;
     const right = r.choices[i] === r.answer;
+    this.logQuestion({ skill: r.skill, prompt: r.terms.map((t, j) => (j === r.missingIndex ? '?' : t)).join(', '), answer: r.answer }, right);
     if (right) { s.correct += 1; this.correctFeedback(); }
     else { s.missed[r.skill] = (s.missed[r.skill] || 0) + 1; this.wrongFeedback(); }
     this.rebuild();
-    this.time.delayedCall(right ? 600 : 1200, () => this.next());
+    if (right) this.time.delayedCall(600, () => this.next());   // wrong answers wait for "Next" after the explanation
   }
 
   next() {
     const s = this.state;
+    if (!s.locked) return;
     s.idx += 1;
     if (s.idx >= s.rounds.length) {
       const missedSkills = Object.entries(s.missed).sort((a, b) => b[1] - a[1]).map(([k]) => k);

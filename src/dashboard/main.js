@@ -2,6 +2,7 @@
 import { MINIGAMES } from '../data/minigames.js';
 import { SUBJECTS } from '../constants.js';
 import { skillLabel } from '../data/skills.js';
+import { skillTip } from '../data/explanations.js';
 import { getBadge } from '../data/badges.js';
 import { resolveLook, OUTLINE, MOUTH } from '../data/avatars.js';
 import { cssVars } from '../ui/theme.js';
@@ -78,20 +79,26 @@ function childCard(c) {
     const detail = r.total ? `${r.correct} / ${r.total}` : r.levelId ? `level ${r.levelId}` : '';
     return `<tr><td>${when(r.at)}</td><td>${g ? g.icon + ' ' + esc(g.title) : esc(r.gameId)}</td><td>${stars(r.stars)}</td><td>${detail}</td><td>+${r.xp} XP</td></tr>`;
   }).join('');
-  const practise = c.practise.length
-    ? c.practise.map((p) => `<span class="skill">${esc(skillLabel(p.skill))} · ${p.count}</span>`).join('')
+  // Skills the game is revisiting (missed and not yet answered right three times since), each with a home tip.
+  const weak = c.weakSkills && c.weakSkills.length ? c.weakSkills : c.practise.map((p) => p.skill);
+  const practise = weak.length
+    ? weak.slice(0, 5).map((id) => `<div class="tip"><span class="skill">${esc(skillLabel(id))}</span> <span class="muted">${esc(skillTip(id))}</span></div>`).join('')
     : '<span class="muted">Nothing stands out. Keep going!</span>';
+  const misses = (c.recentMisses || []).map((m) => `<tr><td>${when(m.at)}</td><td>${esc(m.prompt)}</td><td><b>${esc(m.answer)}</b></td><td>${esc(skillLabel(m.skill))}</td></tr>`).join('');
+  const wk = c.week || { plays: 0, stars: 0, minutes: 0 };
+  const weekLine = wk.plays ? `This week: ${wk.plays} ${wk.plays === 1 ? 'game' : 'games'}, ${wk.stars} ★, ${wk.minutes} min` : 'No games this week yet';
   const badges = c.badges.length ? c.badges.map((id) => `<span class="badge">🏅 ${esc(getBadge(id)?.title || id)}</span>`).join('') : '<span class="muted">No badges yet.</span>';
   return `<section class="card">
     <div class="row"><canvas class="avatar" data-avatar="${c.avatar | 0}" data-look="${esc(JSON.stringify(c.look || null))}" width="48" height="48"></canvas>
-      <div class="grow"><h2>${esc(c.name)}</h2><div class="muted">Grade ${c.grade} · last played ${when(c.lastPlayed)}</div></div></div>
+      <div class="grow"><h2>${esc(c.name)}</h2><div class="muted">Grade ${c.grade} · last played ${when(c.lastPlayed)} · ${weekLine}</div></div></div>
     <h3>Progress</h3>
     <div class="stats">
       <div class="stat"><b>${c.level}</b><span>Level</span></div><div class="stat"><b>${c.xp}</b><span>XP</span></div>
       <div class="stat"><b>${c.stars}</b><span>Stars of ${MINIGAMES.length * 3}</span></div><div class="stat"><b>${c.coins}</b><span>Coins</span></div>
       <div class="stat"><b>${c.codingLevels}</b><span>Mazes solved</span></div><div class="stat"><b>${c.minutes}</b><span>Minutes played</span></div>
     </div>
-    <h3>Skills to practise (last 30 days)</h3><div>${practise}</div>
+    <h3>Skills to practise, and what helps at home</h3><div>${practise}</div>
+    <h3>Questions missed recently</h3>${misses ? `<table><tr><th>When</th><th>Question</th><th>Answer</th><th>Skill</th></tr>${misses}</table>` : '<div class="muted">None recorded yet. Ask about these at dinner when they appear!</div>'}
     <h3>Badges</h3><div>${badges}</div>
     <h3>Games</h3><table><tr><th>Subject</th><th>Game</th><th>Best</th><th></th></tr>${gameRows}</table>
     <h3>Recent activity</h3>${recent ? `<table><tr><th>When</th><th>Game</th><th>Stars</th><th>Score</th><th></th></tr>${recent}</table>` : '<div class="muted">No games recorded yet. Results appear here after each game played while signed in.</div>'}

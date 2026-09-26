@@ -151,3 +151,28 @@ export const PAIRS = {
     { l: 'Lydia', r: 'sold purple cloth', k: 'people' }
   ]
 };
+
+// ORDER for "put the story in order": title and the events in the right order (shown shuffled).
+export const ORDER = {
+  A: [
+    { title: 'Noah and the flood', steps: ['God tells Noah to build an ark', 'The animals go in two by two', 'It rains for forty days', 'A rainbow appears in the sky'], ref: 'Genesis 6–9' },
+    { title: 'David and Goliath', steps: ['Goliath challenges the Israelites', 'David picks five smooth stones', 'David swings his sling', 'Goliath falls down'], ref: '1 Samuel 17' },
+    { title: 'Jonah', steps: ['God tells Jonah to go to Nineveh', 'Jonah sails the other way', 'A big fish swallows Jonah', 'Jonah goes to Nineveh at last'], ref: 'Jonah 1–3' },
+    { title: 'The birth of Jesus', steps: ['Mary and Joseph travel to Bethlehem', 'There is no room at the inn', 'Jesus is born and laid in a manger', 'Shepherds come to see him'], ref: 'Luke 2' },
+    { title: 'Creation', steps: ['God makes light', 'God makes the sea and the land', 'God makes the animals', 'God rests on the seventh day'], ref: 'Genesis 1–2' }
+  ],
+  B: [
+    { title: 'Joseph', steps: ['Joseph gets a coat of many colours', 'His brothers sell him into Egypt', 'Joseph explains Pharaoh’s dreams', 'Joseph forgives his brothers'], ref: 'Genesis 37–45' },
+    { title: 'Moses and the Exodus', steps: ['Moses sees the burning bush', 'Ten plagues come upon Egypt', 'The Red Sea parts', 'Moses receives the Ten Commandments'], ref: 'Exodus 3–20' },
+    { title: 'Daniel', steps: ['Daniel is taken to Babylon', 'Daniel keeps praying to God', 'Daniel is thrown to the lions', 'God shuts the lions’ mouths'], ref: 'Daniel 1–6' },
+    { title: 'Easter', steps: ['Jesus rides into Jerusalem', 'Jesus shares the Last Supper', 'Jesus dies on the cross', 'Jesus rises on the third day'], ref: 'Luke 19–24' },
+    { title: 'Ruth', steps: ['Naomi’s husband and sons die', 'Ruth stays with Naomi', 'Ruth gathers grain in Boaz’s field', 'Ruth marries Boaz'], ref: 'Ruth 1–4' }
+  ],
+  C: [
+    { title: 'Paul', steps: ['Saul persecutes the church', 'A light blinds Saul on the road to Damascus', 'Paul preaches on missionary journeys', 'Paul writes letters from prison'], ref: 'Acts 9–28' },
+    { title: 'Esther', steps: ['Esther becomes queen', 'Haman plots against the Jews', 'Esther risks her life before the king', 'The Jews are saved'], ref: 'Esther 2–9' },
+    { title: 'Elijah', steps: ['Ravens feed Elijah by the brook', 'Elijah challenges the prophets of Baal', 'Fire falls on the altar', 'Elijah goes to heaven in a chariot'], ref: '1 Kings 17 – 2 Kings 2' },
+    { title: 'The early church', steps: ['Jesus returns to heaven', 'The Holy Spirit comes at Pentecost', 'Stephen becomes the first martyr', 'Peter is freed from prison'], ref: 'Acts 1–12' },
+    { title: 'Nehemiah', steps: ['Nehemiah hears the walls are broken', 'The king lets him go to Jerusalem', 'The people rebuild the walls', 'Ezra reads the law to everyone'], ref: 'Nehemiah 1–8' }
+  ]
+};

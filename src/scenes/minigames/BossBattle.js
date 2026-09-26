@@ -70,6 +70,7 @@ export class BossBattle extends MinigameScene {
     speakButton(this, area.x + area.w - 30 * ui, qy + 26 * ui, 40 * ui, question, { rate: this.speechRate });
     this.autoRead(question);
     this.timerBar = new ProgressBar(this, cx, qy + promptH - 16 * ui, area.w - 48, 8 * ui, { color: THEME.success, value: 1 });
+    if (!Number.isFinite(s.timeLimit)) this.timerBar.setVisible(false);
 
     // Choices
     const gridTop = qy + promptH + gap;
@@ -87,6 +88,7 @@ export class BossBattle extends MinigameScene {
     });
     enter(this, [bc, prompt], { from: 'up', distance: 12 });
     enter(this, this.choiceButtons, { from: 'up', delay: 60, stagger: 40 });
+    if (s.hit === 'player' && s.hearts > 0) this.explanationPanel(area, q, () => this.next());
   }
 
   pick(i) {
@@ -104,26 +106,30 @@ export class BossBattle extends MinigameScene {
     this.hurt(s.questions[s.idx]);
   }
 
-  strike() {
+  strike(q) {
     const s = this.state;
     s.correct += 1; s.hp -= 1; s.hit = 'boss';
+    this.logQuestion(q, true);
     this.correctFeedback();
     this.cameras.main.shake(140, 0.005);
     this.rebuild();
     this.time.delayedCall(600, () => (s.hp <= 0 ? this.end(true) : this.next()));
   }
 
+  /** A wrong answer costs a heart and shows why; the fight continues when the player taps Next. */
   hurt(q) {
     const s = this.state;
     s.hearts -= 1; s.hit = 'player';
     s.missed[q.skill] = (s.missed[q.skill] || 0) + 1;
+    this.logQuestion(q, false);
     this.wrongFeedback();
     this.rebuild();
-    this.time.delayedCall(1100, () => (s.hearts <= 0 ? this.end(false) : this.next()));
+    if (s.hearts <= 0) this.time.delayedCall(1100, () => this.end(false));
   }
 
   next() {
     const s = this.state;
+    if (!s.locked) return;
     s.idx += 1;
     if (s.idx >= s.questions.length) return this.end(s.hp < this.payload.boss.hp / 2);   // pool exhausted: call it on damage dealt
     s.locked = false; s.picked = null; s.hit = null; s.qStart = Date.now();

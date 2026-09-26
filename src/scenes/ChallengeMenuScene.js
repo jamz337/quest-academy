@@ -11,6 +11,7 @@ import { T, text } from '../ui/TextStyles.js';
 import { background } from '../ui/Panel.js';
 import { card } from '../ui/Card.js';
 import { chip } from '../ui/Chip.js';
+import { button } from '../ui/Button.js';
 import { topBar } from '../ui/TopBar.js';
 import { StarRow } from '../ui/StarRow.js';
 import { enter } from '../ui/motion.js';
@@ -33,8 +34,8 @@ export class ChallengeMenuScene extends BaseScene {
     const wide = w >= 640;
     const bar = topBar(this, {
       title: 'Challenge Mode', onBack: () => this.go(SCENES.ModeSelect),
-      right: wide ? (x, y) => chip(this, x, y, { text: who, originX: 1, textColor: THEME.ink2 }) : null,
-      subtitle: wide ? null : who
+      right: (x, y) => button(this, x - 62 * ui, y, 124 * ui, 40 * ui, '📊 My skills', { variant: 'secondary', fontSize: 14, onClick: () => this.go(SCENES.Skills) }),
+      subtitle: who
     });
 
     const subjects = Object.values(SUBJECTS);
