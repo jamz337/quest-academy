@@ -14,7 +14,7 @@ import { Sfx } from '../systems/Audio.js';
 import { toast } from '../ui/Toast.js';
 import { resolveLook } from '../data/avatars.js';
 import { lookSpriteTexture } from '../systems/Textures.js';
-import { sparkleSpots, grassSpots, daySeed, dayKey, rollEncounter, chestCoins, pickGift, GRASS, SURPRISE_CHANCE, SURPRISE_COOLDOWN_MS, QUIZ_REWARD, CRITTER } from '../data/world/encounters.js';
+import { sparkleSpots, grassSpots, daySeed, dayKey, rollEncounter, chestCoins, pickGift, GRASS, SURPRISE_CHANCE, SURPRISE_COOLDOWN_MS, QUIZ_REWARD, CRITTERS, CRITTER_MAX_PER_DAY } from '../data/world/encounters.js';
 import { bossQuestions } from '../generators/boss.js';
 import { effectiveGrade } from '../systems/Progression.js';
 import { Rng } from '../systems/Rng.js';
@@ -55,7 +55,7 @@ export class WorldScene extends Phaser.Scene {
     this.createNpcs();
     this.createCoins(profile);
     this.createSparkles(profile);
-    this.createCritter();
+    this.createCritters();
     this.bubble = this.add.image(0, 0, 'bubble').setScale(0.75).setDepth(20).setVisible(false);
 
     const cam = this.cameras.main;
@@ -179,68 +179,71 @@ export class WorldScene extends Phaser.Scene {
     this.startEncounter(rollEncounter(() => Math.random()));
   }
 
-  // ---- The wandering sheep ------------------------------------------------------------------
+  // ---- Wandering critters (a sheep and a bunny) ---------------------------------------------
 
-  createCritter() {
-    this.critter = null;
-    this.critterTimer = this.time.addEvent({ delay: 400, loop: true, callback: this.critterThink, callbackScope: this });
-    this.spawnCritter();
+  createCritters() {
+    this.critters = [];
+    this.critterTimer = this.time.addEvent({ delay: 400, loop: true, callback: this.crittersThink, callbackScope: this });
+    for (const def of CRITTERS) this.spawnCritter(def);
   }
 
-  /** Put the sheep on a random grass tile well away from the player. */
-  spawnCritter() {
+  /** Put a critter on a random grass tile well away from the player. */
+  spawnCritter(def) {
     if (!this.player || !this.player.body) return;
     const far = grassSpots(this.map).filter((s) => Phaser.Math.Distance.Between((s.tx + 0.5) * TILE, (s.ty + 0.5) * TILE, this.player.x, this.player.y) > 10 * TILE);
     const s = Phaser.Utils.Array.GetRandom(far.length ? far : grassSpots(this.map));
     if (!s) return;
-    const c = this.physics.add.sprite((s.tx + 0.5) * TILE, (s.ty + 0.5) * TILE, CRITTER.key, 0).setScale(CHAR_SCALE).setDepth(9);
+    const c = this.physics.add.sprite((s.tx + 0.5) * TILE, (s.ty + 0.5) * TILE, def.key, 0).setScale(CHAR_SCALE).setDepth(9);
     c.body.setSize(10, 8).setOffset(3, 7);
     c.setCollideWorldBounds(true);
     this.physics.add.collider(c, this.layer);
     this.physics.add.collider(c, this.treeLayer);
-    this.physics.add.overlap(this.player, c, () => this.catchCritter());
-    c.moveUntil = 0;
-    this.critter = c;
+    this.physics.add.overlap(this.player, c, () => this.catchCritter(c));
+    c.def = def; c.moveUntil = 0;
+    this.critters.push(c);
   }
 
-  /** Every 400ms: bolt away from a nearby player, otherwise amble about or rest. */
-  critterThink() {
-    const c = this.critter;
-    if (!c || !c.body || !this.player || !this.player.body) return;
+  /** Every 400ms: each critter bolts away from a nearby player, otherwise ambles about or rests. */
+  crittersThink() {
+    if (!this.player || !this.player.body) return;
     const hud = this.hud();
-    if (hud && hud.blocking) { c.setVelocity(0, 0); c.anims.stop(); return; }
-    const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, c.x, c.y);
-    let vx = 0, vy = 0;
-    if (d < CRITTER.fleeDist) {
-      const a = Phaser.Math.Angle.Between(this.player.x, this.player.y, c.x, c.y);
-      vx = Math.cos(a) * CRITTER.fleeSpeed; vy = Math.sin(a) * CRITTER.fleeSpeed;
-      c.moveUntil = 0;
-    } else if (Date.now() >= c.moveUntil) {
-      if (Math.random() >= 0.4) { const a = Math.random() * Math.PI * 2; vx = Math.cos(a) * CRITTER.wanderSpeed; vy = Math.sin(a) * CRITTER.wanderSpeed; }
-      c.moveUntil = Date.now() + 800 + Math.random() * 1200;
-    } else return;
-    c.setVelocity(vx, vy);
-    if (vx) c.setFlipX(vx > 0);
-    if (vx || vy) c.anims.play('sheep-walk', true); else { c.anims.stop(); c.setFrame(0); }
+    for (const c of this.critters) {
+      if (!c.body) continue;
+      const def = c.def;
+      if (hud && hud.blocking) { c.setVelocity(0, 0); c.anims.stop(); continue; }
+      const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, c.x, c.y);
+      let vx = 0, vy = 0;
+      if (d < def.fleeDist) {
+        const a = Phaser.Math.Angle.Between(this.player.x, this.player.y, c.x, c.y);
+        vx = Math.cos(a) * def.fleeSpeed; vy = Math.sin(a) * def.fleeSpeed;
+        c.moveUntil = 0;
+      } else if (Date.now() >= c.moveUntil) {
+        if (Math.random() >= 0.4) { const a = Math.random() * Math.PI * 2; vx = Math.cos(a) * def.wanderSpeed; vy = Math.sin(a) * def.wanderSpeed; }
+        c.moveUntil = Date.now() + 800 + Math.random() * 1200;
+      } else continue;
+      c.setVelocity(vx, vy);
+      if (vx) c.setFlipX(vx > 0);
+      if (vx || vy) c.anims.play(`${def.key}-walk`, true); else { c.anims.stop(); c.setFrame(0); }
+    }
   }
 
-  catchCritter() {
-    const c = this.critter;
+  catchCritter(c) {
     if (!c || !c.active) return;
     const hud = this.hud();
     if (hud && hud.blocking) return;
-    this.critter = null;
+    const def = c.def;
+    this.critters = this.critters.filter((x) => x !== c);
     c.destroy();
     const day = dayKey();
     let coins = 0;
     Store.updateProfile((p) => {
       if (!p.world.critters || p.world.critters.day !== day) p.world.critters = { day, caught: 0 };
-      if (p.world.critters.caught < CRITTER.maxPerDay) { p.world.critters.caught += 1; coins = CRITTER.coins; p.coins += coins; }
+      if (p.world.critters.caught < CRITTER_MAX_PER_DAY) { p.world.critters.caught += 1; coins = def.coins; p.coins += coins; }
     });
-    if (coins) { Sfx.coin(); this.say(`Baa! You caught the ${CRITTER.name}: +${coins} coins`, { icon: 'coin' }); }
-    else { Sfx.pop(); this.say(`Baa! The ${CRITTER.name} is out of coins for today.`, { accent: THEME.ink3 }); }
+    if (coins) { Sfx.coin(); this.say(`${def.cry} You caught the ${def.name}: +${coins} coins`, { icon: 'coin' }); }
+    else { Sfx.pop(); this.say(`${def.cry} The critters are out of coins for today.`, { accent: THEME.ink3 }); }
     if (hud) hud.setCoins(Store.getProfile().coins);
-    this.time.delayedCall(CRITTER.respawnMs, () => this.spawnCritter());
+    this.time.delayedCall(def.respawnMs, () => this.spawnCritter(def));
   }
 
   /** Called from tick(): now and then the tall grass springs a quiz on the walker. */
@@ -542,7 +545,7 @@ export class WorldScene extends Phaser.Scene {
     this.events.off('pause', this.onPauseBound);
     try { if (this.zoneTimer) this.zoneTimer.remove(false); } catch { /* clock already gone */ }
     try { if (this.critterTimer) this.critterTimer.remove(false); } catch { /* clock already gone */ }
-    this.zoneTimer = null; this.critterTimer = null; this.critter = null;
+    this.zoneTimer = null; this.critterTimer = null; this.critters = [];
     try { if (this.controls) this.controls.destroy(); } catch { /* keyboard plugin already gone */ }
     this.controls = null;
     const hud = this.scene.get(SCENES.Hud);

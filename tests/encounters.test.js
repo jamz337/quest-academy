@@ -53,3 +53,15 @@ describe('grass encounters', () => {
     expect(r2.coins).toBe(10 * 2 + 15);
   });
 });
+
+describe('critters', () => {
+  it('each critter has a sprite key, a cry and a coin value, and the bunny is faster than the sheep', async () => {
+    const { CRITTERS, CRITTER_MAX_PER_DAY } = await import('../src/data/world/encounters.js');
+    expect(CRITTERS.map((c) => c.key)).toEqual(['sheep', 'bunny']);
+    for (const c of CRITTERS) { expect(c.cry).toBeTruthy(); expect(c.coins).toBeGreaterThan(0); expect(c.fleeSpeed).toBeGreaterThan(c.wanderSpeed); }
+    const [sheep, bunny] = CRITTERS;
+    expect(bunny.fleeSpeed).toBeGreaterThan(sheep.fleeSpeed);
+    expect(bunny.coins).toBeGreaterThan(sheep.coins);
+    expect(CRITTER_MAX_PER_DAY).toBeGreaterThan(0);
+  });
+});

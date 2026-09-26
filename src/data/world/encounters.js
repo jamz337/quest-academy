@@ -43,8 +43,13 @@ export function sparkleSpots(map, seed, n = SPARKLES_PER_DAY) {
   return cands.slice(0, n);
 }
 
-// The wandering sheep: catch it for a few coins, a limited number of times a day so it cannot be farmed.
-export const CRITTER = { key: 'sheep', name: 'sheep', coins: 3, maxPerDay: 10, respawnMs: 20000, fleeDist: 96, fleeSpeed: 95, wanderSpeed: 35 };
+// Wandering critters: catch one for a few coins, a limited number of times a day so they cannot be farmed.
+// The bunny is faster and more skittish than the sheep, and worth more.
+export const CRITTERS = [
+  { key: 'sheep', name: 'sheep', cry: 'Baa!', coins: 3, respawnMs: 20000, fleeDist: 96, fleeSpeed: 95, wanderSpeed: 35 },
+  { key: 'bunny', name: 'bunny', cry: 'Boing!', coins: 5, respawnMs: 30000, fleeDist: 120, fleeSpeed: 135, wanderSpeed: 55 }
+];
+export const CRITTER_MAX_PER_DAY = 12;
 
 /** What a sparkle hides. `rnd` is a 0..1 function. */
 export function rollEncounter(rnd) {

@@ -102,6 +102,15 @@ const SHEEP = [
 ];
 const SHEEP2 = SHEEP.map((r, i) => (i === 11 || i === 12 ? '...kk.....kk....' : r));
 
+// The bunny: tall ears with pink insides, a pink nose and a white tail. Faces left.
+const BUNNY = [
+  '................', '..kk..kk........', '.kpckkpck.......', '.kpckkpck.......',
+  '.kcckkcck.......', '.kccccccck......', '.kckcccccckkkk..', '.kccccccccccccck',
+  '.kpcccccccccccwk', '..kcccccccccccwk', '...kkccccccccck.', '....kcck..kcck..',
+  '....kkkk..kkkk..', '....xxxxxxxxxx..', '................', '................'
+];
+const BUNNY2 = BUNNY.map((r, i) => (i === 11 ? '...kcck....kcck.' : i === 12 ? '...kkkk....kkkk.' : r));
+
 const TREE = [
   '......kkkk......', '....kkGGGGkk....', '...kGGgGGGGGk...', '..kGgggGGGGGDk..',
   '..kGgGGGGGGGDk..', '.kGGGGGGGGGDDDk.', '.kGgGGGGGGGDDDk.', '.kGGGGGGGGDDDDk.',
@@ -450,10 +459,13 @@ export function generateAllTextures(scene) {
   NPC_STYLES.forEach((st, i) => characterTexture(scene, `npc${i}`, st));
   pixelTexture(scene, 'robot', [ROBOT, ROBOT2]);
   pixelTexture(scene, 'sheep', [SHEEP, SHEEP2]);
-  if (!scene.anims.exists('sheep-walk')) scene.anims.create({ key: 'sheep-walk', frames: scene.anims.generateFrameNumbers('sheep', { start: 0, end: 1 }), frameRate: 5, repeat: -1 });
+  pixelTexture(scene, 'bunny', [BUNNY, BUNNY2]);
+  for (const [key, rate] of [['sheep', 5], ['bunny', 8]]) {
+    if (!scene.anims.exists(`${key}-walk`)) scene.anims.create({ key: `${key}-walk`, frames: scene.anims.generateFrameNumbers(key, { start: 0, end: 1 }), frameRate: rate, repeat: -1 });
+  }
   const sheets = [...CHARACTER_STYLES.map((_, i) => `char${i}`), ...NPC_STYLES.map((_, i) => `npc${i}`)];
   sheets.forEach((key) => walkAnims(scene, key));
   // The game renders anti-aliased (pixelArt: false); pixel-art sheets opt back in to crisp scaling.
-  ['tiles', 'robot', 'sheep', ...sheets].forEach((key) => scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST));
+  ['tiles', 'robot', 'sheep', 'bunny', ...sheets].forEach((key) => scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST));
   if (!scene.anims.exists('robot-walk')) scene.anims.create({ key: 'robot-walk', frames: scene.anims.generateFrameNumbers('robot', { start: 0, end: 1 }), frameRate: 8, repeat: -1 });
 }
