@@ -1,12 +1,14 @@
 import Phaser from 'phaser';
-import { C } from './constants.js';
+import { THEME } from './ui/theme.js';
 
 export function makeConfig(scenes, opts = {}) {
   return {
     type: Phaser.AUTO,
     parent: 'app',
-    backgroundColor: C.navy,
-    pixelArt: true,
+    backgroundColor: THEME.bg,
+    // UI text and shapes are anti-aliased; pixel-art world textures opt in to NEAREST filtering in Textures.js.
+    pixelArt: false,
+    antialias: true,
     roundPixels: true,
     scale: { mode: Phaser.Scale.RESIZE, autoCenter: Phaser.Scale.NO_CENTER, width: window.innerWidth, height: window.innerHeight },
     dom: { createContainer: true },

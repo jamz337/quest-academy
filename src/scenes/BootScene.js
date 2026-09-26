@@ -20,7 +20,18 @@ export class BootScene extends Phaser.Scene {
     Cloud.init();
     const p = Store.getProfile();
     this.scene.start(p ? SCENES.ModeSelect : SCENES.Profile);
+    hideSplash();
   }
+}
+
+/** Fade out and remove the CSS loading screen from index.html. */
+function hideSplash() {
+  try {
+    const el = typeof document !== 'undefined' && document.getElementById('splash');
+    if (!el) return;
+    el.classList.add('hide');
+    setTimeout(() => el.remove(), 350);
+  } catch { /* ignore */ }
 }
 
 function fontsReady() {

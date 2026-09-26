@@ -1,15 +1,17 @@
 // Every texture the game uses is generated here at boot from tiny pixel maps and Graphics calls.
 // To swap in real art later, load spritesheets with the same keys and frame layout and skip the generator.
-import { C, TILE, AVATAR_COUNT } from '../constants.js';
+import Phaser from 'phaser';
+import { TILE, AVATAR_COUNT } from '../constants.js';
+import { THEME } from '../ui/theme.js';
 import { mulberry32 } from './Rng.js';
 import { OUTLINE, MOUTH, BOOTS, CHARACTER_STYLES, NPC_STYLES } from '../data/avatars.js';
 export { CHARACTER_STYLES, NPC_STYLES };
 
 const SHADOW = 'rgba(0,0,0,0.22)';
 const PAL = {
-  '.': null, k: OUTLINE, w: '#fff1e8', s: '#ffccaa', h: '#ab5236', t: '#7a3a1e', r: '#ff004d', b: '#29adff',
-  n: '#1d2b53', g: '#6ed35f', G: '#3f9d3a', D: '#2a6e2a', y: '#ffec27', o: '#ffa300', p: '#ff77a8', l: '#83769c',
-  d: '#5f574f', c: '#c2c3c7', v: '#7e2553', x: SHADOW
+  '.': null, k: OUTLINE, w: '#ffffff', s: '#ffd6b3', h: '#a8613a', t: '#7a4a2a', r: '#ff5c6c', b: '#3d8bff',
+  n: '#2d2a4a', g: '#8fe07c', G: '#4fb84f', D: '#2f8a3a', y: '#ffc531', o: '#ff8f3f', p: '#ff6fae', l: '#8b7fd6',
+  d: '#625f7e', c: '#d6cfc4', v: '#7c5cff', x: SHADOW
 };
 
 /** Darken (f < 1) or lighten (f > 1) a '#rrggbb' string. */
@@ -120,7 +122,7 @@ function grassTile(ctx, x0, rnd, base, dark, light, tufts = 7) {
   for (let i = 0; i < 4; i++) px(ctx, x0 + Math.floor(rnd() * TILE), Math.floor(rnd() * TILE), light);
 }
 
-function pathTile(ctx, x0, rnd, base = '#d9b67a', dark = '#c29a5c', light = '#eacb93') {
+function pathTile(ctx, x0, rnd, base = '#e6c58a', dark = '#cfa96a', light = '#f4dca8') {
   px(ctx, x0, 0, base, TILE, TILE);
   for (let i = 0; i < 5; i++) {
     const x = x0 + Math.floor(rnd() * (TILE - 2)), y = Math.floor(rnd() * (TILE - 2));
@@ -130,64 +132,64 @@ function pathTile(ctx, x0, rnd, base = '#d9b67a', dark = '#c29a5c', light = '#ea
 }
 
 function waterTile(ctx, x0, rnd) {
-  px(ctx, x0, 0, '#3aa9f2', TILE, TILE);
-  for (let i = 0; i < 4; i++) px(ctx, x0 + Math.floor(rnd() * (TILE - 4)), Math.floor(rnd() * (TILE - 3)), '#2f93dc', 4, 2);
+  px(ctx, x0, 0, '#4aa8ff', TILE, TILE);
+  for (let i = 0; i < 4; i++) px(ctx, x0 + Math.floor(rnd() * (TILE - 4)), Math.floor(rnd() * (TILE - 3)), '#3a8fe0', 4, 2);
   [[4, 6], [17, 13], [8, 23], [21, 27]].forEach(([wx, wy]) => {
-    px(ctx, x0 + wx, wy, '#b7e6ff', 3, 1); px(ctx, x0 + wx + 3, wy + 1, '#b7e6ff', 3, 1);
+    px(ctx, x0 + wx, wy, '#c5e8ff', 3, 1); px(ctx, x0 + wx + 3, wy + 1, '#c5e8ff', 3, 1);
   });
 }
 
 function sandTile(ctx, x0, rnd) {
-  px(ctx, x0, 0, '#e8d6a0', TILE, TILE);
-  for (let i = 0; i < 8; i++) px(ctx, x0 + Math.floor(rnd() * TILE), Math.floor(rnd() * TILE), '#d4bf85');
-  for (let i = 0; i < 3; i++) px(ctx, x0 + Math.floor(rnd() * TILE), Math.floor(rnd() * TILE), '#fff7dc');
-  px(ctx, x0 + 22, 20, '#fff7dc', 3, 2); px(ctx, x0 + 23, 22, '#d4bf85', 1, 1);   // a tiny shell
+  px(ctx, x0, 0, '#f3e2ad', TILE, TILE);
+  for (let i = 0; i < 8; i++) px(ctx, x0 + Math.floor(rnd() * TILE), Math.floor(rnd() * TILE), '#dcc88e');
+  for (let i = 0; i < 3; i++) px(ctx, x0 + Math.floor(rnd() * TILE), Math.floor(rnd() * TILE), '#fff8e0');
+  px(ctx, x0 + 22, 20, '#fff8e0', 3, 2); px(ctx, x0 + 23, 22, '#dcc88e', 1, 1);   // a tiny shell
 }
 
 /** Plaster wall with wooden beams on both sides. */
 function wallBase(ctx, x0) {
-  px(ctx, x0, 0, '#f3e5c3', TILE, TILE);
-  px(ctx, x0, 0, '#8a5a34', 2, TILE); px(ctx, x0 + TILE - 2, 0, '#8a5a34', 2, TILE);
-  px(ctx, x0, TILE - 2, '#c9b58e', TILE, 2);
+  px(ctx, x0, 0, '#fff3dc', TILE, TILE);
+  px(ctx, x0, 0, '#a06a3e', 2, TILE); px(ctx, x0 + TILE - 2, 0, '#a06a3e', 2, TILE);
+  px(ctx, x0, TILE - 2, '#d6c4a0', TILE, 2);
 }
 function wallTile(ctx, x0) {
   wallBase(ctx, x0);
-  px(ctx, x0 + 10, 8, '#8a5a34', 12, 12);
-  px(ctx, x0 + 11, 9, '#7fd0ff', 10, 10);
-  px(ctx, x0 + 15, 9, '#8a5a34', 1, 10); px(ctx, x0 + 11, 13, '#8a5a34', 10, 1);
+  px(ctx, x0 + 10, 8, '#a06a3e', 12, 12);
+  px(ctx, x0 + 11, 9, '#a9d8ff', 10, 10);
+  px(ctx, x0 + 15, 9, '#a06a3e', 1, 10); px(ctx, x0 + 11, 13, '#a06a3e', 10, 1);
   px(ctx, x0 + 12, 10, '#ffffff', 2, 1);
 }
 function doorTile(ctx, x0) {
   wallBase(ctx, x0);
-  px(ctx, x0 + 8, 8, '#4a2c14', 16, 24);
-  px(ctx, x0 + 9, 9, '#8a5a34', 14, 23);
-  ctx.fillStyle = '#4a2c14'; ctx.beginPath(); ctx.arc(x0 + 16, 9, 8, Math.PI, 0); ctx.fill();
-  ctx.fillStyle = '#8a5a34'; ctx.beginPath(); ctx.arc(x0 + 16, 10, 7, Math.PI, 0); ctx.fill();
-  px(ctx, x0 + 13, 8, '#6e4424', 1, 24); px(ctx, x0 + 18, 8, '#6e4424', 1, 24);
-  px(ctx, x0 + 19, 20, '#ffec27', 2, 2);
+  px(ctx, x0 + 8, 8, '#4e3220', 16, 24);
+  px(ctx, x0 + 9, 9, '#a06a3e', 14, 23);
+  ctx.fillStyle = '#4e3220'; ctx.beginPath(); ctx.arc(x0 + 16, 9, 8, Math.PI, 0); ctx.fill();
+  ctx.fillStyle = '#a06a3e'; ctx.beginPath(); ctx.arc(x0 + 16, 10, 7, Math.PI, 0); ctx.fill();
+  px(ctx, x0 + 13, 8, '#6b4630', 1, 24); px(ctx, x0 + 18, 8, '#6b4630', 1, 24);
+  px(ctx, x0 + 19, 20, '#ffc531', 2, 2);
 }
 function roofTile(ctx, x0) {
-  px(ctx, x0, 0, '#d94f3f', TILE, TILE);
+  px(ctx, x0, 0, '#ff6b57', TILE, TILE);
   for (let band = 0; band < 4; band++) {
     const y = band * 8;
-    px(ctx, x0, y + 7, '#a83528', TILE, 1);
-    px(ctx, x0, y, '#ef7a68', TILE, 1);
-    for (let x = (band % 2) * 4; x < TILE; x += 8) px(ctx, x0 + x, y + 1, '#a83528', 1, 6);
+    px(ctx, x0, y + 7, '#d84a3a', TILE, 1);
+    px(ctx, x0, y, '#ff9a8a', TILE, 1);
+    for (let x = (band % 2) * 4; x < TILE; x += 8) px(ctx, x0 + x, y + 1, '#d84a3a', 1, 6);
   }
 }
 function gateLockedTile(ctx, x0, rnd) {
   pathTile(ctx, x0, rnd);
-  px(ctx, x0 + 1, 0, '#4a2c14', 6, TILE); px(ctx, x0 + 2, 1, '#7a3a1e', 4, TILE - 2);
-  px(ctx, x0 + TILE - 7, 0, '#4a2c14', 6, TILE); px(ctx, x0 + TILE - 6, 1, '#7a3a1e', 4, TILE - 2);
-  [5, 13, 21].forEach((y) => { px(ctx, x0 + 6, y, '#4a2c14', 20, 7); px(ctx, x0 + 7, y + 1, '#ab5236', 18, 4); });
-  px(ctx, x0 + 13, 8, '#5f574f', 6, 5); px(ctx, x0 + 14, 9, '#ab5236', 4, 4);   // shackle
-  px(ctx, x0 + 12, 12, '#1a1423', 8, 9); px(ctx, x0 + 13, 13, '#ffec27', 6, 7);  // lock body
-  px(ctx, x0 + 15, 15, '#1a1423', 2, 3);
+  px(ctx, x0 + 1, 0, '#4e3220', 6, TILE); px(ctx, x0 + 2, 1, '#7a4a2a', 4, TILE - 2);
+  px(ctx, x0 + TILE - 7, 0, '#4e3220', 6, TILE); px(ctx, x0 + TILE - 6, 1, '#7a4a2a', 4, TILE - 2);
+  [5, 13, 21].forEach((y) => { px(ctx, x0 + 6, y, '#4e3220', 20, 7); px(ctx, x0 + 7, y + 1, '#a8613a', 18, 4); });
+  px(ctx, x0 + 13, 8, '#625f7e', 6, 5); px(ctx, x0 + 14, 9, '#a8613a', 4, 4);   // shackle
+  px(ctx, x0 + 12, 12, '#2d2a4a', 8, 9); px(ctx, x0 + 13, 13, '#ffc531', 6, 7);  // lock body
+  px(ctx, x0 + 15, 15, '#2d2a4a', 2, 3);
 }
 function gateOpenTile(ctx, x0, rnd) {
   pathTile(ctx, x0, rnd);
   [1, TILE - 7].forEach((x) => {
-    px(ctx, x0 + x, 0, '#4a2c14', 6, TILE); px(ctx, x0 + x + 1, 1, '#7a3a1e', 4, TILE - 2); px(ctx, x0 + x + 1, 1, '#c27a4a', 4, 1);
+    px(ctx, x0 + x, 0, '#4e3220', 6, TILE); px(ctx, x0 + x + 1, 1, '#7a4a2a', 4, TILE - 2); px(ctx, x0 + x + 1, 1, '#c98a5a', 4, 1);
   });
 }
 
@@ -197,21 +199,21 @@ export function tilesTexture(scene) {
   const tex = scene.textures.createCanvas('tiles', TILE * n, TILE);
   const ctx = tex.getContext();
   const at = (i) => i * TILE;
-  grassTile(ctx, at(TILE_IDS.grass), rnd, '#4fae4a', '#3b8f3d', '#7fd06e');
+  grassTile(ctx, at(TILE_IDS.grass), rnd, '#5cc45a', '#45a648', '#8fe07c');
   pathTile(ctx, at(TILE_IDS.path), rnd);
   waterTile(ctx, at(TILE_IDS.water), rnd);
   blit(ctx, TREE, at(TILE_IDS.tree), 0, 2);                       // transparent: drawn on the tree overlay layer
   wallTile(ctx, at(TILE_IDS.wall));
   doorTile(ctx, at(TILE_IDS.door));
-  grassTile(ctx, at(TILE_IDS.flower), rnd, '#4fae4a', '#3b8f3d', '#7fd06e', 3);
+  grassTile(ctx, at(TILE_IDS.flower), rnd, '#5cc45a', '#45a648', '#8fe07c', 3);
   blit(ctx, FLOWERS, at(TILE_IDS.flower), 0, 2);
-  grassTile(ctx, at(TILE_IDS.meadow), rnd, '#6cc85e', '#4fae4a', '#a6ef92', 5);
+  grassTile(ctx, at(TILE_IDS.meadow), rnd, '#7ad36a', '#5cc45a', '#b6f0a4', 5);
   for (let i = 0; i < 3; i++) {
     const x = at(TILE_IDS.meadow) + 2 + Math.floor(rnd() * 26), y = 2 + Math.floor(rnd() * 26);
-    px(ctx, x, y, '#ffffff', 2, 2); px(ctx, x + 1, y + 1, '#ffec27');
+    px(ctx, x, y, '#ffffff', 2, 2); px(ctx, x + 1, y + 1, '#ffc531');
   }
-  grassTile(ctx, at(TILE_IDS.woods), rnd, '#3a8a3a', '#2a6a2a', '#52a44e', 8);
-  for (let i = 0; i < 3; i++) px(ctx, at(TILE_IDS.woods) + Math.floor(rnd() * TILE), Math.floor(rnd() * TILE), '#8a5a34');
+  grassTile(ctx, at(TILE_IDS.woods), rnd, '#3f9a45', '#2f7a36', '#57b25a', 8);
+  for (let i = 0; i < 3; i++) px(ctx, at(TILE_IDS.woods) + Math.floor(rnd() * TILE), Math.floor(rnd() * TILE), '#a06a3e');
   sandTile(ctx, at(TILE_IDS.cove), rnd);
   gateLockedTile(ctx, at(TILE_IDS.gateLocked), rnd);
   gateOpenTile(ctx, at(TILE_IDS.gateOpen), rnd);
@@ -220,19 +222,18 @@ export function tilesTexture(scene) {
   tex.refresh();
 }
 
-/** Round avatar badges for profiles: 'avatar' sheet with AVATAR_COUNT frames of 40x40 showing each character's head. */
+/** Round avatar badges for profiles: 'avatar' sheet with AVATAR_COUNT frames of 80x80 (drawn at 2x, shown at ~40) showing each character's head. */
 export function avatarTexture(scene) {
   if (scene.textures.exists('avatar')) return;
-  const S = 40;
+  const S = 80;
   const tex = scene.textures.createCanvas('avatar', S * AVATAR_COUNT, S);
   const ctx = tex.getContext();
   const head = CHAR_DOWN.slice(0, 9).map((r) => r.slice(3, 13));   // 10 x 9 pixels
   CHARACTER_STYLES.forEach((st, i) => {
     const x0 = i * S;
-    ctx.fillStyle = OUTLINE; ctx.beginPath(); ctx.arc(x0 + S / 2, S / 2, S / 2, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = st.top; ctx.beginPath(); ctx.arc(x0 + S / 2, S / 2, S / 2 - 2, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.beginPath(); ctx.arc(x0 + S / 2, S / 2 - 6, S / 2 - 6, Math.PI, 0); ctx.fill();
-    blit(ctx, head, x0 + 5, 6, 3, charPalette(st));
+    ctx.fillStyle = shade(st.top, 0.82); ctx.beginPath(); ctx.arc(x0 + S / 2, S / 2, S / 2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = st.top; ctx.beginPath(); ctx.arc(x0 + S / 2, S / 2, S / 2 - 3, 0, Math.PI * 2); ctx.fill();
+    blit(ctx, head, x0 + 10, 12, 6, charPalette(st));
     tex.add(i, 0, x0, 0, S, S);
   });
   tex.refresh();
@@ -247,33 +248,36 @@ function star(g, cx, cy, r, color) {
   g.closePath(); g.fillPath();
 }
 
+/** Icons used by the UI, generated at 2x so they stay smooth when scaled. Callers size them with setDisplaySize. */
 export function uiTextures(scene) {
   const g = scene.make.graphics({ add: false });
-  const O = 0x1a1423;
   if (!scene.textures.exists('px')) { g.fillStyle(0xffffff, 1); g.fillRect(0, 0, 2, 2); g.generateTexture('px', 2, 2); g.clear(); }
   if (!scene.textures.exists('star')) {
-    star(g, 24, 25, 23, O); star(g, 24, 24, 20, C.yellow); star(g, 24, 22, 11, 0xfff7a0);
-    g.generateTexture('star', 48, 48); g.clear();
+    star(g, 48, 52, 44, THEME.warningDark); star(g, 48, 48, 44, THEME.gold); star(g, 48, 44, 22, 0xffe08a);
+    g.generateTexture('star', 96, 96); g.clear();
   }
-  if (!scene.textures.exists('star-off')) { star(g, 24, 25, 23, O); star(g, 24, 24, 20, 0x3b3550); g.generateTexture('star-off', 48, 48); g.clear(); }
+  if (!scene.textures.exists('star-off')) { star(g, 48, 48, 44, THEME.starOff); g.generateTexture('star-off', 96, 96); g.clear(); }
   if (!scene.textures.exists('coin')) {
-    g.fillStyle(O, 1); g.fillCircle(12, 12, 12);
-    g.fillStyle(C.orange, 1); g.fillCircle(12, 12, 10.5);
-    g.fillStyle(C.yellow, 1); g.fillCircle(11, 11, 8);
-    g.fillStyle(0xd07a00, 1); g.fillRect(9.5, 6, 3, 10);
-    g.fillStyle(0xffffff, 0.55); g.fillCircle(8, 8, 2);
-    g.generateTexture('coin', 24, 24); g.clear();
+    g.fillStyle(THEME.warningDark, 1); g.fillCircle(24, 24, 24);
+    g.fillStyle(THEME.gold, 1); g.fillCircle(24, 22, 21);
+    g.fillStyle(0xffe08a, 1); g.fillCircle(24, 22, 15);
+    g.fillStyle(THEME.warningDark, 1); g.fillRoundedRect(20, 12, 8, 20, 3);
+    g.fillStyle(0xffffff, 0.7); g.fillCircle(15, 14, 4);
+    g.generateTexture('coin', 48, 48); g.clear();
   }
   if (!scene.textures.exists('joy-base')) {
-    g.fillStyle(0xffffff, 0.18); g.fillCircle(60, 60, 58); g.lineStyle(3, 0xffffff, 0.5); g.strokeCircle(60, 60, 58);
-    g.generateTexture('joy-base', 120, 120); g.clear();
+    g.fillStyle(THEME.ink, 0.12); g.fillCircle(120, 120, 116); g.lineStyle(6, 0xffffff, 0.75); g.strokeCircle(120, 120, 116);
+    g.generateTexture('joy-base', 240, 240); g.clear();
   }
-  if (!scene.textures.exists('joy-thumb')) { g.fillStyle(0xffffff, 0.6); g.fillCircle(26, 26, 24); g.generateTexture('joy-thumb', 52, 52); g.clear(); }
+  if (!scene.textures.exists('joy-thumb')) {
+    g.fillStyle(THEME.ink, 0.12); g.fillCircle(52, 56, 46); g.fillStyle(0xffffff, 0.92); g.fillCircle(52, 52, 46);
+    g.generateTexture('joy-thumb', 104, 104); g.clear();
+  }
   if (!scene.textures.exists('bubble')) {
-    g.fillStyle(O, 1); g.fillRoundedRect(0, 0, 16, 16, 5);
-    g.fillStyle(C.white, 1); g.fillRoundedRect(1, 1, 14, 14, 4);
-    g.fillStyle(C.red, 1); g.fillRect(7, 3, 2, 7); g.fillRect(7, 11, 2, 2);
-    g.generateTexture('bubble', 16, 16); g.clear();
+    g.fillStyle(THEME.ink, 0.15); g.fillRoundedRect(1, 3, 30, 30, 10);
+    g.fillStyle(0xffffff, 1); g.fillRoundedRect(0, 0, 32, 32, 10);
+    g.fillStyle(THEME.danger, 1); g.fillRoundedRect(14, 6, 4, 14, 2); g.fillCircle(16, 25, 2.5);
+    g.generateTexture('bubble', 32, 32); g.clear();
   }
   g.destroy();
 }
@@ -292,5 +296,7 @@ export function generateAllTextures(scene) {
     scene.anims.create({ key: `${key}-up`, frames: scene.anims.generateFrameNumbers(key, { start: 2, end: 3 }), frameRate: 6, repeat: -1 });
     scene.anims.create({ key: `${key}-side`, frames: scene.anims.generateFrameNumbers(key, { start: 4, end: 5 }), frameRate: 6, repeat: -1 });
   });
+  // The game renders anti-aliased (pixelArt: false); pixel-art sheets opt back in to crisp scaling.
+  ['tiles', 'robot', ...sheets].forEach((key) => scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST));
   if (!scene.anims.exists('robot-walk')) scene.anims.create({ key: 'robot-walk', frames: scene.anims.generateFrameNumbers('robot', { start: 0, end: 1 }), frameRate: 8, repeat: -1 });
 }

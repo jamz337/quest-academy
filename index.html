@@ -3,29 +3,41 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
-    <meta name="theme-color" content="#1d2b53" />
+    <meta name="theme-color" content="#fff8ef" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="./icons/icon-192.png" />
     <title>Quest Academy</title>
     <style>
       @font-face { font-family: 'Fredoka'; font-style: normal; font-weight: 400 700; font-display: swap; src: url('./fonts/fredoka-latin.woff2') format('woff2'); }
-      html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #1d2b53; overflow: hidden; }
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #fff8ef; overflow: hidden; }
       body { --sat: env(safe-area-inset-top); --sab: env(safe-area-inset-bottom); --sal: env(safe-area-inset-left); --sar: env(safe-area-inset-right); touch-action: none; overscroll-behavior: none; -webkit-user-select: none; user-select: none;
-             -webkit-tap-highlight-color: transparent; font-family: system-ui, sans-serif; }
+             -webkit-tap-highlight-color: transparent; font-family: 'Fredoka', system-ui, sans-serif; color: #2d2a4a; }
       #app { position: fixed; inset: 0; }
       #app canvas { display: block; }
-      #update-toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #fff;
-        color: #1d2b53; padding: 10px 16px; border-radius: 12px; font-weight: 700; display: none; z-index: 10;
-        box-shadow: 0 4px 16px rgba(0,0,0,.35); }
-      #update-toast button { margin-left: 12px; border: 0; background: #29adff; color: #fff; padding: 6px 12px;
-        border-radius: 8px; font-weight: 700; }
+      /* Loading screen: shown until BootScene starts the first scene. */
+      #splash { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+        background: linear-gradient(180deg, #fff8ef, #fdefe0); transition: opacity .3s ease; }
+      #splash.hide { opacity: 0; pointer-events: none; }
+      #splash .mark { width: 88px; height: 88px; filter: drop-shadow(0 8px 16px rgba(45,42,74,.14)); }
+      #splash .name { font-weight: 700; font-size: 22px; letter-spacing: .01em; }
+      #splash .spin { width: 28px; height: 28px; border-radius: 50%; border: 4px solid #e9e2d8; border-top-color: #3d8bff; animation: spin .8s linear infinite; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      #update-toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #fff; color: #2d2a4a; padding: 10px 12px 10px 16px;
+        border-radius: 14px; font-weight: 600; display: none; z-index: 10; box-shadow: 0 8px 24px rgba(45,42,74,.16); white-space: nowrap; }
+      #update-toast button { margin-left: 12px; border: 0; background: #3d8bff; color: #fff; padding: 8px 14px; border-radius: 10px; font: inherit; font-weight: 600; cursor: pointer; }
+      #update-toast button:active { transform: scale(.97); }
     </style>
   </head>
   <body>
     <div id="app"></div>
+    <div id="splash" aria-hidden="true">
+      <svg class="mark" viewBox="0 0 88 88" aria-hidden="true"><rect width="88" height="88" rx="24" fill="#3d8bff"/><path d="M44 17l8.1 16.5 18.2 2.6-13.2 12.9 3.1 18.1L44 58.5l-16.2 8.6 3.1-18.1-13.2-12.9 18.2-2.6z" fill="#fff"/></svg>
+      <div class="name">Quest Academy</div>
+      <div class="spin"></div>
+    </div>
     <div id="update-toast">Update ready <button id="update-btn">Reload</button></div>
     <script type="module" src="/src/main.js"></script>
   </body>

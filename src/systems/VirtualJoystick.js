@@ -16,8 +16,8 @@ export class VirtualJoystick {
     this.enabled = opts.enabled || (() => true);
     this.pointer = null;
     this.vector = { x: 0, y: 0 };
-    this.base = scene.add.image(0, 0, 'joy-base').setScale(ui).setAlpha(0).setDepth(400).setScrollFactor(0);
-    this.thumb = scene.add.image(0, 0, 'joy-thumb').setScale(ui).setAlpha(0).setDepth(401).setScrollFactor(0);
+    this.base = scene.add.image(0, 0, 'joy-base').setScale(ui * 0.5).setAlpha(0).setDepth(400).setScrollFactor(0);
+    this.thumb = scene.add.image(0, 0, 'joy-thumb').setScale(ui * 0.5).setAlpha(0).setDepth(401).setScrollFactor(0);
     this.onDown = this.onDown.bind(this); this.onMove = this.onMove.bind(this); this.onUp = this.onUp.bind(this);
     this.onGameOut = () => this.release();      // 'gameout' passes (timeStamp, event), not a pointer
     scene.input.on('pointerdown', this.onDown);
