@@ -1,9 +1,14 @@
 import { BaseScene } from './BaseScene.js';
-import { C, SCENES, hex } from '../constants.js';
+import { SCENES } from '../constants.js';
+import { THEME } from '../ui/theme.js';
+import { safeArea } from '../systems/Layout.js';
 import { T, text } from '../ui/TextStyles.js';
-import { button } from '../ui/Button.js';
-import { panel, dimmer } from '../ui/Panel.js';
+import { button, iconButton } from '../ui/Button.js';
+import { panel } from '../ui/Panel.js';
+import { chip } from '../ui/Chip.js';
+import { modal } from '../ui/Modal.js';
 import { toast } from '../ui/Toast.js';
+import { enter } from '../ui/motion.js';
 import { Sfx } from '../systems/Audio.js';
 import { VirtualJoystick } from '../systems/VirtualJoystick.js';
 
@@ -39,6 +44,9 @@ export class HudScene extends BaseScene {
     if (this.joystick) { this.joystick.destroy(); this.joystick = null; }
   }
 
+  /** Dialog and menu animate in when they open; everything else redraws quietly. */
+  enterKey() { return (this.state.dialog ? 'd' + this.state.dialog.idx : '') + (this.state.menuOpen ? 'm' : ''); }
+
   get dialogOpen() { return !!this.state.dialog; }
   get menuOpen() { return this.state.menuOpen; }
   /** True while the world should stand still. */
@@ -50,20 +58,20 @@ export class HudScene extends BaseScene {
   build() {
     const { w, h, ui } = this;
     const s = this.state;
+    const sa = safeArea();
     this.joystick = new VirtualJoystick(this, { enabled: () => !this.blocking });
 
     // Top-left: coins and zone
-    const chipW = 150 * ui, chipH = 34 * ui;
-    panel(this, 10, 10, chipW, chipH, { color: C.panelDark, alpha: 0.85, radius: 12 });
-    this.add.image(10 + 20 * ui, 10 + chipH / 2, 'coin').setDisplaySize(22 * ui, 22 * ui);
-    this.coinText = text(this, 10 + 36 * ui, 10 + chipH / 2, String(s.coins), T.bodyBold(this, C.yellow)).setOrigin(0, 0.5);
-    this.zoneText = text(this, 10, 10 + chipH + 14 * ui, s.zone, { ...T.small(this, C.white), stroke: hex(C.navy), strokeThickness: 4 }).setOrigin(0, 0.5);
+    const chipH = 34 * ui, top = 10 + sa.top, left = 10 + sa.left;
+    this.coinChip = chip(this, left, top + chipH / 2, { text: String(s.coins), icon: 'coin', height: chipH, textColor: THEME.warningDark, fontSize: 15 });
+    this.zoneChip = chip(this, left, top + chipH + 8 + 13 * ui, { text: s.zone, height: 26 * ui, fontSize: 12, textColor: THEME.ink2, shadow: 'none', stroke: THEME.line });
+    this.zoneChip.setVisible(!!s.zone);
 
     // Top-right: menu
-    button(this, w - 10 - 40 * ui, 10 + chipH / 2, 80 * ui, chipH, 'Menu', { color: C.panelDark, fontSize: 15, onClick: () => this.openMenu() });
+    iconButton(this, w - 10 - sa.right - 22 * ui, top + chipH / 2, 44 * ui, '☰', { onClick: () => this.openMenu() });
 
     // Bottom-right: round action button
-    if (!s.dialog && !s.menuOpen) this.buildActionButton(w - 56 * ui, h - 56 * ui, 72 * ui);
+    if (!s.dialog && !s.menuOpen) this.buildActionButton(w - 56 * ui - sa.right, h - 56 * ui - sa.bottom, 72 * ui);
 
     if (s.dialog) this.buildDialog(s.dialog);
     if (s.menuOpen) this.buildMenu();
@@ -72,31 +80,34 @@ export class HudScene extends BaseScene {
   buildActionButton(x, y, size) {
     const r = size / 2;
     const c = this.add.container(x, y).setDepth(300);
-    const shadow = this.add.circle(0, 4, r, 0x000000, 0.35);
-    const face = this.add.circle(0, 0, r, C.red, 1).setStrokeStyle(3, C.white, 0.8);
-    const label = text(this, 0, 0, 'A', { ...T.heading(this, C.white), fontSize: Math.round(r * 0.9) + 'px' });
+    const shadow = this.add.circle(0, 5, r, THEME.shadow.color, 0.18);
+    const face = this.add.circle(0, 0, r, THEME.primary, 1).setStrokeStyle(4, 0xffffff, 0.9);
+    const label = text(this, 0, 0, 'A', { ...T.heading(this, THEME.onAccent), fontSize: Math.round(r * 0.9) + 'px', fontStyle: '700' });
     c.add([shadow, face, label]);
     c.setSize(size, size);
     c.setInteractive();
-    c.on('pointerdown', () => { if (this.blocking) return; this.actionFlag = true; face.setFillStyle(C.purple, 1); c.setScale(0.92); });
-    const up = () => { face.setFillStyle(C.red, 1); c.setScale(1); };
+    c.on('pointerdown', () => { if (this.blocking) return; this.actionFlag = true; face.setFillStyle(THEME.primaryDark, 1); c.setScale(0.92); });
+    const up = () => { face.setFillStyle(THEME.primary, 1); c.setScale(1); };
     c.on('pointerup', up); c.on('pointerout', up);
     this.actionButton = c;
   }
 
   // ---- Coins / zone -------------------------------------------------------------------------
 
-  setCoins(n) { this.state.coins = n; if (this.coinText && this.coinText.active) this.coinText.setText(String(n)); }
-  setZone(name) { this.state.zone = name || ''; if (this.zoneText && this.zoneText.active) this.zoneText.setText(this.state.zone); }
+  setCoins(n) { this.state.coins = n; if (this.coinChip && this.coinChip.active) this.coinChip.setText(String(n)); }
+  setZone(name) {
+    this.state.zone = name || '';
+    if (this.zoneChip && this.zoneChip.active) { this.zoneChip.setText(this.state.zone); this.zoneChip.setVisible(!!this.state.zone); }
+  }
   addCoins(n) { this.setCoins(this.state.coins + n); }
 
   /** Short banner (zone entered, unlock...). */
-  banner(msg, opts = {}) { if (!this.scene.isActive()) return; toast(this, msg, { bg: C.green, y: 74 * this.ui + 20, ...opts }); }
+  banner(msg, opts = {}) { if (!this.scene.isActive()) return; toast(this, msg, { accent: THEME.success, y: 74 * this.ui + 20 + safeArea().top, ...opts }); }
   notify(msg, opts = {}) { if (!this.scene.isActive()) return; toast(this, msg, opts); }
 
   // ---- Dialog ------------------------------------------------------------------------------
 
-  /** { name, lines, onPlay?, onLater?, playLabel? } — Play/Later appear after the last line. */
+  /** { name, lines, onPlay?, onLater?, playLabel? } Play/Later appear after the last line. */
   showDialog(d) {
     this.state.dialog = { name: d.name, lines: d.lines || [], idx: 0, onPlay: d.onPlay || null, onLater: d.onLater || null, playLabel: d.playLabel || 'Play', prompt: d.prompt || null };
     this.actionFlag = false;
@@ -132,23 +143,24 @@ export class HudScene extends BaseScene {
     const { w, h, ui } = this;
     const last = d.idx >= d.lines.length - 1;
     const showButtons = last && !!d.onPlay;
-    const pw = Math.min(w - 20, 520 * ui), ph = (showButtons ? 168 : 120) * ui;
-    const px = (w - pw) / 2, py = h - ph - 14;
-    const g = panel(this, px, py, pw, ph, { color: C.panel, alpha: 0.96, stroke: C.yellow });
+    const pw = Math.min(w - 20, 520 * ui), ph = (showButtons ? 176 : 124) * ui;
+    const px = (w - pw) / 2, py = h - ph - 14 - safeArea().bottom;
+    const g = panel(this, px, py, pw, ph, { shadow: 'lg', radius: THEME.radius.xl });
     g.setDepth(500);
     const zone = this.add.zone(px, py, pw, ph).setOrigin(0).setInteractive({ useHandCursor: true }).setDepth(501);
     zone.on('pointerup', () => { if (!showButtons) this.advanceDialog(); });
-    text(this, px + 16, py + 18 * ui, d.name, T.bodyBold(this, C.yellow)).setOrigin(0, 0.5).setDepth(502);
+    const name = chip(this, px + 16, py + 20 * ui, { text: d.name, color: THEME.primarySoft, textColor: THEME.primaryDark, fontSize: 13, height: 26 * ui, shadow: 'none' }).setDepth(502);
     const line = last && d.prompt ? `${d.lines[d.idx]}\n${d.prompt}` : d.lines[d.idx] || '';
-    text(this, px + 16, py + 36 * ui, line, { ...T.body(this), align: 'left', wordWrap: { width: pw - 32 } }).setOrigin(0, 0).setDepth(502);
+    const body = text(this, px + 16, py + 40 * ui, line, { ...T.body(this), align: 'left', wordWrap: { width: pw - 32 } }).setOrigin(0, 0).setDepth(502);
     if (!showButtons) {
       const hint = last ? 'Tap to close' : 'Tap to continue  ▼';
-      this.add.text(px + pw - 14, py + ph - 10, hint, T.small(this, C.grey)).setOrigin(1, 1).setDepth(502);
+      this.add.text(px + pw - 14, py + ph - 10, hint, T.small(this, THEME.ink3)).setOrigin(1, 1).setDepth(502);
     } else {
-      const bw = Math.min((pw - 48) / 2, 180 * ui), bh = 44 * ui, by = py + ph - 32 * ui;
-      button(this, px + pw / 2 - bw / 2 - 8, by, bw, bh, 'Later', { color: C.dark, fontSize: 17, onClick: () => this.closeDialog() }).setDepth(502);
-      button(this, px + pw / 2 + bw / 2 + 8, by, bw, bh, d.playLabel, { color: C.lime, textColor: C.navy, fontSize: 17, onClick: () => this.play() }).setDepth(502);
+      const bw = Math.min((pw - 48) / 2, 180 * ui), bh = 46 * ui, by = py + ph - 34 * ui;
+      button(this, px + pw / 2 - bw / 2 - 8, by, bw, bh, 'Later', { variant: 'ghost', fontSize: 17, onClick: () => this.closeDialog() }).setDepth(502);
+      button(this, px + pw / 2 + bw / 2 + 8, by, bw, bh, d.playLabel, { variant: 'primary', fontSize: 17, onClick: () => this.play() }).setDepth(502);
     }
+    enter(this, [g, name, body], { from: 'up', distance: 16, stagger: 0 });
   }
 
   play() {
@@ -175,15 +187,13 @@ export class HudScene extends BaseScene {
   }
 
   buildMenu() {
-    const { w, h, ui } = this;
-    dimmer(this, 0.6).setDepth(600);
-    const pw = Math.min(w - 40, 320 * ui), ph = 290 * ui;
-    panel(this, w / 2 - pw / 2, h / 2 - ph / 2, pw, ph, { color: C.panel, stroke: C.blue }).setDepth(601);
-    text(this, w / 2, h / 2 - ph / 2 + 36 * ui, 'Paused', T.heading(this, C.yellow)).setDepth(602);
-    const bw = pw - 48, bh = 50 * ui;
-    button(this, w / 2, h / 2 - 40 * ui, bw, bh, 'Resume', { color: C.lime, textColor: C.navy, onClick: () => this.closeMenu() }).setDepth(602);
-    button(this, w / 2, h / 2 + 22 * ui, bw, bh, 'Challenge Mode', { color: C.orange, textColor: C.navy, onClick: () => this.leaveTo(SCENES.ChallengeMenu) }).setDepth(602);
-    button(this, w / 2, h / 2 + 84 * ui, bw, bh, 'Home', { color: C.red, onClick: () => this.leaveTo(SCENES.ModeSelect) }).setDepth(602);
+    const { w, ui } = this;
+    const m = modal(this, { w: 320 * ui, h: 300 * ui, title: 'Paused', accent: THEME.primary, depth: 600, dimAlpha: 0.45 });
+    const bw = m.w - 48, bh = 50 * ui;
+    let y = m.contentTop + 12 * ui + bh / 2;
+    button(this, w / 2, y, bw, bh, 'Resume', { variant: 'primary', onClick: () => this.closeMenu() }).setDepth(603); y += bh + 12;
+    button(this, w / 2, y, bw, bh, 'Challenge Mode', { variant: 'subject', subject: 'code', onClick: () => this.leaveTo(SCENES.ChallengeMenu) }).setDepth(603); y += bh + 12;
+    button(this, w / 2, y, bw, bh, 'Home', { variant: 'secondary', onClick: () => this.leaveTo(SCENES.ModeSelect) }).setDepth(603);
   }
 
   /** Stop the world (which saves its position on shutdown) and this Hud, then start another screen. */

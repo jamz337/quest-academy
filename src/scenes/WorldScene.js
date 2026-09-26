@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { C, SCENES, TILE } from '../constants.js';
+import { SCENES, TILE } from '../constants.js';
+import { THEME } from '../ui/theme.js';
 import * as Store from '../systems/Store.js';
 import * as Launcher from '../systems/MinigameLauncher.js';
 import { unlockedZones } from '../systems/Progression.js';
@@ -283,14 +284,14 @@ export class WorldScene extends Phaser.Scene {
     if (firstTalk) {
       Sfx.coin();
       hud.setCoins(Store.getProfile().coins);
-      hud.notify(`+${HELLO_COINS} coins for saying hello!`, { bg: C.orange, icon: 'coin' });
+      hud.notify(`+${HELLO_COINS} coins for saying hello!`, { icon: 'coin' });
     }
   }
 
   playGame(npc) {
     const game = getGame(npc.gameId);
     if (!game || !this.scene.get(game.sceneKey)) {
-      this.say(`${game ? game.title : 'That game'} is coming soon!`, { bg: C.purple });
+      this.say(`${game ? game.title : 'That game'} is coming soon!`, { accent: THEME.brand });
       return;
     }
     this.stopPlayer();
@@ -311,7 +312,7 @@ export class WorldScene extends Phaser.Scene {
       const tile = this.layer.getTileAt(tx + ox, ty + oy);
       if (!tile || tile.index !== TID.gateLocked) continue;
       const gate = this.map.gates.find((g) => g.tx === tile.x && g.ty === tile.y);
-      if (gate) { Sfx.pop(); this.say(GATE_HINTS[gate.zone] || 'This gate is locked.', { bg: C.dark, icon: 'star' }); return; }
+      if (gate) { Sfx.pop(); this.say(GATE_HINTS[gate.zone] || 'This gate is locked.', { accent: THEME.ink3 }); return; }
     }
   }
 
@@ -337,7 +338,7 @@ export class WorldScene extends Phaser.Scene {
       const isOpen = tile && tile.index === TID.gateOpen;
       if (open.includes(g.zone) && !isOpen) {
         this.layer.putTileAt(TID.gateOpen, g.tx, g.ty);
-        if (announce) { Sfx.unlock(); this.say(`${ZONE_NAMES[g.zone]} is open!`, { bg: C.green, icon: 'star' }); }
+        if (announce) { Sfx.unlock(); this.say(`${ZONE_NAMES[g.zone]} is open!`, { icon: 'star', accent: THEME.success }); }
       }
     }
   }
