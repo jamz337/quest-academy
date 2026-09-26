@@ -1,7 +1,7 @@
 import { BaseScene } from './BaseScene.js';
 import { SCENES } from '../constants.js';
 import { THEME } from '../ui/theme.js';
-import { safeArea } from '../systems/Layout.js';
+import { safeArea, grid } from '../systems/Layout.js';
 import { T, text } from '../ui/TextStyles.js';
 import { button, iconButton } from '../ui/Button.js';
 import { panel } from '../ui/Panel.js';
@@ -24,7 +24,7 @@ export class HudScene extends BaseScene {
   constructor() { super(SCENES.Hud); }
 
   create(data) {
-    this.state = { coins: 0, zone: '', zoneId: null, dialog: null, menuOpen: false, menuPage: 'menu' };
+    this.state = { coins: 0, zone: '', zoneId: null, dialog: null, encounter: null, menuOpen: false, menuPage: 'menu' };
     this.actionFlag = false;
     super.create(data);
     this.scene.bringToTop();
@@ -49,12 +49,15 @@ export class HudScene extends BaseScene {
   }
 
   /** Dialog and menu animate in when they open; everything else redraws quietly. */
-  enterKey() { return (this.state.dialog ? 'd' + this.state.dialog.idx : '') + (this.state.menuOpen ? 'm' + this.state.menuPage : ''); }
+  enterKey() {
+    const s = this.state;
+    return (s.dialog ? 'd' + s.dialog.idx : '') + (s.menuOpen ? 'm' + s.menuPage : '') + (s.encounter ? 'e' + s.encounter.kind + (s.encounter.picked ?? '') : '');
+  }
 
   get dialogOpen() { return !!this.state.dialog; }
   get menuOpen() { return this.state.menuOpen; }
   /** True while the world should stand still. */
-  get blocking() { return this.dialogOpen || this.menuOpen; }
+  get blocking() { return this.dialogOpen || this.menuOpen || !!this.state.encounter; }
 
   /** Returns true once per press of the action button (or a tap on the dialog). */
   takeAction() { const a = this.actionFlag; this.actionFlag = false; return a; }
@@ -75,10 +78,76 @@ export class HudScene extends BaseScene {
     iconButton(this, w - 10 - sa.right - 22 * ui, top + chipH / 2, 44 * ui, '☰', { onClick: () => this.openMenu() });
 
     // Bottom-right: round action button
-    if (!s.dialog && !s.menuOpen) this.buildActionButton(w - 56 * ui - sa.right, h - 56 * ui - sa.bottom, 72 * ui);
+    if (!s.dialog && !s.menuOpen && !s.encounter) this.buildActionButton(w - 56 * ui - sa.right, h - 56 * ui - sa.bottom, 72 * ui);
 
     if (s.dialog) this.buildDialog(s.dialog);
+    if (s.encounter) this.buildEncounter(s.encounter);
     if (s.menuOpen) this.buildMenu();
+  }
+
+  // ---- Grass encounters ---------------------------------------------------------------------
+
+  /** { kind: 'quiz'|'chest'|'gift', q?, coins?, gift?, subject?, onAnswer?(right), onClose? } */
+  showEncounter(e) {
+    this.state.encounter = { ...e, picked: null, right: null };
+    this.actionFlag = false;
+    if (this.joystick) this.joystick.release();
+    this.rebuild();
+  }
+
+  closeEncounter() {
+    const e = this.state.encounter;
+    this.state.encounter = null;
+    this.rebuild();
+    if (e && e.onClose) e.onClose();
+  }
+
+  buildEncounter(e) {
+    const { w, ui } = this;
+    const quiz = e.kind === 'quiz';
+    const accent = quiz ? THEME.subjects[e.subject]?.accent ?? THEME.primary : e.kind === 'chest' ? THEME.gold : THEME.pink;
+    const title = quiz ? 'Pop quiz!' : e.kind === 'chest' ? 'Treasure chest!' : 'Mystery gift!';
+    const mw = Math.min(w - 24, 440 * ui);
+    const bh = 44 * ui, gap = 8, cols = 2;
+    const rows = quiz ? Math.ceil(e.q.choices.length / cols) : 0;
+    // Quiz prompts vary from one line to a short program listing, so the modal is sized from the measured text.
+    const lines = quiz ? e.q.prompt.split('\n').length : 0;
+    const prompt = quiz ? text(this, 0, 0, e.q.prompt, { ...T.at(this, lines > 6 ? 13 : e.q.prompt.length > 60 || lines > 3 ? 15 : 18, THEME.ink, { fontStyle: '700' }), align: 'center', wordWrap: { width: mw - 48 } }).setOrigin(0.5, 0).setDepth(603) : null;
+    const mh = quiz ? 68 * ui + 8 * ui + prompt.height + 20 * ui + rows * bh + (rows - 1) * gap + 14 * ui + 28 * ui + 74 * ui : 250 * ui;
+    const m = modal(this, { w: mw, h: mh, title, accent, depth: 600, dimAlpha: 0.4 });
+    let y = m.contentTop;
+    if (quiz) {
+      const q = e.q;
+      prompt.setPosition(w / 2, y + 8 * ui);
+      y += prompt.height + 20 * ui;
+      const cells = grid({ x: m.x + 24, y, w: m.w - 48, h: rows * bh + (rows - 1) * gap }, cols, rows, gap);
+      q.choices.forEach((choice, i) => {
+        const c = cells[i];
+        const opts = { variant: 'secondary', fontSize: choice.length > 14 ? 14 : 17, radius: THEME.radius.sm, onClick: () => this.answerEncounter(i) };
+        if (e.picked !== null) { if (choice === q.answer) opts.variant = 'success'; else if (i === e.picked) opts.variant = 'danger'; }
+        button(this, c.x, c.y, c.w, c.h, choice, opts).setDepth(603);
+      });
+      y += rows * bh + (rows - 1) * gap + 14 * ui;
+      if (e.picked !== null) {
+        const msg = e.right ? `Correct!  +${e.reward.coins} coins  +${e.reward.xp} XP` : `The answer was ${q.answer}. No harm done!`;
+        text(this, w / 2, y, msg, T.bodyBold(this, e.right ? THEME.successDark : THEME.ink2)).setDepth(603);
+      }
+    } else {
+      const msg = e.kind === 'chest' ? `You found ${e.coins} coins hidden in the grass!` : `${e.gift.title}\n${e.gift.desc}`;
+      text(this, w / 2, y + 30 * ui, msg, { ...T.bodyBold(this), align: 'center', wordWrap: { width: m.w - 48 } }).setDepth(603);
+    }
+    if (!quiz || e.picked !== null) {
+      button(this, w / 2, m.y + m.h - 38 * ui, Math.min(m.w - 48, 200 * ui), 46 * ui, 'Continue', { variant: 'primary', onClick: () => this.closeEncounter() }).setDepth(603);
+    }
+  }
+
+  answerEncounter(i) {
+    const e = this.state.encounter;
+    if (!e || e.picked !== null) return;
+    e.picked = i; e.right = e.q.choices[i] === e.q.answer;
+    if (e.right) Sfx.correct(); else Sfx.wrong();
+    if (e.onAnswer) e.onAnswer(e.right);
+    this.rebuild();
   }
 
   buildActionButton(x, y, size) {

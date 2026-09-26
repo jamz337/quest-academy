@@ -1,7 +1,7 @@
 // Every star, coin, XP, badge, mastery and unlock rule lives here so the games stay simple.
 import { BADGES } from '../data/badges.js';
 import { gamesForSubject } from '../data/minigames.js';
-import { bossDefeated } from '../data/world/quests.js';
+import { ZONE_ORDER } from '../data/world/quests.js';
 
 // ---- Mastery: the better a player does in a subject, the harder its games get ----------------
 export const MASTERY_MAX = 3;
@@ -57,18 +57,8 @@ export function starsForMaze({ solved, blocksUsed, par, attempts }) {
 export const subjectBestStars = (profile, subject) =>
   gamesForSubject(subject).reduce((s, g) => s + (profile.games[g.id]?.bestStars || 0), 0);
 
-/**
- * Which roam zones this profile may enter: a zone opens when the previous zone's boss is beaten. Zones
- * already unlocked under the old star rule stay open.
- */
-export function unlockedZones(profile) {
-  const stored = profile?.world?.unlockedZones || [];
-  const zones = ['math'];
-  if (bossDefeated(profile, 'math') || stored.includes('words')) zones.push('words');
-  if (bossDefeated(profile, 'words') || stored.includes('code')) zones.push('code');
-  if (bossDefeated(profile, 'code') || stored.includes('bible')) zones.push('bible');
-  return zones;
-}
+/** Every village is open to roam; only each zone's boss is gated, behind its quests (see quests.js bossReady). */
+export function unlockedZones() { return [...ZONE_ORDER]; }
 
 /** Score a boss fight. raw: { won, hpLeft, heartsLeft, correct, total }. Stars come from hearts kept. */
 function applyBossResult(profile, payload, raw, result) {
@@ -103,8 +93,10 @@ export function applyResult(profile, payload, raw) {
   const isCoding = raw.stars !== undefined && raw.stars !== null;
   const stars = isCoding ? raw.stars : starsFromAccuracy(raw.correct, raw.total);
   const timeBonus = raw.parTimeMs && raw.timeMs && raw.timeMs <= raw.parTimeMs ? 20 : 0;
-  const coins = raw.coins ?? (isCoding ? stars * 10 : (raw.correct || 0) * 2 + stars * 5);
+  let coins = raw.coins ?? (isCoding ? stars * 10 : (raw.correct || 0) * 2 + stars * 5);
   const xp = raw.xp ?? (isCoding ? stars * 40 : (raw.correct || 0) * 10 + stars * 15 + timeBonus);
+  // A Golden Ticket (found in the grass) doubles the coins of the next game, then is spent.
+  if (profile.charms?.doubleCoins) { coins *= 2; result.doubledCoins = true; delete profile.charms.doubleCoins; }
   const score = raw.score ?? (raw.correct || 0) * 10 + stars * 20 + (timeBonus ? 10 : 0);
   Object.assign(result, { stars, coins, xp, score, timeBonus, passed: stars >= 1 });
 
@@ -135,12 +127,9 @@ export function applyResult(profile, payload, raw) {
   return finishResult(profile, result);
 }
 
-/** Zone unlocks and badges, shared by games and boss fights. */
+/** Badges, shared by games and boss fights. */
 function finishResult(profile, result) {
-  const before = new Set(profile.world.unlockedZones || ['math']);
-  const now = unlockedZones(profile);
-  result.newUnlocks = now.filter((z) => !before.has(z));
-  profile.world.unlockedZones = now;
+  profile.world.unlockedZones = unlockedZones();
 
   // Badges
   result.newBadges = [];

@@ -27,13 +27,6 @@ export const BUILDING_STYLES = {
 
 export const ZONE_NAMES = { hub: 'Academy Hub', math: 'Math Meadow', words: 'Word Woods', code: 'Code Cove', bible: 'Bible Village' };
 
-/** Fallback locked-gate wording; quests.js gateHint() gives the live version. */
-export const GATE_HINTS = {
-  words: 'Defeat the Math Meadow boss to open Word Woods',
-  code: 'Defeat the Word Woods boss to open Code Cove',
-  bible: 'Defeat the Code Cove boss to open Bible Village'
-};
-
 function fillRect(data, x, y, w, h, id) {
   for (let ty = y; ty < y + h; ty++) for (let tx = x; tx < x + w; tx++) {
     if (ty >= 0 && ty < H && tx >= 0 && tx < W) data[ty][tx] = id;
@@ -132,9 +125,9 @@ export function buildMap() {
   bossSpots.code = castle('code', 6, 29); fillRect(data, 6, 33, 5, 1, TID.path);
   bossSpots.bible = castle('bible', 48, 20); fillRect(data, 48, 24, 5, 2, TID.path);
 
-  // Gates: the only way into Word Woods, Code Cove and Bible Village.
+  // Archways into Word Woods, Code Cove and Bible Village: always open, every village can be explored.
   const gates = [{ zone: 'words', tx: 36, ty: 13 }, { zone: 'code', tx: 24, ty: 28 }, { zone: 'bible', tx: 37, ty: 17 }];
-  for (const g of gates) data[g.ty][g.tx] = TID.gateLocked;
+  for (const g of gates) data[g.ty][g.tx] = TID.gateOpen;
 
   // Houses in the neighbourhood's style and the villager who stands in front of each one.
   const npcSpots = {};

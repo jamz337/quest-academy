@@ -12,6 +12,9 @@ import { chip } from '../ui/Chip.js';
 import { ProgressBar } from '../ui/ProgressBar.js';
 import { enter } from '../ui/motion.js';
 import * as Cloud from '../systems/Cloud.js';
+import { claimStreak, currentStreak } from '../systems/Streak.js';
+import { toast } from '../ui/Toast.js';
+import { Sfx } from '../systems/Audio.js';
 import { resolveLook } from '../data/avatars.js';
 import { badgeTexture } from '../systems/Textures.js';
 
@@ -21,10 +24,24 @@ const EMOJI = { map: '\u{1F5FA}️', trophy: '\u{1F3C6}', medal: '\u{1F3C5}', cl
 export class ModeSelectScene extends BaseScene {
   constructor() { super(SCENES.ModeSelect); this.fade = true; }
 
+  /** First visit of the day: bank the streak bonus and say so (once; rebuilds on resize must not repeat it). */
+  claimDailyStreak(p) {
+    let claim = null;
+    Store.updateProfile((prof) => { claim = claimStreak(prof); });
+    if (!claim || !claim.claimed || this.streakShown) return;
+    this.streakShown = true;
+    this.time.delayedCall(700, () => {
+      Sfx.coin();
+      toast(this, `${claim.count > 1 ? `🔥 Day ${claim.count} streak!` : 'Welcome back!'}  +${claim.coins} coins`, { icon: 'coin', accent: THEME.warning });
+      if (claim.count > 1) this.rebuild();   // the profile card shows the streak; coins are read fresh on rebuild
+    });
+  }
+
   build() {
     const { w, h, ui } = this;
     const p = Store.getProfile();
     if (!p) return this.scene.start(SCENES.Profile);
+    this.claimDailyStreak(p);
     background(this, { accent: THEME.primary, accent2: THEME.subjects.code.accent });
     const top0 = safeArea().top;
     const title = text(this, w / 2, top0 + 40 * ui, 'Quest Academy', T.display(this));
@@ -38,7 +55,8 @@ export class ModeSelectScene extends BaseScene {
     pc.add(this.add.circle(ax, 0, 30 * ui, THEME.primarySoft));
     pc.add(this.add.image(ax, 0, badgeTexture(this, resolveLook(p))).setDisplaySize(52 * ui, 52 * ui));
     pc.add(this.add.text(tx, -16 * ui, `${p.name}  ·  Grade ${p.grade}`, T.bodyBold(this)).setOrigin(0, 0.5));
-    pc.add(this.add.text(tx, 8 * ui, `Level ${lvl}`, T.small(this, THEME.ink2)).setOrigin(0, 0.5));
+    const streak = currentStreak(p);
+    pc.add(this.add.text(tx, 8 * ui, `Level ${lvl}${streak > 1 ? `  ·  🔥 ${streak}-day streak` : ''}`, T.small(this, THEME.ink2)).setOrigin(0, 0.5));
     pc.add(new ProgressBar(this, tx + 56 * ui + 55 * ui, 8 * ui, 110 * ui, 8 * ui, { value: (p.xp - lo) / (hi - lo), color: THEME.primary }));
     pc.add(chip(this, chipW / 2 - 14 * ui, 0, { text: String(p.coins), icon: 'coin', color: THEME.warningSoft, textColor: THEME.warningDark, originX: 1, shadow: 'none' }));
 

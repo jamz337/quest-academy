@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { newProfile } from '../src/systems/SaveSystem.js';
 import { mastery, effectiveGrade, updateMastery, unlockedZones, applyResult, MASTERY_MAX } from '../src/systems/Progression.js';
-import { zoneQuests, bossReady, gateHint, activeZone, bossDefeated, ZONE_ORDER } from '../src/data/world/quests.js';
+import { zoneQuests, bossReady, activeZone, bossDefeated, ZONE_ORDER } from '../src/data/world/quests.js';
 import { BOSSES, bossForZone } from '../src/data/world/bosses.js';
 import { NPCS } from '../src/data/world/npcs.js';
 import { gamesForSubject } from '../src/data/minigames.js';
@@ -11,11 +11,6 @@ import { tuningFor } from '../src/data/grades.js';
 import { Rng } from '../src/systems/Rng.js';
 
 const key = (s) => `${s.tx},${s.ty}`;
-const withGatesOpen = (map, zones) => {
-  const data = map.data.map((r) => r.slice());
-  for (const g of map.gates) if (zones.includes(g.zone)) data[g.ty][g.tx] = TID.gateOpen;
-  return { ...map, data };
-};
 
 describe('mastery', () => {
   it('starts at zero and only moves after two strong or two weak games in a row', () => {
@@ -78,31 +73,32 @@ describe('zone quests', () => {
     p.world.coinsCollected = map.coins.map((c, i) => (zoneAt(map, c.tx, c.ty) === 'math' ? i : -1)).filter((i) => i >= 0);
     expect(bossReady(p, 'math')).toBe(true);
     expect(bossReady(p, 'words')).toBe(false);
-    expect(gateHint(p, 'words')).toContain('Count Chaos');
-    expect(gateHint(newProfile({ name: 'B' }), 'words')).toContain('quests');
   });
 
-  it('beating a boss opens the next zone and keeps old star unlocks', () => {
+  it('every village is open from the start; beating a boss clears its zone', () => {
     const p = newProfile({ name: 'A', grade: 3 });
-    expect(unlockedZones(p)).toEqual(['math']);
+    expect(unlockedZones(p)).toEqual(ZONE_ORDER);
     const r = applyResult(p, { gameId: 'boss-math', subject: 'math', band: 'A', boss: bossForZone('math') }, { won: true, heartsLeft: 2, hpLeft: 0, correct: 8, total: 9, timeMs: 1 });
     expect(r.stars).toBe(2);
     expect(r.passed).toBe(true);
-    expect(r.newUnlocks).toEqual(['words']);
     expect(bossDefeated(p, 'math')).toBe(true);
     expect(p.world.bosses.math.attempts).toBe(1);
     expect(p.badges).toContain('boss-1');
-    expect(unlockedZones(p)).toEqual(['math', 'words']);
     expect(activeZone(p)).toBe('words');
     const lost = applyResult(p, { gameId: 'boss-words', subject: 'words', band: 'A', boss: bossForZone('words') }, { won: false, heartsLeft: 0, hpLeft: 3, correct: 5, total: 8, timeMs: 1 });
     expect(lost.stars).toBe(0);
-    expect(unlockedZones(p)).toEqual(['math', 'words']);
-    const legacy = newProfile({ name: 'L' });
-    legacy.world.unlockedZones = ['math', 'words', 'code'];
-    expect(unlockedZones(legacy)).toEqual(['math', 'words', 'code']);
+    expect(bossDefeated(p, 'words')).toBe(false);
+    expect(unlockedZones(p)).toEqual(ZONE_ORDER);
   });
 
-  it('every zone has a boss whose arena is walkable, in its zone, and reachable once the gate is open', () => {
+  it('the Explorer badge needs a hello in every village', () => {
+    const p = newProfile({ name: 'A', grade: 3 });
+    p.world.npcsTalked = ['prof-plus', 'owl-librarian', 'robo-mechanic', 'shepherd'];
+    applyResult(p, { gameId: 'math-dash', subject: 'math', band: 'A' }, { correct: 5, total: 10, timeMs: 1 });
+    expect(p.badges).toContain('explorer');
+  });
+
+  it('every zone has a boss whose arena is walkable, in its zone, and reachable from spawn', () => {
     const map = buildMap();
     for (const z of ZONE_ORDER) {
       const spot = map.bossSpots[z];
@@ -111,10 +107,7 @@ describe('zone quests', () => {
       expect(isWalkable(map.data[spot.ty][spot.tx])).toBe(true);
       expect(zoneAt(map, spot.tx, spot.ty)).toBe(z);
     }
-    const locked = reachableFrom(map);
-    expect(locked.has(key(map.bossSpots.math))).toBe(true);
-    expect(locked.has(key(map.bossSpots.words))).toBe(false);
-    const all = reachableFrom(withGatesOpen(map, ['words', 'code', 'bible']));
+    const all = reachableFrom(map);
     for (const z of ZONE_ORDER) expect(all.has(key(map.bossSpots[z])), z).toBe(true);
     for (const c of map.coins) expect(all.has(key(c))).toBe(true);
   });

@@ -48,19 +48,6 @@ export function zoneQuests(profile, zone) {
 /** True once every non-boss quest in the zone is complete. */
 export const bossReady = (profile, zone) => zoneQuests(profile, zone).filter((q) => q.id !== 'boss').every((q) => q.done);
 
-/** Zone whose gate `zone` opens (the previous zone in ZONE_ORDER), or null for the first zone. */
-export const zoneBefore = (zone) => ZONE_ORDER[ZONE_ORDER.indexOf(zone) - 1] || null;
-
-/** Locked-gate message: what the player still has to do to open `zone`. */
-export function gateHint(profile, zone) {
-  const prev = zoneBefore(zone);
-  const boss = prev && bossForZone(prev);
-  if (!boss) return 'This gate is locked.';
-  if (bossReady(profile, prev)) return `Defeat ${boss.name} in ${ZONE_NAMES[prev]} to open ${ZONE_NAMES[zone]}`;
-  const left = zoneQuests(profile, prev).filter((q) => !q.done && q.id !== 'boss');
-  return `Finish the ${ZONE_NAMES[prev]} quests to wake its boss: ${left.map((q) => q.title.toLowerCase()).join(', ')}`;
-}
-
 /** The zone the player is working on: the first in order that is not cleared, else the last. */
 export function activeZone(profile) {
   return ZONE_ORDER.find((z) => !bossDefeated(profile, z)) || ZONE_ORDER[ZONE_ORDER.length - 1];

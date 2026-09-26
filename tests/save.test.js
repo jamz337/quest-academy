@@ -23,7 +23,7 @@ describe('save system', () => {
     const old = { version: 0, profiles: { x: { id: 'x', name: 'Old', grade: 2, coins: 0, xp: 0 } } };
     const m = migrate(old);
     expect(m.version).toBe(1);
-    expect(m.profiles.x.world.unlockedZones).toEqual(['math']);
+    expect(m.profiles.x.world.unlockedZones).toEqual(['math', 'words', 'code', 'bible']);
     expect(m.settings.sound).toBe(true);
   });
 
@@ -52,8 +52,7 @@ describe('progression', () => {
     expect(r.xp).toBe(90 + 45 + 20);
     expect(p.games['math-dash'].bestStars).toBe(3);
     expect(r.newBadges).toContain('first-win');
-    expect(unlockedZones(p)).toEqual(['math']);   // Word Woods opens when the meadow boss is beaten (see quests.test.js)
-    expect(r.newUnlocks).toEqual([]);
+    expect(unlockedZones(p)).toEqual(['math', 'words', 'code', 'bible']);   // every village is open; bosses are gated by quests
     // Worse replay does not lower the best
     applyResult(p, payload, { correct: 2, total: 10, timeMs: 50000 });
     expect(p.games['math-dash'].bestStars).toBe(3);

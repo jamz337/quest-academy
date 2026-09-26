@@ -70,12 +70,12 @@ export class ResultsScene extends BaseScene {
     if (result.total !== undefined) line('Correct answers', `${result.correct} / ${result.total}`);
     if (boss) {
       line('Boss health left', `${result.hpLeft} / ${boss.hp}`, result.won ? THEME.successDark : THEME.danger);
-      line('Hearts left', '♥'.repeat(result.heartsLeft || 0) + '♡'.repeat(boss.hearts - (result.heartsLeft || 0)), THEME.danger);
+      line('Hearts left', '♥'.repeat(result.heartsLeft || 0) + '♡'.repeat(Math.max(0, (result.maxHearts || boss.hearts) - (result.heartsLeft || 0))), THEME.danger);
     }
     if (result.levelId) line('Level', `${result.levelId}${result.solved ? '  solved' : ''}`, result.solved ? THEME.successDark : THEME.danger);
     if (result.blocksUsed !== undefined && result.par !== undefined) line('Blocks used', `${result.blocksUsed}  (par ${result.par})`);
     line('Time', formatTime(result.timeMs) + (result.timeBonus ? '  ⚡ bonus' : ''), result.timeBonus ? THEME.successDark : THEME.ink);
-    line('Coins earned', `+${result.coins}`, THEME.warningDark);
+    line(result.doubledCoins ? 'Coins earned  🎫 doubled!' : 'Coins earned', `+${result.coins}`, THEME.warningDark);
     line('XP earned', `+${result.xp}`, THEME.successDark);
     if (result.newBest) { chip(this, w / 2, y, { text: '★ New best score!', originX: 0.5, color: THEME.warningSoft, textColor: THEME.warningDark, shadow: 'none' }); y += 30 * ui; }
     if (result.missedSkills && result.missedSkills.length) {

@@ -93,6 +93,15 @@ const ROBOT = [
 ];
 const ROBOT2 = ROBOT.map((r, i) => (i >= 12 && i <= 14 ? '...kddk..kddk...' : r));
 
+// The wandering sheep (faces left; flipX for right). Two walk frames swap the legs.
+const SHEEP = [
+  '................', '.....wwwwww.....', '....wwwwwwww....', '...wwwwwwwwww...',
+  '..kkwwwwwwwwww..', '.kkkkwwwwwwwwww.', '.kckkwwwwwwwwww.', '.kkkkwwwwwwwwww.',
+  '..kkwwwwwwwwwww.', '...wwwwwwwwwww..', '....wwwwwwwww...', '....kk...kk.....',
+  '....kk...kk.....', '....xxxxxxxx....', '................', '................'
+];
+const SHEEP2 = SHEEP.map((r, i) => (i === 11 || i === 12 ? '...kk.....kk....' : r));
+
 const TREE = [
   '......kkkk......', '....kkGGGGkk....', '...kGGgGGGGGk...', '..kGgggGGGGGDk..',
   '..kGgGGGGGGGDk..', '.kGGGGGGGGGDDDk.', '.kGgGGGGGGGDDDk.', '.kGGGGGGGGDDDDk.',
@@ -417,6 +426,13 @@ export function uiTextures(scene) {
     g.fillStyle(THEME.ink, 0.12); g.fillCircle(52, 56, 46); g.fillStyle(0xffffff, 0.92); g.fillCircle(52, 52, 46);
     g.generateTexture('joy-thumb', 104, 104); g.clear();
   }
+  if (!scene.textures.exists('sparkle')) {
+    // Four-point glint: white with a gold core, drawn at 2x.
+    const pts = (r, q) => [[24, 24 - r], [24 + q, 24 - q], [24 + r, 24], [24 + q, 24 + q], [24, 24 + r], [24 - q, 24 + q], [24 - r, 24], [24 - q, 24 - q]];
+    const poly = (list, color) => { g.fillStyle(color, 1); g.beginPath(); list.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); g.fillPath(); };
+    poly(pts(24, 5), 0xffffff); poly(pts(14, 3), THEME.gold);
+    g.generateTexture('sparkle', 48, 48); g.clear();
+  }
   if (!scene.textures.exists('bubble')) {
     g.fillStyle(THEME.ink, 0.15); g.fillRoundedRect(1, 3, 30, 30, 10);
     g.fillStyle(0xffffff, 1); g.fillRoundedRect(0, 0, 32, 32, 10);
@@ -433,9 +449,11 @@ export function generateAllTextures(scene) {
   CHARACTER_STYLES.forEach((st, i) => characterTexture(scene, `char${i}`, st));
   NPC_STYLES.forEach((st, i) => characterTexture(scene, `npc${i}`, st));
   pixelTexture(scene, 'robot', [ROBOT, ROBOT2]);
+  pixelTexture(scene, 'sheep', [SHEEP, SHEEP2]);
+  if (!scene.anims.exists('sheep-walk')) scene.anims.create({ key: 'sheep-walk', frames: scene.anims.generateFrameNumbers('sheep', { start: 0, end: 1 }), frameRate: 5, repeat: -1 });
   const sheets = [...CHARACTER_STYLES.map((_, i) => `char${i}`), ...NPC_STYLES.map((_, i) => `npc${i}`)];
   sheets.forEach((key) => walkAnims(scene, key));
   // The game renders anti-aliased (pixelArt: false); pixel-art sheets opt back in to crisp scaling.
-  ['tiles', 'robot', ...sheets].forEach((key) => scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST));
+  ['tiles', 'robot', 'sheep', ...sheets].forEach((key) => scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST));
   if (!scene.anims.exists('robot-walk')) scene.anims.create({ key: 'robot-walk', frames: scene.anims.generateFrameNumbers('robot', { start: 0, end: 1 }), frameRate: 8, repeat: -1 });
 }

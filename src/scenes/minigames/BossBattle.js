@@ -9,6 +9,7 @@ import { card } from '../../ui/Card.js';
 import { ProgressBar } from '../../ui/ProgressBar.js';
 import { enter } from '../../ui/motion.js';
 import { Sfx } from '../../systems/Audio.js';
+import * as Store from '../../systems/Store.js';
 
 const POOL = 24;   // more than any fight can use: hp + hearts − 1 questions at most
 
@@ -21,10 +22,12 @@ export class BossBattle extends MinigameScene {
 
   initState() {
     const boss = this.payload.boss;
+    // A Lucky Charm found in the grass adds a heart to this fight and is spent when it ends.
+    const charm = !!Store.getProfile()?.charms?.extraHeart;
     return {
       questions: bossQuestions(boss.subject, this.payload.grade, this.rng, POOL),
-      idx: 0, correct: 0, hp: boss.hp, hearts: boss.hearts, locked: false, picked: null, hit: null,
-      qStart: Date.now(), timeLimit: boss.questionTimeMs, missed: {}
+      idx: 0, correct: 0, hp: boss.hp, hearts: boss.hearts + (charm ? 1 : 0), maxHearts: boss.hearts + (charm ? 1 : 0), charm,
+      locked: false, picked: null, hit: null, qStart: Date.now(), timeLimit: boss.questionTimeMs, missed: {}
     };
   }
 
@@ -51,7 +54,7 @@ export class BossBattle extends MinigameScene {
       new ProgressBar(this, tx + (area.w / 2 - tx - 16) / 2, bossH / 2 - 18 * ui, area.w / 2 - tx - 16, 10 * ui, { value: s.hp / boss.hp, color: THEME.danger }),
       this.add.text(area.w / 2 - 16, -bossH / 2 + 18 * ui, `${s.hp} / ${boss.hp}`, T.small(this, THEME.onAccent)).setOrigin(1, 0.5)
     ]);
-    const hearts = this.add.text(area.w / 2 - 16, -bossH / 2 + 38 * ui, '♥'.repeat(s.hearts) + '♡'.repeat(boss.hearts - s.hearts), T.at(this, 18, THEME.danger)).setOrigin(1, 0.5);
+    const hearts = this.add.text(area.w / 2 - 16, -bossH / 2 + 38 * ui, '♥'.repeat(s.hearts) + '♡'.repeat(s.maxHearts - s.hearts), T.at(this, 18, THEME.danger)).setOrigin(1, 0.5);
     bc.add(hearts);
     if (s.hit === 'player') this.tweens.add({ targets: hearts, scale: 1.4, yoyo: true, duration: 120 });
 
@@ -127,8 +130,9 @@ export class BossBattle extends MinigameScene {
   end(won) {
     const s = this.state;
     if (won) Sfx.fanfare();
+    if (s.charm) Store.updateProfile((p) => { if (p.charms) delete p.charms.extraHeart; });
     const missedSkills = Object.entries(s.missed).sort((a, b) => b[1] - a[1]).map(([k]) => k);
-    this.finish({ won, hpLeft: Math.max(0, s.hp), heartsLeft: Math.max(0, s.hearts), correct: s.correct, total: s.idx + 1, missedSkills, delay: 300 });
+    this.finish({ won, hpLeft: Math.max(0, s.hp), heartsLeft: Math.max(0, s.hearts), maxHearts: s.maxHearts, correct: s.correct, total: s.idx + 1, missedSkills, delay: 300 });
   }
 
   onResumed() { this.state.qStart = Date.now() - Math.min(Date.now() - this.state.qStart, this.state.timeLimit * 0.5); }

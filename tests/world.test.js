@@ -6,11 +6,6 @@ import { mergeInput } from '../src/systems/InputController.js';
 
 const key = (s) => `${s.tx},${s.ty}`;
 
-function withGatesOpen(map, zonesOpen) {
-  const data = map.data.map((r) => r.slice());
-  for (const g of map.gates) if (zonesOpen.includes(g.zone)) data[g.ty][g.tx] = TID.gateOpen;
-  return { ...map, data };
-}
 
 describe('world map', () => {
   const map = buildMap();
@@ -39,28 +34,23 @@ describe('world map', () => {
     for (const g of MINIGAMES) expect(NPCS.find((n) => n.id === g.npc)?.gameId).toBe(g.id);
   });
 
-  it('with gates locked only the hub and Math Meadow NPCs are reachable', () => {
+  it('every village is open: all NPC spots, boss arenas and coins are reachable from spawn', () => {
     const seen = reachableFrom(map);
-    for (const npc of NPCS) {
-      const reachable = seen.has(key(map.npcSpots[npc.id]));
-      expect(reachable, npc.id).toBe(npc.zone === 'hub' || npc.zone === 'math');
-    }
-  });
-
-  it('opening the words gate reaches Word Woods but not Code Cove', () => {
-    const seen = reachableFrom(withGatesOpen(map, ['words']));
-    for (const npc of NPCS) expect(seen.has(key(map.npcSpots[npc.id])), npc.id).toBe(!['code', 'bible'].includes(npc.zone));
-  });
-
-  it('with all gates open every NPC spot and coin is reachable', () => {
-    const seen = reachableFrom(withGatesOpen(map, ['words', 'code', 'bible']));
     for (const npc of NPCS) expect(seen.has(key(map.npcSpots[npc.id])), npc.id).toBe(true);
+    for (const [zone, spot] of Object.entries(map.bossSpots)) expect(seen.has(key(spot)), zone).toBe(true);
     for (const c of map.coins) expect(seen.has(key(c))).toBe(true);
+  });
+
+  it('closing the archways would seal each village off (so the tree walls are intact)', () => {
+    const data = map.data.map((r) => r.slice());
+    for (const g of map.gates) data[g.ty][g.tx] = TID.gateLocked;
+    const seen = reachableFrom({ ...map, data });
+    for (const npc of NPCS) expect(seen.has(key(map.npcSpots[npc.id])), npc.id).toBe(npc.zone === 'hub' || npc.zone === 'math');
   });
 
   it('each gate sits on the boundary of its zone', () => {
     for (const g of map.gates) {
-      expect(map.data[g.ty][g.tx]).toBe(TID.gateLocked);
+      expect(map.data[g.ty][g.tx]).toBe(TID.gateOpen);
       const neighbours = [[0, 1], [0, -1], [1, 0], [-1, 0]].map(([dx, dy]) => zoneAt(map, g.tx + dx, g.ty + dy));
       expect(neighbours).toContain(g.zone);
     }

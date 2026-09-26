@@ -3,18 +3,22 @@ import { SCENES, TILE } from '../constants.js';
 import { THEME } from '../ui/theme.js';
 import * as Store from '../systems/Store.js';
 import * as Launcher from '../systems/MinigameLauncher.js';
-import { unlockedZones } from '../systems/Progression.js';
 import { getGame } from '../data/minigames.js';
 import { bandFor } from '../data/grades.js';
 import { buildMap, zoneAt, isWalkable, groundUnder, TID, SOLID, ROOF_TILES, WALL_TILES, DOOR_TILES, ZONE_NAMES } from '../data/world/map.js';
 import { NPCS } from '../data/world/npcs.js';
 import { BOSSES } from '../data/world/bosses.js';
-import { bossReady, bossDefeated, gateHint, zoneQuests } from '../data/world/quests.js';
+import { bossReady, bossDefeated, zoneQuests } from '../data/world/quests.js';
 import { InputController } from '../systems/InputController.js';
 import { Sfx } from '../systems/Audio.js';
 import { toast } from '../ui/Toast.js';
 import { resolveLook } from '../data/avatars.js';
 import { lookSpriteTexture } from '../systems/Textures.js';
+import { sparkleSpots, grassSpots, daySeed, dayKey, rollEncounter, chestCoins, pickGift, GRASS, SURPRISE_CHANCE, SURPRISE_COOLDOWN_MS, QUIZ_REWARD, CRITTER } from '../data/world/encounters.js';
+import { bossQuestions } from '../generators/boss.js';
+import { effectiveGrade } from '../systems/Progression.js';
+import { Rng } from '../systems/Rng.js';
+import { SUBJECTS } from '../constants.js';
 
 const SPEED = 110;          // px/s
 const TALK_DIST = 44;       // px between player and NPC centres
@@ -46,11 +50,12 @@ export class WorldScene extends Phaser.Scene {
     this.treeLayer.setCollision([TID.tree]);
     this.tilemap = tilemap;
     this.physics.world.setBounds(0, 0, tilemap.widthInPixels, tilemap.heightInPixels);
-    this.syncGates(profile, false);
 
     this.createPlayer(profile);
     this.createNpcs();
     this.createCoins(profile);
+    this.createSparkles(profile);
+    this.createCritter();
     this.bubble = this.add.image(0, 0, 'bubble').setScale(0.75).setDepth(20).setVisible(false);
 
     const cam = this.cameras.main;
@@ -137,6 +142,150 @@ export class WorldScene extends Phaser.Scene {
       this.tweens.add({ targets: img, y: img.y - 3, duration: 500 + (i % 4) * 90, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
     });
     this.physics.add.overlap(this.player, this.coinGroup, (_p, coin) => this.collectCoin(coin));
+  }
+
+  /** Today's sparkles: the ones not yet found glint on the grass and trigger an encounter when stepped on. */
+  createSparkles(profile) {
+    const day = dayKey();
+    const rec = profile.world.sparkles;
+    const found = rec && rec.day === day ? rec.found || [] : [];
+    this.sparkleGroup = this.physics.add.staticGroup();
+    sparkleSpots(this.map, daySeed(profile.id, day)).forEach((s, i) => {
+      if (found.includes(i)) return;
+      const img = this.sparkleGroup.create((s.tx + 0.5) * TILE, (s.ty + 0.5) * TILE, 'sparkle');
+      img.setScale(0.45).setDepth(3).refreshBody();
+      img.body.setSize(14, 14);
+      img.setData('idx', i);
+      this.tweens.add({ targets: img, alpha: 0.35, scale: 0.3, duration: 600 + (i % 3) * 120, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+      this.tweens.add({ targets: img, angle: 360, duration: 6000, repeat: -1 });
+    });
+    this.physics.add.overlap(this.player, this.sparkleGroup, (_p, sp) => this.onSparkle(sp));
+    this.nextSurprise = Date.now() + 15000;   // a little grace after arriving
+    this.lastTile = null;
+  }
+
+  onSparkle(sp) {
+    if (!sp.active) return;
+    const hud = this.hud();
+    if (hud && hud.blocking) return;
+    const idx = sp.getData('idx');
+    sp.destroy();
+    const day = dayKey();
+    Store.updateProfile((p) => {
+      if (!p.world.sparkles || p.world.sparkles.day !== day) p.world.sparkles = { day, found: [] };
+      if (!p.world.sparkles.found.includes(idx)) p.world.sparkles.found.push(idx);
+    });
+    Sfx.unlock();
+    this.startEncounter(rollEncounter(() => Math.random()));
+  }
+
+  // ---- The wandering sheep ------------------------------------------------------------------
+
+  createCritter() {
+    this.critter = null;
+    this.critterTimer = this.time.addEvent({ delay: 400, loop: true, callback: this.critterThink, callbackScope: this });
+    this.spawnCritter();
+  }
+
+  /** Put the sheep on a random grass tile well away from the player. */
+  spawnCritter() {
+    if (!this.player || !this.player.body) return;
+    const far = grassSpots(this.map).filter((s) => Phaser.Math.Distance.Between((s.tx + 0.5) * TILE, (s.ty + 0.5) * TILE, this.player.x, this.player.y) > 10 * TILE);
+    const s = Phaser.Utils.Array.GetRandom(far.length ? far : grassSpots(this.map));
+    if (!s) return;
+    const c = this.physics.add.sprite((s.tx + 0.5) * TILE, (s.ty + 0.5) * TILE, CRITTER.key, 0).setScale(CHAR_SCALE).setDepth(9);
+    c.body.setSize(10, 8).setOffset(3, 7);
+    c.setCollideWorldBounds(true);
+    this.physics.add.collider(c, this.layer);
+    this.physics.add.collider(c, this.treeLayer);
+    this.physics.add.overlap(this.player, c, () => this.catchCritter());
+    c.moveUntil = 0;
+    this.critter = c;
+  }
+
+  /** Every 400ms: bolt away from a nearby player, otherwise amble about or rest. */
+  critterThink() {
+    const c = this.critter;
+    if (!c || !c.body || !this.player || !this.player.body) return;
+    const hud = this.hud();
+    if (hud && hud.blocking) { c.setVelocity(0, 0); c.anims.stop(); return; }
+    const d = Phaser.Math.Distance.Between(this.player.x, this.player.y, c.x, c.y);
+    let vx = 0, vy = 0;
+    if (d < CRITTER.fleeDist) {
+      const a = Phaser.Math.Angle.Between(this.player.x, this.player.y, c.x, c.y);
+      vx = Math.cos(a) * CRITTER.fleeSpeed; vy = Math.sin(a) * CRITTER.fleeSpeed;
+      c.moveUntil = 0;
+    } else if (Date.now() >= c.moveUntil) {
+      if (Math.random() >= 0.4) { const a = Math.random() * Math.PI * 2; vx = Math.cos(a) * CRITTER.wanderSpeed; vy = Math.sin(a) * CRITTER.wanderSpeed; }
+      c.moveUntil = Date.now() + 800 + Math.random() * 1200;
+    } else return;
+    c.setVelocity(vx, vy);
+    if (vx) c.setFlipX(vx > 0);
+    if (vx || vy) c.anims.play('sheep-walk', true); else { c.anims.stop(); c.setFrame(0); }
+  }
+
+  catchCritter() {
+    const c = this.critter;
+    if (!c || !c.active) return;
+    const hud = this.hud();
+    if (hud && hud.blocking) return;
+    this.critter = null;
+    c.destroy();
+    const day = dayKey();
+    let coins = 0;
+    Store.updateProfile((p) => {
+      if (!p.world.critters || p.world.critters.day !== day) p.world.critters = { day, caught: 0 };
+      if (p.world.critters.caught < CRITTER.maxPerDay) { p.world.critters.caught += 1; coins = CRITTER.coins; p.coins += coins; }
+    });
+    if (coins) { Sfx.coin(); this.say(`Baa! You caught the ${CRITTER.name}: +${coins} coins`, { icon: 'coin' }); }
+    else { Sfx.pop(); this.say(`Baa! The ${CRITTER.name} is out of coins for today.`, { accent: THEME.ink3 }); }
+    if (hud) hud.setCoins(Store.getProfile().coins);
+    this.time.delayedCall(CRITTER.respawnMs, () => this.spawnCritter());
+  }
+
+  /** Called from tick(): now and then the tall grass springs a quiz on the walker. */
+  maybeSurprise(tx, ty) {
+    const tile = `${tx},${ty}`;
+    if (tile === this.lastTile) return;
+    this.lastTile = tile;
+    const hud = this.hud();
+    if (!hud || hud.blocking || Date.now() < this.nextSurprise) return;
+    if (!GRASS.has(this.map.data[ty]?.[tx])) return;
+    if (Math.random() >= SURPRISE_CHANCE) return;
+    this.nextSurprise = Date.now() + SURPRISE_COOLDOWN_MS;
+    Sfx.pop();
+    this.startEncounter('quiz');
+  }
+
+  startEncounter(kind) {
+    const hud = this.hud();
+    if (!hud) return;
+    this.stopPlayer();
+    const profile = Store.getProfile();
+    const rng = new Rng();
+    if (kind === 'quiz') {
+      const tx = Math.floor(this.player.x / TILE), ty = Math.floor(this.player.y / TILE);
+      const subject = zoneAt(this.map, tx, ty) || rng.pick(Object.keys(SUBJECTS));
+      const sub = SUBJECTS[subject] ? subject : rng.pick(Object.keys(SUBJECTS));
+      const [q] = bossQuestions(sub, effectiveGrade(profile, sub), rng, 1);
+      hud.showEncounter({ kind, subject: sub, q, reward: QUIZ_REWARD, onAnswer: (right) => { if (right) this.reward(QUIZ_REWARD); } });
+    } else if (kind === 'chest') {
+      const coins = chestCoins(() => rng.float());
+      this.reward({ coins });
+      hud.showEncounter({ kind, coins });
+    } else {
+      const gift = pickGift(() => rng.float());
+      if (gift.charm) Store.updateProfile((p) => { p.charms ||= {}; p.charms[gift.charm] = true; });
+      else this.reward(gift);
+      hud.showEncounter({ kind, gift });
+    }
+  }
+
+  reward({ coins = 0, xp = 0 }) {
+    Store.updateProfile((p) => { p.coins += coins; p.xp += xp; });
+    if (coins) Sfx.coin();
+    const hud = this.hud();
+    if (hud) hud.setCoins(Store.getProfile().coins);
   }
 
   /**
@@ -241,7 +390,6 @@ export class WorldScene extends Phaser.Scene {
 
     if (inp.actionJustPressed && !skipAction) {
       if (near) this.talk(near);
-      else this.inspectGate();
     }
   }
 
@@ -267,6 +415,7 @@ export class WorldScene extends Phaser.Scene {
     }
     const p = Store.getProfile();
     if (hud && p && hud.state.coins !== p.coins) hud.setCoins(p.coins);
+    this.maybeSurprise(tx, ty);
   }
 
   // ---- Interactions --------------------------------------------------------------------------
@@ -348,17 +497,6 @@ export class WorldScene extends Phaser.Scene {
     Launcher.launch(this, npc.gameId, { source: 'roam', context });
   }
 
-  /** Action pressed next to a locked gate: explain how to open it. */
-  inspectGate() {
-    const tx = Math.floor(this.player.x / TILE), ty = Math.floor(this.player.y / TILE);
-    for (const [ox, oy] of [[0, -1], [0, 1], [-1, 0], [1, 0]]) {
-      const tile = this.layer.getTileAt(tx + ox, ty + oy);
-      if (!tile || tile.index !== TID.gateLocked) continue;
-      const gate = this.map.gates.find((g) => g.tx === tile.x && g.ty === tile.y);
-      if (gate) { Sfx.pop(); this.say(gateHint(Store.getProfile(), gate.zone), { accent: THEME.ink3 }); return; }
-    }
-  }
-
   collectCoin(coin) {
     if (!coin.active) return;
     const idx = coin.getData('idx');
@@ -373,19 +511,6 @@ export class WorldScene extends Phaser.Scene {
     if (hud) hud.setCoins(Store.getProfile().coins);
   }
 
-  /** Open gates for every unlocked zone; with `announce`, celebrate the ones that just opened. */
-  syncGates(profile, announce) {
-    const open = unlockedZones(profile);
-    for (const g of this.map.gates) {
-      const tile = this.layer.getTileAt(g.tx, g.ty);
-      const isOpen = tile && tile.index === TID.gateOpen;
-      if (open.includes(g.zone) && !isOpen) {
-        this.layer.putTileAt(TID.gateOpen, g.tx, g.ty);
-        if (announce) { Sfx.unlock(); this.say(`${ZONE_NAMES[g.zone]} is open!`, { icon: 'star', accent: THEME.success }); }
-      }
-    }
-  }
-
   // ---- Lifecycle -----------------------------------------------------------------------------
 
   onResume() {
@@ -394,7 +519,6 @@ export class WorldScene extends Phaser.Scene {
     this.launchHud();
     this.stopPlayer();
     this.wasBlocked = true;            // swallow the click/key that brought us back
-    this.syncGates(profile, true);
     const hud = this.hud();
     if (hud) hud.setCoins(profile.coins);
   }
@@ -417,7 +541,8 @@ export class WorldScene extends Phaser.Scene {
     this.events.off('resume', this.onResumeBound);
     this.events.off('pause', this.onPauseBound);
     try { if (this.zoneTimer) this.zoneTimer.remove(false); } catch { /* clock already gone */ }
-    this.zoneTimer = null;
+    try { if (this.critterTimer) this.critterTimer.remove(false); } catch { /* clock already gone */ }
+    this.zoneTimer = null; this.critterTimer = null; this.critter = null;
     try { if (this.controls) this.controls.destroy(); } catch { /* keyboard plugin already gone */ }
     this.controls = null;
     const hud = this.scene.get(SCENES.Hud);
