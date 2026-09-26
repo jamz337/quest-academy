@@ -5,6 +5,7 @@ import { generateRounds } from '../../../generators/coding/programGen.js';
 import { text, T } from '../../../ui/TextStyles.js';
 import { button } from '../../../ui/Button.js';
 import { Sfx } from '../../../systems/Audio.js';
+import { pointerPos } from '../../../systems/Layout.js';
 
 const ROUNDS = 6;
 
@@ -54,7 +55,7 @@ export class PredictRobot extends MazeGameScene {
     if (s.phase === 'guess') {
       const lv = this.lv();
       const z = this.add.zone(this.mazeOrigin.x + lv.w * this.cell / 2, this.mazeOrigin.y + lv.h * this.cell / 2, lv.w * this.cell, lv.h * this.cell).setInteractive({ useHandCursor: true });
-      z.on('pointerup', (pointer) => this.tapCell(pointer.x, pointer.y));
+      z.on('pointerup', (pointer) => { const p = pointerPos(this, pointer); this.tapCell(p.x, p.y); });
     }
     const { ui } = this;
     const footH = 60 * ui;

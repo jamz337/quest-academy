@@ -1,5 +1,5 @@
 import { THEME, hex, textOn, drawShadow } from './theme.js';
-import { uiScale, safeArea } from '../systems/Layout.js';
+import { uiScale, safeArea, viewport } from '../systems/Layout.js';
 import { FONT, WEIGHT } from './TextStyles.js';
 
 /**
@@ -9,7 +9,7 @@ import { FONT, WEIGHT } from './TextStyles.js';
 export function toast(scene, message, opts = {}) {
   const { color, bg = THEME.surface, duration = 1800, icon = null, y = null, accent = null, depth = 1000 } = opts;
   const s = uiScale(scene);
-  const w = scene.scale.width;
+  const w = viewport(scene).w;
   const targetY = y ?? safeArea().top + 40 * s + 20;
   const c = scene.add.container(w / 2, -60).setDepth(depth);
   const txt = scene.add.text(0, 0, message, {

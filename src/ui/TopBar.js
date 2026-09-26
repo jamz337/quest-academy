@@ -1,5 +1,5 @@
 import { THEME } from './theme.js';
-import { uiScale, safeArea } from '../systems/Layout.js';
+import { uiScale, safeArea, viewport } from '../systems/Layout.js';
 import { T, text } from './TextStyles.js';
 import { iconButton } from './Button.js';
 
@@ -11,7 +11,7 @@ import { iconButton } from './Button.js';
 export function topBar(scene, opts = {}) {
   const { title = '', onBack = null, backLabel = '←', right = null, subtitle = null, accent = null } = opts;
   const s = uiScale(scene);
-  const w = scene.scale.width;
+  const w = viewport(scene).w;
   const inset = safeArea().top;
   const h = 56 * s + inset, cy = inset + 28 * s + 2;
   const back = onBack ? iconButton(scene, 12 + 22 * s, cy, 44 * s, backLabel, { onClick: onBack }) : null;

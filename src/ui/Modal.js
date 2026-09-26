@@ -1,5 +1,5 @@
 import { THEME } from './theme.js';
-import { uiScale } from '../systems/Layout.js';
+import { uiScale, viewport } from '../systems/Layout.js';
 import { panel, dimmer } from './Panel.js';
 import { T, text } from './TextStyles.js';
 import { enter } from './motion.js';
@@ -12,7 +12,7 @@ import { enter } from './motion.js';
 export function modal(scene, opts = {}) {
   const { w, h, title = null, accent = null, dim = true, dimAlpha = 0.35, depth = null, y: yTop } = opts;
   const s = uiScale(scene);
-  const W = scene.scale.width, H = scene.scale.height;
+  const { w: W, h: H } = viewport(scene);
   const pw = Math.min(W - 24, w);
   const ph = yTop !== undefined ? Math.min(H - yTop - 12, h) : Math.min(H - 24, h);
   const x = (W - pw) / 2, y = yTop !== undefined ? yTop : (H - ph) / 2;

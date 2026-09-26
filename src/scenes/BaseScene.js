@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { viewport, uiScale } from '../systems/Layout.js';
+import { viewport, uiScale, fitCamera, dpr } from '../systems/Layout.js';
 import { THEME } from '../ui/theme.js';
 
 const FADE = [255, 248, 239];   // THEME.bg as r, g, b
@@ -37,6 +37,7 @@ export class BaseScene extends Phaser.Scene {
     this.children.list.slice().forEach((c) => c.destroy());
     this.vp = viewport(this);
     this.ui = uiScale(this);
+    fitCamera(this);
     this.buildCount = (this.buildCount || 0) + 1;
     const key = this.enterKey();
     this.animateEnter = this.buildCount === 1 || key !== this.lastEnterKey;
@@ -60,7 +61,7 @@ export class BaseScene extends Phaser.Scene {
   }
 
   /** Convenience: current viewport (refreshed on rebuild). */
-  get w() { return this.scale.width; }
-  get h() { return this.scale.height; }
+  get w() { return this.scale.width / dpr(); }
+  get h() { return this.scale.height / dpr(); }
   get portrait() { return this.scale.height >= this.scale.width; }
 }

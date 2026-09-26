@@ -10,6 +10,7 @@ import { NPCS } from '../data/world/npcs.js';
 import { BOSSES } from '../data/world/bosses.js';
 import { bossReady, bossDefeated, zoneQuests } from '../data/world/quests.js';
 import { InputController } from '../systems/InputController.js';
+import { viewport, dpr } from '../systems/Layout.js';
 import { Sfx } from '../systems/Audio.js';
 import { toast } from '../ui/Toast.js';
 import { resolveLook } from '../data/avatars.js';
@@ -334,7 +335,8 @@ export class WorldScene extends Phaser.Scene {
   applyZoom() {
     const cam = this.cameras.main;
     if (!cam) return;
-    cam.setZoom(Math.min(this.scale.width, this.scale.height) < 600 ? 2 : 3);
+    const { min } = viewport(this);
+    cam.setZoom((min < 600 ? 2 : 3) * dpr());   // world zoom in CSS pixels, times the device pixel ratio
   }
 
   // ---- Hud bridge ----------------------------------------------------------------------------

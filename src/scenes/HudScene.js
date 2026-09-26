@@ -1,7 +1,7 @@
 import { BaseScene } from './BaseScene.js';
 import { SCENES } from '../constants.js';
 import { THEME } from '../ui/theme.js';
-import { safeArea, grid } from '../systems/Layout.js';
+import { safeArea, grid, viewport } from '../systems/Layout.js';
 import { T, text } from '../ui/TextStyles.js';
 import { button, iconButton, speakButton } from '../ui/Button.js';
 import { readable } from '../ui/ReadableText.js';
@@ -33,7 +33,8 @@ export class HudScene extends BaseScene {
     this.scene.bringToTop();
     const onWake = () => {
       // The world may have been rotated while a mini-game was up; the size check keeps rebuilds rare.
-      if (this.vp && (this.vp.w !== this.scale.width || this.vp.h !== this.scale.height)) this.rebuild();
+      const now = viewport(this);
+      if (this.vp && (this.vp.w !== now.w || this.vp.h !== now.h)) this.rebuild();
       this.actionFlag = false;
       if (this.joystick) this.joystick.release();
     };

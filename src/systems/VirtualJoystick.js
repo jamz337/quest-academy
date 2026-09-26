@@ -1,6 +1,6 @@
 // Floating touch joystick drawn with the 'joy-base' / 'joy-thumb' textures. Appears where the finger
 // lands, tracks that one pointer only, so a second finger can press the action button at the same time.
-import { uiScale } from './Layout.js';
+import { uiScale, viewport, pointerPos } from './Layout.js';
 
 export class VirtualJoystick {
   /**
@@ -12,7 +12,7 @@ export class VirtualJoystick {
     const ui = uiScale(scene);
     this.radius = (opts.radius ?? 56) * ui;
     this.deadzone = opts.deadzone ?? 0.25;
-    this.zone = opts.zone || ((x, y) => x < scene.scale.width * 0.6 && y > scene.scale.height * 0.15);
+    this.zone = opts.zone || ((x, y) => { const v = viewport(scene); return x < v.w * 0.6 && y > v.h * 0.15; });
     this.enabled = opts.enabled || (() => true);
     this.pointer = null;
     this.vector = { x: 0, y: 0 };
@@ -30,18 +30,20 @@ export class VirtualJoystick {
 
   onDown(pointer, over) {
     if (this.pointer || this.destroyed) return;
-    if (!this.enabled() || !this.zone(pointer.x, pointer.y)) return;
+    const p = pointerPos(this.scene, pointer);
+    if (!this.enabled() || !this.zone(p.x, p.y)) return;
     if (over && over.length) return;              // a button under the finger owns this touch
     this.pointer = pointer;
-    this.origin = { x: pointer.x, y: pointer.y };
-    this.base.setPosition(pointer.x, pointer.y).setAlpha(1);
-    this.thumb.setPosition(pointer.x, pointer.y).setAlpha(1);
+    this.origin = { x: p.x, y: p.y };
+    this.base.setPosition(p.x, p.y).setAlpha(1);
+    this.thumb.setPosition(p.x, p.y).setAlpha(1);
     this.vector = { x: 0, y: 0 };
   }
 
   onMove(pointer) {
     if (pointer !== this.pointer) return;
-    let dx = pointer.x - this.origin.x, dy = pointer.y - this.origin.y;
+    const p = pointerPos(this.scene, pointer);
+    let dx = p.x - this.origin.x, dy = p.y - this.origin.y;
     const len = Math.hypot(dx, dy);
     if (len > this.radius) { dx *= this.radius / len; dy *= this.radius / len; }
     this.thumb.setPosition(this.origin.x + dx, this.origin.y + dy);

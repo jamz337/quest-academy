@@ -3,6 +3,7 @@ import { registerSW } from 'virtual:pwa-register';
 import { makeConfig } from './config.js';
 import { unlockAudio } from './systems/Audio.js';
 import { scenes } from './scenes/index.js';
+import { dpr } from './systems/Layout.js';
 
 // Keep full error stacks reachable for on-device debugging (chrome://inspect or a console).
 window.__errors = [];
@@ -13,8 +14,32 @@ window.addEventListener('unhandledrejection', (e) => window.__errors.push(String
 // the Canvas renderer (to rule out a GPU/WebGL problem on a device), ?debug shows a live diagnostics box.
 const params = new URLSearchParams(location.search);
 const keepRunningHidden = params.has('bg');
+
+// HiDPI text: every Text rasterises at the device pixel ratio unless a style says otherwise.
+const setStyle = Phaser.GameObjects.TextStyle.prototype.setStyle;
+Phaser.GameObjects.TextStyle.prototype.setStyle = function (style, updateText, setDefaults) {
+  const out = setStyle.call(this, style, updateText, setDefaults);
+  if (!this.resolution) this.resolution = dpr();
+  return out;
+};
+
 const game = new Phaser.Game(makeConfig(scenes, { keepRunningHidden, forceCanvas: params.has('canvas') }));
 if (keepRunningHidden) { game.events.off('hidden'); game.events.off('blur'); }
+
+// Keep the canvas at DPR times the window size, shown at window size (rotation, on-screen keyboard, resize).
+const fit = () => {
+  if (!game.canvas) return;   // not booted yet
+  const d = dpr(), w = Math.max(1, window.innerWidth), h = Math.max(1, window.innerHeight);
+  game.scale.setZoom(1 / d);
+  game.scale.resize(Math.round(w * d), Math.round(h * d));
+  game.canvas.style.width = w + 'px'; game.canvas.style.height = h + 'px';
+  // A pixel-ratio change (browser zoom, moving between screens) fires no resize event; watch for it.
+  try { matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`).addEventListener('change', fit, { once: true }); } catch { /* not supported */ }
+};
+window.addEventListener('resize', fit);
+window.addEventListener('orientationchange', () => setTimeout(fit, 100));
+game.events.once('ready', fit);
+setTimeout(fit, 0);   // in case 'ready' already fired during construction
 
 if (params.has('debug')) {
   const box = document.createElement('pre');
