@@ -47,10 +47,10 @@ export class ChallengeMenuScene extends BaseScene {
       const sy = areaTop + si * sectionH;
       this.add.circle(22, sy + labelH / 2, 5 * ui, s.accent);
       const title = text(this, 34, sy + labelH / 2, s.title, T.bodyBold(this, s.dark)).setOrigin(0, 0.5);
-      // Mastery: how hard this subject currently plays for the profile.
+      // Pace (mastery) and the grade this subject's questions are at for the profile.
       const lvl = mastery(p, s.id).level, eg = effectiveGrade(p, s.id);
       chip(this, title.x + title.width + 10, sy + labelH / 2, {
-        text: `${MASTERY_LABEL[lvl]}${lvl ? ` · Grade ${eg} questions` : ''}`, height: 22 * ui, fontSize: 12,
+        text: `${MASTERY_LABEL[lvl]} · Grade ${eg}`, height: 22 * ui, fontSize: 12,
         color: lvl ? s.soft : THEME.sunken, textColor: lvl ? s.dark : THEME.ink2, shadow: 'none'
       });
       const games = gamesForSubject(s.id);

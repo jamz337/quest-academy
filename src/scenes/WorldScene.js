@@ -19,7 +19,7 @@ import { lookSpriteTexture } from '../systems/Textures.js';
 import { sparkleSpots, grassSpots, daySeed, dayKey, rollEncounter, chestCoins, pickGift, GRASS, SURPRISE_CHANCE, SURPRISE_COOLDOWN_MS, QUIZ_REWARD, CRITTERS, CRITTER_MAX_PER_DAY, FISH_MAX_PER_DAY, rollFish } from '../data/world/encounters.js';
 import { VERSES } from '../data/bible/bank.js';
 import { bossQuestions } from '../generators/boss.js';
-import { effectiveGrade, houseStars, nextHouseLevel, HOUSE_LEVELS, checkBadges } from '../systems/Progression.js';
+import { effectiveGrade, gameGrade, gradeUps, houseStars, nextHouseLevel, HOUSE_LEVELS, checkBadges } from '../systems/Progression.js';
 import { errandFor, errandState, activeErrand, acceptErrand, pickUpErrand, deliverErrand, errandLine } from '../data/world/errands.js';
 import { starPop, fireworks } from '../ui/Fireworks.js';
 import { getBadge } from '../data/badges.js';
@@ -474,8 +474,11 @@ export class WorldScene extends Phaser.Scene {
     const profile = Store.getProfile();
     let prompt = npc.playPrompt;
     if (npc.gameId && !getGame(npc.gameId)?.usesLevels) {
-      const stars = houseStars(profile, npc.gameId), level = nextHouseLevel(profile, npc.gameId);
-      prompt = stars >= HOUSE_LEVELS ? `You have all ${HOUSE_LEVELS} stars here! Play level ${HOUSE_LEVELS} again?` : `${npc.playPrompt} Level ${level} of ${HOUSE_LEVELS}${stars ? ` (${stars} star${stars > 1 ? 's' : ''} so far)` : ''}`;
+      // Levels start over each time the game moves up a grade, so count passes at the current grade.
+      const lv = profile.games?.[npc.gameId]?.levels || {};
+      const passed = [1, 2, 3].filter((n) => (lv[n] || 0) >= 1).length, level = nextHouseLevel(profile, npc.gameId);
+      const at = gradeUps(profile, npc.gameId) ? ` at Grade ${gameGrade(profile, npc.gameId)}` : '';
+      prompt = passed >= HOUSE_LEVELS ? `You have all ${HOUSE_LEVELS} stars here! Play level ${HOUSE_LEVELS} again?` : `${npc.playPrompt} Level ${level} of ${HOUSE_LEVELS}${at}${passed ? ` (${passed} star${passed > 1 ? 's' : ''} so far)` : ''}`;
     }
     hud.showDialog({ name: npc.name, lines: npc.lines, prompt, onPlay: npc.gameId ? () => this.playGame(npc) : null });
     if (firstTalk) {
@@ -522,7 +525,7 @@ export class WorldScene extends Phaser.Scene {
     this.savePosition();
     const profile = Store.getProfile();
     let extra = {};
-    try { extra = npc.pickContext ? npc.pickContext(profile, bandFor(profile.grade)) || {} : {}; } catch { extra = {}; }
+    try { extra = npc.pickContext ? npc.pickContext(profile, bandFor(gameGrade(profile, npc.gameId))) || {} : {}; } catch { extra = {}; }
     const context = { npcId: npc.id, zoneId: npc.zone };
     for (const [k, v] of Object.entries(extra)) if (v !== undefined) context[k] = v;
     if (this.scene.isActive(SCENES.Hud)) this.scene.sleep(SCENES.Hud);
@@ -593,6 +596,7 @@ export class WorldScene extends Phaser.Scene {
         });
       }
     } else this.refreshHouseStars();
+    if (result.gradeUp) this.time.delayedCall(2200, () => this.say(`📈 ${payload.title} moves up to Grade ${result.gradeUp.to}!`, { icon: 'star', accent: THEME.brand }));
     if (result.errandUnlocked) {
       const giver = NPCS.find((n) => n.id === result.errandUnlocked.npc);
       this.time.delayedCall(2400, () => this.say(`📜 ${giver ? giver.name : 'A villager'} has an errand for you — talk to them!`, { accent: THEME.brand }));

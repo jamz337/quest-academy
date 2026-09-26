@@ -56,7 +56,7 @@ describe('errands', () => {
     applyResult(p, { gameId: 'math-dash', subject: 'math', band: 'A', level: 2 }, { correct: 8, total: 10, timeMs: 1 });
     applyResult(p, { gameId: 'math-dash', subject: 'math', band: 'A', level: 3 }, { correct: 8, total: 10, timeMs: 1 });
     expect(houseStars(p, 'math-dash')).toBe(3);
-    expect(nextHouseLevel(p, 'math-dash')).toBe(3);
+    expect(nextHouseLevel(p, 'math-dash')).toBe(1);   // finished: the game moved up a grade and its levels start over
     expect(p.badges).toContain('house-3');
   });
 });

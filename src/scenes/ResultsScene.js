@@ -46,11 +46,14 @@ export class ResultsScene extends BaseScene {
     }
     if (result.goal && result.goal.done) { this.time.delayedCall(delay, () => { Sfx.coin(); toast(this, `🎯 Today's goal done!  +${result.goal.coins} coins`, { icon: 'coin', accent: THEME.warning }); }); delay += 1400; }
     if (result.familyBonus) { this.time.delayedCall(delay, () => { Sfx.fanfare(); toast(this, `👨‍👩‍👧 Family goal reached!  +${result.familyBonus} coins`, { icon: 'star', accent: THEME.success }); }); delay += 1400; }
+    if (result.gradeUp) {
+      this.time.delayedCall(delay, () => { Sfx.unlock(); toast(this, `📈 Grade up! ${this.sceneData.payload.title} now asks Grade ${result.gradeUp.to} questions`, { icon: 'star', accent: THEME.brand }); }); delay += 1400;
+    }
     const subject = SUBJECTS[this.sceneData.payload.subject]?.title || 'Your';
     if (result.masteryChange > 0) {
-      this.time.delayedCall(delay, () => { Sfx.unlock(); toast(this, `Level up! ${subject} questions get harder: ${MASTERY_LABEL[result.mastery]}`, { icon: 'star', accent: THEME.brand }); });
+      this.time.delayedCall(delay, () => { Sfx.unlock(); toast(this, `${MASTERY_LABEL[result.mastery]}! ${subject} games play a little faster now`, { icon: 'star', accent: THEME.brand }); });
     } else if (result.masteryChange < 0) {
-      this.time.delayedCall(delay, () => toast(this, `Easing off a little: ${subject} is back to ${MASTERY_LABEL[result.mastery]}`, { accent: THEME.ink3 }));
+      this.time.delayedCall(delay, () => toast(this, `Easing off a little: ${subject} is back to ${MASTERY_LABEL[result.mastery]} pace`, { accent: THEME.ink3 }));
     }
   }
 

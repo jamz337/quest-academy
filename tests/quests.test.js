@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { newProfile } from '../src/systems/SaveSystem.js';
-import { mastery, effectiveGrade, updateMastery, unlockedZones, applyResult, MASTERY_MAX } from '../src/systems/Progression.js';
+import { mastery, effectiveGrade, gameGrade, gradeUps, houseStars, nextHouseLevel, updateMastery, unlockedZones, applyResult, MASTERY_MAX, HOUSE_LEVELS } from '../src/systems/Progression.js';
 import { zoneQuests, bossReady, activeZone, bossDefeated, ZONE_ORDER } from '../src/data/world/quests.js';
 import { BOSSES, bossForZone } from '../src/data/world/bosses.js';
 import { NPCS } from '../src/data/world/npcs.js';
@@ -25,12 +25,12 @@ describe('mastery', () => {
     expect(updateMastery(p, 'math', 0).to).toBe(0);
   });
 
-  it('raises the grade the generators see, within 2..8', () => {
+  it('never changes the grade the generators see: questions stay at the chosen grade', () => {
     const p = newProfile({ name: 'A', grade: 3 });
     for (let i = 0; i < 3 * MASTERY_MAX; i++) updateMastery(p, 'words', 3);
     expect(mastery(p, 'words').level).toBe(MASTERY_MAX);
-    expect(effectiveGrade(p, 'words')).toBe(3 + MASTERY_MAX);
-    expect(effectiveGrade(p, 'math')).toBe(3);
+    expect(effectiveGrade(p, 'words')).toBe(3);
+    expect(gameGrade(p, 'eng-builder')).toBe(3);
     expect(effectiveGrade({ grade: 8, mastery: { math: { level: 3 } } }, 'math', 1)).toBe(8);
     expect(effectiveGrade({ grade: 2 }, 'math')).toBe(2);
   });
@@ -51,6 +51,40 @@ describe('mastery', () => {
     expect(mastery(p, 'math').level).toBe(1);
     const boss = applyResult(p, { gameId: 'boss-math', subject: 'math', band: 'A', boss: bossForZone('math') }, { won: true, heartsLeft: 3, hpLeft: 0, correct: 8, total: 8, timeMs: 1 });
     expect(boss.masteryChange).toBeUndefined();
+  });
+});
+
+describe('grade up on finishing a game', () => {
+  const play = (p, gameId, level, correct = 10) => applyResult(p, { gameId, subject: 'math', band: 'A', level }, { correct, total: 10, timeMs: 1000 });
+
+  it('keeps every house level at the chosen grade until all three are passed, then moves the game up one grade', () => {
+    const p = newProfile({ name: 'A', grade: 3 });
+    expect(gameGrade(p, 'math-dash')).toBe(3);
+    const r1 = play(p, 'math-dash', 1);
+    expect(r1.gradeUp).toBeUndefined();
+    expect(gameGrade(p, 'math-dash')).toBe(3);
+    play(p, 'math-dash', 2);
+    expect(nextHouseLevel(p, 'math-dash')).toBe(3);
+    const r3 = play(p, 'math-dash', 3);
+    expect(r3.gradeUp).toEqual({ from: 3, to: 4 });
+    expect(r3.houseStars).toBe(HOUSE_LEVELS);
+    expect(gradeUps(p, 'math-dash')).toBe(1);
+    expect(gameGrade(p, 'math-dash')).toBe(4);
+    expect(gameGrade(p, 'math-pizza')).toBe(3);          // other games are untouched
+    expect(houseStars(p, 'math-dash')).toBe(HOUSE_LEVELS); // the house keeps its stars
+    expect(nextHouseLevel(p, 'math-dash')).toBe(1);        // and the levels start over at the new grade
+  });
+
+  it('does not move up on a failed level or past grade 8, and a subject is at the grade all its games reached', () => {
+    const p = newProfile({ name: 'A', grade: 8 });
+    play(p, 'math-dash', 1); play(p, 'math-dash', 2);
+    expect(play(p, 'math-dash', 3, 2).gradeUp).toBeUndefined();   // 20% is not a pass
+    expect(play(p, 'math-dash', 3).gradeUp).toBeUndefined();      // already at the top grade
+    expect(gameGrade(p, 'math-dash')).toBe(8);
+    const q = newProfile({ name: 'B', grade: 4 });
+    [1, 2, 3].forEach((l) => play(q, 'math-dash', l));
+    expect(gameGrade(q, 'math-dash')).toBe(5);
+    expect(effectiveGrade(q, 'math')).toBe(4);   // Fraction Pizza and Pattern Bridge are still at grade 4
   });
 });
 

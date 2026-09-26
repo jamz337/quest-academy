@@ -4,6 +4,7 @@ import { THEME } from '../ui/theme.js';
 import * as Store from '../systems/Store.js';
 import * as Launcher from '../systems/MinigameLauncher.js';
 import { bandFor, BANDS, BAND_LABEL } from '../data/grades.js';
+import { gameGrade } from '../systems/Progression.js';
 import { levelsForBand } from '../data/coding/levels.js';
 import { grid } from '../systems/Layout.js';
 import { T, text } from '../ui/TextStyles.js';
@@ -25,7 +26,7 @@ export class LevelSelectScene extends BaseScene {
   init(data) {
     this.sceneData = data || {};
     const p = Store.getProfile();
-    this.band = bandFor(p ? p.grade : 3);
+    this.band = bandFor(gameGrade(p, 'code-maze'));   // the player's grade plus Robo Maze's earned grade-ups
   }
 
   create(data) {

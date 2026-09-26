@@ -19,10 +19,27 @@ export function mastery(profile, subject) {
   return { level: Math.max(0, Math.min(MASTERY_MAX, m?.level | 0)), streak: m?.streak | 0 };
 }
 
-/** Grade the generators are asked for: the player's grade raised by their mastery level. */
+const clampGrade = (g) => Math.max(MIN_GRADE, Math.min(MAX_GRADE, g));
+
+// ---- Grade: questions stay at the grade the player picked. Finishing a game (all its levels passed) moves
+// that game up one grade, and its levels reset so the player climbs again at the new grade. ----------------
+
+/** How many grades a game has moved up from the player's grade, by finishing all its levels. */
+export const gradeUps = (profile, gameId) => Math.max(0, profile?.games?.[gameId]?.gradeUp | 0);
+
+/** Grade the generators are asked for in one game: the player's grade plus that game's earned grade-ups. */
+export function gameGrade(profile, gameId, extra = 0) {
+  return clampGrade((Number(profile?.grade) || 3) + gradeUps(profile, gameId) + extra);
+}
+
+/**
+ * Grade for a whole subject (world quizzes, boss fights, the challenge menu): the player's grade plus the
+ * grade-ups every game of the subject has earned, so nobody meets questions a game has not yet reached.
+ */
 export function effectiveGrade(profile, subject, extra = 0) {
-  const g = (Number(profile?.grade) || 3) + mastery(profile, subject).level + extra;
-  return Math.max(MIN_GRADE, Math.min(MAX_GRADE, g));
+  const games = gamesForSubject(subject);
+  const ups = games.length ? Math.min(...games.map((g) => gradeUps(profile, g.id))) : 0;
+  return clampGrade((Number(profile?.grade) || 3) + ups + extra);
 }
 
 export const MASTERY_UP = 3, MASTERY_DOWN = 2;
@@ -71,9 +88,11 @@ export const HOUSE_LEVELS = 3;
 export function houseStars(profile, gameId) {
   const game = getGame(gameId);
   if (game && game.usesLevels) {
-    const band = bandFor(effectiveGrade(profile, game.subject));
+    if (gradeUps(profile, gameId) > 0) return HOUSE_LEVELS;
+    const band = bandFor(gameGrade(profile, gameId));
     return Math.min(HOUSE_LEVELS, levelsForBand(band).filter((l) => (profile.coding?.levels?.[l.id]?.stars || 0) > 0).length);
   }
+  if (gradeUps(profile, gameId) > 0) return HOUSE_LEVELS;   // finished once: the house keeps its stars
   const lv = profile.games?.[gameId]?.levels || {};
   return Math.min(HOUSE_LEVELS, [1, 2, 3].filter((n) => (lv[n] || 0) >= 1).length);
 }
@@ -143,14 +162,20 @@ export function applyResult(profile, payload, raw) {
   profile.games[payload.gameId] = rec;
   const before = houseStars(profile, payload.gameId);   // includes this pass already; compute "new" from hadStar
   Object.assign(result, { level, levelPassed: stars >= 1, newHouseStar: stars >= 1 && !hadStar && !isCoding, houseStars: before, houseLevels: HOUSE_LEVELS });
-  if (result.newHouseStar && level === 1) result.errandUnlocked = unlockErrand(profile, getGame(payload.gameId)?.npc);
+  if (result.newHouseStar && level === 1 && !rec.gradeUp) result.errandUnlocked = unlockErrand(profile, getGame(payload.gameId)?.npc);
+  // Finished every level at this grade: the game moves up a grade and its levels start over.
+  if (!isCoding && stars >= 1 && [1, 2, 3].every((n) => (rec.levels[n] || 0) >= 1)) applyGradeUp(profile, payload.gameId, rec, result);
 
-  // Per-level record for coding levels
+  // Per-level record for coding levels; solving the last level of the band moves the game up a grade.
   if (raw.levelId) {
     const lv = profile.coding.levels[raw.levelId] || { stars: 0, bestBlocks: null };
+    const wasSolved = lv.stars > 0;
     lv.stars = Math.max(lv.stars, stars);
     if (raw.solved && raw.blocksUsed !== undefined) lv.bestBlocks = lv.bestBlocks === null ? raw.blocksUsed : Math.min(lv.bestBlocks, raw.blocksUsed);
     profile.coding.levels[raw.levelId] = lv;
+    const band = bandFor(gameGrade(profile, payload.gameId));
+    const allSolved = levelsForBand(band).every((l) => (profile.coding.levels[l.id]?.stars || 0) > 0);
+    if (stars >= 1 && !wasSolved && allSolved) applyGradeUp(profile, payload.gameId, rec, result);
   }
 
   profile.coins += coins;
@@ -167,6 +192,16 @@ export function applyResult(profile, payload, raw) {
   }
   result.goal = applyGoal(profile, result);
   return finishResult(profile, result);
+}
+
+/** Move a finished game up one grade (never past grade 8) and reset its levels; reports it on the result. */
+function applyGradeUp(profile, gameId, rec, result) {
+  const from = gameGrade(profile, gameId);
+  if (from >= MAX_GRADE) return;
+  rec.gradeUp = (rec.gradeUp | 0) + 1;
+  rec.levels = {};
+  result.gradeUp = { from, to: gameGrade(profile, gameId) };
+  result.houseStars = houseStars(profile, gameId);
 }
 
 /** Badges, shared by games and boss fights. */

@@ -4,7 +4,7 @@ import { getGame } from '../data/minigames.js';
 import { getBoss } from '../data/world/bosses.js';
 import { bandFor } from '../data/grades.js';
 import * as Store from './Store.js';
-import { applyResult, effectiveGrade, mastery, nextHouseLevel } from './Progression.js';
+import { applyResult, effectiveGrade, gameGrade, mastery, nextHouseLevel } from './Progression.js';
 import * as Cloud from './Cloud.js';
 import { addFamilyStars, claimFamily } from './Goals.js';
 
@@ -12,8 +12,8 @@ export const BOSS_SCENE = 'MG_Boss';
 
 /**
  * Launch a mini-game (or a boss fight, by boss id) on top of `fromScene`, which is paused (not stopped) so
- * it keeps its state. The payload's grade/band come from the player's mastery in the subject, so games get
- * harder as they improve; bosses play one grade above that.
+ * it keeps its state. The payload's grade is the player's grade plus the grade-ups the game has earned by being
+ * finished (see Progression.gameGrade); a boss plays at the grade every game of its subject has reached.
  * opts: { source: 'roam'|'challenge', context: { npcId?, zoneId?, levelId? }, seed? }
  */
 export function launch(fromScene, gameId, opts = {}) {
@@ -21,9 +21,9 @@ export function launch(fromScene, gameId, opts = {}) {
   if (!game && !boss) throw new Error('Unknown game ' + gameId);
   const profile = Store.getProfile();
   const subject = (game || boss).subject;
-  // House level 1-3 (from the villager, or the next unpassed one): each level plays a grade higher.
+  // House level 1-3 (from the villager, or the next unpassed one): same grade throughout, a quicker pace each level.
   const level = boss ? 0 : Math.max(1, Math.min(3, (opts.context && opts.context.level) || nextHouseLevel(profile, gameId)));
-  const grade = effectiveGrade(profile, subject, boss ? 1 : level - 1);
+  const grade = boss ? effectiveGrade(profile, subject) : gameGrade(profile, gameId);
   const payload = {
     gameId, sceneKey: game ? game.sceneKey : BOSS_SCENE, title: game ? game.title : boss.name, subject, level: level || undefined,
     grade, band: bandFor(grade), mastery: mastery(profile, subject).level, boss: boss || undefined, timers: profile.timers !== 'off',

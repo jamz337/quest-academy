@@ -20,7 +20,7 @@ export const BADGES = [
   { id: 'champion', title: 'Academy Champion', desc: 'Defeat every boss', test: (p) => ['math', 'words', 'code', 'bible'].every((z) => p.world.bosses?.[z]?.defeated) },
   { id: 'helper', title: 'Helping Hand', desc: 'Finish 5 errands for the villagers', test: (p) => Object.values(p.world.errands || {}).filter((s) => s === 'done').length >= 5 },
   { id: 'errand-hero', title: 'Errand Hero', desc: 'Finish every errand', test: (p) => Object.values(p.world.errands || {}).filter((s) => s === 'done').length >= 12 },
-  { id: 'house-3', title: 'Three Stars', desc: 'Pass all three levels at a house', test: (p) => Object.values(p.games).some((g) => g.levels && [1, 2, 3].every((n) => (g.levels[n] || 0) >= 1)) },
+  { id: 'house-3', title: 'Three Stars', desc: 'Pass all three levels at a house', test: (p) => Object.values(p.games).some((g) => (g.gradeUp | 0) > 0 || (g.levels && [1, 2, 3].every((n) => (g.levels[n] || 0) >= 1))) },
   { id: 'master', title: 'Master Mind', desc: 'Reach Master level in any subject', test: (p) => Object.values(p.mastery || {}).some((m) => (m.level | 0) >= 3) }
 ];
 
