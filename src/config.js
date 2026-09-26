@@ -3,7 +3,7 @@ import { THEME } from './ui/theme.js';
 
 export function makeConfig(scenes, opts = {}) {
   return {
-    type: Phaser.AUTO,
+    type: opts.forceCanvas ? Phaser.CANVAS : Phaser.AUTO,
     parent: 'app',
     backgroundColor: THEME.bg,
     // UI text and shapes are anti-aliased; pixel-art world textures opt in to NEAREST filtering in Textures.js.
