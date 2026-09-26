@@ -72,7 +72,7 @@ export function fakeSystems(target = {}, { width = 400, height = 700, syncTweens
       chain(cfg) { (cfg.tweens || []).forEach((t) => { if (t.onComplete) t.onComplete(); }); return {}; }
     },
     time: { delayedCall(ms, fn) { const t = { ms, fn, remove() {} }; timers.push(t); return t; } },
-    cameras: { main: { shake() {}, flash() {}, fadeIn() {}, fadeOut(d, r, g, b, force, cb) { if (cb) cb(null, 1); }, on() {}, once() {}, setRoundPixels() {} } },
+    cameras: { main: { shake() {}, flash() {}, fadeIn() {}, fadeOut(d, r, g, b, cb) { if (cb) cb(null, 1); }, on() {}, once() {}, setRoundPixels() {} } },
     events: { on() {}, once() {}, emit() {} },
     scene: { bringToTop() {}, pause() {}, launch() {}, start() {}, stop() {}, resume() {}, isActive() { return true; }, isPaused() { return false; }, get() { return null; }, key: 'X' },
     anims: { exists: () => true },

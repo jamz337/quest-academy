@@ -84,7 +84,13 @@ export class ProfileScene extends BaseScene {
     const { w, ui } = this;
     const d = this.state.draft;
     const editing = !!this.state.editing;
-    const m = modal(this, { w: 520 * ui, h: 580 * ui, title: editing ? 'Edit player' : 'New player', accent: THEME.primary, dim: false });
+    const pw = Math.min(w - 24, 520 * ui);
+    const aSize = Math.min(52 * ui, (pw - 48) / AVATAR_COUNT - 6);
+    const aCols = this.portrait && pw < 400 ? 4 : AVATAR_COUNT;
+    const aRows = Math.ceil(AVATAR_COUNT / aCols);
+    const extra = editing ? 22 * ui + (this.state.confirmDelete ? 76 * ui : 20 * ui) : 0;
+    const need = 68 * ui + 90 * ui + 18 * ui + aRows * (aSize + 12) + 16 * ui + 92 * ui + 48 * ui + extra + 26 * ui;
+    const m = modal(this, { w: pw, h: need, title: editing ? 'Edit player' : 'New player', accent: THEME.primary, dim: false });
     const label = (str, y) => text(this, m.x + 24, y, str, T.caption(this)).setOrigin(0, 0.5);
     let y = m.contentTop;
 
@@ -98,9 +104,6 @@ export class ProfileScene extends BaseScene {
 
     // Avatar picker
     label('AVATAR', y); y += 18 * ui;
-    const aSize = Math.min(52 * ui, (m.w - 48) / AVATAR_COUNT - 6);
-    const aCols = this.portrait && m.w < 400 ? 4 : AVATAR_COUNT;
-    const aRows = Math.ceil(AVATAR_COUNT / aCols);
     const cells = grid({ x: m.x + 24, y, w: m.w - 48, h: aRows * (aSize + 12) }, aCols, aRows, 6);
     for (let i = 0; i < AVATAR_COUNT; i++) {
       const c = cells[i];

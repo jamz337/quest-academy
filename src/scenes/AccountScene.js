@@ -42,7 +42,7 @@ export class AccountScene extends BaseScene {
   buildSignedIn(top) {
     const { w, ui } = this;
     const c = Cloud.info();
-    const m = modal(this, { w: 480 * ui, h: 470 * ui, y: top + 8, accent: THEME.pink, dim: false });
+    const m = modal(this, { w: 480 * ui, h: 456 * ui, y: top + 8, accent: THEME.pink, dim: false });
     let y = m.y + 40 * ui;
     text(this, w / 2, y, c.email || '', T.bodyBold(this)); y += 32 * ui;
     const offline = c.status === 'offline' || c.status === 'unavailable';
@@ -76,7 +76,7 @@ export class AccountScene extends BaseScene {
   buildForm(top) {
     const { w, ui } = this;
     const s = this.state;
-    const m = modal(this, { w: 480 * ui, h: 480 * ui, y: top + 8, accent: THEME.pink, dim: false });
+    const m = modal(this, { w: 480 * ui, h: 424 * ui, y: top + 8, accent: THEME.pink, dim: false });
     let y = m.y + 34 * ui;
     text(this, w / 2, y, 'Save progress online so it follows your children\nto any phone, tablet or computer.', { ...T.small(this, THEME.ink2), wordWrap: { width: m.w - 40 } });
     y += 44 * ui;

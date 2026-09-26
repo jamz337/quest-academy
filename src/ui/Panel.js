@@ -34,10 +34,11 @@ export function background(scene, opts = {}) {
   const g = scene.add.graphics();
   g.fillGradientStyle(THEME.bg, THEME.bg, THEME.bgBottom, THEME.bgBottom, 1);
   g.fillRect(0, 0, w, h);
-  const big = Math.max(w, h);
-  g.fillStyle(accent, 0.10); g.fillCircle(w * 0.12, h * 0.08, big * 0.40);
-  g.fillStyle(accent2, 0.08); g.fillCircle(w * 0.92, h * 0.90, big * 0.36);
-  g.fillStyle(THEME.gold, 0.07); g.fillCircle(w * 0.88, h * 0.16, big * 0.14);
+  const m = Math.min(w, h);
+  const blob = (x, y, r, color, a) => { g.fillStyle(color, a * 0.5); g.fillCircle(x, y, r * 1.3); g.fillStyle(color, a); g.fillCircle(x, y, r); };
+  blob(w * 0.08, h * 0.05, m * 0.42, accent, 0.07);
+  blob(w * 0.96, h * 0.94, m * 0.38, accent2, 0.06);
+  blob(w * 0.9, h * 0.14, m * 0.13, THEME.gold, 0.09);
   if (dots) {
     const rnd = mulberry32(3);
     g.fillStyle(THEME.ink, 0.045);

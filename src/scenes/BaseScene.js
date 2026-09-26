@@ -56,7 +56,7 @@ export class BaseScene extends Phaser.Scene {
     const cam = this.cameras && this.cameras.main;
     const start = () => (data === undefined ? this.scene.start(key) : this.scene.start(key, data));
     if (!this.fade || !cam || typeof cam.fadeOut !== 'function') { start(); return; }
-    cam.fadeOut(THEME.motion.base, ...FADE, false, (c, progress) => { if (progress === 1) start(); });
+    cam.fadeOut(THEME.motion.base, ...FADE, (c, progress) => { if (progress >= 1) start(); });
   }
 
   /** Convenience: current viewport (refreshed on rebuild). */
