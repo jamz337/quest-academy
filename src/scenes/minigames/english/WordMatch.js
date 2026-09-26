@@ -1,0 +1,107 @@
+import { MinigameScene } from '../MinigameScene.js';
+import { C, hex } from '../../../constants.js';
+import { generateRounds, ROUNDS, PAIRS_PER_ROUND } from '../../../generators/english/match.js';
+import { grid } from '../../../systems/Layout.js';
+import { Sfx } from '../../../systems/Audio.js';
+import { T, text } from '../../../ui/TextStyles.js';
+import { panel } from '../../../ui/Panel.js';
+
+const PAR_MS = 120000;
+const TITLES = { synonym: 'Match the words that mean the same', antonym: 'Match the opposites', definition: 'Match each word to its meaning' };
+
+/** Word Match: two columns of 5 cards; pair them up. 3 rounds. A pair counts if it took at most one mistake. */
+export class WordMatch extends MinigameScene {
+  constructor() { super('MG_WordMatch'); }
+
+  initState() {
+    return { rounds: generateRounds(this.payload.grade, this.rng), rIdx: 0, done: [], mistakes: {}, left: null, right: null,
+      first: null, flash: null, busy: false };
+  }
+
+  get round() { return this.state.rounds[this.state.rIdx]; }
+  progressLabel() { return `Round ${Math.min(this.state.rIdx + 1, ROUNDS)} / ${ROUNDS}`; }
+  key(pairIdx) { return `${this.state.rIdx}-${pairIdx}`; }
+
+  buildGame(area) {
+    const s = this.state, ui = this.ui, r = this.round;
+    if (!r) return;
+    const headH = 44 * ui;
+    text(this, area.x + area.w / 2, area.y + headH / 2, TITLES[r.pairs[0].k] || 'Match the pairs', { ...T.bodyBold(this, C.white), wordWrap: { width: area.w - 16 } });
+    const gap = 10 * ui;
+    const colW = Math.min((area.w - gap) / 2, 340 * ui);
+    const x0 = area.x + (area.w - (colW * 2 + gap)) / 2;
+    const availH = area.y + area.h - (area.y + headH);
+    const cardH = Math.max(48 * ui, Math.min(76 * ui, (availH - gap * (PAIRS_PER_ROUND - 1)) / PAIRS_PER_ROUND));
+    const rect = { x: x0, y: area.y + headH, w: colW * 2 + gap, h: cardH * PAIRS_PER_ROUND + gap * (PAIRS_PER_ROUND - 1) };
+    const cells = grid(rect, 2, PAIRS_PER_ROUND, gap);
+    for (let row = 0; row < PAIRS_PER_ROUND; row++) {
+      const lp = row, rp = r.right[row];
+      this.makeCard(cells[row * 2], r.pairs[lp].l, this.cardStyle('L', lp), () => this.tap('L', lp));
+      this.makeCard(cells[row * 2 + 1], r.pairs[rp].r, this.cardStyle('R', rp), () => this.tap('R', rp));
+    }
+  }
+
+  /** Colour + interactivity for a card, derived purely from state. */
+  cardStyle(side, pairIdx) {
+    const s = this.state;
+    if (s.done.includes(this.key(pairIdx))) return { color: C.lime, textColor: C.navy, active: false };
+    if (s.flash && s.flash[side] === pairIdx) return { color: C.red, textColor: C.white, active: false };
+    const sel = side === 'L' ? s.left : s.right;
+    if (sel === pairIdx) return { color: C.yellow, textColor: C.navy, active: !s.busy };
+    return { color: C.panel, textColor: C.white, active: !s.busy, stroke: C.blue };
+  }
+
+  makeCard(cell, label, style, onTap) {
+    const ui = this.ui;
+    const c = this.add.container(cell.x, cell.y);
+    const g = this.add.graphics();
+    g.fillStyle(0x000000, 0.3); g.fillRoundedRect(-cell.w / 2, -cell.h / 2 + 4, cell.w, cell.h, 12);
+    g.fillStyle(style.color, 1); g.fillRoundedRect(-cell.w / 2, -cell.h / 2, cell.w, cell.h, 12);
+    if (style.stroke) { g.lineStyle(2, style.stroke, 0.7); g.strokeRoundedRect(-cell.w / 2, -cell.h / 2, cell.w, cell.h, 12); }
+    c.add(g);
+    const fontSize = Math.round((label.length > 14 ? 15 : label.length > 9 ? 18 : 22) * ui) + 'px';
+    c.add(this.add.text(0, 0, label, { ...T.bodyBold(this), fontSize, color: hex(style.textColor), wordWrap: { width: cell.w - 16 } }).setOrigin(0.5));
+    c.setSize(cell.w, cell.h);
+    if (style.active) { c.setInteractive({ useHandCursor: true }); c.on('pointerup', onTap); }
+    return c;
+  }
+
+  tap(side, pairIdx) {
+    const s = this.state;
+    if (s.busy || s.done.includes(this.key(pairIdx))) return;
+    const prop = side === 'L' ? 'left' : 'right';
+    if (s[prop] === pairIdx) { s[prop] = null; s.first = null; this.rebuild(); return; }
+    s[prop] = pairIdx;
+    if (s.left === null || s.right === null) { s.first = side; Sfx.click(); this.rebuild(); return; }
+    if (s.left === s.right) {
+      s.done.push(this.key(pairIdx)); s.left = s.right = null; s.first = null;
+      Sfx.correct(); this.rebuild();
+      const roundDone = this.round.pairs.every((_, i) => s.done.includes(this.key(i)));
+      if (roundDone) { s.busy = true; this.time.delayedCall(700, () => this.nextRound()); }
+      return;
+    }
+    // Wrong: the mistake goes to the pair the player was trying to match (the first card tapped).
+    const k = this.key(s.first === 'R' ? s.right : s.left);
+    s.mistakes[k] = (s.mistakes[k] || 0) + 1;
+    s.flash = { L: s.left, R: s.right }; s.busy = true;
+    this.wrongFeedback(); this.rebuild();
+    this.time.delayedCall(500, () => { s.flash = null; s.left = s.right = null; s.first = null; s.busy = false; this.rebuild(); });
+  }
+
+  nextRound() {
+    const s = this.state;
+    s.rIdx += 1; s.busy = false; s.left = s.right = null; s.first = null; s.flash = null;
+    if (s.rIdx >= s.rounds.length) {
+      let correct = 0;
+      const missedBySkill = {};
+      s.rounds.forEach((r, ri) => r.pairs.forEach((p, pi) => {
+        const m = s.mistakes[`${ri}-${pi}`] || 0;
+        if (m <= 1) correct += 1; else missedBySkill[p.k] = (missedBySkill[p.k] || 0) + 1;
+      }));
+      const missedSkills = Object.entries(missedBySkill).sort((a, b) => b[1] - a[1]).map(([k]) => k);
+      return this.finish({ correct, total: ROUNDS * PAIRS_PER_ROUND, parTimeMs: PAR_MS, missedSkills });
+    }
+    Sfx.fanfare();
+    this.rebuild();
+  }
+}
