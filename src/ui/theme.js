@@ -85,8 +85,10 @@ export function cssVars() {
     '--line': hex(THEME.line), '--line-strong': hex(THEME.lineStrong),
     '--primary': hex(THEME.primary), '--primary-dark': hex(THEME.primaryDark), '--primary-soft': hex(THEME.primarySoft),
     '--brand': hex(THEME.brand), '--brand-soft': hex(THEME.brandSoft), '--pink': hex(THEME.pink), '--pink-soft': hex(THEME.pinkSoft),
-    '--success': hex(THEME.success), '--success-soft': hex(THEME.successSoft), '--danger': hex(THEME.danger), '--danger-soft': hex(THEME.dangerSoft),
-    '--warning': hex(THEME.warning), '--warning-soft': hex(THEME.warningSoft), '--gold': hex(THEME.gold), '--star-off': hex(THEME.starOff),
+    '--brand-dark': hex(THEME.brandDark), '--pink-dark': hex(THEME.pinkDark),
+    '--success': hex(THEME.success), '--success-dark': hex(THEME.successDark), '--success-soft': hex(THEME.successSoft),
+    '--danger': hex(THEME.danger), '--danger-dark': hex(THEME.dangerDark), '--danger-soft': hex(THEME.dangerSoft),
+    '--warning': hex(THEME.warning), '--warning-dark': hex(THEME.warningDark), '--warning-soft': hex(THEME.warningSoft), '--gold': hex(THEME.gold), '--star-off': hex(THEME.starOff),
     '--math': hex(THEME.subjects.math.accent), '--words': hex(THEME.subjects.words.accent), '--code': hex(THEME.subjects.code.accent),
     '--math-soft': hex(THEME.subjects.math.soft), '--words-soft': hex(THEME.subjects.words.soft), '--code-soft': hex(THEME.subjects.code.soft)
   };

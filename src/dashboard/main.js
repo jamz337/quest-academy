@@ -4,6 +4,10 @@ import { SUBJECTS } from '../constants.js';
 import { skillLabel } from '../data/skills.js';
 import { getBadge } from '../data/badges.js';
 import { CHARACTER_STYLES, OUTLINE, MOUTH } from '../data/avatars.js';
+import { cssVars } from '../ui/theme.js';
+
+// The page's CSS variables come from the same tokens as the game so the two never drift.
+for (const [k, v] of Object.entries(cssVars())) document.documentElement.style.setProperty(k, v);
 
 const KEY = 'qa.cloud';
 const $ = (id) => document.getElementById(id);

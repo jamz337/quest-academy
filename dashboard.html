@@ -3,54 +3,82 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#1d2b53" />
+    <meta name="theme-color" content="#fff8ef" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
     <title>Quest Academy · Parent dashboard</title>
     <style>
       @font-face { font-family: 'Fredoka'; font-style: normal; font-weight: 400 700; font-display: swap; src: url('./fonts/fredoka-latin.woff2') format('woff2'); }
-      :root { --navy: #1d2b53; --panel: #2a3a6b; --dark: #14203f; --grey: #c2c3c7; --yellow: #ffec27; --lime: #00e436; --blue: #29adff; --orange: #ffa300; --red: #ff004d; --pink: #ff77a8; --white: #fff1e8; }
+      /* Defaults mirror src/ui/theme.js; main.js overwrites them from the same tokens at start-up. */
+      :root {
+        --bg: #fff8ef; --bg-bottom: #fdefe0; --surface: #ffffff; --surface-alt: #fbf6ee; --sunken: #f3ede4;
+        --ink: #2d2a4a; --ink2: #625f7e; --ink3: #9794ad; --line: #e9e2d8; --line-strong: #d6cfc4;
+        --primary: #3d8bff; --primary-dark: #2a6fd6; --primary-soft: #dcebff; --brand: #7c5cff; --brand-dark: #6244d9; --brand-soft: #e9e3ff;
+        --success: #2ec46a; --success-dark: #229c53; --success-soft: #dcf6e6; --danger: #ff5c6c; --danger-dark: #d94656; --danger-soft: #ffe1e5;
+        --warning: #ffb627; --warning-dark: #e09a12; --warning-soft: #fff0cc; --gold: #ffc531; --star-off: #e4ddd2;
+        --math: #3d8bff; --words: #2ec46a; --code: #ff8f3f;
+        --shadow-sm: 0 3px 0 rgba(45,42,74,.06);
+        --shadow-md: 0 3px 0 rgba(45,42,74,.05), 0 10px 24px rgba(45,42,74,.08);
+      }
       * { box-sizing: border-box; }
       html, body { margin: 0; min-height: 100%; }
-      body { background: linear-gradient(180deg, var(--navy), var(--dark) 60%); color: var(--white); font-family: 'Fredoka', system-ui, sans-serif; font-weight: 500; padding: 16px; }
+      body { background: linear-gradient(180deg, var(--bg), var(--bg-bottom) 70%); color: var(--ink); font-family: 'Fredoka', system-ui, sans-serif; font-weight: 500; padding: 16px; -webkit-font-smoothing: antialiased; }
       main { max-width: 960px; margin: 0 auto; }
-      h1 { font-size: 28px; color: var(--yellow); margin: 8px 0 4px; text-shadow: 0 3px 0 rgba(0,0,0,.35); }
-      h2 { font-size: 20px; margin: 0; }
-      h3 { font-size: 15px; margin: 14px 0 6px; color: var(--grey); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
-      .muted { color: var(--grey); font-size: 14px; }
-      .card { background: var(--panel); border-radius: 16px; padding: 16px; margin: 14px 0; box-shadow: 0 5px 0 rgba(0,0,0,.3); }
+      .top { display: flex; align-items: center; gap: 14px; margin: 6px 0 18px; }
+      .mark { width: 46px; height: 46px; border-radius: 15px; background: var(--primary); display: grid; place-items: center; box-shadow: var(--shadow-md); flex: none; }
+      .mark svg { width: 26px; height: 26px; }
+      h1 { font-size: 24px; margin: 0; font-weight: 700; line-height: 1.1; }
+      h2 { font-size: 20px; margin: 0; font-weight: 600; }
+      h3 { font-size: 12px; margin: 20px 0 8px; color: var(--ink2); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+      .pill { display: inline-block; background: var(--primary-soft); color: var(--primary-dark); border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 600; }
+      .muted { color: var(--ink2); font-size: 14px; }
+      .card { background: var(--surface); border-radius: 20px; padding: 18px; margin: 14px 0; box-shadow: var(--shadow-md); }
       .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-      .grow { flex: 1; }
-      label { display: block; font-size: 14px; color: var(--grey); margin: 10px 0 4px; }
-      input { width: 100%; height: 44px; border-radius: 10px; border: 3px solid var(--blue); padding: 0 12px; font: inherit; font-weight: 600; color: var(--navy); background: var(--white); }
-      button { font: inherit; font-weight: 600; border: 0; border-radius: 12px; padding: 10px 18px; color: #fff; background: var(--blue); cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,.3); }
-      button:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,.3); }
-      button.lime { background: var(--lime); color: var(--navy); }
-      button.ghost { background: var(--dark); }
-      button.red { background: var(--red); }
+      .grow { flex: 1; min-width: 0; }
+      label { display: block; font-size: 12px; color: var(--ink2); margin: 12px 0 6px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+      input { width: 100%; height: 46px; border-radius: 12px; border: 2px solid var(--line); padding: 0 14px; font: inherit; font-weight: 600; color: var(--ink); background: var(--surface); outline: none; transition: border-color .15s, box-shadow .15s; }
+      input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(61,139,255,.2); }
+      input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--primary); }
+      button { font: inherit; font-weight: 600; border: 0; border-radius: 14px; padding: 11px 18px; color: #fff; background: var(--primary); cursor: pointer; box-shadow: var(--shadow-sm); transition: transform .1s ease, filter .15s ease; }
+      button:hover { filter: brightness(1.04); }
+      button:active { transform: scale(.97); }
+      button.lime { background: var(--success); }
+      button.ghost { background: var(--surface); color: var(--ink); box-shadow: inset 0 0 0 2px var(--line), var(--shadow-sm); }
+      button.red { background: var(--danger); }
       button[disabled] { opacity: .5; cursor: default; }
-      .error { color: var(--orange); font-size: 14px; margin-top: 8px; }
+      .error { color: var(--danger); font-size: 14px; margin-top: 8px; }
       .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
-      .stat { background: var(--dark); border-radius: 12px; padding: 10px; text-align: center; }
-      .stat b { display: block; font-size: 22px; color: var(--yellow); }
-      .stat span { font-size: 12px; color: var(--grey); }
+      .stat { background: var(--surface-alt); border-radius: 14px; padding: 12px 10px; text-align: center; }
+      .stat b { display: block; font-size: 24px; font-weight: 700; color: var(--ink); }
+      .stat span { font-size: 12px; color: var(--ink2); }
       table { width: 100%; border-collapse: collapse; font-size: 14px; }
-      th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid rgba(255,255,255,.08); }
-      th { color: var(--grey); font-weight: 600; }
-      .stars { color: var(--yellow); letter-spacing: 1px; white-space: nowrap; }
-      .stars .off { color: #3b3550; }
-      .badge, .skill { display: inline-block; background: var(--dark); border-radius: 999px; padding: 4px 10px; margin: 3px 4px 3px 0; font-size: 13px; }
-      .skill { border: 2px solid var(--orange); }
-      .avatar { width: 48px; height: 48px; border-radius: 50%; image-rendering: pixelated; background: var(--dark); }
-      .subject-math { color: var(--blue); } .subject-words { color: var(--lime); } .subject-code { color: var(--orange); }
+      th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); }
+      tr:last-child td { border-bottom: 0; }
+      th { color: var(--ink2); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
+      .stars { color: var(--gold); letter-spacing: 1px; white-space: nowrap; }
+      .stars .off { color: var(--star-off); }
+      .badge, .skill { display: inline-block; border-radius: 999px; padding: 5px 12px; margin: 3px 6px 3px 0; font-size: 13px; font-weight: 600; }
+      .badge { background: var(--brand-soft); color: var(--brand-dark); }
+      .skill { background: var(--warning-soft); color: var(--warning-dark); }
+      .avatar { width: 48px; height: 48px; border-radius: 50%; background: var(--sunken); flex: none; }
+      .subject-math { color: var(--math); font-weight: 600; } .subject-words { color: var(--words); font-weight: 600; } .subject-code { color: var(--code); font-weight: 600; }
       .hidden { display: none; }
-      a { color: var(--blue); }
-      footer { text-align: center; margin: 24px 0; }
+      a { color: var(--primary); font-weight: 600; text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      footer { text-align: center; margin: 28px 0; }
+      @media (max-width: 520px) {
+        body { padding: 12px; }
+        .card { padding: 14px; border-radius: 16px; }
+        table { display: block; overflow-x: auto; white-space: nowrap; }
+      }
     </style>
   </head>
   <body>
     <main>
-      <h1>Quest Academy</h1>
-      <div class="muted">Parent dashboard</div>
+      <header class="top">
+        <div class="mark" aria-hidden="true"><svg viewBox="0 0 88 88"><path d="M44 17l8.1 16.5 18.2 2.6-13.2 12.9 3.1 18.1L44 58.5l-16.2 8.6 3.1-18.1-13.2-12.9 18.2-2.6z" fill="#fff"/></svg></div>
+        <div class="grow"><h1>Quest Academy</h1><div class="muted">Parent dashboard</div></div>
+        <span class="pill">Family account</span>
+      </header>
 
       <section id="login" class="card">
         <h2>Sign in</h2>
@@ -61,7 +89,7 @@
           <label for="password">Password</label>
           <input id="password" type="password" autocomplete="current-password" required minlength="8" />
           <div class="error hidden" id="login-error"></div>
-          <div class="row" style="margin-top:14px">
+          <div class="row" style="margin-top:16px">
             <button type="submit" id="login-btn">Sign in</button>
             <button type="button" class="ghost" id="register-btn">Create account</button>
           </div>
@@ -71,14 +99,14 @@
       <section id="dash" class="hidden">
         <div class="card row">
           <div class="grow"><b id="who"></b><div class="muted" id="synced"></div></div>
-          <label class="row" style="margin:0;gap:8px"><input type="checkbox" id="lb-toggle" style="width:auto;height:auto" /> Show on leaderboard</label>
+          <label class="row" style="margin:0;gap:8px;text-transform:none;letter-spacing:0;font-size:14px;color:var(--ink)"><input type="checkbox" id="lb-toggle" style="width:auto;height:auto" /> Show on leaderboard</label>
           <button class="ghost" id="refresh-btn">Refresh</button>
           <button class="red" id="logout-btn">Sign out</button>
         </div>
         <div id="children"></div>
       </section>
 
-      <footer class="muted"><a href="./">Back to the game</a></footer>
+      <footer class="muted"><a href="./">&larr; Back to the game</a></footer>
     </main>
     <script type="module" src="/src/dashboard/main.js"></script>
   </body>
