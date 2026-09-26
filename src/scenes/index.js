@@ -18,11 +18,12 @@ import { WordMatch } from './minigames/english/WordMatch.js';
 import { RoboMaze } from './minigames/coding/RoboMaze.js';
 import { BugHunt } from './minigames/coding/BugHunt.js';
 import { PredictRobot } from './minigames/coding/PredictRobot.js';
+import { BossBattle } from './minigames/BossBattle.js';
 
 // Order matters for render depth: later scenes draw on top when several are active.
 export const scenes = [
   BootScene, ProfileScene, ModeSelectScene, WorldScene, HudScene, ChallengeMenuScene, LevelSelectScene,
   NumberDash, FractionPizza, PatternBridge, WordBuilder, GrammarGate, WordMatch,
-  RoboMaze, BugHunt, PredictRobot,
+  RoboMaze, BugHunt, PredictRobot, BossBattle,
   ResultsScene, PauseScene, AccountScene, LeaderboardScene
 ];

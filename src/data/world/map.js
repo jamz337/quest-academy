@@ -11,10 +11,10 @@ export const isWalkable = (id) => !SOLID.includes(id);
 
 export const ZONE_NAMES = { hub: 'Academy Hub', math: 'Math Meadow', words: 'Word Woods', code: 'Code Cove' };
 
-/** What a locked gate needs, in kid-friendly words. */
+/** Fallback locked-gate wording; quests.js gateHint() gives the live version. */
 export const GATE_HINTS = {
-  words: 'Earn 3 stars in Math games to open Word Woods',
-  code: 'Earn 3 stars in English games to open Code Cove'
+  words: 'Defeat the Math Meadow boss to open Word Woods',
+  code: 'Defeat the Word Woods boss to open Code Cove'
 };
 
 function fillRect(data, x, y, w, h, id) {
@@ -96,6 +96,12 @@ export function buildMap() {
   vline(data, 4, 18, 20, TID.path); vline(data, 10, 17, 20, TID.path);   // meadow lanes
   vline(data, 7, 25, 26, TID.path); hline(data, 7, 15, 26, TID.path); vline(data, 15, 20, 26, TID.path);
 
+  // Boss arenas: a paved clearing off the main roads in each zone, joined to the path network.
+  fillRect(data, 5, 8, 5, 3, TID.path); vline(data, 7, 11, 19, TID.path);       // meadow: north of the lanes
+  fillRect(data, 31, 9, 3, 3, TID.path); hline(data, 33, 36, 10, TID.path);     // woods: west of the road
+  fillRect(data, 6, 30, 5, 3, TID.path); hline(data, 11, 13, 32, TID.path); vline(data, 13, 32, 33, TID.path);   // cove: west end of the beach
+  const bossSpots = { math: { tx: 7, ty: 9 }, words: { tx: 32, ty: 10 }, code: { tx: 8, ty: 31 } };
+
   // Gates: the only way into Word Woods and Code Cove.
   const gates = [{ zone: 'words', tx: 36, ty: 13 }, { zone: 'code', tx: 24, ty: 28 }];
   for (const g of gates) data[g.ty][g.tx] = TID.gateLocked;
@@ -127,10 +133,11 @@ export function buildMap() {
   const coins = [
     { tx: 8, ty: 20 }, { tx: 14, ty: 20 }, { tx: 18, ty: 20 }, { tx: 11, ty: 26 },
     { tx: 22, ty: 18 }, { tx: 26, ty: 23 }, { tx: 31, ty: 17 }, { tx: 36, ty: 15 },
-    { tx: 36, ty: 10 }, { tx: 24, ty: 31 }, { tx: 15, ty: 33 }, { tx: 33, ty: 33 }
+    { tx: 36, ty: 10 }, { tx: 24, ty: 31 }, { tx: 15, ty: 33 }, { tx: 33, ty: 33 },
+    { tx: 35, ty: 7 }, { tx: 41, ty: 7 }, { tx: 7, ty: 13 }
   ];
 
-  return { width: W, height: H, data, spawn, zones, gates, npcSpots, buildings, coins };
+  return { width: W, height: H, data, spawn, zones, gates, npcSpots, bossSpots, buildings, coins };
 }
 
 /** Ground tile shown beneath a tree (trees are drawn on an overlay layer so the local ground shows through). */

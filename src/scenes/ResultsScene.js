@@ -13,6 +13,7 @@ import { Sfx } from '../systems/Audio.js';
 import * as Launcher from '../systems/MinigameLauncher.js';
 import { getBadge } from '../data/badges.js';
 import { skillLabel } from '../data/skills.js';
+import { MASTERY_LABEL } from '../systems/Progression.js';
 
 const HEADLINES = ['Keep practising!', 'Good try!', 'Great job!', 'Amazing!'];
 
@@ -35,6 +36,12 @@ export class ResultsScene extends BaseScene {
       const zone = SUBJECTS[z]?.zone || z;
       this.time.delayedCall(delay, () => { Sfx.unlock(); toast(this, `${zone} unlocked!`, { icon: 'coin', accent: THEME.success }); }); delay += 1400;
     }
+    const subject = SUBJECTS[this.sceneData.payload.subject]?.title || 'Your';
+    if (result.masteryChange > 0) {
+      this.time.delayedCall(delay, () => { Sfx.unlock(); toast(this, `Level up! ${subject} questions get harder: ${MASTERY_LABEL[result.mastery]}`, { icon: 'star', accent: THEME.brand }); });
+    } else if (result.masteryChange < 0) {
+      this.time.delayedCall(delay, () => toast(this, `Easing off a little: ${subject} is back to ${MASTERY_LABEL[result.mastery]}`, { accent: THEME.ink3 }));
+    }
   }
 
   build() {
@@ -44,7 +51,9 @@ export class ResultsScene extends BaseScene {
     background(this, { accent: subject.accent, accent2: THEME.gold, dots: false });
     const m = modal(this, { w: 460 * ui, h: 540 * ui, accent: subject.accent, dim: false });
     let y = m.y + 44 * ui;
-    const head = text(this, w / 2, y, HEADLINES[result.stars] || HEADLINES[0], T.title(this));
+    const boss = payload.boss;
+    const headline = boss ? (result.won ? boss.win : boss.lose) : HEADLINES[result.stars] || HEADLINES[0];
+    const head = text(this, w / 2, y, headline, { ...T.title(this), wordWrap: { width: m.w - 40 } });
     y += 34 * ui;
     const tag = chip(this, w / 2, y, { text: payload.title, originX: 0.5, color: subject.soft, textColor: subject.dark, shadow: 'none' });
     y += 46 * ui;
@@ -59,6 +68,10 @@ export class ResultsScene extends BaseScene {
       y += 30 * ui;
     };
     if (result.total !== undefined) line('Correct answers', `${result.correct} / ${result.total}`);
+    if (boss) {
+      line('Boss health left', `${result.hpLeft} / ${boss.hp}`, result.won ? THEME.successDark : THEME.danger);
+      line('Hearts left', '♥'.repeat(result.heartsLeft || 0) + '♡'.repeat(boss.hearts - (result.heartsLeft || 0)), THEME.danger);
+    }
     if (result.levelId) line('Level', `${result.levelId}${result.solved ? '  solved' : ''}`, result.solved ? THEME.successDark : THEME.danger);
     if (result.blocksUsed !== undefined && result.par !== undefined) line('Blocks used', `${result.blocksUsed}  (par ${result.par})`);
     line('Time', formatTime(result.timeMs) + (result.timeBonus ? '  ⚡ bonus' : ''), result.timeBonus ? THEME.successDark : THEME.ink);

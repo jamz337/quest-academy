@@ -6,8 +6,10 @@ import * as Launcher from '../systems/MinigameLauncher.js';
 import { unlockedZones } from '../systems/Progression.js';
 import { getGame } from '../data/minigames.js';
 import { bandFor } from '../data/grades.js';
-import { buildMap, zoneAt, isWalkable, groundUnder, TID, GATE_HINTS, ZONE_NAMES } from '../data/world/map.js';
+import { buildMap, zoneAt, isWalkable, groundUnder, TID, ZONE_NAMES } from '../data/world/map.js';
 import { NPCS } from '../data/world/npcs.js';
+import { BOSSES } from '../data/world/bosses.js';
+import { bossReady, bossDefeated, gateHint, zoneQuests } from '../data/world/quests.js';
 import { InputController } from '../systems/InputController.js';
 import { Sfx } from '../systems/Audio.js';
 import { toast } from '../ui/Toast.js';
@@ -108,6 +110,17 @@ export class WorldScene extends Phaser.Scene {
       s.body.setSize(22, 22);
       s.npc = def;
       this.npcs.push(s);
+    }
+    // Bosses stand in their arenas and talk like villagers; `boss` marks them for talk().
+    for (const boss of BOSSES) {
+      const spot = this.map.bossSpots[boss.zone];
+      if (!spot) continue;
+      const s = this.npcGroup.create((spot.tx + 0.5) * TILE, (spot.ty + 0.5) * TILE, lookSpriteTexture(this, boss.look), 0);
+      s.setScale(CHAR_SCALE * 1.3).setDepth(5).refreshBody();
+      s.body.setSize(26, 26);
+      s.boss = boss;
+      this.npcs.push(s);
+      this.tweens.add({ targets: s, y: s.y - 3, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
     }
     this.physics.add.collider(this.player, this.npcGroup);
   }
@@ -250,7 +263,7 @@ export class WorldScene extends Phaser.Scene {
     if (z !== this.currentZone) {
       this.currentZone = z;
       const name = z ? ZONE_NAMES[z] : 'Grasslands';
-      if (hud) { hud.setZone(name); if (z && !hud.blocking) hud.banner(name); }
+      if (hud) { hud.setZone(name, z); if (z && !hud.blocking) hud.banner(name); }
     }
     const p = Store.getProfile();
     if (hud && p && hud.state.coins !== p.coins) hud.setCoins(p.coins);
@@ -269,6 +282,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   talk(sprite) {
+    if (sprite.boss) return this.talkBoss(sprite);
     const npc = sprite.npc;
     const hud = this.hud();
     this.facePlayerTo(sprite);
@@ -288,6 +302,33 @@ export class WorldScene extends Phaser.Scene {
       hud.setCoins(Store.getProfile().coins);
       hud.notify(`+${HELLO_COINS} coins for saying hello!`, { icon: 'coin' });
     }
+  }
+
+  /** Bosses fight only once the zone's other quests are done; afterwards they offer a rematch. */
+  talkBoss(sprite) {
+    const boss = sprite.boss;
+    const hud = this.hud();
+    this.facePlayerTo(sprite);
+    Sfx.pop();
+    if (!hud) return;
+    const profile = Store.getProfile();
+    const beaten = bossDefeated(profile, boss.zone);
+    if (!beaten && !bossReady(profile, boss.zone)) {
+      const left = zoneQuests(profile, boss.zone).filter((q) => !q.done && q.id !== 'boss').map((q) => `• ${q.title} (${q.count}/${q.total})`);
+      hud.showDialog({ name: boss.name, lines: [...boss.locked, 'Still to do:\n' + left.join('\n')] });
+      return;
+    }
+    hud.showDialog({
+      name: boss.name, lines: beaten ? boss.beaten : boss.intro, prompt: beaten ? 'Rematch?' : 'Fight?', playLabel: 'Fight!',
+      onPlay: () => this.fightBoss(boss)
+    });
+  }
+
+  fightBoss(boss) {
+    this.stopPlayer();
+    this.savePosition();
+    if (this.scene.isActive(SCENES.Hud)) this.scene.sleep(SCENES.Hud);
+    Launcher.launch(this, boss.id, { source: 'roam', context: { bossId: boss.id, zoneId: boss.zone } });
   }
 
   playGame(npc) {
@@ -314,7 +355,7 @@ export class WorldScene extends Phaser.Scene {
       const tile = this.layer.getTileAt(tx + ox, ty + oy);
       if (!tile || tile.index !== TID.gateLocked) continue;
       const gate = this.map.gates.find((g) => g.tx === tile.x && g.ty === tile.y);
-      if (gate) { Sfx.pop(); this.say(GATE_HINTS[gate.zone] || 'This gate is locked.', { accent: THEME.ink3 }); return; }
+      if (gate) { Sfx.pop(); this.say(gateHint(Store.getProfile(), gate.zone), { accent: THEME.ink3 }); return; }
     }
   }
 

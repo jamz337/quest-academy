@@ -26,7 +26,7 @@ describe('world map', () => {
     expect(isWalkable(map.data[map.spawn.ty][map.spawn.tx])).toBe(true);
     for (const [id, s] of Object.entries(map.npcSpots)) expect(isWalkable(map.data[s.ty][s.tx]), id).toBe(true);
     for (const c of map.coins) expect(map.data[c.ty][c.tx]).toBe(TID.path);
-    expect(map.coins).toHaveLength(12);
+    expect(map.coins).toHaveLength(15);
   });
 
   it('every NPC in npcs.js has a spot in the zone it belongs to', () => {

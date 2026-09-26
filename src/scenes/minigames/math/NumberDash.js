@@ -1,7 +1,7 @@
 import { MinigameScene } from '../MinigameScene.js';
 import { THEME } from '../../../ui/theme.js';
 import { generateSet } from '../../../generators/math/arithmetic.js';
-import { TUNING } from '../../../data/grades.js';
+import { tuningFor } from '../../../data/grades.js';
 import { grid } from '../../../systems/Layout.js';
 import { T, text } from '../../../ui/TextStyles.js';
 import { button } from '../../../ui/Button.js';
@@ -15,7 +15,7 @@ export class NumberDash extends MinigameScene {
   constructor() { super('MG_NumberDash'); }
 
   initState() {
-    const tune = TUNING[this.payload.band];
+    const tune = tuningFor(this.payload);
     return {
       questions: generateSet(this.payload.grade, this.rng, tune.questions),
       idx: 0, correct: 0, locked: false, picked: null,

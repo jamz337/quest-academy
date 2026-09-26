@@ -5,6 +5,7 @@ import * as Store from '../systems/Store.js';
 import * as Launcher from '../systems/MinigameLauncher.js';
 import { gamesForSubject } from '../data/minigames.js';
 import { bandFor, BAND_LABEL } from '../data/grades.js';
+import { mastery, effectiveGrade, MASTERY_LABEL } from '../systems/Progression.js';
 import { grid } from '../systems/Layout.js';
 import { T, text } from '../ui/TextStyles.js';
 import { background } from '../ui/Panel.js';
@@ -44,7 +45,13 @@ export class ChallengeMenuScene extends BaseScene {
     subjects.forEach((s, si) => {
       const sy = areaTop + si * sectionH;
       this.add.circle(22, sy + labelH / 2, 5 * ui, s.accent);
-      text(this, 34, sy + labelH / 2, s.title, T.bodyBold(this, s.dark)).setOrigin(0, 0.5);
+      const title = text(this, 34, sy + labelH / 2, s.title, T.bodyBold(this, s.dark)).setOrigin(0, 0.5);
+      // Mastery: how hard this subject currently plays for the profile.
+      const lvl = mastery(p, s.id).level, eg = effectiveGrade(p, s.id);
+      chip(this, title.x + title.width + 10, sy + labelH / 2, {
+        text: `${MASTERY_LABEL[lvl]}${lvl ? ` · Grade ${eg} questions` : ''}`, height: 22 * ui, fontSize: 12,
+        color: lvl ? s.soft : THEME.sunken, textColor: lvl ? s.dark : THEME.ink2, shadow: 'none'
+      });
       const games = gamesForSubject(s.id);
       const cells = grid({ x: 12, y: sy + labelH, w: w - 24, h: sectionH - labelH - 10 }, games.length, 1, 10);
       games.forEach((g, gi) => cards.push(this.card(g, cells[gi], s, p)));

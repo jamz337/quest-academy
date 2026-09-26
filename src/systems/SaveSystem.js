@@ -10,9 +10,9 @@ export function newProfile({ name, avatar = 0, grade = 3, look = null }) {
   const now = Date.now();
   return {
     id, name: String(name || 'Player').slice(0, 14), avatar, look, grade,
-    createdAt: now, updatedAt: now, coins: 0, xp: 0, badges: [],
+    createdAt: now, updatedAt: now, coins: 0, xp: 0, badges: [], mastery: {},
     games: {}, coding: { levels: {} },
-    world: { x: null, y: null, unlockedZones: ['math'], npcsTalked: [], coinsCollected: [] }
+    world: { x: null, y: null, unlockedZones: ['math'], npcsTalked: [], coinsCollected: [], bosses: {} }
   };
 }
 
@@ -29,9 +29,9 @@ export function migrate(data) {
   }
   // Fill any fields that older profiles might miss.
   for (const p of Object.values(d.profiles || {})) {
-    p.games ||= {}; p.coding ||= { levels: {} }; p.badges ||= [];
+    p.games ||= {}; p.coding ||= { levels: {} }; p.badges ||= []; p.mastery ||= {};
     p.world ||= { x: null, y: null, unlockedZones: ['math'], npcsTalked: [], coinsCollected: [] };
-    p.world.unlockedZones ||= ['math']; p.world.npcsTalked ||= []; p.world.coinsCollected ||= [];
+    p.world.unlockedZones ||= ['math']; p.world.npcsTalked ||= []; p.world.coinsCollected ||= []; p.world.bosses ||= {};
   }
   d.profiles ||= {};
   d.settings ||= { sound: true, lastMode: 'roam' };

@@ -1,22 +1,29 @@
 // The one place that knows how a mini-game is started and how control returns to the caller.
 import { SCENES } from '../constants.js';
 import { getGame } from '../data/minigames.js';
+import { getBoss } from '../data/world/bosses.js';
 import { bandFor } from '../data/grades.js';
 import * as Store from './Store.js';
-import { applyResult } from './Progression.js';
+import { applyResult, effectiveGrade, mastery } from './Progression.js';
 import * as Cloud from './Cloud.js';
 
+export const BOSS_SCENE = 'MG_Boss';
+
 /**
- * Launch a mini-game on top of `fromScene`, which is paused (not stopped) so it keeps its state.
+ * Launch a mini-game (or a boss fight, by boss id) on top of `fromScene`, which is paused (not stopped) so
+ * it keeps its state. The payload's grade/band come from the player's mastery in the subject, so games get
+ * harder as they improve; bosses play one grade above that.
  * opts: { source: 'roam'|'challenge', context: { npcId?, zoneId?, levelId? }, seed? }
  */
 export function launch(fromScene, gameId, opts = {}) {
-  const game = getGame(gameId);
-  if (!game) throw new Error('Unknown game ' + gameId);
+  const game = getGame(gameId), boss = game ? null : getBoss(gameId);
+  if (!game && !boss) throw new Error('Unknown game ' + gameId);
   const profile = Store.getProfile();
+  const subject = (game || boss).subject;
+  const grade = effectiveGrade(profile, subject, boss ? 1 : 0);
   const payload = {
-    gameId, sceneKey: game.sceneKey, title: game.title, subject: game.subject,
-    grade: profile.grade, band: bandFor(profile.grade),
+    gameId, sceneKey: game ? game.sceneKey : BOSS_SCENE, title: game ? game.title : boss.name, subject,
+    grade, band: bandFor(grade), mastery: mastery(profile, subject).level, boss: boss || undefined,
     source: opts.source || 'challenge', returnTo: fromScene.scene.key,
     context: opts.context || {}, seed: opts.seed
   };

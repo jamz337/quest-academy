@@ -13,7 +13,11 @@ export const BADGES = [
   { id: 'explorer', title: 'Explorer', desc: 'Unlock every zone', test: (p) => (p.world.unlockedZones || []).length >= 3 },
   { id: 'rich', title: 'Coin Collector', desc: 'Hold 200 coins', test: (p) => p.coins >= 200 },
   { id: 'all-rounder', title: 'All-Rounder', desc: 'Play all 9 games', test: (p) => MINIGAMES.every((g) => p.games[g.id]) },
-  { id: 'coder-10', title: 'Ten Mazes', desc: 'Solve 10 Robo Maze levels', test: (p) => Object.values(p.coding.levels).filter((l) => l.stars > 0).length >= 10 }
+  { id: 'coder-10', title: 'Ten Mazes', desc: 'Solve 10 Robo Maze levels', test: (p) => Object.values(p.coding.levels).filter((l) => l.stars > 0).length >= 10 },
+  { id: 'boss-1', title: 'Boss Buster', desc: 'Defeat your first boss', test: (p) => Object.values(p.world.bosses || {}).some((b) => b.defeated) },
+  { id: 'flawless', title: 'Flawless Fight', desc: 'Beat a boss without losing a heart', test: (p, r) => !!(r && r.won && r.heartsLeft === 3) },
+  { id: 'champion', title: 'Academy Champion', desc: 'Defeat every boss', test: (p) => ['math', 'words', 'code'].every((z) => p.world.bosses?.[z]?.defeated) },
+  { id: 'master', title: 'Master Mind', desc: 'Reach Master level in any subject', test: (p) => Object.values(p.mastery || {}).some((m) => (m.level | 0) >= 3) }
 ];
 
 export const getBadge = (id) => BADGES.find((b) => b.id === id);

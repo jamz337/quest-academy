@@ -43,7 +43,7 @@ describe('progression', () => {
     expect(starsFromAccuracy(4, 10)).toBe(0);
   });
 
-  it('applies a quiz result, awards coins/xp, tracks best and unlocks zones', () => {
+  it('applies a quiz result, awards coins/xp and tracks the best; stars alone no longer open zones', () => {
     const p = newProfile({ name: 'T', grade: 3 });
     const payload = { gameId: 'math-dash', band: 'A' };
     const r = applyResult(p, payload, { correct: 9, total: 10, timeMs: 50000, parTimeMs: 90000 });
@@ -52,8 +52,8 @@ describe('progression', () => {
     expect(r.xp).toBe(90 + 45 + 20);
     expect(p.games['math-dash'].bestStars).toBe(3);
     expect(r.newBadges).toContain('first-win');
-    expect(unlockedZones(p)).toEqual(['math', 'words']);
-    expect(r.newUnlocks).toEqual(['words']);
+    expect(unlockedZones(p)).toEqual(['math']);   // Word Woods opens when the meadow boss is beaten (see quests.test.js)
+    expect(r.newUnlocks).toEqual([]);
     // Worse replay does not lower the best
     applyResult(p, payload, { correct: 2, total: 10, timeMs: 50000 });
     expect(p.games['math-dash'].bestStars).toBe(3);

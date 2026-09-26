@@ -11,6 +11,10 @@ import { toast } from '../ui/Toast.js';
 import { enter } from '../ui/motion.js';
 import { Sfx } from '../systems/Audio.js';
 import { VirtualJoystick } from '../systems/VirtualJoystick.js';
+import * as Store from '../systems/Store.js';
+import { ZONE_NAMES } from '../data/world/map.js';
+import { zoneQuests, activeZone, ZONE_ORDER, bossReady } from '../data/world/quests.js';
+import { bossForZone } from '../data/world/bosses.js';
 
 /**
  * Overlay on top of the World scene: joystick, action button, coin counter, zone label, menu and the
@@ -20,7 +24,7 @@ export class HudScene extends BaseScene {
   constructor() { super(SCENES.Hud); }
 
   create(data) {
-    this.state = { coins: 0, zone: '', dialog: null, menuOpen: false };
+    this.state = { coins: 0, zone: '', zoneId: null, dialog: null, menuOpen: false, menuPage: 'menu' };
     this.actionFlag = false;
     super.create(data);
     this.scene.bringToTop();
@@ -45,7 +49,7 @@ export class HudScene extends BaseScene {
   }
 
   /** Dialog and menu animate in when they open; everything else redraws quietly. */
-  enterKey() { return (this.state.dialog ? 'd' + this.state.dialog.idx : '') + (this.state.menuOpen ? 'm' : ''); }
+  enterKey() { return (this.state.dialog ? 'd' + this.state.dialog.idx : '') + (this.state.menuOpen ? 'm' + this.state.menuPage : ''); }
 
   get dialogOpen() { return !!this.state.dialog; }
   get menuOpen() { return this.state.menuOpen; }
@@ -95,8 +99,8 @@ export class HudScene extends BaseScene {
   // ---- Coins / zone -------------------------------------------------------------------------
 
   setCoins(n) { this.state.coins = n; if (this.coinChip && this.coinChip.active) this.coinChip.setText(String(n)); }
-  setZone(name) {
-    this.state.zone = name || '';
+  setZone(name, id = null) {
+    this.state.zone = name || ''; this.state.zoneId = id;
     if (this.zoneChip && this.zoneChip.active) { this.zoneChip.setText(this.state.zone); this.zoneChip.setVisible(!!this.state.zone); }
   }
   addCoins(n) { this.setCoins(this.state.coins + n); }
@@ -174,7 +178,7 @@ export class HudScene extends BaseScene {
 
   openMenu() {
     if (this.state.menuOpen) return;
-    this.state.menuOpen = true;
+    this.state.menuOpen = true; this.state.menuPage = 'menu';
     if (this.joystick) this.joystick.release();
     if (this.scene.isActive(SCENES.World)) this.scene.pause(SCENES.World);
     this.rebuild();
@@ -187,13 +191,40 @@ export class HudScene extends BaseScene {
   }
 
   buildMenu() {
+    if (this.state.menuPage === 'quests') return this.buildQuests();
     const { w, ui } = this;
-    const m = modal(this, { w: 320 * ui, h: 300 * ui, title: 'Paused', accent: THEME.primary, depth: 600, dimAlpha: 0.45 });
+    const m = modal(this, { w: 320 * ui, h: 362 * ui, title: 'Paused', accent: THEME.primary, depth: 600, dimAlpha: 0.45 });
     const bw = m.w - 48, bh = 50 * ui;
     let y = m.contentTop + 12 * ui + bh / 2;
     button(this, w / 2, y, bw, bh, 'Resume', { variant: 'primary', onClick: () => this.closeMenu() }).setDepth(603); y += bh + 12;
+    button(this, w / 2, y, bw, bh, 'Quests', { variant: 'warning', onClick: () => { Sfx.click(); this.state.menuPage = 'quests'; this.rebuild(); } }).setDepth(603); y += bh + 12;
     button(this, w / 2, y, bw, bh, 'Challenge Mode', { variant: 'subject', subject: 'code', onClick: () => this.leaveTo(SCENES.ChallengeMenu) }).setDepth(603); y += bh + 12;
     button(this, w / 2, y, bw, bh, 'Home', { variant: 'secondary', onClick: () => this.leaveTo(SCENES.ModeSelect) }).setDepth(603);
+  }
+
+  /** Checklist for the zone the player stands in (or the next one to clear), with the boss last. */
+  buildQuests() {
+    const { w, ui } = this;
+    const profile = Store.getProfile() || {};
+    const zone = ZONE_ORDER.includes(this.state.zoneId) ? this.state.zoneId : activeZone(profile);
+    const quests = zoneQuests(profile, zone);
+    const boss = bossForZone(zone);
+    const rowH = 34 * ui;
+    const m = modal(this, { w: 400 * ui, h: 180 * ui + quests.length * rowH, title: `${ZONE_NAMES[zone]} quests`, accent: THEME.warning, depth: 600, dimAlpha: 0.45 });
+    let y = m.contentTop + 6 * ui;
+    const ready = boss && bossReady(profile, zone);
+    const done = quests.every((q) => q.done);
+    const sub = done ? 'Zone cleared! Explore the next land.' : ready ? `${boss.name} is waiting. Go and fight!` : 'Finish these to wake the boss.';
+    text(this, w / 2, y, sub, T.small(this, THEME.ink2)).setDepth(603); y += 24 * ui;
+    quests.forEach((q) => {
+      const cy = y + rowH / 2;
+      const mark = q.done ? '✓' : q.id === 'boss' && !ready ? '🔒' : '○';
+      text(this, m.x + 26, cy, mark, T.bodyBold(this, q.done ? THEME.successDark : THEME.ink3)).setDepth(603);
+      text(this, m.x + 48, cy, q.title, { ...T.body(this, q.done ? THEME.ink2 : THEME.ink), wordWrap: { width: m.w - 130 } }).setOrigin(0, 0.5).setDepth(603);
+      text(this, m.x + m.w - 24, cy, `${q.count}/${q.total}`, T.small(this, q.done ? THEME.successDark : THEME.ink2)).setOrigin(1, 0.5).setDepth(603);
+      y += rowH;
+    });
+    button(this, w / 2, m.y + m.h - 36 * ui, Math.min(m.w - 48, 200 * ui), 44 * ui, 'Back', { variant: 'secondary', onClick: () => { this.state.menuPage = 'menu'; this.rebuild(); } }).setDepth(603);
   }
 
   /** Stop the world (which saves its position on shutdown) and this Hud, then start another screen. */

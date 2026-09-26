@@ -1,6 +1,41 @@
-// Every star, coin, XP, badge and unlock rule lives here so the games stay simple.
+// Every star, coin, XP, badge, mastery and unlock rule lives here so the games stay simple.
 import { BADGES } from '../data/badges.js';
 import { gamesForSubject } from '../data/minigames.js';
+import { bossDefeated } from '../data/world/quests.js';
+
+// ---- Mastery: the better a player does in a subject, the harder its games get ----------------
+export const MASTERY_MAX = 3;
+export const MASTERY_LABEL = ['Rookie', 'Skilled', 'Expert', 'Master'];
+const MIN_GRADE = 2, MAX_GRADE = 8;
+
+/** { level, streak } for a subject. streak counts consecutive 3-star (+) or 0-1-star (−) results. */
+export function mastery(profile, subject) {
+  const m = profile?.mastery?.[subject];
+  return { level: Math.max(0, Math.min(MASTERY_MAX, m?.level | 0)), streak: m?.streak | 0 };
+}
+
+/** Grade the generators are asked for: the player's grade raised by their mastery level. */
+export function effectiveGrade(profile, subject, extra = 0) {
+  const g = (Number(profile?.grade) || 3) + mastery(profile, subject).level + extra;
+  return Math.max(MIN_GRADE, Math.min(MAX_GRADE, g));
+}
+
+/**
+ * Fold a result into the subject's mastery: two 3-star games in a row step it up, two weak games in a row
+ * step it down, a 2-star game holds. Returns { from, to }.
+ */
+export function updateMastery(profile, subject, stars) {
+  profile.mastery ||= {};
+  const m = profile.mastery[subject] || { level: 0, streak: 0 };
+  const from = m.level;
+  if (stars >= 3) m.streak = Math.max(1, m.streak + 1);
+  else if (stars <= 1) m.streak = Math.min(-1, m.streak - 1);
+  else m.streak = 0;
+  if (m.streak >= 2 && m.level < MASTERY_MAX) { m.level += 1; m.streak = 0; }
+  if (m.streak <= -2 && m.level > 0) { m.level -= 1; m.streak = 0; }
+  profile.mastery[subject] = m;
+  return { from, to: m.level };
+}
 
 export function starsFromAccuracy(correct, total) {
   if (!total) return 0;
@@ -22,12 +57,32 @@ export function starsForMaze({ solved, blocksUsed, par, attempts }) {
 export const subjectBestStars = (profile, subject) =>
   gamesForSubject(subject).reduce((s, g) => s + (profile.games[g.id]?.bestStars || 0), 0);
 
-/** Which roam zones this profile may enter. */
+/**
+ * Which roam zones this profile may enter: a zone opens when the previous zone's boss is beaten. Zones
+ * already unlocked under the old star rule stay open.
+ */
 export function unlockedZones(profile) {
+  const stored = profile?.world?.unlockedZones || [];
   const zones = ['math'];
-  if (subjectBestStars(profile, 'math') >= 3) zones.push('words');
-  if (subjectBestStars(profile, 'words') >= 3) zones.push('code');
+  if (bossDefeated(profile, 'math') || stored.includes('words')) zones.push('words');
+  if (bossDefeated(profile, 'words') || stored.includes('code')) zones.push('code');
   return zones;
+}
+
+/** Score a boss fight. raw: { won, hpLeft, heartsLeft, correct, total }. Stars come from hearts kept. */
+function applyBossResult(profile, payload, raw, result) {
+  const won = !!raw.won;
+  const stars = won ? Math.max(1, Math.min(3, raw.heartsLeft | 0)) : 0;
+  const coins = raw.coins ?? (raw.correct || 0) * 2 + (won ? 50 : 0);
+  const xp = raw.xp ?? (raw.correct || 0) * 10 + (won ? 150 : 0);
+  Object.assign(result, { stars, coins, xp, score: (raw.correct || 0) * 10 + stars * 50, timeBonus: 0, passed: won, newBest: false });
+  profile.world.bosses ||= {};
+  const rec = profile.world.bosses[payload.boss.zone] || { defeated: false, attempts: 0, bestStars: 0, firstWinAt: null };
+  rec.attempts += 1;
+  if (won && !rec.defeated) rec.firstWinAt = Date.now();
+  rec.defeated = rec.defeated || won;
+  rec.bestStars = Math.max(rec.bestStars, stars);
+  profile.world.bosses[payload.boss.zone] = rec;
 }
 
 /**
@@ -37,6 +92,12 @@ export function unlockedZones(profile) {
 export function applyResult(profile, payload, raw) {
   const result = { gameId: payload.gameId, band: payload.band, aborted: !!raw.aborted, ...raw };
   if (result.aborted) return result;
+  if (payload.boss) {
+    applyBossResult(profile, payload, raw, result);
+    profile.coins += result.coins;
+    profile.xp += result.xp;
+    return finishResult(profile, result);
+  }
 
   const isCoding = raw.stars !== undefined && raw.stars !== null;
   const stars = isCoding ? raw.stars : starsFromAccuracy(raw.correct, raw.total);
@@ -66,8 +127,15 @@ export function applyResult(profile, payload, raw) {
 
   profile.coins += coins;
   profile.xp += xp;
+  if (payload.subject) {
+    const m = updateMastery(profile, payload.subject, stars);
+    result.mastery = m.to; result.masteryChange = m.to - m.from;
+  }
+  return finishResult(profile, result);
+}
 
-  // Unlocks
+/** Zone unlocks and badges, shared by games and boss fights. */
+function finishResult(profile, result) {
   const before = new Set(profile.world.unlockedZones || ['math']);
   const now = unlockedZones(profile);
   result.newUnlocks = now.filter((z) => !before.has(z));

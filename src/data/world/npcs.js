@@ -8,7 +8,9 @@ export const NPCS = [
     lines: [
       'Welcome to Quest Academy! Walk around and talk to friends to play games.',
       'Math Meadow is to the west. Word Woods is up in the north-east, and Code Cove is down south by the sea.',
-      'Earn 3 stars in Math games to open Word Woods, and 3 stars in English games to open Code Cove!'
+      'Each land has quests: meet the villagers, earn a star in every game and find the hidden coins.',
+      'Finish them all and the boss of that land will fight you. Beat the boss to open the next gate!',
+      'Check your quests any time from the pause menu.'
     ],
     playPrompt: null
   },
