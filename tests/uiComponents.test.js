@@ -17,6 +17,7 @@ const { StarRow } = await import('../src/ui/StarRow.js');
 const { toast } = await import('../src/ui/Toast.js');
 const { enter, shake, pulse } = await import('../src/ui/motion.js');
 const { textInput } = await import('../src/ui/Input.js');
+const { signpost, SIGN_BOARDS } = await import('../src/ui/Signpost.js');
 const { BaseScene } = await import('../src/scenes/BaseScene.js');
 const { THEME, textOn, mix, hex } = await import('../src/ui/theme.js');
 
@@ -123,6 +124,16 @@ describe('widgets', () => {
     shake(s, o); pulse(s, o);
     const d = textInput(s, 0, 0, 100, 40, { value: 'v', onInput() {}, onEnter() {} });
     expect(d.input.value).toBe('v');
+  });
+});
+
+describe('signpost', () => {
+  it('draws one labelled board per land with no button label', () => {
+    const scene = fakeSystems();
+    const s = signpost(scene, 100, 200);
+    expect(s.labels.map((t) => t.text)).toEqual(SIGN_BOARDS.map((b) => b.label));
+    expect(s.label).toBeUndefined();
+    expect(s.height).toBeGreaterThan(40);
   });
 });
 

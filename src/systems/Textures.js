@@ -102,14 +102,6 @@ const SHEEP = [
 ];
 const SHEEP2 = SHEEP.map((r, i) => (i === 11 || i === 12 ? '...kk.....kk....' : r));
 
-// Signpost: three boards (arrows pointing different ways) on a wooden post.
-const SIGN = [
-  '..kkkkkkkkkk....', '.kccccccccccck..', '.kctccttcttcck..', '.kcccccccccccck.', '..kkkkkkkkkk....',
-  '.......hh.......', '....kkkkkkkkkkk.', '...kcccccccccck.', '...kcttcttccttk.', '...kcccccccccck.', '....kkkkkkkkkkk.',
-  '.......hh.......', '..kkkkkkkkkk....', '.kcttccttcttck..', '..kkkkkkkkkk....', '.......hh.......'
-];
-const SIGN_PAL = { k: '#4e3220', c: '#f0b36b', t: '#7a4a2a', h: '#8a5a3a' };
-
 // The bunny: tall ears with pink insides, a pink nose and a white tail. Faces left.
 const BUNNY = [
   '................', '..kk..kk........', '.kpckkpck.......', '.kpckkpck.......',
@@ -476,13 +468,12 @@ export function generateAllTextures(scene) {
   pixelTexture(scene, 'robot', [ROBOT, ROBOT2]);
   pixelTexture(scene, 'sheep', [SHEEP, SHEEP2]);
   pixelTexture(scene, 'bunny', [BUNNY, BUNNY2]);
-  pixelTexture(scene, 'sign', [SIGN], { '.': null, ...SIGN_PAL });
   for (const [key, rate] of [['sheep', 5], ['bunny', 8]]) {
     if (!scene.anims.exists(`${key}-walk`)) scene.anims.create({ key: `${key}-walk`, frames: scene.anims.generateFrameNumbers(key, { start: 0, end: 1 }), frameRate: rate, repeat: -1 });
   }
   const sheets = [...CHARACTER_STYLES.map((_, i) => `char${i}`), ...NPC_STYLES.map((_, i) => `npc${i}`)];
   sheets.forEach((key) => walkAnims(scene, key));
   // The game renders anti-aliased (pixelArt: false); pixel-art sheets opt back in to crisp scaling.
-  ['tiles', 'robot', 'sheep', 'bunny', 'sign', ...sheets].forEach((key) => scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST));
+  ['tiles', 'robot', 'sheep', 'bunny', ...sheets].forEach((key) => scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST));
   if (!scene.anims.exists('robot-walk')) scene.anims.create({ key: 'robot-walk', frames: scene.anims.generateFrameNumbers('robot', { start: 0, end: 1 }), frameRate: 8, repeat: -1 });
 }

@@ -154,7 +154,7 @@ export function buildMap() {
   place('scribe', 'bible', 43, 14);
   place('fisherman', 'bible', 47, 14);
   npcSpots.signpost = { tx: 24, ty: 18 };
-  const signSpot = { tx: 25, ty: 18 };   // the wooden signpost next to Sam
+  const signSpot = { tx: 24, ty: 17 };   // the wooden signpost right behind Sam, at the top of the plaza
 
   // The player's own house in the hub, in the classic red-roof style, with a path to the plaza.
   const homeDoor = building(data, 18, 15, 3, 3, { roof: TID.roof, wall: TID.wall, door: TID.door });

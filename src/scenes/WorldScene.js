@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { SCENES, TILE } from '../constants.js';
+import { signpost } from '../ui/Signpost.js';
 import { THEME } from '../ui/theme.js';
 import * as Store from '../systems/Store.js';
 import * as Launcher from '../systems/MinigameLauncher.js';
@@ -658,7 +659,14 @@ export class WorldScene extends Phaser.Scene {
 
   createLandmarks(profile) {
     const sign = this.map.signSpot;
-    if (sign) this.add.image((sign.tx + 0.5) * TILE, (sign.ty + 0.5) * TILE - 6, 'sign').setScale(CHAR_SCALE).setDepth(5);
+    if (sign) {
+      // The post stands on the tile centre so the boards clear Sam's head just below; players cannot walk through the post.
+      const sx = (sign.tx + 0.5) * TILE, sy = (sign.ty + 0.5) * TILE;
+      this.signpost = signpost(this, sx, sy).setDepth(11);
+      const post = this.add.rectangle(sx, sy - 3, 12, 8).setVisible(false);
+      this.physics.add.existing(post, true);
+      if (this.player) this.physics.add.collider(this.player, post);
+    }
     const home = this.map.home;
     if (home) {
       const cx = (home.x + home.w / 2) * TILE, cy = (home.y - 0.35) * TILE;
