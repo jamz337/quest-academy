@@ -1,11 +1,12 @@
 import { MinigameScene } from '../MinigameScene.js';
-import { C, hex } from '../../../constants.js';
+import { THEME } from '../../../ui/theme.js';
 import { generateRounds } from '../../../generators/english/words.js';
 import { grid } from '../../../systems/Layout.js';
 import { Sfx } from '../../../systems/Audio.js';
 import { T, text } from '../../../ui/TextStyles.js';
 import { button } from '../../../ui/Button.js';
-import { panel } from '../../../ui/Panel.js';
+import { card, tile } from '../../../ui/Card.js';
+import { enter, shake } from '../../../ui/motion.js';
 
 const PAR_MS = 120000;
 const MAX_TRIES = 3;
@@ -22,13 +23,16 @@ export class WordBuilder extends MinigameScene {
 
   get round() { return this.state.rounds[this.state.idx]; }
   progressLabel() { return `${Math.min(this.state.idx + 1, this.state.rounds.length)} / ${this.state.rounds.length}`; }
+  progressRatio() { return this.state.idx / this.state.rounds.length; }
+  enterKey() { return this.state.idx; }
 
   buildGame(area) {
     const s = this.state, ui = this.ui, r = this.round;
     if (!r) return;
     const hintH = 76 * ui;
-    panel(this, area.x, area.y, area.w, hintH, { color: C.panelDark, stroke: C.lime });
+    const hint = card(this, area.x + area.w / 2, area.y + hintH / 2, area.w, hintH);
     text(this, area.x + area.w / 2, area.y + hintH / 2, `Hint: ${r.hint}`, { ...T.body(this), wordWrap: { width: area.w - 24 } });
+    enter(this, hint, { from: 'up', distance: 12 });
 
     const n = r.word.length, gap = 6 * ui;
     let cols = n, size = Math.min(64 * ui, (area.w - gap * (n - 1)) / n);
@@ -42,42 +46,33 @@ export class WordBuilder extends MinigameScene {
     const slotsY = area.y + hintH + 18 * ui;
     this.slotBox = this.add.container(0, 0);
     const slotCells = grid(rowRect(slotsY), cols, rows, gap);
-    const slotColor = s.result === 'right' ? C.lime : s.result === 'wrong' ? C.red : C.panel;
+    const slotColor = s.result === 'right' ? THEME.success : s.result === 'wrong' ? THEME.danger : this.subject.accent;
     s.slots.forEach((ti, i) => {
       if (i >= n) return;
-      const letter = ti === null ? '' : r.scrambled[ti];
-      const tile = this.makeTile(slotCells[i].x, slotCells[i].y, size, letter, ti === null ? C.panelDark : slotColor, ti !== null && !s.locked ? () => this.tapSlot(i) : null, C.white);
-      this.slotBox.add(tile);
+      const letter = ti === null ? '' : r.scrambled[ti].toUpperCase();
+      const t = tile(this, slotCells[i].x, slotCells[i].y, size, letter, {
+        empty: ti === null, color: slotColor, textColor: THEME.onAccent, onTap: ti !== null && !s.locked ? () => this.tapSlot(i) : null
+      });
+      this.slotBox.add(t);
     });
-    text(this, area.x + area.w / 2, slotsY + blockH + 14 * ui, `Tries left: ${MAX_TRIES - s.attempts}`, T.small(this, s.attempts ? C.orange : C.grey));
+    text(this, area.x + area.w / 2, slotsY + blockH + 14 * ui, `Tries left: ${MAX_TRIES - s.attempts}`, T.small(this, s.attempts ? THEME.warningDark : THEME.ink2));
 
     // Letter tiles
     const tilesY = slotsY + blockH + 30 * ui;
     const tileCells = grid(rowRect(tilesY), cols, rows, gap);
-    r.scrambled.forEach((letter, ti) => {
+    const letters = r.scrambled.map((letter, ti) => {
       const used = s.slots.includes(ti);
-      const t = this.makeTile(tileCells[ti].x, tileCells[ti].y, size, letter, C.yellow, used || s.locked ? null : () => this.tapTile(ti), C.navy);
-      if (used) t.setAlpha(0.22);
+      const t = tile(this, tileCells[ti].x, tileCells[ti].y, size, letter.toUpperCase(), { onTap: used || s.locked ? null : () => this.tapTile(ti) });
+      if (used) t.setAlpha(0.25);
+      return t;
     });
+    enter(this, letters, { from: 'pop', delay: 80, stagger: 30 });
 
     // Controls
     const by = Math.max(tilesY + blockH + 40 * ui, area.y + area.h - 36 * ui);
     const bw = Math.min(170 * ui, area.w / 2 - 8);
-    button(this, area.x + area.w / 2 - bw / 2 - 6, by, bw, 52 * ui, s.hinted ? 'Hint used' : 'Hint', { color: C.purple, fontSize: 18, onClick: () => this.hint(), disabled: s.hinted || s.locked });
-    button(this, area.x + area.w / 2 + bw / 2 + 6, by, bw, 52 * ui, 'Clear', { color: C.dark, fontSize: 18, onClick: () => this.clear(), disabled: s.locked });
-  }
-
-  makeTile(x, y, size, letter, color, onTap, textColor) {
-    const c = this.add.container(x, y);
-    const g = this.add.graphics();
-    g.fillStyle(0x000000, 0.3); g.fillRoundedRect(-size / 2, -size / 2 + 4, size, size, 10);
-    g.fillStyle(color, 1); g.fillRoundedRect(-size / 2, -size / 2, size, size, 10);
-    if (!letter) { g.lineStyle(2, C.grey, 0.5); g.strokeRoundedRect(-size / 2, -size / 2, size, size, 10); }
-    c.add(g);
-    if (letter) c.add(this.add.text(0, 0, letter.toUpperCase(), { ...T.heading(this), fontSize: Math.round(size * 0.5) + 'px', color: hex(textColor) }).setOrigin(0.5));
-    c.setSize(size, size);
-    if (onTap) { c.setInteractive({ useHandCursor: true }); c.on('pointerup', onTap); }
-    return c;
+    button(this, area.x + area.w / 2 - bw / 2 - 6, by, bw, 52 * ui, s.hinted ? 'Hint used' : 'Hint', { variant: 'secondary', fontSize: 18, onClick: () => this.hint(), disabled: s.hinted || s.locked });
+    button(this, area.x + area.w / 2 + bw / 2 + 6, by, bw, 52 * ui, 'Clear', { variant: 'ghost', fontSize: 18, onClick: () => this.clear(), disabled: s.locked });
   }
 
   tapTile(ti) {
@@ -95,7 +90,6 @@ export class WordBuilder extends MinigameScene {
     const s = this.state;
     if (s.locked || s.slots[i] === null) return;
     s.slots[i] = null;
-    Sfx.click();
     this.rebuild();
   }
 
@@ -138,7 +132,7 @@ export class WordBuilder extends MinigameScene {
       return;
     }
     this.rebuild();
-    if (this.slotBox) this.tweens.add({ targets: this.slotBox, x: 8, duration: 45, yoyo: true, repeat: 5 });
+    shake(this, this.slotBox);
     this.time.delayedCall(800, () => { s.slots.fill(null); s.result = null; s.locked = false; this.rebuild(); });
   }
 

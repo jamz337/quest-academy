@@ -1,11 +1,13 @@
 import { MinigameScene } from '../MinigameScene.js';
-import { C } from '../../../constants.js';
+import { THEME } from '../../../ui/theme.js';
 import { generateRounds, fillBlank } from '../../../generators/english/grammar.js';
 import { skillLabel } from '../../../data/skills.js';
 import { grid } from '../../../systems/Layout.js';
 import { T, text } from '../../../ui/TextStyles.js';
 import { button } from '../../../ui/Button.js';
-import { panel } from '../../../ui/Panel.js';
+import { card } from '../../../ui/Card.js';
+import { stripe } from '../../../ui/Panel.js';
+import { enter } from '../../../ui/motion.js';
 
 const PAR_MS = 90000;
 
@@ -19,28 +21,36 @@ export class GrammarGate extends MinigameScene {
 
   get round() { return this.state.rounds[this.state.idx]; }
   progressLabel() { return `${Math.min(this.state.idx + 1, this.state.rounds.length)} / ${this.state.rounds.length}`; }
+  progressRatio() { return this.state.idx / this.state.rounds.length; }
+  enterKey() { return this.state.idx; }
 
   buildGame(area) {
     const s = this.state, ui = this.ui, r = this.round;
     if (!r) return;
     const gap = 12;
     const promptH = Math.min(area.h * 0.42, 260 * ui);
-    panel(this, area.x, area.y, area.w, promptH, { color: C.panelDark, stroke: C.lime });
-    text(this, area.x + area.w / 2, area.y + 22 * ui, `Which word fits? (${skillLabel(r.skill)})`, T.small(this, C.grey));
+    const cx = area.x + area.w / 2;
+    const prompt = card(this, cx, area.y + promptH / 2, area.w, promptH);
+    stripe(this, cx - 24 * ui, area.y + 10 * ui, 48 * ui, this.subject.accent, 5 * ui);
+    text(this, cx, area.y + 30 * ui, `Which word fits? (${skillLabel(r.skill)})`, T.small(this, THEME.ink2));
     const shown = s.picked === null ? fillBlank(r.sentence) : fillBlank(r.sentence, r.options[r.answer]);
     const long = shown.length > 40;
-    text(this, area.x + area.w / 2, area.y + promptH / 2 + 10 * ui, shown,
-      { ...T.heading(this, s.picked === null ? C.white : C.lime), fontSize: Math.round((long ? 22 : 28) * ui) + 'px', wordWrap: { width: area.w - 32 } });
+    text(this, cx, area.y + promptH / 2 + 12 * ui, shown,
+      T.at(this, long ? 22 : 28, s.picked === null ? THEME.ink : THEME.successDark, { wordWrap: { width: area.w - 32 } }));
+    enter(this, prompt, { from: 'up', distance: 12 });
 
     const top = area.y + promptH + gap;
     const rect = { x: area.x, y: top, w: area.w, h: Math.min(area.y + area.h - top, (this.portrait ? 260 : 130) * ui) };
     const cells = this.portrait ? grid(rect, 1, 3, gap) : grid(rect, 3, 1, gap);
-    r.options.forEach((opt, i) => {
+    const made = r.options.map((opt, i) => {
       const c = cells[i];
-      let color = C.blue;
-      if (s.picked !== null) color = i === r.answer ? C.lime : i === s.picked ? C.red : C.dark;
-      button(this, c.x, c.y, c.w, Math.max(56 * ui, Math.min(c.h, 96 * ui)), opt, { color, fontSize: opt.length > 10 ? 20 : 26, wrap: true, onClick: () => this.pick(i) });
+      let variant = 'secondary', faded = false;
+      if (s.picked !== null) { if (i === r.answer) variant = 'success'; else if (i === s.picked) variant = 'danger'; else faded = true; }
+      const b = button(this, c.x, c.y, c.w, Math.max(56 * ui, Math.min(c.h, 96 * ui)), opt, { variant, fontSize: opt.length > 10 ? 20 : 26, wrap: true, onClick: () => this.pick(i) });
+      if (faded) b.setAlpha(0.45);
+      return b;
     });
+    enter(this, made, { from: 'up', delay: 60, stagger: 40 });
   }
 
   pick(i) {

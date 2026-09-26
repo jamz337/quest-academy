@@ -1,16 +1,21 @@
 import { BaseScene } from '../BaseScene.js';
-import { C, SCENES, SUBJECTS } from '../../constants.js';
+import { SCENES } from '../../constants.js';
+import { THEME, subjectOf } from '../../ui/theme.js';
 import { Rng } from '../../systems/Rng.js';
 import * as Launcher from '../../systems/MinigameLauncher.js';
 import { Sfx } from '../../systems/Audio.js';
+import { safeArea } from '../../systems/Layout.js';
 import { T, text } from '../../ui/TextStyles.js';
-import { button } from '../../ui/Button.js';
+import { iconButton } from '../../ui/Button.js';
 import { background } from '../../ui/Panel.js';
+import { chip } from '../../ui/Chip.js';
+import { ProgressBar } from '../../ui/ProgressBar.js';
 
 /**
  * Base class for every mini-game.
  * Subclasses implement initState() -> plain object, and buildGame(area) which draws from this.state.
  * Call this.finish(raw) when done. Keep all progress in this.state so rotation (rebuild) never loses it.
+ * Override enterKey() to return the round index so ui/motion.enter() animates once per round.
  */
 export class MinigameScene extends BaseScene {
   init(payload) {
@@ -38,32 +43,44 @@ export class MinigameScene extends BaseScene {
   buildGame() {}
 
   elapsedMs() { return Date.now() - this.startedAt - this.pausedMs; }
-  get subjectColor() { return SUBJECTS[this.payload.subject]?.color ?? C.blue; }
+  get subject() { return subjectOf(this.payload.subject); }
+  get subjectColor() { return this.subject.accent; }
 
   build() {
-    background(this, C.navy, C.panelDark, this.subjectColor);
+    background(this, { accent: this.subject.accent, accent2: this.subject.soft, dots: false });
     // Block pointer events from reaching the paused scene underneath.
     this.add.rectangle(0, 0, this.w, this.h, 0x000000, 0.001).setOrigin(0).setInteractive();
     this.area = this.createFrame();
     this.buildGame(this.area);
   }
 
-  /** Top bar with pause button, title and a progress label. Returns the play area rect below it. */
+  /** Transparent header: pause button, title, progress chip and an optional thin progress bar. Returns the play area rect below it. */
   createFrame() {
-    const { w, ui } = this;
-    const barH = 52 * ui;
-    this.add.rectangle(0, 0, w, barH, this.subjectColor, 1).setOrigin(0);
-    this.add.rectangle(0, barH, w, 4, 0x000000, 0.25).setOrigin(0);
-    button(this, 34 * ui, barH / 2, 52 * ui, 38 * ui, 'II', { color: C.panelDark, fontSize: 16, onClick: () => this.openPause() });
-    text(this, w / 2, barH / 2, this.payload.title, T.heading(this, C.white));
-    this.progressText = text(this, w - 16, barH / 2, this.progressLabel(), T.bodyBold(this, C.white)).setOrigin(1, 0.5);
-    const pad = 12;
-    return { x: pad, y: barH + pad, w: w - pad * 2, h: this.h - barH - pad * 2 };
+    const { w, h, ui } = this;
+    const sa = safeArea();
+    const barH = 56 * ui + sa.top, cy = sa.top + 28 * ui + 2;
+    iconButton(this, 12 + sa.left + 22 * ui, cy, 44 * ui, 'II', { fontSize: 15, onClick: () => this.openPause() });
+    text(this, w / 2, cy, this.payload.title, T.heading(this));
+    this.progressChip = chip(this, w - 12 - sa.right, cy, { text: this.progressLabel(), originX: 1, color: this.subject.soft, textColor: this.subject.dark, shadow: 'none' });
+    const ratio = this.progressRatio();
+    let top = barH;
+    if (ratio !== null) {
+      this.progressBar = new ProgressBar(this, w / 2, barH + 4 * ui, w - 32 - sa.left - sa.right, 6 * ui, { value: ratio, color: this.subject.accent });
+      top = barH + 12 * ui;
+    }
+    const pad = 14;
+    return { x: pad + sa.left, y: top + pad, w: w - pad * 2 - sa.left - sa.right, h: h - top - pad * 2 - sa.bottom };
   }
 
   /** Override to show e.g. "3 / 10". */
   progressLabel() { return ''; }
-  refreshProgress() { if (this.progressText && this.progressText.active) this.progressText.setText(this.progressLabel()); }
+  /** Override to return 0..1 for the thin bar under the header, or null for none. */
+  progressRatio() { return null; }
+  refreshProgress() {
+    if (this.progressChip && this.progressChip.active) this.progressChip.setText(this.progressLabel());
+    const r = this.progressRatio();
+    if (r !== null && this.progressBar && this.progressBar.active) this.progressBar.animateTo(r);
+  }
 
   openPause() {
     Sfx.click();
@@ -82,10 +99,10 @@ export class MinigameScene extends BaseScene {
   abort() { this.finished = true; Launcher.abort(this, this.payload); }
 
   /** Quick screen flash for right/wrong feedback. */
-  flash(color, alpha = 0.25) {
+  flash(color, alpha = 0.14) {
     const r = this.add.rectangle(0, 0, this.w, this.h, color, alpha).setOrigin(0).setDepth(900);
     this.tweens.add({ targets: r, alpha: 0, duration: 350, onComplete: () => r.destroy() });
   }
-  correctFeedback() { Sfx.correct(); this.flash(C.lime, 0.18); }
-  wrongFeedback() { Sfx.wrong(); this.flash(C.red, 0.18); this.cameras.main.shake(120, 0.004); }
+  correctFeedback() { Sfx.correct(); this.flash(THEME.success, 0.14); }
+  wrongFeedback() { Sfx.wrong(); this.flash(THEME.danger, 0.14); this.cameras.main.shake(120, 0.004); }
 }
