@@ -1,6 +1,6 @@
 import { MazeGameScene } from './MazeGameScene.js';
 import { BlockEditor, newEditorState } from './BlockEditor.js';
-import { C } from '../../../constants.js';
+import { THEME } from '../../../ui/theme.js';
 import { generateRounds } from '../../../generators/coding/programGen.js';
 import { text, T } from '../../../ui/TextStyles.js';
 import { button } from '../../../ui/Button.js';
@@ -19,6 +19,7 @@ export class PredictRobot extends MazeGameScene {
 
   round() { return this.state.rounds[this.state.idx]; }
   progressLabel() { return `${Math.min(this.state.idx + 1, ROUNDS)} / ${ROUNDS}`; }
+  progressRatio() { return this.state.idx / ROUNDS; }
   level() { return this.round().level; }
   program() { return this.round().program; }
 
@@ -43,12 +44,12 @@ export class PredictRobot extends MazeGameScene {
     const g = this.add.graphics();
     if (s.guess) {
       const p = this.cellCenter(s.guess.x, s.guess.y);
-      g.lineStyle(4, s.phase === 'result' ? (s.wasRight ? C.lime : C.red) : C.yellow, 1);
+      g.lineStyle(4, s.phase === 'result' ? (s.wasRight ? THEME.success : THEME.danger) : THEME.gold, 1);
       g.strokeCircle(p.x, p.y, this.cell * 0.34);
     }
     if (s.phase === 'result' && !s.wasRight) {
       const e = this.cellCenter(this.round().end.x, this.round().end.y);
-      g.lineStyle(4, C.lime, 1); g.strokeCircle(e.x, e.y, this.cell * 0.42);
+      g.lineStyle(4, THEME.success, 1); g.strokeCircle(e.x, e.y, this.cell * 0.42);
     }
     if (s.phase === 'guess') {
       const lv = this.lv();
@@ -61,9 +62,9 @@ export class PredictRobot extends MazeGameScene {
     this.editor = new BlockEditor(this, er, { program: this.program(), editor: s.editor, readOnly: true, runningUid: s.runningUid });
     const fx = er.x + er.w / 2, fy = er.y + er.h + footH / 2;
     if (s.phase === 'result') {
-      button(this, fx, fy, Math.min(er.w - 20, 220 * ui), 48 * ui, s.idx + 1 >= ROUNDS ? 'Finish' : 'Next ▶', { color: C.lime, textColor: C.navy, onClick: () => this.next() });
-    } else if (s.phase === 'reveal') text(this, fx, fy, 'Running the program…', T.small(this, C.grey));
-    else text(this, fx, fy, 'Tap a floor cell on the maze', T.small(this, C.grey));
+      button(this, fx, fy, Math.min(er.w - 20, 220 * ui), 48 * ui, s.idx + 1 >= ROUNDS ? 'Finish' : 'Next ▶', { variant: 'primary', onClick: () => this.next() });
+    } else if (s.phase === 'reveal') text(this, fx, fy, 'Running the program…', T.small(this, THEME.ink2));
+    else text(this, fx, fy, 'Tap a floor cell on the maze', T.small(this, THEME.ink2));
   }
 
   tapCell(px, py) {

@@ -1,6 +1,6 @@
 import { MazeGameScene } from './MazeGameScene.js';
 import { BlockEditor, newEditorState } from './BlockEditor.js';
-import { C } from '../../../constants.js';
+import { THEME } from '../../../ui/theme.js';
 import { bugLevelsForBand } from '../../../data/coding/levels.js';
 import { cloneProgram } from '../../../generators/coding/ast.js';
 import { toast } from '../../../ui/Toast.js';
@@ -22,6 +22,7 @@ export class BugHunt extends MazeGameScene {
 
   puzzle() { return this.state.puzzles[this.state.idx]; }
   progressLabel() { return `${Math.min(this.state.idx + 1, this.state.puzzles.length)} / ${this.state.puzzles.length}`; }
+  progressRatio() { return this.state.idx / this.state.puzzles.length; }
   level() { return this.puzzle().level; }
   palette() { return this.puzzle().level.blocks; }
   maxBlocks() { return this.puzzle().level.maxBlocks; }
@@ -29,9 +30,9 @@ export class BugHunt extends MazeGameScene {
   buildGame(area) {
     const s = this.state, p = this.puzzle();
     const L = this.layout(area);
-    this.drawInfo(L.infoRect, `🐛 ${p.level.title}`, p.hint);
+    this.drawInfo(L.infoRect, `\u{1F41B} ${p.level.title}`, p.hint);
     this.drawMaze(L.mazeRect);
-    const extra = s.puzzleRuns >= 3 ? [{ label: 'Skip', color: C.purple, onClick: () => this.skip() }] : [];
+    const extra = s.puzzleRuns >= 3 ? [{ label: 'Skip', variant: 'brand', onClick: () => this.skip() }] : [];
     this.editor = new BlockEditor(this, L.editorRect, {
       program: s.program, editor: s.editor, palette: this.palette(), maxBlocks: this.maxBlocks(),
       locked: s.running || s.busy, runningUid: s.runningUid,
@@ -45,7 +46,7 @@ export class BugHunt extends MazeGameScene {
     if (outcome.solved) {
       s.solvedCount += 1;
       this.correctFeedback();
-      toast(this, 'Bug fixed!', { bg: C.green });
+      toast(this, 'Bug fixed!', { icon: 'star', accent: THEME.success });
       const token = this.runToken;
       this.time.delayedCall(1000, () => { if (token === this.runToken && !this.finished) this.nextPuzzle(); });
       return;
@@ -55,7 +56,7 @@ export class BugHunt extends MazeGameScene {
   }
 
   skip() {
-    toast(this, 'Skipped. On to the next bug!', { bg: C.purple });
+    toast(this, 'Skipped. On to the next bug!', { accent: THEME.brand });
     this.nextPuzzle();
   }
 

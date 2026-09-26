@@ -1,6 +1,6 @@
 import { MazeGameScene } from './MazeGameScene.js';
 import { BlockEditor, newEditorState } from './BlockEditor.js';
-import { C } from '../../../constants.js';
+import { THEME } from '../../../ui/theme.js';
 import * as Store from '../../../systems/Store.js';
 import { starsForMaze } from '../../../systems/Progression.js';
 import { getLevel, nextUnsolvedLevel } from '../../../data/coding/levels.js';
@@ -42,7 +42,7 @@ export class RoboMaze extends MazeGameScene {
     const blocksUsed = countBlocks(s.program);
     const stars = starsForMaze({ solved: true, blocksUsed, par: lv.par, attempts: s.attempts });
     this.correctFeedback();
-    toast(this, blocksUsed <= lv.par ? 'Goal! Perfect program!' : 'Goal!', { bg: C.green });
+    toast(this, blocksUsed <= lv.par ? 'Goal! Perfect program!' : 'Goal!', { icon: 'star', accent: THEME.success });
     this.finish({ stars, levelId: lv.id, solved: true, blocksUsed, par: lv.par, attempts: s.attempts, delay: 1100 });
   }
 }

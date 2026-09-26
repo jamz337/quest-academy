@@ -3,14 +3,14 @@
 // All progress lives in this.state so a rebuild (rotation) mid-run is safe: the run is cancelled and the
 // robot goes back to the start.
 import { MinigameScene } from '../MinigameScene.js';
-import { C } from '../../../constants.js';
+import { THEME } from '../../../ui/theme.js';
 import { parseLevel, execute } from '../../../generators/coding/interpreter.js';
 import { text, T } from '../../../ui/TextStyles.js';
 import { panel } from '../../../ui/Panel.js';
 import { toast } from '../../../ui/Toast.js';
 import { Sfx } from '../../../systems/Audio.js';
 
-const FLOOR = 0xf4ecd8, FLOOR_LINE = 0xd9cfb8, WALL = 0x1a2340, WALL_TOP = 0x2f3d6b;
+const FLOOR = 0xffffff, FLOOR_LINE = THEME.line, WALL = THEME.ink2, WALL_TOP = 0x7f7c9c, FRAME = THEME.lineStrong;
 const coinKey = (c) => c.x + ',' + c.y;
 
 export class MazeGameScene extends MinigameScene {
@@ -72,9 +72,8 @@ export class MazeGameScene extends MinigameScene {
   }
 
   drawInfo(r, title, hint) {
-    const { ui } = this;
-    text(this, r.x + r.w / 2, r.y + 12 * ui, title, { ...T.bodyBold(this, C.yellow), fontSize: Math.round(17 * ui) + 'px' });
-    if (hint) text(this, r.x + r.w / 2, r.y + 32 * ui, hint, { ...T.small(this, C.grey), fontSize: Math.round(12 * ui) + 'px', wordWrap: { width: r.w - 8 } }).setOrigin(0.5, 0.5);
+    text(this, r.x + r.w / 2, r.y + 12 * this.ui, title, T.at(this, 17, THEME.ink));
+    if (hint) text(this, r.x + r.w / 2, r.y + 32 * this.ui, hint, T.at(this, 12, THEME.ink2, { fontStyle: '500', wordWrap: { width: r.w - 8 } })).setOrigin(0.5, 0.5);
   }
 
   // ───────────── maze ─────────────
@@ -93,7 +92,7 @@ export class MazeGameScene extends MinigameScene {
     this.cell = cell;
     this.mazeOrigin = { x: rect.x + (rect.w - cell * lv.w) / 2, y: rect.y + (rect.h - cell * lv.h) / 2 };
     const { x: ox, y: oy } = this.mazeOrigin;
-    panel(this, ox - 4, oy - 4, cell * lv.w + 8, cell * lv.h + 8, { color: WALL, radius: 8 });
+    panel(this, ox - 5, oy - 5, cell * lv.w + 10, cell * lv.h + 10, { color: FRAME, radius: 12, shadow: 'md' });
     const g = this.add.graphics();
     for (let y = 0; y < lv.h; y++) for (let x = 0; x < lv.w; x++) {
       const px = ox + x * cell, py = oy + y * cell;
@@ -107,13 +106,13 @@ export class MazeGameScene extends MinigameScene {
     }
     // start pad
     const sp = this.cellCenter(lv.start.x, lv.start.y);
-    g.fillStyle(C.blue, 0.25); g.fillCircle(sp.x, sp.y, cell * 0.36);
+    g.fillStyle(THEME.primary, 0.22); g.fillCircle(sp.x, sp.y, cell * 0.36);
     // goal flag
     if (lv.goal) {
       const gc = this.cellCenter(lv.goal.x, lv.goal.y);
-      g.fillStyle(C.green, 0.25); g.fillRect(gc.x - cell / 2 + 2, gc.y - cell / 2 + 2, cell - 4, cell - 4);
-      g.fillStyle(C.dark, 1); g.fillRect(gc.x - cell * 0.22, gc.y - cell * 0.36, cell * 0.08, cell * 0.72);
-      g.fillStyle(C.lime, 1);
+      g.fillStyle(THEME.success, 0.2); g.fillRect(gc.x - cell / 2 + 2, gc.y - cell / 2 + 2, cell - 4, cell - 4);
+      g.fillStyle(THEME.ink2, 1); g.fillRect(gc.x - cell * 0.22, gc.y - cell * 0.36, cell * 0.08, cell * 0.72);
+      g.fillStyle(THEME.success, 1);
       g.fillTriangle(gc.x - cell * 0.14, gc.y - cell * 0.36, gc.x + cell * 0.32, gc.y - cell * 0.18, gc.x - cell * 0.14, gc.y);
     }
     // coins
@@ -248,9 +247,9 @@ export class MazeGameScene extends MinigameScene {
 
   /** Called when a run stops for any reason. outcome: { solved, crashed?, reason?, stopped?, goal?, coinsLeft? } */
   onRunEnd(outcome) {
-    if (outcome.crashed) toast(this, outcome.reason === 'steps' ? 'Too many steps! Is there a loop?' : 'Bump! The robot hit a wall.', { bg: C.red });
-    else if (!outcome.solved && outcome.goal) toast(this, 'Collect every coin before the flag!', { bg: C.orange });
-    else if (!outcome.solved) toast(this, 'The program ended before the flag.', { bg: C.purple });
+    if (outcome.crashed) toast(this, outcome.reason === 'steps' ? 'Too many steps! Is there a loop?' : 'Bump! The robot hit a wall.', { accent: THEME.danger });
+    else if (!outcome.solved && outcome.goal) toast(this, 'Collect every coin before the flag!', { accent: THEME.warning });
+    else if (!outcome.solved) toast(this, 'The program ended before the flag.', { accent: THEME.brand });
     this.rebuild();
   }
 

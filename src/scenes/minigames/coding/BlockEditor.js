@@ -1,8 +1,8 @@
 // Touch program editor drawn into a rect of a scene. It renders entirely from the program AST and the
 // editor state object it is given (both live in scene.state), so the scene can rebuild at any time.
-import { C, hex } from '../../../constants.js';
+import { THEME, hex, textOn } from '../../../ui/theme.js';
 import { BLOCKS, CONDS } from '../../../data/coding/blocks.js';
-import { text, T, FONT } from '../../../ui/TextStyles.js';
+import { text, T, FONT, WEIGHT } from '../../../ui/TextStyles.js';
 import { button } from '../../../ui/Button.js';
 import { panel } from '../../../ui/Panel.js';
 import { toast } from '../../../ui/Toast.js';
@@ -26,11 +26,16 @@ function rowLabel(b) {
   }
 }
 
+/** Button options for a toolbar/control item: either a theme variant or a custom fill colour. */
+function itemOpts(it) {
+  return it.variant ? { variant: it.variant } : { color: it.color, textColor: it.textColor };
+}
+
 /**
  * opts: {
  *   program, editor (state from newEditorState), palette: string[], maxBlocks,
  *   readOnly?, locked? (running: no edits), runningUid?,
- *   onChange(), controls?: { onRun, onStep, onReset, onClear, onSpeed, running, extra?: [{ label, color, onClick }] }
+ *   onChange(), controls?: { onRun, onStep, onReset, onClear, onSpeed, running, extra?: [{ label, variant|color, onClick }] }
  * }
  */
 export class BlockEditor {
@@ -72,17 +77,17 @@ export class BlockEditor {
   drawControls(x, y, w) {
     const { scene, ui } = this, c = this.o.controls;
     const items = [
-      { label: '▶ Run', color: C.lime, textColor: C.navy, onClick: c.onRun, disabled: c.running },
-      { label: 'Step', color: C.blue, onClick: c.onStep, disabled: c.running },
-      { label: 'Reset', color: C.orange, textColor: C.navy, onClick: c.onReset },
-      { label: 'Clear', color: C.red, onClick: c.onClear, disabled: c.running || this.o.locked },
-      { label: `${this.ed.speed || 1}x`, color: C.dark, onClick: c.onSpeed },
+      { label: '▶ Run', variant: 'success', onClick: c.onRun, disabled: c.running },
+      { label: 'Step', variant: 'primary', onClick: c.onStep, disabled: c.running },
+      { label: 'Reset', variant: 'warning', onClick: c.onReset },
+      { label: 'Clear', variant: 'danger', onClick: c.onClear, disabled: c.running || this.o.locked },
+      { label: `${this.ed.speed || 1}x`, variant: 'secondary', onClick: c.onSpeed },
       ...(c.extra || [])
     ];
     const gap = 6, bw = (w - gap * (items.length - 1)) / items.length, bh = 40 * ui;
     items.forEach((it, i) => {
       button(scene, x + i * (bw + gap) + bw / 2, y + bh / 2, bw, bh, it.label, {
-        color: it.color, textColor: it.textColor ?? C.white, fontSize: bw < 70 ? 13 : 15, disabled: !!it.disabled, onClick: it.onClick
+        ...itemOpts(it), fontSize: bw < 70 ? 13 : 15, radius: 10, disabled: !!it.disabled, onClick: it.onClick
       });
     });
   }
@@ -92,13 +97,12 @@ export class BlockEditor {
     const n = countBlocks(this.program);
     const over = n > this.maxBlocks;
     const label = this.o.readOnly ? 'Program' : `Blocks ${n} / ${this.maxBlocks}`;
-    text(scene, x + 4, y + h / 2, label, T.small(scene, over ? C.red : C.grey)).setOrigin(0, 0.5);
+    text(scene, x + 4, y + h / 2, label, T.small(scene, over ? THEME.danger : THEME.ink2)).setOrigin(0, 0.5);
     if (this.showFunctions && !this.o.readOnly) {
       const tw = 56 * ui, th = h - 2;
       ['main', 'F1'].forEach((v, i) => {
-        const active = this.ed.view === v;
         button(scene, x + w - tw / 2 - (1 - i) * (tw + 4), y + h / 2, tw, th, v === 'main' ? 'Main' : 'F1', {
-          color: active ? C.pink : C.panel, fontSize: 12, radius: 8, onClick: () => this.setView(v)
+          variant: 'secondary', selected: this.ed.view === v, selectedAccent: THEME.pink, fontSize: 12, radius: 8, onClick: () => this.setView(v)
         });
       });
     }
@@ -111,7 +115,7 @@ export class BlockEditor {
     const sel = this.ed.selectedUid ? findBlock(this.program, this.ed.selectedUid) : null;
     const showToolbar = this.canEdit && (sel || (this.ed.containerUid !== 'main' && this.ed.containerUid !== 'F1'));
     const tbH = showToolbar ? 40 * ui : 0;
-    panel(scene, r.x, r.y, r.w, r.h, { color: C.panelDark, stroke: C.panel, radius: 10 });
+    panel(scene, r.x, r.y, r.w, r.h, { color: THEME.surface, stroke: THEME.line, radius: 12, shadow: 'sm' });
     const listH = r.h - tbH - 8;
     const marker = this.canEdit ? this.insertionPoint(rows, view) : null;
     const total = rows.length + (marker ? 1 : 0);
@@ -124,7 +128,7 @@ export class BlockEditor {
     const rowsDrawn = []; // { row, x, y, w, h }
     const drawRowAt = (row, x, w, y) => rowsDrawn.push({ row, x, y, w, h: rh - 3 });
     if (rows.length === 0 && !marker) {
-      text(scene, r.x + r.w / 2, r.y + Math.min(r.h / 2, 40 * ui), this.o.readOnly ? '(empty)' : 'Tap blocks to add →', T.small(scene, C.grey));
+      text(scene, r.x + r.w / 2, r.y + Math.min(r.h / 2, 40 * ui), this.o.readOnly ? '(empty)' : 'Tap blocks to add →', T.small(scene, THEME.ink3));
     }
     let placedMarker = false;
     rows.forEach((row, i) => {
@@ -143,7 +147,7 @@ export class BlockEditor {
       const last = rowsDrawn[j - 1];
       const active = this.ed.containerUid === b.uid;
       const bx = d.x + Math.min(6, indent / 2);
-      this.rowGfx.lineStyle(active ? 4 : 2, active ? C.white : BLOCKS[b.op].color, active ? 0.9 : 0.6);
+      this.rowGfx.lineStyle(active ? 4 : 2, active ? THEME.ink : BLOCKS[b.op].color, active ? 0.8 : 0.6);
       this.rowGfx.lineBetween(bx, d.y + d.h, bx, last.y + last.h + 2);
       this.rowGfx.lineBetween(bx, last.y + last.h + 2, bx + indent * 0.7, last.y + last.h + 2);
     });
@@ -156,26 +160,25 @@ export class BlockEditor {
   drawMarker(r, y, rh, indent, depth) {
     const g = this.rowGfx, ui = this.ui;
     const x = r.x + 6 + depth * indent, w = r.w - 12 - depth * indent;
-    g.lineStyle(2, C.yellow, 0.8);
+    g.fillStyle(THEME.warningSoft, 1);
+    g.fillRoundedRect(x, y + 1, w, rh - 4, 6);
+    g.lineStyle(2, THEME.warning, 0.9);
     g.strokeRoundedRect(x, y + 1, w, rh - 4, 6);
-    this.scene.add.text(x + 8, y + (rh - 3) / 2, '▸ add here', { fontFamily: FONT, fontSize: Math.round(clamp(rh * 0.45, 9, 13 * ui)) + 'px', color: hex(C.yellow), fontStyle: 'normal' }).setOrigin(0, 0.5);
+    this.scene.add.text(x + 8, y + (rh - 3) / 2, '▸ add here', { fontFamily: FONT, fontSize: Math.round(clamp(rh * 0.45, 9, 13 * ui)) + 'px', color: hex(THEME.warningDark), fontStyle: WEIGHT.bold }).setOrigin(0, 0.5);
   }
 
   drawRow(row, x, y, w, h, fontPx) {
     const { scene } = this;
     const b = row.block;
     const isElse = row.kind === 'else';
-    const color = isElse ? C.green : BLOCKS[b.op].color;
+    const color = isElse ? THEME.block.else : BLOCKS[b.op].color;
     const selected = this.ed.selectedUid === b.uid && (!isElse || this.ed.branch === 'else') && !this.o.readOnly;
     const g = this.rowGfx;
     g.fillStyle(color, this.o.locked && !this.o.readOnly ? 0.6 : 1);
-    g.fillRoundedRect(x, y, w, h, 6);
-    g.fillStyle(0xffffff, 0.15);
-    g.fillRoundedRect(x + 2, y + 1, w - 4, h * 0.4, 5);
-    if (selected) { g.lineStyle(3, C.white, 1); g.strokeRoundedRect(x, y, w, h, 6); }
+    g.fillRoundedRect(x, y, w, h, 8);
+    if (selected) { g.lineStyle(3, THEME.ink, 1); g.strokeRoundedRect(x + 1, y + 1, w - 2, h - 2, 7); }
     const label = isElse ? 'else' : rowLabel(b);
-    const dark = color === C.yellow || color === C.grey || color === C.peach;
-    scene.add.text(x + 8, y + h / 2, label, { fontFamily: FONT, fontSize: fontPx + 'px', color: hex(dark ? C.navy : C.white), fontStyle: 'bold' }).setOrigin(0, 0.5);
+    scene.add.text(x + 8, y + h / 2, label, { fontFamily: FONT, fontSize: fontPx + 'px', color: hex(textOn(color)), fontStyle: WEIGHT.bold }).setOrigin(0, 0.5);
     if (!isElse) this.rowRects[b.uid] = { x, y, w, h };
     if (this.canEdit) {
       const z = scene.add.zone(x + w / 2, y + h / 2, w, h).setInteractive({ useHandCursor: true });
@@ -188,34 +191,34 @@ export class BlockEditor {
     const b = sel ? sel.block : null;
     const items = [];
     if (b) {
-      items.push({ label: '✕', color: C.red, onClick: () => this.deleteSelected() });
-      items.push({ label: '▲', color: C.dark, onClick: () => this.moveSelected(-1) });
-      items.push({ label: '▼', color: C.dark, onClick: () => this.moveSelected(1) });
+      items.push({ label: '✕', variant: 'danger', onClick: () => this.deleteSelected() });
+      items.push({ label: '▲', variant: 'secondary', onClick: () => this.moveSelected(-1) });
+      items.push({ label: '▼', variant: 'secondary', onClick: () => this.moveSelected(1) });
       if (b.op === 'repeat') {
-        items.push({ label: '−', color: C.orange, textColor: C.navy, onClick: () => this.bumpCount(-1) });
-        items.push({ label: '+', color: C.orange, textColor: C.navy, onClick: () => this.bumpCount(1) });
+        items.push({ label: '−', variant: 'warning', onClick: () => this.bumpCount(-1) });
+        items.push({ label: '+', variant: 'warning', onClick: () => this.bumpCount(1) });
       } else if (b.op === 'if') {
-        items.push({ label: b.cond, color: C.green, onClick: () => this.cycleCond() });
-        items.push({ label: b.else ? 'else ✓' : 'else', color: b.else ? C.green : C.panel, onClick: () => this.toggleElse() });
+        items.push({ label: b.cond, variant: 'success', onClick: () => this.cycleCond() });
+        items.push({ label: b.else ? 'else ✓' : 'else', variant: b.else ? 'success' : 'secondary', onClick: () => this.toggleElse() });
       } else if (!isContainer(b)) {
-        items.push({ label: '⟳', color: C.blue, onClick: () => this.cycleOp() });
+        items.push({ label: '⟳', variant: 'primary', onClick: () => this.cycleOp() });
       }
     }
     const inContainer = this.ed.containerUid !== 'main' && this.ed.containerUid !== 'F1';
-    if (inContainer) items.push({ label: 'Done', color: C.lime, textColor: C.navy, onClick: () => this.done() });
+    if (inContainer) items.push({ label: 'Done', variant: 'primary', onClick: () => this.done() });
     if (!items.length) return;
     const gap = 4, bw = Math.min(48 * ui, (r.w - gap * (items.length - 1)) / items.length), bh = r.h - 4;
     const total = bw * items.length + gap * (items.length - 1);
     const x0 = r.x + (r.w - total) / 2;
     items.forEach((it, i) => button(scene, x0 + i * (bw + gap) + bw / 2, r.y + r.h / 2, bw, bh, it.label, {
-      color: it.color, textColor: it.textColor ?? C.white, fontSize: it.label.length > 3 ? 12 : 15, radius: 8, onClick: it.onClick
+      ...itemOpts(it), fontSize: it.label.length > 3 ? 12 : 15, radius: 8, onClick: it.onClick
     }));
   }
 
   drawPalette(r) {
     const { scene, ui } = this;
     const ids = this.o.palette || [];
-    panel(scene, r.x, r.y, r.w, r.h, { color: C.panel, alpha: 0.5, radius: 10 });
+    panel(scene, r.x, r.y, r.w, r.h, { color: THEME.surfaceAlt, stroke: THEME.line, radius: 12, shadow: 'none' });
     const cols = ids.length > 4 ? 2 : 1;
     const rowsN = Math.ceil(ids.length / cols);
     const gap = 6;
@@ -226,9 +229,8 @@ export class BlockEditor {
       const def = BLOCKS[id];
       if (!def) return;
       const col = i % cols, row = Math.floor(i / cols);
-      const dark = def.color === C.yellow;
       button(scene, r.x + 6 + col * (bw + gap) + bw / 2, r.y + 6 + row * (bh + gap) + bh / 2, bw, bh, def.label, {
-        color: def.color, textColor: dark ? C.navy : C.white, fontSize: bw < 90 ? 12 : 14, radius: 8,
+        color: def.color, fontSize: bw < 90 ? 12 : 14, radius: 10,
         disabled: !this.canEdit || full, onClick: () => this.addBlock(id)
       });
     });
@@ -264,8 +266,8 @@ export class BlockEditor {
     this.hl.clear();
     const rr = uid ? this.rowRects[uid] : null;
     if (!rr) return;
-    this.hl.lineStyle(4, C.yellow, 1);
-    this.hl.strokeRoundedRect(rr.x - 1, rr.y - 1, rr.w + 2, rr.h + 2, 7);
+    this.hl.lineStyle(4, THEME.gold, 1);
+    this.hl.strokeRoundedRect(rr.x - 1, rr.y - 1, rr.w + 2, rr.h + 2, 9);
   }
 
   // ───────────── editing ─────────────
@@ -281,7 +283,7 @@ export class BlockEditor {
 
   addBlock(op) {
     if (!this.canEdit) return;
-    if (countBlocks(this.program) >= this.maxBlocks) { toast(this.scene, `Only ${this.maxBlocks} blocks allowed!`, { bg: C.red }); return; }
+    if (countBlocks(this.program) >= this.maxBlocks) { toast(this.scene, `Only ${this.maxBlocks} blocks allowed!`, { accent: THEME.danger }); return; }
     const block = makeBlock(op);
     const list = bodyOf(this.program, this.ed.containerUid, this.ed.branch);
     const after = this.ed.selectedUid && list.some((x) => x.uid === this.ed.selectedUid) ? this.ed.selectedUid : null;
