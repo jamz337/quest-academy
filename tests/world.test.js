@@ -16,9 +16,9 @@ describe('world map', () => {
   const map = buildMap();
 
   it('has the expected size and a deterministic layout', () => {
-    expect(map.width).toBe(48); expect(map.height).toBe(40);
+    expect(map.width).toBe(56); expect(map.height).toBe(40);
     expect(map.data).toHaveLength(40);
-    for (const row of map.data) expect(row).toHaveLength(48);
+    for (const row of map.data) expect(row).toHaveLength(56);
     expect(buildMap().data).toEqual(map.data);
   });
 
@@ -26,7 +26,7 @@ describe('world map', () => {
     expect(isWalkable(map.data[map.spawn.ty][map.spawn.tx])).toBe(true);
     for (const [id, s] of Object.entries(map.npcSpots)) expect(isWalkable(map.data[s.ty][s.tx]), id).toBe(true);
     for (const c of map.coins) expect(map.data[c.ty][c.tx]).toBe(TID.path);
-    expect(map.coins).toHaveLength(15);
+    expect(map.coins).toHaveLength(18);
   });
 
   it('every NPC in npcs.js has a spot in the zone it belongs to', () => {
@@ -49,11 +49,11 @@ describe('world map', () => {
 
   it('opening the words gate reaches Word Woods but not Code Cove', () => {
     const seen = reachableFrom(withGatesOpen(map, ['words']));
-    for (const npc of NPCS) expect(seen.has(key(map.npcSpots[npc.id])), npc.id).toBe(npc.zone !== 'code');
+    for (const npc of NPCS) expect(seen.has(key(map.npcSpots[npc.id])), npc.id).toBe(!['code', 'bible'].includes(npc.zone));
   });
 
   it('with all gates open every NPC spot and coin is reachable', () => {
-    const seen = reachableFrom(withGatesOpen(map, ['words', 'code']));
+    const seen = reachableFrom(withGatesOpen(map, ['words', 'code', 'bible']));
     for (const npc of NPCS) expect(seen.has(key(map.npcSpots[npc.id])), npc.id).toBe(true);
     for (const c of map.coins) expect(seen.has(key(c))).toBe(true);
   });

@@ -114,7 +114,7 @@ describe('zone quests', () => {
     const locked = reachableFrom(map);
     expect(locked.has(key(map.bossSpots.math))).toBe(true);
     expect(locked.has(key(map.bossSpots.words))).toBe(false);
-    const all = reachableFrom(withGatesOpen(map, ['words', 'code']));
+    const all = reachableFrom(withGatesOpen(map, ['words', 'code', 'bible']));
     for (const z of ZONE_ORDER) expect(all.has(key(map.bossSpots[z])), z).toBe(true);
     for (const c of map.coins) expect(all.has(key(c))).toBe(true);
   });
@@ -122,7 +122,7 @@ describe('zone quests', () => {
 
 describe('boss questions', () => {
   it('are valid multiple choice for every subject and grade', () => {
-    for (const subject of ['math', 'words', 'code']) for (const grade of [2, 3, 5, 6, 8]) {
+    for (const subject of ['math', 'words', 'code', 'bible']) for (const grade of [2, 3, 5, 6, 8]) {
       const qs = bossQuestions(subject, grade, new Rng(grade * 7 + subject.length), 12);
       expect(qs.length, `${subject} ${grade}`).toBe(12);
       for (const q of qs) {

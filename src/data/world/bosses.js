@@ -28,8 +28,18 @@ export const BOSSES = [
     intro: ['BZZT. A new programmer in my cove?', 'Read my programs and predict what my robots do. Get it wrong and… BZZT!', 'Beat me and you are the champion of Quest Academy. Begin!'],
     locked: ['BZZT. Access denied. Complete the cove tasks first.', 'Then return and face the Bug King.'],
     taunts: ['BZZT. Error!', 'Your logic has a bug!', 'Segfault!'],
-    beaten: ['System… crashing… you win!', 'You are the champion of Quest Academy! Rematch any time.'],
-    win: 'Glitch the Bug King is defeated!', lose: 'Glitch crashed your program…', unlocks: null
+    beaten: ['System… crashing… you win!', 'The gate to Bible Village is open. Rematch any time.'],
+    win: 'Glitch the Bug King is defeated!', lose: 'Glitch crashed your program…', unlocks: 'bible'
+  },
+  {
+    id: 'boss-bible', zone: 'bible', subject: 'bible', name: 'Goliath', title: 'Giant of Gath', scale: 1.6,
+    look: { hair: '#2d2a4a', skin: '#c98a5a', top: '#b08d3a', legs: '#6b4630', bg: '#7a4a2a' },
+    hp: 8, hearts: 3, questionTimeMs: 22000,
+    intro: ['WHO dares to stand before Goliath? You are only a child!', 'A shepherd boy once faced me with a sling. You will face me with what you know.', 'Answer my questions about the Book, or run home. Well?'],
+    locked: ['Ha! You have not even walked the village yet.', 'Meet the villagers, learn their stories, then come and face me.'],
+    taunts: ['Is that your best?', 'You do not know the stories!', 'Ha! Wrong!'],
+    beaten: ['Beaten... by a child... again!', 'You are the champion of Quest Academy! Come back for a rematch whenever you like.'],
+    win: 'Goliath is defeated!', lose: 'Goliath wins this round…', unlocks: null
   }
 ];
 

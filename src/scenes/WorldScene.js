@@ -6,7 +6,7 @@ import * as Launcher from '../systems/MinigameLauncher.js';
 import { unlockedZones } from '../systems/Progression.js';
 import { getGame } from '../data/minigames.js';
 import { bandFor } from '../data/grades.js';
-import { buildMap, zoneAt, isWalkable, groundUnder, TID, ZONE_NAMES } from '../data/world/map.js';
+import { buildMap, zoneAt, isWalkable, groundUnder, TID, SOLID, ROOF_TILES, WALL_TILES, DOOR_TILES, ZONE_NAMES } from '../data/world/map.js';
 import { NPCS } from '../data/world/npcs.js';
 import { BOSSES } from '../data/world/bosses.js';
 import { bossReady, bossDefeated, gateHint, zoneQuests } from '../data/world/quests.js';
@@ -39,7 +39,7 @@ export class WorldScene extends Phaser.Scene {
     const tilemap = this.make.tilemap({ data: ground, tileWidth: TILE, tileHeight: TILE });
     const tileset = tilemap.addTilesetImage('tiles', 'tiles', TILE, TILE, 0, 0);
     this.layer = tilemap.createLayer(0, tileset, 0, 0);
-    this.layer.setCollision([TID.water, TID.wall, TID.roof, TID.gateLocked]);
+    this.layer.setCollision(SOLID.filter((id) => id !== TID.tree));   // trees collide on their own layer
     this.drawDecor();
     this.treeLayer = tilemap.createBlankLayer('trees', tileset, 0, 0).setDepth(2);
     this.map.data.forEach((row, ty) => row.forEach((id, tx) => { if (id === TID.tree) this.treeLayer.putTileAt(TID.tree, tx, ty); }));
@@ -116,7 +116,7 @@ export class WorldScene extends Phaser.Scene {
       const spot = this.map.bossSpots[boss.zone];
       if (!spot) continue;
       const s = this.npcGroup.create((spot.tx + 0.5) * TILE, (spot.ty + 0.5) * TILE, lookSpriteTexture(this, boss.look), 0);
-      s.setScale(CHAR_SCALE * 1.3).setDepth(5).refreshBody();
+      s.setScale(CHAR_SCALE * (boss.scale || 1.3)).setDepth(5).refreshBody();
       s.body.setSize(26, 26);
       s.boss = boss;
       this.npcs.push(s);
@@ -146,8 +146,8 @@ export class WorldScene extends Phaser.Scene {
   drawDecor() {
     const { data, width: W, height: H } = this.map;
     const at = (x, y) => (x < 0 || y < 0 || x >= W || y >= H ? -1 : data[y][x]);
-    const PATHY = new Set([TID.path, TID.door, TID.gateLocked, TID.gateOpen]);
-    const BUILDING = new Set([TID.wall, TID.roof, TID.door]);
+    const PATHY = new Set([TID.path, ...DOOR_TILES, TID.gateLocked, TID.gateOpen]);
+    const BUILDING = new Set([...WALL_TILES, ...ROOF_TILES, ...DOOR_TILES]);
     const g = this.make.graphics({ add: false });
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const id = at(x, y), px = x * TILE, py = y * TILE;
@@ -167,7 +167,7 @@ export class WorldScene extends Phaser.Scene {
       } else if (BUILDING.has(id)) {
         g.fillStyle(0x000000, 0.22);
         if (!BUILDING.has(at(x + 1, y))) g.fillRect(px + TILE, py + 4, 4, TILE);
-        if (!BUILDING.has(at(x, y + 1)) && id !== TID.door) g.fillRect(px + 4, py + TILE, TILE, 4);
+        if (!BUILDING.has(at(x, y + 1)) && !DOOR_TILES.includes(id)) g.fillRect(px + 4, py + TILE, TILE, 4);
       }
     }
     const rt = this.add.renderTexture(0, 0, W * TILE, H * TILE).setOrigin(0).setDepth(1);

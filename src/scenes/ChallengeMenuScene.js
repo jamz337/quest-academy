@@ -65,10 +65,20 @@ export class ChallengeMenuScene extends BaseScene {
     const h = Math.min(c.h, 150 * ui);
     const k = card(this, c.x, c.y, c.w, h, { stroke: subject.soft, onTap: () => this.play(g) });
     const compact = h < 110 * ui;
-    const iy = -h / 2 + (compact ? 24 : 32) * ui;
-    k.add(this.add.circle(0, iy, (compact ? 18 : 24) * ui, subject.soft));
-    k.add(this.add.text(0, iy, g.icon, { fontSize: Math.round((compact ? 20 : 26) * ui) + 'px' }).setOrigin(0.5));
-    k.add(this.add.text(0, -h / 2 + (compact ? 50 : 66) * ui, g.title, T.at(this, compact ? 14 : 16, THEME.ink, { wordWrap: { width: c.w - 12 } })).setOrigin(0.5));
+    if (compact) {
+      // Short cards (four subjects on a small screen): icon beside the title, stars underneath.
+      const ty = -h * 0.2, r = 14 * ui;
+      const title = this.add.text(0, ty, g.title, T.at(this, 14, THEME.ink)).setOrigin(0, 0.5);
+      const ix = -(r * 2 + 8 + title.width) / 2 + r;
+      title.setX(ix + r + 8);
+      k.add([this.add.circle(ix, ty, r, subject.soft), this.add.text(ix, ty, g.icon, { fontSize: Math.round(16 * ui) + 'px' }).setOrigin(0.5), title]);
+      k.add(new StarRow(this, 0, h / 2 - 16 * ui, rec ? rec.bestStars : 0, 16 * ui));
+      return k;
+    }
+    const iy = -h / 2 + 32 * ui;
+    k.add(this.add.circle(0, iy, 24 * ui, subject.soft));
+    k.add(this.add.text(0, iy, g.icon, { fontSize: Math.round(26 * ui) + 'px' }).setOrigin(0.5));
+    k.add(this.add.text(0, -h / 2 + 66 * ui, g.title, T.at(this, 16, THEME.ink, { wordWrap: { width: c.w - 12 } })).setOrigin(0.5));
     k.add(new StarRow(this, 0, h / 2 - 20 * ui, rec ? rec.bestStars : 0, 20 * ui));
     return k;
   }

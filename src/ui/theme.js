@@ -18,7 +18,8 @@ export const THEME = {
   subjects: {
     math: { accent: 0x3d8bff, dark: 0x2a6fd6, soft: 0xdcebff },
     words: { accent: 0x2ec46a, dark: 0x229c53, soft: 0xdcf6e6 },
-    code: { accent: 0xff8f3f, dark: 0xdd6f22, soft: 0xffe6d3 }
+    code: { accent: 0xff8f3f, dark: 0xdd6f22, soft: 0xffe6d3 },
+    bible: { accent: 0x8b5cf6, dark: 0x6d3fd9, soft: 0xeee6ff }
   },
   radius: { xs: 8, sm: 12, md: 16, lg: 20, xl: 28, pill: 999 },
   space: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 },
@@ -89,7 +90,7 @@ export function cssVars() {
     '--success': hex(THEME.success), '--success-dark': hex(THEME.successDark), '--success-soft': hex(THEME.successSoft),
     '--danger': hex(THEME.danger), '--danger-dark': hex(THEME.dangerDark), '--danger-soft': hex(THEME.dangerSoft),
     '--warning': hex(THEME.warning), '--warning-dark': hex(THEME.warningDark), '--warning-soft': hex(THEME.warningSoft), '--gold': hex(THEME.gold), '--star-off': hex(THEME.starOff),
-    '--math': hex(THEME.subjects.math.accent), '--words': hex(THEME.subjects.words.accent), '--code': hex(THEME.subjects.code.accent),
+    '--math': hex(THEME.subjects.math.accent), '--words': hex(THEME.subjects.words.accent), '--code': hex(THEME.subjects.code.accent), '--bible': hex(THEME.subjects.bible.accent),
     '--math-soft': hex(THEME.subjects.math.soft), '--words-soft': hex(THEME.subjects.words.soft), '--code-soft': hex(THEME.subjects.code.soft)
   };
   return v;

@@ -19,11 +19,12 @@ import { RoboMaze } from './minigames/coding/RoboMaze.js';
 import { BugHunt } from './minigames/coding/BugHunt.js';
 import { PredictRobot } from './minigames/coding/PredictRobot.js';
 import { BossBattle } from './minigames/BossBattle.js';
+import { BibleQuiz } from './minigames/bible/BibleQuiz.js';
 
 // Order matters for render depth: later scenes draw on top when several are active.
 export const scenes = [
   BootScene, ProfileScene, ModeSelectScene, WorldScene, HudScene, ChallengeMenuScene, LevelSelectScene,
   NumberDash, FractionPizza, PatternBridge, WordBuilder, GrammarGate, WordMatch,
-  RoboMaze, BugHunt, PredictRobot, BossBattle,
+  RoboMaze, BugHunt, PredictRobot, BossBattle, BibleQuiz,
   ResultsScene, PauseScene, AccountScene, LeaderboardScene
 ];

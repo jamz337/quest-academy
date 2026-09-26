@@ -88,7 +88,7 @@ function childCard(c) {
     <h3>Progress</h3>
     <div class="stats">
       <div class="stat"><b>${c.level}</b><span>Level</span></div><div class="stat"><b>${c.xp}</b><span>XP</span></div>
-      <div class="stat"><b>${c.stars}</b><span>Stars of 27</span></div><div class="stat"><b>${c.coins}</b><span>Coins</span></div>
+      <div class="stat"><b>${c.stars}</b><span>Stars of ${MINIGAMES.length * 3}</span></div><div class="stat"><b>${c.coins}</b><span>Coins</span></div>
       <div class="stat"><b>${c.codingLevels}</b><span>Mazes solved</span></div><div class="stat"><b>${c.minutes}</b><span>Minutes played</span></div>
     </div>
     <h3>Skills to practise (last 30 days)</h3><div>${practise}</div>

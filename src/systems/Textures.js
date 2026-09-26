@@ -108,7 +108,11 @@ const FLOWERS = [
 ];
 
 /** Tileset 'tiles' with TILE x TILE frames: see TILE_IDS. */
-export const TILE_IDS = { grass: 0, path: 1, water: 2, tree: 3, wall: 4, door: 5, flower: 6, meadow: 7, woods: 8, cove: 9, gateLocked: 10, gateOpen: 11, roof: 12 };
+export const TILE_IDS = {
+  grass: 0, path: 1, water: 2, tree: 3, wall: 4, door: 5, flower: 6, meadow: 7, woods: 8, cove: 9, gateLocked: 10, gateOpen: 11, roof: 12,
+  roofMath: 13, wallMath: 14, doorMath: 15, roofWords: 16, wallWords: 17, doorWords: 18, roofCode: 19, wallCode: 20, doorCode: 21,
+  roofBible: 22, wallBible: 23, doorBible: 24, castleTop: 25, castleWall: 26, castleDoor: 27, village: 28
+};
 
 const px = (ctx, x, y, col, w = 1, h = 1) => { ctx.fillStyle = col; ctx.fillRect(x, y, w, h); };
 
@@ -159,8 +163,9 @@ function wallTile(ctx, x0) {
   px(ctx, x0 + 15, 9, '#a06a3e', 1, 10); px(ctx, x0 + 11, 13, '#a06a3e', 10, 1);
   px(ctx, x0 + 12, 10, '#ffffff', 2, 1);
 }
-function doorTile(ctx, x0) {
-  wallBase(ctx, x0);
+/** Arched wooden door on whatever wall `wallFn` paints. */
+function doorTile(ctx, x0, wallFn = wallBase) {
+  wallFn(ctx, x0);
   px(ctx, x0 + 8, 8, '#4e3220', 16, 24);
   px(ctx, x0 + 9, 9, '#a06a3e', 14, 23);
   ctx.fillStyle = '#4e3220'; ctx.beginPath(); ctx.arc(x0 + 16, 9, 8, Math.PI, 0); ctx.fill();
@@ -177,6 +182,104 @@ function roofTile(ctx, x0) {
     for (let x = (band % 2) * 4; x < TILE; x += 8) px(ctx, x0 + x, y + 1, '#d84a3a', 1, 6);
   }
 }
+// ---- Neighbourhood styles -------------------------------------------------------------------
+
+/** Math Meadow: thatched roof over the plaster-and-beam cottage walls. */
+function thatchRoof(ctx, x0) {
+  px(ctx, x0, 0, '#e6b94f', TILE, TILE);
+  for (let y = 3; y < TILE; y += 4) for (let x = (y / 4) % 2 ? 0 : 3; x < TILE; x += 6) px(ctx, x0 + x, y, '#c9962f', 4, 1);
+  for (let x = 1; x < TILE; x += 7) px(ctx, x0 + x, (x * 5) % TILE, '#f6d67e', 2, 1);
+  px(ctx, x0, TILE - 2, '#b8862a', TILE, 2);
+}
+
+/** Word Woods: log cabin. */
+function logWall(ctx, x0, window = true) {
+  px(ctx, x0, 0, '#b57b4b', TILE, TILE);
+  for (let y = 0; y < TILE; y += 6) { px(ctx, x0, y + 1, '#c98e5e', TILE, 1); px(ctx, x0, y + 5, '#7a4a2a', TILE, 1); }
+  px(ctx, x0, 0, '#7a4a2a', 2, TILE); px(ctx, x0 + TILE - 2, 0, '#7a4a2a', 2, TILE);
+  if (window) { px(ctx, x0 + 10, 9, '#4e3220', 12, 12); px(ctx, x0 + 11, 10, '#ffe08a', 10, 10); px(ctx, x0 + 15, 10, '#4e3220', 2, 10); px(ctx, x0 + 11, 14, '#4e3220', 10, 2); }
+}
+function shingleRoof(ctx, x0) {
+  px(ctx, x0, 0, '#8a5a3a', TILE, TILE);
+  for (let band = 0; band < 4; band++) {
+    const y = band * 8;
+    px(ctx, x0, y + 7, '#5e3a22', TILE, 1); px(ctx, x0, y, '#a8704a', TILE, 1);
+    for (let x = (band % 2) * 4; x < TILE; x += 8) px(ctx, x0 + x, y + 1, '#5e3a22', 1, 6);
+  }
+}
+
+/** Code Cove: teal metal roof over riveted panels with a glowing screen. */
+function panelWall(ctx, x0, window = true) {
+  px(ctx, x0, 0, '#dfe7ec', TILE, TILE);
+  px(ctx, x0, 10, '#b9c6cf', TILE, 1); px(ctx, x0, 21, '#b9c6cf', TILE, 1); px(ctx, x0, 0, '#b9c6cf', 1, TILE); px(ctx, x0 + TILE - 1, 0, '#b9c6cf', 1, TILE);
+  for (const [rx, ry] of [[3, 3], [27, 3], [3, 26], [27, 26], [3, 14], [27, 14]]) px(ctx, x0 + rx, ry, '#9aa8b2', 2, 2);
+  if (window) {
+    px(ctx, x0 + 9, 8, '#2d2a4a', 14, 14); px(ctx, x0 + 10, 9, '#0f1a2e', 12, 12);
+    [[11, 11, 5], [11, 14, 8], [11, 17, 3]].forEach(([wx, wy, len]) => px(ctx, x0 + wx, wy, '#2ec46a', len, 1));
+  }
+}
+function techRoof(ctx, x0) {
+  px(ctx, x0, 0, '#3fb8c9', TILE, TILE);
+  for (let x = 0; x < TILE; x += 4) { px(ctx, x0 + x, 0, '#2a95a6', 1, TILE); px(ctx, x0 + x + 2, 0, '#7fd8e4', 1, TILE); }
+  px(ctx, x0, TILE - 2, '#1f7a88', TILE, 2);
+}
+
+/** Bible Village: sandstone chapel walls with a stained-glass window under a slate roof. */
+function stoneWall(ctx, x0, window = true) {
+  px(ctx, x0, 0, '#e8d9b5', TILE, TILE);
+  for (let y = 7; y < TILE; y += 8) px(ctx, x0, y, '#c9b48e', TILE, 1);
+  for (let row = 0; row < 4; row++) for (let x = (row % 2) * 5 + 2; x < TILE; x += 10) px(ctx, x0 + x, row * 8, '#c9b48e', 1, 7);
+  if (window) {
+    ctx.fillStyle = '#7a6a4a'; ctx.beginPath(); ctx.arc(x0 + 16, 13, 7, Math.PI, 0); ctx.fill(); px(ctx, x0 + 9, 13, '#7a6a4a', 14, 12);
+    ctx.fillStyle = '#3d8bff'; ctx.beginPath(); ctx.arc(x0 + 16, 13, 5, Math.PI, 0); ctx.fill();
+    px(ctx, x0 + 11, 13, '#ff5c6c', 5, 5); px(ctx, x0 + 16, 13, '#ffc531', 5, 5); px(ctx, x0 + 11, 18, '#2ec46a', 5, 5); px(ctx, x0 + 16, 18, '#8b5cf6', 5, 5);
+    px(ctx, x0 + 15, 8, '#7a6a4a', 2, 15); px(ctx, x0 + 11, 17, '#7a6a4a', 10, 1);
+  }
+}
+function slateRoof(ctx, x0) {
+  px(ctx, x0, 0, '#5b6b8c', TILE, TILE);
+  for (let band = 0; band < 6; band++) {
+    const y = band * 5 + 4;
+    px(ctx, x0, y, '#46557a', TILE, 1);
+    for (let x = (band % 2) * 4; x < TILE; x += 8) px(ctx, x0 + x, y - 4, '#46557a', 1, 4);
+    px(ctx, x0 + (band % 2) * 4 + 1, y - 3, '#7181a3', 2, 1);
+  }
+}
+
+/** Castles: grey stone blocks, a crenellated top and a great iron-studded gate. */
+function castleWall(ctx, x0, slit = true) {
+  px(ctx, x0, 0, '#9aa3ad', TILE, TILE);
+  for (let y = 7; y < TILE; y += 8) px(ctx, x0, y, '#6f7882', TILE, 1);
+  for (let row = 0; row < 4; row++) for (let x = (row % 2) * 6 + 3; x < TILE; x += 12) px(ctx, x0 + x, row * 8, '#6f7882', 1, 7);
+  for (let row = 0; row < 4; row++) px(ctx, x0 + (row % 2) * 6 + 5, row * 8 + 1, '#b4bcc4', 3, 1);
+  if (slit) { px(ctx, x0 + 14, 9, '#2d2a4a', 4, 14); px(ctx, x0 + 15, 10, '#1d2b53', 2, 12); }
+}
+function castleTop(ctx, x0) {
+  castleWall(ctx, x0, false);
+  px(ctx, x0, 0, '#5e6771', TILE, 12);
+  for (let x = 0; x < TILE; x += 8) { px(ctx, x0 + x, 0, '#7d8791', 4, 12); px(ctx, x0 + x, 0, '#b4bcc4', 4, 1); }
+  px(ctx, x0, 12, '#b4bcc4', TILE, 1);
+}
+function castleDoor(ctx, x0) {
+  castleWall(ctx, x0, false);
+  px(ctx, x0 + 6, 9, '#2d2a4a', 20, 23);
+  ctx.fillStyle = '#2d2a4a'; ctx.beginPath(); ctx.arc(x0 + 16, 10, 10, Math.PI, 0); ctx.fill();
+  px(ctx, x0 + 8, 10, '#4e3220', 16, 22);
+  ctx.fillStyle = '#4e3220'; ctx.beginPath(); ctx.arc(x0 + 16, 11, 8, Math.PI, 0); ctx.fill();
+  px(ctx, x0 + 15, 10, '#2d2a4a', 2, 22);
+  for (const [sx, sy] of [[10, 14], [20, 14], [10, 20], [20, 20], [10, 26], [20, 26]]) px(ctx, x0 + sx, sy, '#9aa3ad', 2, 2);
+}
+
+/** Cobbled village ground. */
+function villageTile(ctx, x0, rnd) {
+  px(ctx, x0, 0, '#d9c9a8', TILE, TILE);
+  for (let i = 0; i < 7; i++) {
+    const x = x0 + Math.floor(rnd() * (TILE - 6)), y = Math.floor(rnd() * (TILE - 5));
+    px(ctx, x, y, '#c4b08a', 6, 4); px(ctx, x + 1, y, '#ece0c4', 3, 1);
+  }
+  for (let i = 0; i < 3; i++) px(ctx, x0 + Math.floor(rnd() * TILE), Math.floor(rnd() * TILE), '#b39d78');
+}
+
 function gateLockedTile(ctx, x0, rnd) {
   pathTile(ctx, x0, rnd);
   px(ctx, x0 + 1, 0, '#4e3220', 6, TILE); px(ctx, x0 + 2, 1, '#7a4a2a', 4, TILE - 2);
@@ -218,6 +321,12 @@ export function tilesTexture(scene) {
   gateLockedTile(ctx, at(TILE_IDS.gateLocked), rnd);
   gateOpenTile(ctx, at(TILE_IDS.gateOpen), rnd);
   roofTile(ctx, at(TILE_IDS.roof));
+  thatchRoof(ctx, at(TILE_IDS.roofMath)); wallTile(ctx, at(TILE_IDS.wallMath)); doorTile(ctx, at(TILE_IDS.doorMath), wallBase);
+  shingleRoof(ctx, at(TILE_IDS.roofWords)); logWall(ctx, at(TILE_IDS.wallWords)); doorTile(ctx, at(TILE_IDS.doorWords), (c, x) => logWall(c, x, false));
+  techRoof(ctx, at(TILE_IDS.roofCode)); panelWall(ctx, at(TILE_IDS.wallCode)); doorTile(ctx, at(TILE_IDS.doorCode), (c, x) => panelWall(c, x, false));
+  slateRoof(ctx, at(TILE_IDS.roofBible)); stoneWall(ctx, at(TILE_IDS.wallBible)); doorTile(ctx, at(TILE_IDS.doorBible), (c, x) => stoneWall(c, x, false));
+  castleTop(ctx, at(TILE_IDS.castleTop)); castleWall(ctx, at(TILE_IDS.castleWall)); castleDoor(ctx, at(TILE_IDS.castleDoor));
+  villageTile(ctx, at(TILE_IDS.village), rnd);
   for (let i = 0; i < n; i++) tex.add(i, 0, at(i), 0, TILE, TILE);
   tex.refresh();
 }

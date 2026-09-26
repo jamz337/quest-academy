@@ -17,7 +17,13 @@ export const MINIGAMES = [
   { id: 'code-bug', subject: 'code', title: 'Bug Hunt', sceneKey: 'MG_BugHunt', icon: '🐛', npc: 'bug-catcher',
     description: 'Find and fix the broken block.' },
   { id: 'code-predict', subject: 'code', title: 'Predict the Robot', sceneKey: 'MG_PredictRobot', icon: '🔮', npc: 'fortune-teller',
-    description: 'Read the program. Where will the robot end up?' }
+    description: 'Read the program. Where will the robot end up?' },
+  { id: 'bible-quiz', subject: 'bible', title: 'Bible Quiz', sceneKey: 'MG_BibleQuiz', icon: '📖', npc: 'shepherd',
+    description: 'Who, what and where in the Bible.' },
+  { id: 'bible-verse', subject: 'bible', title: 'Verse Builder', sceneKey: 'MG_BibleQuiz', icon: '✨', npc: 'scribe',
+    description: 'Fill in the missing word of the verse.' },
+  { id: 'bible-match', subject: 'bible', title: 'Who Am I?', sceneKey: 'MG_WordMatch', icon: '🐑', npc: 'fisherman',
+    description: 'Match each Bible person to their story.' }
 ];
 
 export const getGame = (id) => MINIGAMES.find((g) => g.id === id);

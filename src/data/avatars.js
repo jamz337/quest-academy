@@ -26,7 +26,10 @@ export const NPC_STYLES = [
   { hair: '#2ec46a', skin: '#ffd6b3', top: '#625f7e', legs: '#3d8bff' },
   { hair: '#d6cfc4', skin: '#ffd6b3', top: '#a8613a', legs: '#7c5cff' },
   { hair: '#ff5c6c', skin: '#b8794a', top: '#2ec46a', legs: '#2d2a4a' },
-  { hair: '#ffc531', skin: '#ffd6b3', top: '#8b7fd6', legs: '#229c53' }
+  { hair: '#ffc531', skin: '#ffd6b3', top: '#8b7fd6', legs: '#229c53' },
+  { hair: '#7a4a2a', skin: '#b8794a', top: '#e8d9b5', legs: '#7a4a2a' },   // shepherd
+  { hair: '#2d2a4a', skin: '#ffd6b3', top: '#8b5cf6', legs: '#625f7e' },   // scribe
+  { hair: '#a8613a', skin: '#b8794a', top: '#3d8bff', legs: '#2d2a4a' }    // fisherman
 ];
 
 // Swatches players can pick in the profile editor. The first entries mirror the preset colours above.

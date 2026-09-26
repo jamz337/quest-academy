@@ -1,6 +1,8 @@
 import { MinigameScene } from '../MinigameScene.js';
 import { THEME, hex } from '../../../ui/theme.js';
 import { generateRounds, ROUNDS, PAIRS_PER_ROUND } from '../../../generators/english/match.js';
+import { PAIRS as BIBLE_PAIRS } from '../../../data/bible/bank.js';
+import { bandFor } from '../../../data/grades.js';
 import { grid } from '../../../systems/Layout.js';
 import { Sfx } from '../../../systems/Audio.js';
 import { T, text } from '../../../ui/TextStyles.js';
@@ -8,14 +10,15 @@ import { card } from '../../../ui/Card.js';
 import { enter } from '../../../ui/motion.js';
 
 const PAR_MS = 120000;
-const TITLES = { synonym: 'Match the words that mean the same', antonym: 'Match the opposites', definition: 'Match each word to its meaning' };
+const TITLES = { synonym: 'Match the words that mean the same', antonym: 'Match the opposites', definition: 'Match each word to its meaning', people: 'Match each person to what they did' };
 
-/** Word Match: two columns of 5 cards; pair them up. 3 rounds. A pair counts if it took at most one mistake. */
+/** Word Match: two columns of 5 cards; pair them up. 3 rounds. A pair counts if it took at most one mistake. Also runs "Who Am I?" from the Bible bank. */
 export class WordMatch extends MinigameScene {
   constructor() { super('MG_WordMatch'); }
 
   initState() {
-    return { rounds: generateRounds(this.payload.grade, this.rng), rIdx: 0, done: [], mistakes: {}, left: null, right: null,
+    const bank = this.payload.gameId === 'bible-match' ? BIBLE_PAIRS[bandFor(this.payload.grade)] : undefined;
+    return { rounds: generateRounds(this.payload.grade, this.rng, bank), rIdx: 0, done: [], mistakes: {}, left: null, right: null,
       first: null, flash: null, busy: false };
   }
 

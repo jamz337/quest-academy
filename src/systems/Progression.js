@@ -66,6 +66,7 @@ export function unlockedZones(profile) {
   const zones = ['math'];
   if (bossDefeated(profile, 'math') || stored.includes('words')) zones.push('words');
   if (bossDefeated(profile, 'words') || stored.includes('code')) zones.push('code');
+  if (bossDefeated(profile, 'code') || stored.includes('bible')) zones.push('bible');
   return zones;
 }
 

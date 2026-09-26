@@ -7,7 +7,7 @@ export const NPCS = [
     id: 'signpost', name: 'Signpost Sam', sprite: 'npc8', gameId: null, zone: 'hub',
     lines: [
       'Welcome to Quest Academy! Walk around and talk to friends to play games.',
-      'Math Meadow is to the west. Word Woods is up in the north-east, and Code Cove is down south by the sea.',
+      'Math Meadow is to the west. Word Woods is up in the north-east, Code Cove is down south by the sea, and Bible Village is over to the east.',
       'Each land has quests: meet the villagers, earn a star in every game and find the hidden coins.',
       'Finish them all and the boss of that land will fight you. Beat the boss to open the next gate!',
       'Check your quests any time from the pause menu.'
@@ -61,6 +61,21 @@ export const NPCS = [
     id: 'fortune-teller', name: 'Fortune Teller', sprite: 'npc9', gameId: 'code-predict', zone: 'code',
     lines: ['I see... a robot... and a program...', 'Read the code and predict where the robot ends up. Can you see the future?'],
     playPrompt: 'Want to play Predict the Robot?'
+  },
+  {
+    id: 'shepherd', name: 'Shepherd Eli', sprite: 'npc10', gameId: 'bible-quiz', zone: 'bible',
+    lines: ['Welcome to the village, friend! My sheep know my voice, and I know the old stories.', 'Who built the ark? Who beat the giant? Let us see how well you know them.'],
+    playPrompt: 'Want to play Bible Quiz?'
+  },
+  {
+    id: 'scribe', name: 'Scribe Miriam', sprite: 'npc11', gameId: 'bible-verse', zone: 'bible',
+    lines: ['Careful, the ink is still wet! I copy verses all day long.', 'Some of my scrolls have a word missing. Can you fill in the blanks?'],
+    playPrompt: 'Want to play Verse Builder?'
+  },
+  {
+    id: 'fisherman', name: 'Fisherman Andrew', sprite: 'npc12', gameId: 'bible-match', zone: 'bible',
+    lines: ['Just back from the lake with a full net!', 'Every person in the Bible has a story. Can you match each one to what they did?'],
+    playPrompt: 'Want to play Who Am I?'
   }
 ];
 

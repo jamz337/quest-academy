@@ -5,8 +5,8 @@ import { BOSSES, bossForZone } from './bosses.js';
 import { gamesForSubject } from '../minigames.js';
 import { ZONE_NAMES, buildMap, zoneAt } from './map.js';
 
-export const ZONE_ORDER = ['math', 'words', 'code'];
-const SUBJECT_OF_ZONE = { math: 'math', words: 'words', code: 'code' };
+export const ZONE_ORDER = ['math', 'words', 'code', 'bible'];
+const SUBJECT_OF_ZONE = { math: 'math', words: 'words', code: 'code', bible: 'bible' };
 
 let coinIndexByZone = null;
 /** Indices into map.coins per zone, computed once (the map is deterministic). */

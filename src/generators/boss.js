@@ -10,6 +10,7 @@ import { PAIRS } from '../data/english/pairBank.js';
 import { WORDS } from '../data/english/wordBank.js';
 import { bandFor } from '../data/grades.js';
 import { scramble } from './english/words.js';
+import { bibleQuestion } from './bible/quiz.js';
 
 const DIR_WORD = { N: 'North ▲', E: 'East ▶', S: 'South ▼', W: 'West ◀' };
 
@@ -63,7 +64,7 @@ function codeQuestion(grade, rng) {
   return { prompt: start + programText(r.program.main) + '\n\nWhich way does it face at the end?', choices: rng.shuffle(Object.values(DIR_WORD)), answer, skill: band === 'B' ? 'repeat' : 'sequence_code' };
 }
 
-const BY_SUBJECT = { math: mathQuestion, words: wordsQuestion, code: codeQuestion };
+const BY_SUBJECT = { math: mathQuestion, words: wordsQuestion, code: codeQuestion, bible: bibleQuestion };
 
 /** n questions for a subject at a grade, with no repeated prompts. */
 export function bossQuestions(subject, grade, rng, n = 20) {

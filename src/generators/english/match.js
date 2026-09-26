@@ -6,8 +6,7 @@ import { bandFor } from '../../data/grades.js';
 export const ROUNDS = 3;
 export const PAIRS_PER_ROUND = 5;
 
-export function generateRounds(grade, rng) {
-  const bank = PAIRS[bandFor(grade)];
+export function generateRounds(grade, rng, bank = PAIRS[bandFor(grade)]) {
   const picked = rng.sample(bank, ROUNDS * PAIRS_PER_ROUND);
   const rounds = [];
   for (let r = 0; r < ROUNDS; r++) {
