@@ -13,13 +13,16 @@ export default handler('GET', async (req, res) => {
     WHERE a.leaderboard AND r.created_at > now() - interval '7 days'
     GROUP BY r.account_id, r.profile_id, r.profile_name
     ORDER BY xp DESC LIMIT 20`;
-  // Attach avatars from the saves for the weekly rows.
+  // Attach avatars (preset index plus any custom look) from the saves for the weekly rows.
   const avatars = {};
-  for (const r of await sql`SELECT s.account_id, p.key AS pid, (p.value->>'avatar')::int AS avatar
-                            FROM saves s, jsonb_each(s.data->'profiles') p`) avatars[`${r.account_id}:${r.pid}`] = r.avatar;
+  for (const r of await sql`SELECT s.account_id, p.key AS pid, (p.value->>'avatar')::int AS avatar, p.value->'look' AS look
+                            FROM saves s, jsonb_each(s.data->'profiles') p`) avatars[`${r.account_id}:${r.pid}`] = { avatar: r.avatar ?? 0, look: r.look || null };
   res.setHeader('Cache-Control', 'public, max-age=60');
   send(res, 200, {
     allTime,
-    week: week.map((r) => ({ name: r.name, avatar: avatars[`${r.account_id}:${r.profile_id}`] ?? 0, xp: r.xp, games: r.games }))
+    week: week.map((r) => {
+      const a = avatars[`${r.account_id}:${r.profile_id}`] || { avatar: 0, look: null };
+      return { name: r.name, avatar: a.avatar, look: a.look, xp: r.xp, games: r.games };
+    })
   });
 });

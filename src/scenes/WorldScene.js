@@ -11,6 +11,8 @@ import { NPCS } from '../data/world/npcs.js';
 import { InputController } from '../systems/InputController.js';
 import { Sfx } from '../systems/Audio.js';
 import { toast } from '../ui/Toast.js';
+import { resolveLook } from '../data/avatars.js';
+import { lookSpriteTexture } from '../systems/Textures.js';
 
 const SPEED = 110;          // px/s
 const TALK_DIST = 44;       // px between player and NPC centres
@@ -86,8 +88,8 @@ export class WorldScene extends Phaser.Scene {
       const row = this.map.data[ty];
       if (row && row[tx] !== undefined && isWalkable(row[tx])) { x = w.x; y = w.y; }
     }
-    const key = `char${Number.isInteger(profile.avatar) ? profile.avatar : 0}`;
-    this.player = this.physics.add.sprite(x, y, this.textures.exists(key) ? key : 'char0', 0).setScale(CHAR_SCALE).setDepth(10);
+    const key = lookSpriteTexture(this, resolveLook(profile));
+    this.player = this.physics.add.sprite(x, y, key, 0).setScale(CHAR_SCALE).setDepth(10);
     this.player.body.setSize(10, 8).setOffset(3, 8);   // feet-sized box so doors and gaps feel fair
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.layer);

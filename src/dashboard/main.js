@@ -3,7 +3,7 @@ import { MINIGAMES } from '../data/minigames.js';
 import { SUBJECTS } from '../constants.js';
 import { skillLabel } from '../data/skills.js';
 import { getBadge } from '../data/badges.js';
-import { CHARACTER_STYLES, OUTLINE, MOUTH } from '../data/avatars.js';
+import { resolveLook, OUTLINE, MOUTH } from '../data/avatars.js';
 import { cssVars } from '../ui/theme.js';
 
 // The page's CSS variables come from the same tokens as the game so the two never drift.
@@ -83,7 +83,7 @@ function childCard(c) {
     : '<span class="muted">Nothing stands out. Keep going!</span>';
   const badges = c.badges.length ? c.badges.map((id) => `<span class="badge">🏅 ${esc(getBadge(id)?.title || id)}</span>`).join('') : '<span class="muted">No badges yet.</span>';
   return `<section class="card">
-    <div class="row"><canvas class="avatar" data-avatar="${c.avatar | 0}" width="48" height="48"></canvas>
+    <div class="row"><canvas class="avatar" data-avatar="${c.avatar | 0}" data-look="${esc(JSON.stringify(c.look || null))}" width="48" height="48"></canvas>
       <div class="grow"><h2>${esc(c.name)}</h2><div class="muted">Grade ${c.grade} · last played ${when(c.lastPlayed)}</div></div></div>
     <h3>Progress</h3>
     <div class="stats">
@@ -100,10 +100,14 @@ function childCard(c) {
 
 // Same colours as the in-game avatars, drawn as a simple face so the page needs no game assets.
 function drawAvatar(canvas) {
-  const { hair, skin, top } = CHARACTER_STYLES[Math.max(0, Math.min(7, Number(canvas.dataset.avatar) || 0))];
+  let look = null;
+  try { look = JSON.parse(canvas.dataset.look || 'null'); } catch { /* ignore */ }
+  const { hair, skin, top, bg } = resolveLook({ avatar: Number(canvas.dataset.avatar) || 0, look });
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = OUTLINE; ctx.beginPath(); ctx.arc(24, 24, 24, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = top; ctx.beginPath(); ctx.arc(24, 24, 22, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(24, 24, 22, 0, Math.PI * 2); ctx.clip();
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, 48, 48);
+  ctx.fillStyle = top; ctx.fillRect(9, 38, 30, 12);   // shoulders
   ctx.fillStyle = skin; ctx.fillRect(13, 14, 22, 22);
   ctx.fillStyle = hair; ctx.fillRect(11, 8, 26, 9); ctx.fillRect(11, 17, 4, 8); ctx.fillRect(33, 17, 4, 8);
   ctx.fillStyle = OUTLINE; ctx.fillRect(18, 24, 3, 4); ctx.fillRect(27, 24, 3, 4);

@@ -12,6 +12,8 @@ import { chip } from '../ui/Chip.js';
 import { ProgressBar } from '../ui/ProgressBar.js';
 import { enter } from '../ui/motion.js';
 import * as Cloud from '../systems/Cloud.js';
+import { resolveLook } from '../data/avatars.js';
+import { badgeTexture } from '../systems/Textures.js';
 
 const EMOJI = { map: '\u{1F5FA}️', trophy: '\u{1F3C6}', medal: '\u{1F3C5}', cloud: '☁️', family: '\u{1F46A}', swap: '\u{1F501}', soundOn: '\u{1F50A}', soundOff: '\u{1F507}' };
 
@@ -34,7 +36,7 @@ export class ModeSelectScene extends BaseScene {
     const lvl = levelFromXp(p.xp), lo = xpForLevel(lvl), hi = xpForLevel(lvl + 1);
     const ax = -chipW / 2 + 42 * ui, tx = -chipW / 2 + 82 * ui;
     pc.add(this.add.circle(ax, 0, 30 * ui, THEME.primarySoft));
-    pc.add(this.add.image(ax, 0, 'avatar', p.avatar).setDisplaySize(52 * ui, 52 * ui));
+    pc.add(this.add.image(ax, 0, badgeTexture(this, resolveLook(p))).setDisplaySize(52 * ui, 52 * ui));
     pc.add(this.add.text(tx, -16 * ui, `${p.name}  ·  Grade ${p.grade}`, T.bodyBold(this)).setOrigin(0, 0.5));
     pc.add(this.add.text(tx, 8 * ui, `Level ${lvl}`, T.small(this, THEME.ink2)).setOrigin(0, 0.5));
     pc.add(new ProgressBar(this, tx + 56 * ui + 55 * ui, 8 * ui, 110 * ui, 8 * ui, { value: (p.xp - lo) / (hi - lo), color: THEME.primary }));

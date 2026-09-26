@@ -25,7 +25,7 @@ export function summarize(save, results = [], now = Date.now()) {
       const practise = Object.entries(missed).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([skill, count]) => ({ skill, count }));
       const minutes = Math.round(rs.reduce((s, r) => s + (r.time_ms || 0), 0) / 60000);
       return {
-        id: p.id, name: p.name, avatar: p.avatar, grade: p.grade,
+        id: p.id, name: p.name, avatar: p.avatar, look: p.look || null, grade: p.grade,
         xp: p.xp || 0, level: levelFromXp(p.xp || 0), coins: p.coins || 0, stars: totalStars(p),
         badges: p.badges || [], games: p.games || {},
         codingLevels: Object.values(p.coding?.levels || {}).filter((l) => l.stars > 0).length,
@@ -38,11 +38,11 @@ export function summarize(save, results = [], now = Date.now()) {
     });
 }
 
-/** Rows for the all-time board from saves: [{ name, avatar, xp, stars, grade }]. */
+/** Rows for the all-time board from saves: [{ name, avatar, look, xp, stars, grade }]. */
 export function allTimeBoard(saves, limit = 20) {
   const rows = [];
   for (const s of saves) for (const p of Object.values(s.profiles || {})) {
-    rows.push({ name: p.name, avatar: p.avatar ?? 0, grade: p.grade, xp: p.xp || 0, stars: totalStars(p) });
+    rows.push({ name: p.name, avatar: p.avatar ?? 0, look: p.look || null, grade: p.grade, xp: p.xp || 0, stars: totalStars(p) });
   }
   return rows.sort((a, b) => b.xp - a.xp || b.stars - a.stars).slice(0, limit);
 }

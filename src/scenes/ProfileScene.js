@@ -12,6 +12,15 @@ import { modal } from '../ui/Modal.js';
 import { textInput } from '../ui/Input.js';
 import { enter } from '../ui/motion.js';
 import { Sfx } from '../systems/Audio.js';
+import { resolveLook, sanitizeLook, HAIR_COLORS, CLOTHES_COLORS, BG_COLORS } from '../data/avatars.js';
+import { badgeTexture } from '../systems/Textures.js';
+
+// Colour rows in the editor; `key` matches the fields of a profile's look.
+const SWATCHES = [
+  { key: 'hair', title: 'HAIR', colors: HAIR_COLORS },
+  { key: 'top', title: 'CLOTHES', colors: CLOTHES_COLORS },
+  { key: 'bg', title: 'BACKGROUND', colors: BG_COLORS }
+];
 
 /** Pick, create, edit or delete local player profiles. */
 export class ProfileScene extends BaseScene {
@@ -53,7 +62,7 @@ export class ProfileScene extends BaseScene {
     const { ui } = this;
     const k = card(this, c.x, c.y, c.w, c.h, { stroke: THEME.line, onTap: () => { Store.setActiveProfile(p.id); this.go(SCENES.ModeSelect); } });
     const disc = this.add.circle(0, -c.h * 0.22, 36 * ui, THEME.primarySoft);
-    const img = this.add.image(0, -c.h * 0.22, 'avatar', p.avatar).setDisplaySize(56 * ui, 56 * ui);
+    const img = this.add.image(0, -c.h * 0.22, badgeTexture(this, resolveLook(p))).setDisplaySize(56 * ui, 56 * ui);
     const name = this.add.text(0, c.h * 0.14, p.name, T.bodyBold(this)).setOrigin(0.5);
     const meta = this.add.text(0, c.h * 0.32, `Grade ${p.grade}  ·  Lv ${levelFromXp(p.xp)}`, T.small(this, THEME.ink2)).setOrigin(0.5);
     k.add([disc, img, name, meta]);
@@ -75,34 +84,51 @@ export class ProfileScene extends BaseScene {
     this.state.mode = 'form';
     this.state.editing = profile;
     this.state.confirmDelete = false;
-    this.state.draft = profile ? { name: profile.name, avatar: profile.avatar, grade: profile.grade } : { name: '', avatar: Math.floor(Math.random() * AVATAR_COUNT), grade: 3 };
+    this.state.draft = profile
+      ? { name: profile.name, avatar: profile.avatar, look: sanitizeLook(profile.look), grade: profile.grade }
+      : { name: '', avatar: Math.floor(Math.random() * AVATAR_COUNT), look: null, grade: 3 };
     this.buildCount = 0;   // animate the form in
     this.rebuild();
   }
 
   buildForm() {
-    const { w, ui } = this;
+    const { w, h } = this;
     const d = this.state.draft;
     const editing = !!this.state.editing;
-    const pw = Math.min(w - 24, 520 * ui);
-    const aSize = Math.min(52 * ui, (pw - 48) / AVATAR_COUNT - 6);
+    const pw = Math.min(w - 24, 520 * this.ui);
     const aCols = this.portrait && pw < 400 ? 4 : AVATAR_COUNT;
     const aRows = Math.ceil(AVATAR_COUNT / aCols);
-    const extra = editing ? 22 * ui + (this.state.confirmDelete ? 76 * ui : 20 * ui) : 0;
-    const need = 68 * ui + 90 * ui + 18 * ui + aRows * (aSize + 12) + 16 * ui + 92 * ui + 48 * ui + extra + 26 * ui;
+    // The form is tall, so its spacing shrinks below the normal UI scale on short screens (landscape phones,
+    // tablets) until the whole modal fits; text keeps its size.
+    // On narrow screens the colour labels sit above their swatches so the swatches stay big enough to tap.
+    const maxColors = Math.max(...SWATCHES.map((r) => r.colors.length));
+    const labelW = 96 * this.ui;
+    const inline = (pw - 48 - labelW) / maxColors >= 30 * this.ui;
+    const height = (s) => {
+      const extra = editing ? 22 * s + (this.state.confirmDelete ? 76 * s : 20 * s) : 0;
+      const swatches = SWATCHES.length * (34 + (inline ? 0 : 18)) * s;
+      return 68 * s + 90 * s + 18 * s + aRows * (Math.min(44 * s, (pw - 48) / AVATAR_COUNT - 6) + 12) + 10 * s + swatches + 12 * s + 92 * s + 48 * s + extra + 26 * s;
+    };
+    const ui = height(this.ui) > h - 24 ? Math.max(0.7, this.ui * (h - 24) / height(this.ui)) : this.ui;
+    const aSize = Math.min(44 * ui, (pw - 48) / AVATAR_COUNT - 6);
+    const swatchRow = 34 * ui;
+    const need = height(ui);
     const m = modal(this, { w: pw, h: need, title: editing ? 'Edit player' : 'New player', accent: THEME.primary, dim: false });
     const label = (str, y) => text(this, m.x + 24, y, str, T.caption(this)).setOrigin(0, 0.5);
+    const look = resolveLook(d);
     let y = m.contentTop;
 
-    // Name (DOM input so the on-screen keyboard works on Android)
+    // Name (DOM input so the on-screen keyboard works on Android) with a live preview of the badge beside it
     label('NAME', y); y += 22 * ui;
-    textInput(this, w / 2, y + 22 * ui, m.w - 48, 44 * ui, {
+    const prev = 52 * ui, inW = m.w - 48 - prev - 12;
+    textInput(this, m.x + 24 + inW / 2, y + 22 * ui, inW, 44 * ui, {
       value: d.name, placeholder: 'Type a name', maxLength: 14, autocapitalize: 'words', fontSize: 18,
       onInput: (v) => { d.name = v; }, onEnter: () => this.saveForm()
     });
+    this.add.image(m.x + m.w - 24 - prev / 2, y + 22 * ui, badgeTexture(this, look)).setDisplaySize(prev, prev);
     y += 44 * ui + 24 * ui;
 
-    // Avatar picker
+    // Preset picker: sets the face (skin) and the default colours; picking one clears any custom colours
     label('AVATAR', y); y += 18 * ui;
     const cells = grid({ x: m.x + 24, y, w: m.w - 48, h: aRows * (aSize + 12) }, aCols, aRows, 6);
     for (let i = 0; i < AVATAR_COUNT; i++) {
@@ -110,17 +136,36 @@ export class ProfileScene extends BaseScene {
       const sel = i === d.avatar;
       this.add.circle(c.x, c.y, aSize / 2 + 5, sel ? THEME.gold : THEME.sunken);
       const img = this.add.image(c.x, c.y, 'avatar', i).setDisplaySize(aSize, aSize).setInteractive({ useHandCursor: true });
-      img.on('pointerup', () => { Sfx.pop(); d.avatar = i; this.rebuild(); });
+      img.on('pointerup', () => { Sfx.pop(); d.avatar = i; d.look = null; this.rebuild(); });
       if (!sel) img.setAlpha(0.8);
     }
-    y += aRows * (aSize + 12) + 16 * ui;
+    y += aRows * (aSize + 12) + 10 * ui;
+
+    // Colour rows: hair, clothes and badge background
+    SWATCHES.forEach(({ key, title, colors }) => {
+      if (!inline) { label(title, y + 9 * ui); y += 18 * ui; }
+      const cy = y + swatchRow / 2;
+      if (inline) label(title, cy);
+      const rowW = m.w - 48 - (inline ? labelW : 0);
+      const size = Math.min(24 * ui, rowW / colors.length - 4);
+      const step = rowW / colors.length;
+      colors.forEach((c, i) => {
+        const cx = m.x + 24 + (inline ? labelW : 0) + step * i + step / 2;
+        const sel = look[key] === c;
+        if (sel) this.add.circle(cx, cy, size / 2 + 4, THEME.gold);
+        const dot = this.add.circle(cx, cy, size / 2, parseInt(c.slice(1), 16)).setStrokeStyle(2, THEME.line, 0.6).setInteractive({ useHandCursor: true });
+        dot.on('pointerup', () => { Sfx.pop(); d.look = { ...(d.look || {}), [key]: c }; this.rebuild(); });
+      });
+      y += swatchRow;
+    });
+    y += 12 * ui;
 
     // Grade picker
     label('GRADE', y); y += 20 * ui;
     const gcells = grid({ x: m.x + 24, y, w: m.w - 48, h: 44 * ui }, GRADES.length, 1, 6);
     GRADES.forEach((g, i) => {
       const c = gcells[i];
-      button(this, c.x, c.y + c.h / 2, c.w, c.h, String(g), {
+      button(this, c.x, c.y, c.w, c.h, String(g), {
         variant: 'secondary', selected: g === d.grade, fontSize: 17, radius: THEME.radius.sm,
         onClick: () => { d.grade = g; this.rebuild(); }
       });
@@ -151,9 +196,9 @@ export class ProfileScene extends BaseScene {
     const name = (d.name || '').trim() || 'Player';
     if (this.state.editing) {
       Store.setActiveProfile(this.state.editing.id);
-      Store.updateProfile((p) => { p.name = name; p.avatar = d.avatar; p.grade = d.grade; });
+      Store.updateProfile((p) => { p.name = name; p.avatar = d.avatar; p.look = sanitizeLook(d.look); p.grade = d.grade; });
     } else {
-      Store.createProfile({ name, avatar: d.avatar, grade: d.grade });
+      Store.createProfile({ name, avatar: d.avatar, look: sanitizeLook(d.look), grade: d.grade });
     }
     Sfx.correct();
     this.go(SCENES.ModeSelect);

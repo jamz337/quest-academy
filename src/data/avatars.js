@@ -28,3 +28,35 @@ export const NPC_STYLES = [
   { hair: '#ff5c6c', skin: '#b8794a', top: '#2ec46a', legs: '#2d2a4a' },
   { hair: '#ffc531', skin: '#ffd6b3', top: '#8b7fd6', legs: '#229c53' }
 ];
+
+// Swatches players can pick in the profile editor. The first entries mirror the preset colours above.
+export const HAIR_COLORS = ['#2d2a4a', '#a8613a', '#7a4a2a', '#ffc531', '#ff8f3f', '#ff5c6c', '#625f7e', '#d6cfc4', '#ffffff', '#7c5cff', '#ff6fae', '#3d8bff', '#2ec46a'];
+export const CLOTHES_COLORS = ['#3d8bff', '#ff6fae', '#2ec46a', '#ff8f3f', '#8b7fd6', '#ffc531', '#d6cfc4', '#ff5c6c', '#7c5cff', '#229c53', '#2d2a4a', '#ffffff', '#a8613a'];
+export const BG_COLORS = ['#3d8bff', '#ff6fae', '#2ec46a', '#ff8f3f', '#8b7fd6', '#ffc531', '#ff5c6c', '#7c5cff', '#4aa8ff', '#f3e2ad', '#2d2a4a', '#ffffff', '#5cc45a'];
+
+const HEX = /^#[0-9a-f]{6}$/i;
+
+/** Keep only valid '#rrggbb' overrides from a stored look; anything else is dropped. Returns null when nothing is set. */
+export function sanitizeLook(look) {
+  if (!look || typeof look !== 'object') return null;
+  const out = {};
+  for (const k of ['hair', 'top', 'bg']) if (typeof look[k] === 'string' && HEX.test(look[k])) out[k] = look[k].toLowerCase();
+  return Object.keys(out).length ? out : null;
+}
+
+/**
+ * The colours a profile is drawn with: its preset (`avatar` index) with any `look` overrides on top.
+ * `bg` is the badge background; it defaults to the top colour so profiles without a look render as before.
+ */
+export function resolveLook(profile) {
+  const idx = Math.max(0, Math.min(CHARACTER_STYLES.length - 1, Number(profile?.avatar) || 0));
+  const st = CHARACTER_STYLES[idx];
+  const o = sanitizeLook(profile?.look) || {};
+  const top = o.top || st.top;
+  return { hair: o.hair || st.hair, skin: st.skin, top, legs: st.legs, bg: o.bg || top };
+}
+
+/** Stable id for a resolved look, used as a texture key suffix. */
+export function lookId(look) {
+  return [look.hair, look.skin, look.top, look.legs, look.bg].map((c) => c.slice(1)).join('');
+}

@@ -5,11 +5,11 @@ export function defaultSave() {
   return { version: SAVE_VERSION, activeProfileId: null, settings: { sound: true, lastMode: 'roam' }, profiles: {}, deleted: {} };
 }
 
-export function newProfile({ name, avatar = 0, grade = 3 }) {
+export function newProfile({ name, avatar = 0, grade = 3, look = null }) {
   const id = 'p_' + Math.random().toString(36).slice(2, 8);
   const now = Date.now();
   return {
-    id, name: String(name || 'Player').slice(0, 14), avatar, grade,
+    id, name: String(name || 'Player').slice(0, 14), avatar, look, grade,
     createdAt: now, updatedAt: now, coins: 0, xp: 0, badges: [],
     games: {}, coding: { levels: {} },
     world: { x: null, y: null, unlockedZones: ['math'], npcsTalked: [], coinsCollected: [] }

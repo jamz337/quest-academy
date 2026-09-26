@@ -8,6 +8,8 @@ import { panel, background } from '../ui/Panel.js';
 import { topBar } from '../ui/TopBar.js';
 import { enter } from '../ui/motion.js';
 import { levelFromXp } from '../systems/SaveSystem.js';
+import { resolveLook } from '../data/avatars.js';
+import { badgeTexture } from '../systems/Textures.js';
 
 const MEDALS = [THEME.warningDark, THEME.ink3, THEME.subjects.code.dark];
 
@@ -63,7 +65,7 @@ export class LeaderboardScene extends BaseScene {
       if (i % 2 === 0) { const g = this.add.graphics(); g.fillStyle(THEME.surfaceAlt, 1); g.fillRoundedRect(px + 8, -rowH / 2 + 2, pw - 16, rowH - 4, 10); c.add(g); }
       c.add(this.add.text(px + 30 * ui, 0, String(i + 1), T.bodyBold(this, medal || THEME.ink3)).setOrigin(0.5));
       c.add(this.add.circle(px + 62 * ui, 0, rowH * 0.42, i < 3 ? THEME.brandSoft : THEME.sunken));
-      c.add(this.add.image(px + 62 * ui, 0, 'avatar', Math.max(0, Math.min(7, r.avatar | 0))).setDisplaySize(rowH * 0.74, rowH * 0.74));
+      c.add(this.add.image(px + 62 * ui, 0, badgeTexture(this, resolveLook(r))).setDisplaySize(rowH * 0.74, rowH * 0.74));
       c.add(this.add.text(px + 86 * ui, 0, r.name || 'Player', T.bodyBold(this)).setOrigin(0, 0.5));
       const right = s.tab === 'week' ? `${r.xp} XP · ${r.games} ${r.games === 1 ? 'game' : 'games'}` : `Lv ${levelFromXp(r.xp)} · ${r.xp} XP · ${r.stars} ★`;
       c.add(this.add.text(px + pw - 16, 0, right, T.small(this, THEME.ink2)).setOrigin(1, 0.5));

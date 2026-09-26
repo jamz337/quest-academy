@@ -4,7 +4,7 @@ import Phaser from 'phaser';
 import { TILE, AVATAR_COUNT } from '../constants.js';
 import { THEME } from '../ui/theme.js';
 import { mulberry32 } from './Rng.js';
-import { OUTLINE, MOUTH, BOOTS, CHARACTER_STYLES, NPC_STYLES } from '../data/avatars.js';
+import { OUTLINE, MOUTH, BOOTS, CHARACTER_STYLES, NPC_STYLES, lookId } from '../data/avatars.js';
 export { CHARACTER_STYLES, NPC_STYLES };
 
 const SHADOW = 'rgba(0,0,0,0.22)';
@@ -222,21 +222,56 @@ export function tilesTexture(scene) {
   tex.refresh();
 }
 
-/** Round avatar badges for profiles: 'avatar' sheet with AVATAR_COUNT frames of 80x80 (drawn at 2x, shown at ~40) showing each character's head. */
+const BADGE = 80;   // badge frames are drawn at 2x and shown at ~40
+const BUST = CHAR_DOWN.slice(0, 13).map((r) => r.slice(2, 14));   // 12 x 13 pixels: head, shoulders and arms
+
+/** One round badge: coloured disc with a darker rim and the character from the shoulders up, clipped to the disc. */
+function paintBadge(ctx, x0, look) {
+  const bg = look.bg || look.top, S = BADGE;
+  ctx.fillStyle = shade(bg, 0.82); ctx.beginPath(); ctx.arc(x0 + S / 2, S / 2, S / 2, 0, Math.PI * 2); ctx.fill();
+  ctx.save();
+  ctx.beginPath(); ctx.arc(x0 + S / 2, S / 2, S / 2 - 3, 0, Math.PI * 2); ctx.clip();
+  ctx.fillStyle = bg; ctx.fillRect(x0, 0, S, S);
+  blit(ctx, BUST, x0 + 10, 14, 5, charPalette(look));
+  ctx.restore();
+}
+
+/** Round avatar badges for the preset picker: 'avatar' sheet with AVATAR_COUNT frames of 80x80. */
 export function avatarTexture(scene) {
   if (scene.textures.exists('avatar')) return;
-  const S = 80;
-  const tex = scene.textures.createCanvas('avatar', S * AVATAR_COUNT, S);
+  const tex = scene.textures.createCanvas('avatar', BADGE * AVATAR_COUNT, BADGE);
   const ctx = tex.getContext();
-  const head = CHAR_DOWN.slice(0, 9).map((r) => r.slice(3, 13));   // 10 x 9 pixels
-  CHARACTER_STYLES.forEach((st, i) => {
-    const x0 = i * S;
-    ctx.fillStyle = shade(st.top, 0.82); ctx.beginPath(); ctx.arc(x0 + S / 2, S / 2, S / 2, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = st.top; ctx.beginPath(); ctx.arc(x0 + S / 2, S / 2, S / 2 - 3, 0, Math.PI * 2); ctx.fill();
-    blit(ctx, head, x0 + 10, 12, 6, charPalette(st));
-    tex.add(i, 0, x0, 0, S, S);
-  });
+  CHARACTER_STYLES.forEach((st, i) => { paintBadge(ctx, i * BADGE, st); tex.add(i, 0, i * BADGE, 0, BADGE, BADGE); });
   tex.refresh();
+}
+
+/** Badge for a resolved look (see data/avatars.js resolveLook): built on first use and cached by colour. Returns the texture key. */
+export function badgeTexture(scene, look) {
+  const key = 'badge:' + lookId(look);
+  if (!scene.textures.exists(key)) {
+    const tex = scene.textures.createCanvas(key, BADGE, BADGE);
+    paintBadge(tex.getContext(), 0, look);
+    tex.refresh();
+  }
+  return key;
+}
+
+/** Walking sheet plus -down/-up/-side animations for a resolved look. Returns the texture key. */
+export function lookSpriteTexture(scene, look) {
+  const key = 'look:' + lookId(look);
+  if (!scene.textures.exists(key)) {
+    characterTexture(scene, key, look);
+    scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    walkAnims(scene, key);
+  }
+  return key;
+}
+
+function walkAnims(scene, key) {
+  if (scene.anims.exists(`${key}-down`)) return;
+  scene.anims.create({ key: `${key}-down`, frames: scene.anims.generateFrameNumbers(key, { start: 0, end: 1 }), frameRate: 6, repeat: -1 });
+  scene.anims.create({ key: `${key}-up`, frames: scene.anims.generateFrameNumbers(key, { start: 2, end: 3 }), frameRate: 6, repeat: -1 });
+  scene.anims.create({ key: `${key}-side`, frames: scene.anims.generateFrameNumbers(key, { start: 4, end: 5 }), frameRate: 6, repeat: -1 });
 }
 
 function star(g, cx, cy, r, color) {
@@ -290,12 +325,7 @@ export function generateAllTextures(scene) {
   NPC_STYLES.forEach((st, i) => characterTexture(scene, `npc${i}`, st));
   pixelTexture(scene, 'robot', [ROBOT, ROBOT2]);
   const sheets = [...CHARACTER_STYLES.map((_, i) => `char${i}`), ...NPC_STYLES.map((_, i) => `npc${i}`)];
-  sheets.forEach((key) => {
-    if (scene.anims.exists(`${key}-down`)) return;
-    scene.anims.create({ key: `${key}-down`, frames: scene.anims.generateFrameNumbers(key, { start: 0, end: 1 }), frameRate: 6, repeat: -1 });
-    scene.anims.create({ key: `${key}-up`, frames: scene.anims.generateFrameNumbers(key, { start: 2, end: 3 }), frameRate: 6, repeat: -1 });
-    scene.anims.create({ key: `${key}-side`, frames: scene.anims.generateFrameNumbers(key, { start: 4, end: 5 }), frameRate: 6, repeat: -1 });
-  });
+  sheets.forEach((key) => walkAnims(scene, key));
   // The game renders anti-aliased (pixelArt: false); pixel-art sheets opt back in to crisp scaling.
   ['tiles', 'robot', ...sheets].forEach((key) => scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST));
   if (!scene.anims.exists('robot-walk')) scene.anims.create({ key: 'robot-walk', frames: scene.anims.generateFrameNumbers('robot', { start: 0, end: 1 }), frameRate: 8, repeat: -1 });
