@@ -135,8 +135,15 @@ export function iconButton(scene, x, y, size, glyph, opts = {}) {
   return new Button(scene, x, y, size, size, glyph, { variant: 'secondary', radius: size / 2, fontSize: (size / s) * 0.42, ...opts });
 }
 
-/** Round 🔊 button that reads `getText()` aloud. Returns null (draws nothing) when the browser cannot speak. */
-export function speakButton(scene, x, y, size, getText, opts = {}) {
+/**
+ * Round 🔊 button that reads aloud. `source` is a ReadableText (its words light up as they are spoken),
+ * a string, or a function returning either. Returns null (draws nothing) when the browser cannot speak.
+ */
+export function speakButton(scene, x, y, size, source, opts = {}) {
   if (!canSpeak()) return null;
-  return iconButton(scene, x, y, size, '🔊', { variant: 'ghost', ...opts, onClick: () => speak(typeof getText === 'function' ? getText() : getText) });
+  const { rate, ...rest } = opts;
+  return iconButton(scene, x, y, size, '🔊', {
+    variant: 'ghost', ...rest,
+    onClick: () => { const s = typeof source === 'function' ? source() : source; if (s && typeof s.read === 'function') s.read({ rate }); else speak(s, { rate }); }
+  });
 }

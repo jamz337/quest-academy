@@ -4,7 +4,8 @@ import { THEME, subjectOf } from '../../ui/theme.js';
 import { Rng } from '../../systems/Rng.js';
 import * as Launcher from '../../systems/MinigameLauncher.js';
 import { Sfx } from '../../systems/Audio.js';
-import { stop as stopSpeech } from '../../systems/Speech.js';
+import { stop as stopSpeech, rateFor } from '../../systems/Speech.js';
+import * as Store from '../../systems/Store.js';
 import { safeArea } from '../../systems/Layout.js';
 import { T, text } from '../../ui/TextStyles.js';
 import { iconButton } from '../../ui/Button.js';
@@ -99,6 +100,16 @@ export class MinigameScene extends BaseScene {
   }
 
   abort() { this.finished = true; stopSpeech(); Launcher.abort(this, this.payload); }
+
+  /** Speaking rate for this player, and whether they asked for everything to be read automatically. */
+  get speechRate() { return rateFor(this.payload.grade); }
+  get autoReads() { return Store.getProfile()?.readAloud === 'auto'; }
+
+  /** Games call this with their prompt (a ReadableText): in automatic mode it is read when the round changes. */
+  autoRead(readableText) {
+    if (!readableText || !this.animateEnter || !this.autoReads) return;
+    this.time.delayedCall(350, () => { if (readableText.active) readableText.read({ rate: this.speechRate }); });
+  }
 
   /** Quick screen flash for right/wrong feedback. */
   flash(color, alpha = 0.14) {

@@ -5,6 +5,7 @@ import { skillLabel } from '../../../data/skills.js';
 import { grid } from '../../../systems/Layout.js';
 import { T, text } from '../../../ui/TextStyles.js';
 import { button, speakButton } from '../../../ui/Button.js';
+import { readable } from '../../../ui/ReadableText.js';
 import { card } from '../../../ui/Card.js';
 import { stripe } from '../../../ui/Panel.js';
 import { enter } from '../../../ui/motion.js';
@@ -33,11 +34,11 @@ export class GrammarGate extends MinigameScene {
     const prompt = card(this, cx, area.y + promptH / 2, area.w, promptH);
     stripe(this, cx - 24 * ui, area.y + 10 * ui, 48 * ui, this.subject.accent, 5 * ui);
     text(this, cx, area.y + 30 * ui, `Which word fits? (${skillLabel(r.skill)})`, T.small(this, THEME.ink2));
-    speakButton(this, area.x + area.w - 30 * ui, area.y + 30 * ui, 40 * ui, () => fillBlank(r.sentence, s.picked === null ? '____' : r.options[r.answer]));
     const shown = s.picked === null ? fillBlank(r.sentence) : fillBlank(r.sentence, r.options[r.answer]);
     const long = shown.length > 40;
-    text(this, cx, area.y + promptH / 2 + 12 * ui, shown,
-      T.at(this, long ? 22 : 28, s.picked === null ? THEME.ink : THEME.successDark, { wordWrap: { width: area.w - 32 } }));
+    const sentence = readable(this, cx, area.y + promptH / 2 + 12 * ui, shown, T.at(this, long ? 22 : 28, s.picked === null ? THEME.ink : THEME.successDark), { width: area.w - 32 });
+    speakButton(this, area.x + area.w - 30 * ui, area.y + 30 * ui, 40 * ui, sentence, { rate: this.speechRate });
+    this.autoRead(sentence);
     enter(this, prompt, { from: 'up', distance: 12 });
 
     const top = area.y + promptH + gap;

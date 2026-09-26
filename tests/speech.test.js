@@ -17,3 +17,21 @@ describe('read aloud', () => {
     expect(speak('hello')).toBe(false);
   });
 });
+
+describe('word highlighting', () => {
+  it('maps spoken character positions back to on-screen words', async () => {
+    const { spokenWords, wordAt, rateFor } = await import('../src/systems/Speech.js');
+    const { spoken, ranges } = spokenWords(['The', 'school', '____', 'was', 'strict.']);
+    expect(spoken).toBe('The school blank was strict.');
+    expect(ranges).toEqual([[0, 3], [4, 10], [11, 16], [17, 20], [21, 28]]);
+    expect(wordAt(ranges, 0)).toBe(0);
+    expect(wordAt(ranges, 11)).toBe(2);   // "blank" lights up the ____ word
+    expect(wordAt(ranges, 27)).toBe(4);
+    expect(wordAt(ranges, 20)).toBe(3);   // the space after a word still belongs to it
+    const arrows = spokenWords(['Move', '▲']);
+    expect(arrows.spoken).toBe('Move forward');
+    expect(arrows.ranges[1]).toEqual([5, 12]);
+    expect(spokenWords(['“', 'hi”']).ranges[0]).toBeNull();   // a lone quote speaks as nothing and is skipped
+    expect(rateFor(2)).toBeLessThan(rateFor(5));
+  });
+});

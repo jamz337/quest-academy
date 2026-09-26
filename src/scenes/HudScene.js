@@ -4,6 +4,8 @@ import { THEME } from '../ui/theme.js';
 import { safeArea, grid } from '../systems/Layout.js';
 import { T, text } from '../ui/TextStyles.js';
 import { button, iconButton, speakButton } from '../ui/Button.js';
+import { readable } from '../ui/ReadableText.js';
+import { rateFor } from '../systems/Speech.js';
 import { panel } from '../ui/Panel.js';
 import { chip } from '../ui/Chip.js';
 import { modal } from '../ui/Modal.js';
@@ -85,6 +87,15 @@ export class HudScene extends BaseScene {
     if (s.menuOpen) this.buildMenu();
   }
 
+  // ---- Read aloud ---------------------------------------------------------------------------
+
+  get speechRate() { return rateFor(Store.getProfile()?.grade); }
+  /** In "read everything" mode, a new dialog line or question is read as soon as it appears. */
+  autoRead(readableText) {
+    if (!readableText || !this.animateEnter || Store.getProfile()?.readAloud !== 'auto') return;
+    this.time.delayedCall(350, () => { if (readableText.active) readableText.read({ rate: this.speechRate }); });
+  }
+
   // ---- Grass encounters ---------------------------------------------------------------------
 
   /** { kind: 'quiz'|'chest'|'gift', q?, coins?, gift?, subject?, onAnswer?(right), onClose? } */
@@ -112,14 +123,15 @@ export class HudScene extends BaseScene {
     const rows = quiz ? Math.ceil(e.q.choices.length / cols) : 0;
     // Quiz prompts vary from one line to a short program listing, so the modal is sized from the measured text.
     const lines = quiz ? e.q.prompt.split('\n').length : 0;
-    const prompt = quiz ? text(this, 0, 0, e.q.prompt, { ...T.at(this, lines > 6 ? 13 : e.q.prompt.length > 60 || lines > 3 ? 15 : 18, THEME.ink, { fontStyle: '700' }), align: 'center', wordWrap: { width: mw - 48 } }).setOrigin(0.5, 0).setDepth(603) : null;
+    const prompt = quiz ? readable(this, 0, 0, e.q.prompt, T.at(this, lines > 6 ? 13 : e.q.prompt.length > 60 || lines > 3 ? 15 : 18, THEME.ink, { fontStyle: '700' }), { width: mw - 48 }).setOrigin(0.5, 0).setDepth(603) : null;
+    if (prompt && e.picked === null) this.autoRead(prompt);
     const mh = quiz ? 68 * ui + 8 * ui + prompt.height + 20 * ui + rows * bh + (rows - 1) * gap + 14 * ui + 28 * ui + 74 * ui : 250 * ui;
     const m = modal(this, { w: mw, h: mh, title, accent, depth: 600, dimAlpha: 0.4 });
     let y = m.contentTop;
     if (quiz) {
       const q = e.q;
       prompt.setPosition(w / 2, y + 8 * ui);
-      const sb = speakButton(this, m.x + m.w - 34 * ui, m.y + 40 * ui, 40 * ui, () => q.prompt); if (sb) sb.setDepth(603);
+      const sb = speakButton(this, m.x + m.w - 34 * ui, m.y + 40 * ui, 40 * ui, prompt, { rate: this.speechRate }); if (sb) sb.setDepth(603);
       y += prompt.height + 20 * ui;
       const cells = grid({ x: m.x + 24, y, w: m.w - 48, h: rows * bh + (rows - 1) * gap }, cols, rows, gap);
       q.choices.forEach((choice, i) => {
@@ -225,7 +237,9 @@ export class HudScene extends BaseScene {
     zone.on('pointerup', () => { if (!showButtons) this.advanceDialog(); });
     const name = chip(this, px + 16, py + 20 * ui, { text: d.name, color: THEME.primarySoft, textColor: THEME.primaryDark, fontSize: 13, height: 26 * ui, shadow: 'none' }).setDepth(502);
     const line = last && d.prompt ? `${d.lines[d.idx]}\n${d.prompt}` : d.lines[d.idx] || '';
-    const body = text(this, px + 16, py + 40 * ui, line, { ...T.body(this), align: 'left', wordWrap: { width: pw - 32 } }).setOrigin(0, 0).setDepth(502);
+    const body = readable(this, px + 16, py + 40 * ui, line, T.body(this), { width: pw - 64 * ui, align: 'left' }).setOrigin(0, 0).setDepth(502);
+    const sb = speakButton(this, px + pw - 30 * ui, py + 22 * ui, 40 * ui, body, { rate: this.speechRate }); if (sb) sb.setDepth(502);
+    this.autoRead(body);
     if (!showButtons) {
       const hint = last ? 'Tap to close' : 'Tap to continue  ▼';
       this.add.text(px + pw - 14, py + ph - 10, hint, T.small(this, THEME.ink3)).setOrigin(1, 1).setDepth(502);

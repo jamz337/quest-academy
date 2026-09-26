@@ -5,6 +5,7 @@ import { badgeTexture } from '../../systems/Textures.js';
 import { grid } from '../../systems/Layout.js';
 import { T, text } from '../../ui/TextStyles.js';
 import { button, speakButton } from '../../ui/Button.js';
+import { readable } from '../../ui/ReadableText.js';
 import { card } from '../../ui/Card.js';
 import { ProgressBar } from '../../ui/ProgressBar.js';
 import { enter } from '../../ui/motion.js';
@@ -64,9 +65,10 @@ export class BossBattle extends MinigameScene {
     const promptH = Math.min(area.h * (lines > 3 ? 0.46 : 0.32), (lines > 3 ? 260 : 190) * ui);
     const qy = area.y + bossH + gap;
     const prompt = card(this, cx, qy + promptH / 2, area.w, promptH);
-    speakButton(this, area.x + area.w - 30 * ui, qy + 26 * ui, 40 * ui, () => q.prompt);
     const size = lines > 3 ? 15 : q.prompt.length > 28 ? 20 : q.prompt.length > 12 ? 28 : 40;
-    text(this, cx, qy + promptH / 2 - 10 * ui, q.prompt, { ...T.at(this, size, THEME.ink, { fontStyle: lines > 3 ? '500' : '700' }), align: lines > 3 ? 'left' : 'center', wordWrap: { width: area.w - 40 } });
+    const question = readable(this, cx, qy + promptH / 2 - 10 * ui, q.prompt, T.at(this, size, THEME.ink, { fontStyle: lines > 3 ? '500' : '700' }), { width: area.w - 40, align: lines > 3 ? 'left' : 'center' });
+    speakButton(this, area.x + area.w - 30 * ui, qy + 26 * ui, 40 * ui, question, { rate: this.speechRate });
+    this.autoRead(question);
     this.timerBar = new ProgressBar(this, cx, qy + promptH - 16 * ui, area.w - 48, 8 * ui, { color: THEME.success, value: 1 });
 
     // Choices

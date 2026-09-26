@@ -85,8 +85,8 @@ export class ProfileScene extends BaseScene {
     this.state.editing = profile;
     this.state.confirmDelete = false;
     this.state.draft = profile
-      ? { name: profile.name, avatar: profile.avatar, look: sanitizeLook(profile.look), grade: profile.grade }
-      : { name: '', avatar: Math.floor(Math.random() * AVATAR_COUNT), look: null, grade: 3 };
+      ? { name: profile.name, avatar: profile.avatar, look: sanitizeLook(profile.look), grade: profile.grade, readAloud: profile.readAloud || 'tap' }
+      : { name: '', avatar: Math.floor(Math.random() * AVATAR_COUNT), look: null, grade: 3, readAloud: 'tap' };
     this.buildCount = 0;   // animate the form in
     this.rebuild();
   }
@@ -107,7 +107,7 @@ export class ProfileScene extends BaseScene {
     const height = (s) => {
       const extra = editing ? 22 * s + (this.state.confirmDelete ? 76 * s : 20 * s) : 0;
       const swatches = SWATCHES.length * (34 + (inline ? 0 : 18)) * s;
-      return 68 * s + 90 * s + 18 * s + aRows * (Math.min(44 * s, (pw - 48) / AVATAR_COUNT - 6) + 12) + 10 * s + swatches + 12 * s + 92 * s + 48 * s + extra + 26 * s;
+      return 68 * s + 90 * s + 18 * s + aRows * (Math.min(44 * s, (pw - 48) / AVATAR_COUNT - 6) + 12) + 10 * s + swatches + 12 * s + 92 * s + 92 * s + 48 * s + extra + 26 * s;
     };
     const ui = height(this.ui) > h - 24 ? Math.max(0.7, this.ui * (h - 24) / height(this.ui)) : this.ui;
     const aSize = Math.min(44 * ui, (pw - 48) / AVATAR_COUNT - 6);
@@ -172,6 +172,15 @@ export class ProfileScene extends BaseScene {
     });
     y += 44 * ui + 28 * ui;
 
+    // Read aloud: tap the 🔊 button when wanted, or have every question and villager line read automatically
+    label('READ ALOUD', y); y += 20 * ui;
+    const rcells = grid({ x: m.x + 24, y, w: m.w - 48, h: 44 * ui }, 2, 1, 6);
+    [['tap', 'Tap 🔊 to hear it'], ['auto', 'Read everything to me']].forEach(([v, lbl], i) => {
+      const c = rcells[i];
+      button(this, c.x, c.y, c.w, c.h, lbl, { variant: 'secondary', selected: d.readAloud === v, fontSize: 15, radius: THEME.radius.sm, onClick: () => { d.readAloud = v; this.rebuild(); } });
+    });
+    y += 44 * ui + 28 * ui;
+
     // Actions
     const bw = Math.min(200 * ui, (m.w - 72) / 2), bh = 48 * ui;
     button(this, w / 2 - bw / 2 - 8, y + bh / 2, bw, bh, 'Cancel', { variant: 'ghost', onClick: () => { this.state.mode = 'list'; this.buildCount = 0; this.rebuild(); } });
@@ -196,9 +205,9 @@ export class ProfileScene extends BaseScene {
     const name = (d.name || '').trim() || 'Player';
     if (this.state.editing) {
       Store.setActiveProfile(this.state.editing.id);
-      Store.updateProfile((p) => { p.name = name; p.avatar = d.avatar; p.look = sanitizeLook(d.look); p.grade = d.grade; });
+      Store.updateProfile((p) => { p.name = name; p.avatar = d.avatar; p.look = sanitizeLook(d.look); p.grade = d.grade; p.readAloud = d.readAloud; });
     } else {
-      Store.createProfile({ name, avatar: d.avatar, look: sanitizeLook(d.look), grade: d.grade });
+      Store.createProfile({ name, avatar: d.avatar, look: sanitizeLook(d.look), grade: d.grade, readAloud: d.readAloud });
     }
     Sfx.correct();
     this.go(SCENES.ModeSelect);
