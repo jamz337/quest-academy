@@ -68,14 +68,22 @@ export class ModeSelectScene extends BaseScene {
     const goalText = goal.done ? `🎯 Today's goal done!` : `🎯 Today: ${'★'.repeat(goal.stars)} in ${game ? game.title : goal.gameId}`;
     const famText = `👨‍👩‍👧 Family: ${Math.min(fam.stars, fam.target)}/${fam.target} ★ this week`;
     const gy = chipY + chipH + 18 * ui;
-    const gc = chip(this, w / 2 - 6, gy, { text: goalText, originX: 1, color: goal.done ? THEME.successSoft : THEME.warningSoft, textColor: goal.done ? THEME.successDark : THEME.warningDark, fontSize: 13, height: 26 * ui, shadow: 'none' });
-    const fc = chip(this, w / 2 + 6, gy, { text: famText, originX: 0, color: THEME.sunken, textColor: THEME.ink2, fontSize: 13, height: 26 * ui, shadow: 'none' });
-    if (this.portrait && w < 520) { gc.setX(w / 2).setY(gy); gc.originX = 0.5; fc.setVisible(false); }
+    // Side by side when there is room; stacked on narrow phones (a chip's origin is fixed at creation).
+    const narrow = w < 520;
+    const goalStyle = { text: goalText, color: goal.done ? THEME.successSoft : THEME.warningSoft, textColor: goal.done ? THEME.successDark : THEME.warningDark, fontSize: 13, height: 26 * ui, shadow: 'none' };
+    const famStyle = { text: famText, color: THEME.sunken, textColor: THEME.ink2, fontSize: 13, height: 26 * ui, shadow: 'none' };
+    if (narrow) {
+      chip(this, w / 2, gy, { ...goalStyle, originX: 0.5 });
+      chip(this, w / 2, gy + 30 * ui, { ...famStyle, originX: 0.5 });
+    } else {
+      chip(this, w / 2 - 6, gy, { ...goalStyle, originX: 1 });
+      chip(this, w / 2 + 6, gy, { ...famStyle, originX: 0 });
+    }
     Store.persist();   // dailyGoal / familyGoal may have created today's records
 
     // Mode buttons
     const rowH = 46 * ui, row2Y = h - 36 * ui - safeArea().bottom, row1Y = row2Y - rowH - 10;
-    const areaTop = chipY + chipH + 22 * ui + 22 * ui, areaBottom = row1Y - rowH / 2 - 16;
+    const areaTop = chipY + chipH + 22 * ui + (narrow ? 52 : 22) * ui, areaBottom = row1Y - rowH / 2 - 16;
     const areaH = areaBottom - areaTop;
     const bw = Math.min(this.portrait ? w - 40 : (w - 64) / 2, this.portrait ? 380 * ui : 300 * ui);
     const bh = Math.min(this.portrait ? areaH / 2 - 12 : areaH, 140 * ui);
