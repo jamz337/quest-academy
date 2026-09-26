@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#1d2b53" />
+    <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+    <title>Quest Academy · Parent dashboard</title>
+    <style>
+      @font-face { font-family: 'Fredoka'; font-style: normal; font-weight: 400 700; font-display: swap; src: url('./fonts/fredoka-latin.woff2') format('woff2'); }
+      :root { --navy: #1d2b53; --panel: #2a3a6b; --dark: #14203f; --grey: #c2c3c7; --yellow: #ffec27; --lime: #00e436; --blue: #29adff; --orange: #ffa300; --red: #ff004d; --pink: #ff77a8; --white: #fff1e8; }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; min-height: 100%; }
+      body { background: linear-gradient(180deg, var(--navy), var(--dark) 60%); color: var(--white); font-family: 'Fredoka', system-ui, sans-serif; font-weight: 500; padding: 16px; }
+      main { max-width: 960px; margin: 0 auto; }
+      h1 { font-size: 28px; color: var(--yellow); margin: 8px 0 4px; text-shadow: 0 3px 0 rgba(0,0,0,.35); }
+      h2 { font-size: 20px; margin: 0; }
+      h3 { font-size: 15px; margin: 14px 0 6px; color: var(--grey); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+      .muted { color: var(--grey); font-size: 14px; }
+      .card { background: var(--panel); border-radius: 16px; padding: 16px; margin: 14px 0; box-shadow: 0 5px 0 rgba(0,0,0,.3); }
+      .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+      .grow { flex: 1; }
+      label { display: block; font-size: 14px; color: var(--grey); margin: 10px 0 4px; }
+      input { width: 100%; height: 44px; border-radius: 10px; border: 3px solid var(--blue); padding: 0 12px; font: inherit; font-weight: 600; color: var(--navy); background: var(--white); }
+      button { font: inherit; font-weight: 600; border: 0; border-radius: 12px; padding: 10px 18px; color: #fff; background: var(--blue); cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,.3); }
+      button:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,.3); }
+      button.lime { background: var(--lime); color: var(--navy); }
+      button.ghost { background: var(--dark); }
+      button.red { background: var(--red); }
+      button[disabled] { opacity: .5; cursor: default; }
+      .error { color: var(--orange); font-size: 14px; margin-top: 8px; }
+      .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
+      .stat { background: var(--dark); border-radius: 12px; padding: 10px; text-align: center; }
+      .stat b { display: block; font-size: 22px; color: var(--yellow); }
+      .stat span { font-size: 12px; color: var(--grey); }
+      table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid rgba(255,255,255,.08); }
+      th { color: var(--grey); font-weight: 600; }
+      .stars { color: var(--yellow); letter-spacing: 1px; white-space: nowrap; }
+      .stars .off { color: #3b3550; }
+      .badge, .skill { display: inline-block; background: var(--dark); border-radius: 999px; padding: 4px 10px; margin: 3px 4px 3px 0; font-size: 13px; }
+      .skill { border: 2px solid var(--orange); }
+      .avatar { width: 48px; height: 48px; border-radius: 50%; image-rendering: pixelated; background: var(--dark); }
+      .subject-math { color: var(--blue); } .subject-words { color: var(--lime); } .subject-code { color: var(--orange); }
+      .hidden { display: none; }
+      a { color: var(--blue); }
+      footer { text-align: center; margin: 24px 0; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Quest Academy</h1>
+      <div class="muted">Parent dashboard</div>
+
+      <section id="login" class="card">
+        <h2>Sign in</h2>
+        <p class="muted">Use the same parent email and password as in the game's <b>Family account</b> screen.</p>
+        <form id="login-form">
+          <label for="email">Email</label>
+          <input id="email" type="email" autocomplete="email" required />
+          <label for="password">Password</label>
+          <input id="password" type="password" autocomplete="current-password" required minlength="8" />
+          <div class="error hidden" id="login-error"></div>
+          <div class="row" style="margin-top:14px">
+            <button type="submit" id="login-btn">Sign in</button>
+            <button type="button" class="ghost" id="register-btn">Create account</button>
+          </div>
+        </form>
+      </section>
+
+      <section id="dash" class="hidden">
+        <div class="card row">
+          <div class="grow"><b id="who"></b><div class="muted" id="synced"></div></div>
+          <label class="row" style="margin:0;gap:8px"><input type="checkbox" id="lb-toggle" style="width:auto;height:auto" /> Show on leaderboard</label>
+          <button class="ghost" id="refresh-btn">Refresh</button>
+          <button class="red" id="logout-btn">Sign out</button>
+        </div>
+        <div id="children"></div>
+      </section>
+
+      <footer class="muted"><a href="./">Back to the game</a></footer>
+    </main>
+    <script type="module" src="/src/dashboard/main.js"></script>
+  </body>
+</html>

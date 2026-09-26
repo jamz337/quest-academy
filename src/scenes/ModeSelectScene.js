@@ -6,6 +6,7 @@ import { T, text } from '../ui/TextStyles.js';
 import { button } from '../ui/Button.js';
 import { panel, background } from '../ui/Panel.js';
 import { ProgressBar } from '../ui/ProgressBar.js';
+import * as Cloud from '../systems/Cloud.js';
 
 /** Home screen: profile summary and the two big mode buttons. */
 export class ModeSelectScene extends BaseScene {
@@ -30,7 +31,8 @@ export class ModeSelectScene extends BaseScene {
     text(this, w / 2 + chipW / 2 - 44 * ui, chipY + chipH / 2, String(p.coins), T.bodyBold(this, C.yellow)).setOrigin(0, 0.5);
 
     // Mode buttons
-    const areaTop = chipY + chipH + 24 * ui, areaBottom = h - 80 * ui;
+    const rowH = 44 * ui, row2Y = h - 40 * ui, row1Y = row2Y - rowH - 10;
+    const areaTop = chipY + chipH + 24 * ui, areaBottom = row1Y - rowH / 2 - 16;
     const areaH = areaBottom - areaTop;
     const bw = Math.min(this.portrait ? w - 40 : (w - 64) / 2, this.portrait ? 360 * ui : 300 * ui);
     const bh = Math.min(this.portrait ? areaH / 2 - 12 : areaH, 150 * ui);
@@ -44,8 +46,12 @@ export class ModeSelectScene extends BaseScene {
       color: C.orange, textColor: C.navy, fontSize: 20, wrap: true, onClick: () => { Store.setSetting('lastMode', 'challenge'); this.scene.start(SCENES.ChallengeMenu); }
     });
 
-    // Bottom row
-    const sw = Math.min(170 * ui, (w - 48) / 2), sh = 44 * ui, sy = h - 40 * ui;
+    // Bottom rows: online features, then device settings
+    const sw = Math.min(170 * ui, (w - 48) / 2), sh = rowH, sy = row2Y;
+    button(this, w / 2 - sw / 2 - 8, row1Y, sw, sh, 'Leaderboard', { color: C.purple, fontSize: 16, onClick: () => this.scene.start(SCENES.Leaderboard) });
+    const cloud = Cloud.info();
+    const cloudLabel = !cloud.signedIn ? 'Family account' : cloud.status === 'offline' ? 'Account: offline' : cloud.status === 'syncing' ? 'Account: syncing…' : 'Account: synced';
+    button(this, w / 2 + sw / 2 + 8, row1Y, sw, sh, cloudLabel, { color: cloud.signedIn ? C.green : C.pink, fontSize: 15, onClick: () => this.scene.start(SCENES.Account) });
     button(this, w / 2 - sw / 2 - 8, sy, sw, sh, 'Switch player', { color: C.lavender, fontSize: 16, onClick: () => this.scene.start(SCENES.Profile) });
     const sound = Store.settings().sound;
     button(this, w / 2 + sw / 2 + 8, sy, sw, sh, sound ? 'Sound: on' : 'Sound: off', {

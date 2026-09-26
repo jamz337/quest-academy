@@ -2,7 +2,7 @@
 import { SAVE_KEY, SAVE_BACKUP_KEY, SAVE_VERSION } from '../constants.js';
 
 export function defaultSave() {
-  return { version: SAVE_VERSION, activeProfileId: null, settings: { sound: true, lastMode: 'roam' }, profiles: {} };
+  return { version: SAVE_VERSION, activeProfileId: null, settings: { sound: true, lastMode: 'roam' }, profiles: {}, deleted: {} };
 }
 
 export function newProfile({ name, avatar = 0, grade = 3 }) {
@@ -33,8 +33,31 @@ export function migrate(data) {
     p.world ||= { x: null, y: null, unlockedZones: ['math'], npcsTalked: [], coinsCollected: [] };
     p.world.unlockedZones ||= ['math']; p.world.npcsTalked ||= []; p.world.coinsCollected ||= [];
   }
+  d.profiles ||= {};
   d.settings ||= { sound: true, lastMode: 'roam' };
+  d.deleted ||= {};
   return d;
+}
+
+/**
+ * Merge two saves (used for cloud sync, on both the device and the server). Profiles are matched by id and
+ * the copy with the newer updatedAt wins; `deleted` holds tombstones so a profile removed on one device
+ * does not come back from another. Settings and the active profile come from `incoming`.
+ */
+export function mergeSaves(base, incoming) {
+  const a = base || defaultSave(), b = incoming || defaultSave();
+  const deleted = { ...(a.deleted || {}) };
+  for (const [id, ts] of Object.entries(b.deleted || {})) deleted[id] = Math.max(deleted[id] || 0, Number(ts) || 0);
+  const profiles = {};
+  const ids = new Set([...Object.keys(a.profiles || {}), ...Object.keys(b.profiles || {})]);
+  for (const id of ids) {
+    const pa = a.profiles?.[id], pb = b.profiles?.[id];
+    const p = !pa ? pb : !pb ? pa : (pb.updatedAt || 0) >= (pa.updatedAt || 0) ? pb : pa;
+    if (deleted[id] && deleted[id] >= (p.updatedAt || 0)) continue;
+    profiles[id] = p;
+  }
+  const activeProfileId = profiles[b.activeProfileId] ? b.activeProfileId : profiles[a.activeProfileId] ? a.activeProfileId : null;
+  return migrate({ version: SAVE_VERSION, activeProfileId, settings: { ...(a.settings || {}), ...(b.settings || {}) }, profiles, deleted });
 }
 
 function parse(raw) {

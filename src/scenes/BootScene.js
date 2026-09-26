@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { SCENES } from '../constants.js';
 import { generateAllTextures } from '../systems/Textures.js';
 import * as Store from '../systems/Store.js';
+import * as Cloud from '../systems/Cloud.js';
 
 const FONT_WAIT_MS = 1500;
 
@@ -16,6 +17,7 @@ export class BootScene extends Phaser.Scene {
   launch() {
     generateAllTextures(this);
     Store.init();
+    Cloud.init();
     const p = Store.getProfile();
     this.scene.start(p ? SCENES.ModeSelect : SCENES.Profile);
   }

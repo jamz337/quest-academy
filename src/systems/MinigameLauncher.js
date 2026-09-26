@@ -4,6 +4,7 @@ import { getGame } from '../data/minigames.js';
 import { bandFor } from '../data/grades.js';
 import * as Store from './Store.js';
 import { applyResult } from './Progression.js';
+import * as Cloud from './Cloud.js';
 
 /**
  * Launch a mini-game on top of `fromScene`, which is paused (not stopped) so it keeps its state.
@@ -28,7 +29,7 @@ export function launch(fromScene, gameId, opts = {}) {
 export function complete(scene, payload, raw) {
   const profile = Store.getProfile();
   const result = applyResult(profile, payload, raw);
-  if (!result.aborted) Store.persist();
+  if (!result.aborted) { Store.persist(); Cloud.postResult(profile, payload, result); }
   scene.scene.start(SCENES.Results, { payload, result });
   return result;
 }

@@ -3,9 +3,9 @@ import { VitePWA } from 'vite-plugin-pwa';
 
 export default defineConfig({
   base: './',
-  server: { host: true },
+  server: { host: true, proxy: { '/api': 'http://localhost:3001' } },
   preview: { host: true },
-  build: { target: 'es2019', chunkSizeWarningLimit: 2000 },
+  build: { target: 'es2019', chunkSizeWarningLimit: 2000, rollupOptions: { input: { main: 'index.html', dashboard: 'dashboard.html' } } },
   test: { environment: 'node', include: ['tests/**/*.test.js'] },
   plugins: [
     VitePWA({
@@ -33,6 +33,7 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,woff2,webmanifest}'],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
         navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/api\//, /dashboard/],
         cleanupOutdatedCaches: true
       }
     })

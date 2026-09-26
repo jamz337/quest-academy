@@ -56,6 +56,18 @@ Then use Chrome's menu, **Add to Home screen** / **Install app**. The app opens 
 
 To publish, upload the `dist/` folder to any static host with https (GitHub Pages, Netlify, Cloudflare Pages). A Play Store build can be made later by wrapping `dist/` with Capacitor.
 
+## Deploy on Vercel with cloud saves (Neon)
+
+The game is fully playable as a static site. Signing in with a **Family account** (parent email + password) adds cloud saves that follow a child across devices, a **parent dashboard** at `/dashboard.html` and a site-wide **leaderboard** (first names and avatars only). Those need the `api/` serverless functions and a Neon Postgres database.
+
+1. Push this repository to GitHub and import it in Vercel. The Vite preset and `vercel.json` handle the build; the `api/` folder becomes serverless functions automatically.
+2. In Neon, create a project and copy the **pooled** connection string. In Vercel, Project Settings > Environment Variables, add `DATABASE_URL` with that value (or install the Neon integration from the Vercel marketplace, which sets it for you). Optionally add `AUTH_SECRET` (any long random string) used to sign sign-in tokens.
+3. Redeploy. Tables are created on first use (see `api/_lib/db.js` for the schema).
+
+Without `DATABASE_URL` the site still works; the account, leaderboard and dashboard screens simply say cloud features are not switched on.
+
+Local development with the API: copy `.env.example` to `.env`, fill in `DATABASE_URL`, then run `npm run dev:api` in one terminal and `npm run dev` in another. Vite proxies `/api` to the local API on port 3001.
+
 ## Project layout
 
 - `src/scenes/` screens: profiles, home, world, HUD, challenge menu, level select, results, pause, and `minigames/` per subject
