@@ -15,7 +15,8 @@ import { Sfx } from '../systems/Audio.js';
 import { toast } from '../ui/Toast.js';
 import { resolveLook } from '../data/avatars.js';
 import { lookSpriteTexture } from '../systems/Textures.js';
-import { sparkleSpots, grassSpots, daySeed, dayKey, rollEncounter, chestCoins, pickGift, GRASS, SURPRISE_CHANCE, SURPRISE_COOLDOWN_MS, QUIZ_REWARD, CRITTERS, CRITTER_MAX_PER_DAY } from '../data/world/encounters.js';
+import { sparkleSpots, grassSpots, daySeed, dayKey, rollEncounter, chestCoins, pickGift, GRASS, SURPRISE_CHANCE, SURPRISE_COOLDOWN_MS, QUIZ_REWARD, CRITTERS, CRITTER_MAX_PER_DAY, FISH_MAX_PER_DAY, rollFish } from '../data/world/encounters.js';
+import { VERSES } from '../data/bible/bank.js';
 import { bossQuestions } from '../generators/boss.js';
 import { effectiveGrade, houseStars, nextHouseLevel, HOUSE_LEVELS, checkBadges } from '../systems/Progression.js';
 import { errandFor, errandState, activeErrand, acceptErrand, pickUpErrand, deliverErrand, errandLine } from '../data/world/errands.js';
@@ -63,6 +64,9 @@ export class WorldScene extends Phaser.Scene {
     this.createCritters();
     this.createHouseStars();
     this.createErrandItem(profile);
+    this.createLandmarks(profile);
+    // Loading while standing in the doorway should not open the house until the player steps out and back in.
+    this.atHomeDoor = !!this.map.home && Math.floor(this.player.x / TILE) === this.map.home.door.tx && Math.floor(this.player.y / TILE) === this.map.home.door.ty;
     this.bubble = this.add.image(0, 0, 'bubble').setScale(0.75).setDepth(20).setVisible(false);
 
     const cam = this.cameras.main;
@@ -406,6 +410,7 @@ export class WorldScene extends Phaser.Scene {
 
     if (inp.actionJustPressed && !skipAction) {
       if (near) this.talk(near);
+      else this.tryFishing();
     }
   }
 
@@ -434,6 +439,9 @@ export class WorldScene extends Phaser.Scene {
     this.maybeSurprise(tx, ty);
     if (hud && p) { const line = errandLine(p); if (hud.state.carry !== line) hud.setCarry(line); }
     if (this.errandItem && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.errandItem.x, this.errandItem.y) < 22) this.pickUpItem();
+    const atDoor = this.map.home && tx === this.map.home.door.tx && ty === this.map.home.door.ty;
+    if (atDoor && !this.atHomeDoor && hud && !hud.blocking) { this.stopPlayer(); hud.showHome(); }
+    this.atHomeDoor = atDoor;
   }
 
   // ---- Interactions --------------------------------------------------------------------------
@@ -644,6 +652,54 @@ export class WorldScene extends Phaser.Scene {
     if (hud) hud.setCarry(errandLine(Store.getProfile()));
     const giver = NPCS.find((n) => n.id === e.npc);
     this.say(`${e.emoji} You found the ${e.item}! Take it to ${giver ? giver.name : 'the villager'}.`, { accent: THEME.success });
+  }
+
+  // ---- Landmarks: the signpost and the player's house ----------------------------------------
+
+  createLandmarks(profile) {
+    const sign = this.map.signSpot;
+    if (sign) this.add.image((sign.tx + 0.5) * TILE, (sign.ty + 0.5) * TILE - 6, 'sign').setScale(CHAR_SCALE).setDepth(5);
+    const home = this.map.home;
+    if (home) {
+      const cx = (home.x + home.w / 2) * TILE, cy = (home.y - 0.35) * TILE;
+      this.homePlate = this.add.text(cx, cy, `${profile.name}'s house`, { fontFamily: 'Fredoka, sans-serif', fontSize: '9px', color: '#2d2a4a', backgroundColor: '#fff8ef', padding: { x: 3, y: 1 } }).setOrigin(0.5).setDepth(4).setResolution(4);
+    }
+  }
+
+  // ---- Fishing ----------------------------------------------------------------------------------
+
+  /** Action pressed with nobody near: if the player faces water, cast a line. */
+  tryFishing() {
+    const tx = Math.floor(this.player.x / TILE), ty = Math.floor(this.player.y / TILE);
+    const dir = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] }[this.facing] || [0, 1];
+    const cand = [[tx + dir[0], ty + dir[1]], [tx, ty + 1], [tx, ty - 1], [tx - 1, ty], [tx + 1, ty]];
+    const spot = cand.find(([x, y]) => this.map.data[y] && this.map.data[y][x] === TID.water);
+    if (!spot) return;
+    const hud = this.hud();
+    if (!hud || hud.blocking) return;
+    const p = Store.getProfile();
+    const day = dayKey();
+    const rec = p.world.fishing && p.world.fishing.day === day ? p.world.fishing : { day, caught: 0 };
+    if (rec.caught >= FISH_MAX_PER_DAY) { Sfx.pop(); this.say('The fish are resting for today. Come back tomorrow!', { accent: THEME.ink3 }); return; }
+    this.stopPlayer();
+    this.savePosition();
+    hud.showFishing({ onCatch: (loot) => this.landFish(loot) });
+  }
+
+  /** A successful pull: pay the loot and, for a bottle, show its message. */
+  landFish(loot) {
+    const day = dayKey();
+    Store.updateProfile((p) => {
+      if (!p.world.fishing || p.world.fishing.day !== day) p.world.fishing = { day, caught: 0 };
+      p.world.fishing.caught += 1;
+      p.coins += loot.coins || 0;
+    });
+    const hud = this.hud();
+    if (hud) { hud.setCoins(Store.getProfile().coins); if (loot.coins) hud.awardCoins(loot.coins); }
+    if (!loot.message) return null;
+    const band = ['A', 'B', 'C'][Math.floor(Math.random() * 3)];
+    const v = VERSES[band][Math.floor(Math.random() * VERSES[band].length)];
+    return `“${v.t.replace('___', v.a)}” — ${v.ref}`;
   }
 
   // ---- Lifecycle -----------------------------------------------------------------------------

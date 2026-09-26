@@ -26,8 +26,16 @@ const SWATCHES = [
 export class ProfileScene extends BaseScene {
   constructor() { super(SCENES.Profile); this.fade = true; }
 
-  init() {
+  init(data) {
     this.state = { mode: 'list', editing: null, draft: null, confirmDelete: false };
+    const edit = data && data.edit && Store.listProfiles().find((p) => p.id === data.edit);
+    if (edit) { this.state.mode = 'form'; this.state.editing = edit; this.state.draft = this.draftFor(edit); }
+  }
+
+  draftFor(profile) {
+    return profile
+      ? { name: profile.name, avatar: profile.avatar, look: sanitizeLook(profile.look), grade: profile.grade, readAloud: profile.readAloud || 'auto', timers: profile.timers || 'on' }
+      : { name: '', avatar: Math.floor(Math.random() * AVATAR_COUNT), look: null, grade: 3, readAloud: 'auto', timers: 'on' };
   }
 
   build() {
@@ -84,9 +92,7 @@ export class ProfileScene extends BaseScene {
     this.state.mode = 'form';
     this.state.editing = profile;
     this.state.confirmDelete = false;
-    this.state.draft = profile
-      ? { name: profile.name, avatar: profile.avatar, look: sanitizeLook(profile.look), grade: profile.grade, readAloud: profile.readAloud || 'tap', timers: profile.timers || 'on' }
-      : { name: '', avatar: Math.floor(Math.random() * AVATAR_COUNT), look: null, grade: 3, readAloud: 'tap', timers: 'on' };
+    this.state.draft = this.draftFor(profile);
     this.buildCount = 0;   // animate the form in
     this.rebuild();
   }
@@ -214,9 +220,10 @@ export class ProfileScene extends BaseScene {
     const name = (d.name || '').trim() || 'Player';
     if (this.state.editing) {
       Store.setActiveProfile(this.state.editing.id);
-      Store.updateProfile((p) => { p.name = name; p.avatar = d.avatar; p.look = sanitizeLook(d.look); p.grade = d.grade; p.readAloud = d.readAloud; p.timers = d.timers; });
+      Store.updateProfile((p) => { p.name = name; p.avatar = d.avatar; p.look = sanitizeLook(d.look); p.grade = d.grade; p.readAloud = d.readAloud; p.readAloudChosen = true; p.timers = d.timers; });
     } else {
       Store.createProfile({ name, avatar: d.avatar, look: sanitizeLook(d.look), grade: d.grade, readAloud: d.readAloud, timers: d.timers });
+      Store.updateProfile((p) => { p.readAloudChosen = true; });
     }
     Sfx.correct();
     this.go(SCENES.ModeSelect);

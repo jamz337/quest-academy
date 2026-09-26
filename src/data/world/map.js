@@ -154,6 +154,13 @@ export function buildMap() {
   place('scribe', 'bible', 43, 14);
   place('fisherman', 'bible', 47, 14);
   npcSpots.signpost = { tx: 24, ty: 18 };
+  const signSpot = { tx: 25, ty: 18 };   // the wooden signpost next to Sam
+
+  // The player's own house in the hub, in the classic red-roof style, with a path to the plaza.
+  const homeDoor = building(data, 18, 15, 3, 3, { roof: TID.roof, wall: TID.wall, door: TID.door });
+  buildings.push({ zone: 'hub', style: 'home', x: 18, y: 15, w: 3, h: 3, door: homeDoor });
+  hline(data, homeDoor.tx, 21, homeDoor.ty + 1, TID.path);
+  const home = { door: homeDoor, front: { tx: homeDoor.tx, ty: homeDoor.ty + 1 }, x: 18, y: 15, w: 3, h: 3 };
 
   // Clear scenery trees that ended up touching a road, doorway, building or villager, so nothing is boxed in.
   const BUILT = new Set([TID.path, TID.gateOpen, ...ROOF_TILES, ...WALL_TILES, ...DOOR_TILES]);
@@ -180,7 +187,7 @@ export function buildMap() {
     { tx: 42, ty: 17 }, { tx: 45, ty: 22 }, { tx: 50, ty: 25 }
   ];
 
-  return { width: W, height: H, data, spawn, zones, gates, npcSpots, bossSpots, buildings, coins };
+  return { width: W, height: H, data, spawn, zones, gates, npcSpots, bossSpots, buildings, coins, signSpot, home };
 }
 
 /** Ground tile shown beneath a tree (trees are drawn on an overlay layer so the local ground shows through). */

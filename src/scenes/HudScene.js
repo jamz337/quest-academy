@@ -18,7 +18,15 @@ import * as Store from '../systems/Store.js';
 import { ZONE_NAMES } from '../data/world/map.js';
 import { zoneQuests, activeZone, ZONE_ORDER, bossReady } from '../data/world/quests.js';
 import { bossForZone } from '../data/world/bosses.js';
-import { errandLine } from '../data/world/errands.js';
+import { errandLine, errandsDone } from '../data/world/errands.js';
+import { FISH_WAIT_MS, FISH_BITE_MS, rollFish } from '../data/world/encounters.js';
+import { getBadge } from '../data/badges.js';
+import { levelFromXp } from '../systems/SaveSystem.js';
+import { currentStreak } from '../systems/Streak.js';
+import { houseStars } from '../systems/Progression.js';
+import { MINIGAMES } from '../data/minigames.js';
+import { fireworks } from '../ui/Fireworks.js';
+import { SCENES as S } from '../constants.js';
 import { flyCoins } from '../ui/Coins.js';
 
 /**
@@ -29,7 +37,7 @@ export class HudScene extends BaseScene {
   constructor() { super(SCENES.Hud); }
 
   create(data) {
-    this.state = { coins: 0, zone: '', zoneId: null, carry: null, dialog: null, encounter: null, menuOpen: false, menuPage: 'menu' };
+    this.state = { coins: 0, zone: '', zoneId: null, carry: null, dialog: null, encounter: null, home: false, fishing: null, menuOpen: false, menuPage: 'menu' };
     this.actionFlag = false;
     super.create(data);
     this.scene.bringToTop();
@@ -57,13 +65,13 @@ export class HudScene extends BaseScene {
   /** Dialog and menu animate in when they open; everything else redraws quietly. */
   enterKey() {
     const s = this.state;
-    return (s.dialog ? 'd' + s.dialog.idx : '') + (s.menuOpen ? 'm' + s.menuPage : '') + (s.encounter ? 'e' + s.encounter.kind + (s.encounter.picked ?? '') : '');
+    return (s.dialog ? 'd' + s.dialog.idx : '') + (s.menuOpen ? 'm' + s.menuPage : '') + (s.encounter ? 'e' + s.encounter.kind + (s.encounter.picked ?? '') : '') + (s.home ? 'h' : '') + (s.fishing ? 'f' + s.fishing.phase : '');
   }
 
   get dialogOpen() { return !!this.state.dialog; }
   get menuOpen() { return this.state.menuOpen; }
   /** True while the world should stand still. */
-  get blocking() { return this.dialogOpen || this.menuOpen || !!this.state.encounter; }
+  get blocking() { return this.dialogOpen || this.menuOpen || !!this.state.encounter || this.state.home || !!this.state.fishing; }
 
   /** Returns true once per press of the action button (or a tap on the dialog). */
   takeAction() { const a = this.actionFlag; this.actionFlag = false; return a; }
@@ -86,10 +94,12 @@ export class HudScene extends BaseScene {
     iconButton(this, w - 10 - sa.right - 22 * ui, top + chipH / 2, 44 * ui, '☰', { onClick: () => this.openMenu() });
 
     // Bottom-right: round action button
-    if (!s.dialog && !s.menuOpen && !s.encounter) this.buildActionButton(w - 56 * ui - sa.right, h - 56 * ui - sa.bottom, 72 * ui);
+    if (!this.blocking) this.buildActionButton(w - 56 * ui - sa.right, h - 56 * ui - sa.bottom, 72 * ui);
 
     if (s.dialog) this.buildDialog(s.dialog);
     if (s.encounter) this.buildEncounter(s.encounter);
+    if (s.home) this.buildHome();
+    if (s.fishing) this.buildFishing(s.fishing);
     if (s.menuOpen) this.buildMenu();
   }
 
@@ -100,6 +110,106 @@ export class HudScene extends BaseScene {
   autoRead(readableText) {
     if (!readableText || !this.animateEnter || Store.getProfile()?.readAloud !== 'auto') return;
     this.time.delayedCall(350, () => { if (readableText.active) readableText.read({ rate: this.speechRate }); });
+  }
+
+  // ---- The player's house ----------------------------------------------------------------------
+
+  showHome() { this.state.home = true; if (this.joystick) this.joystick.release(); this.rebuild(); }
+  closeHome() { this.state.home = false; this.rebuild(); }
+
+  /** Trophy room: level, streak, house stars, bosses, errands and badges, plus a shortcut to the look editor. */
+  buildHome() {
+    const { w, ui } = this;
+    const p = Store.getProfile();
+    if (!p) return;
+    const badges = (p.badges || []).map((id) => getBadge(id)).filter(Boolean);
+    const rows = Math.min(badges.length, 6);
+    const m = modal(this, { w: 420 * ui, h: (300 + rows * 24) * ui, title: `${p.name}'s house`, accent: THEME.pink, depth: 600, dimAlpha: 0.45 });
+    let y = m.contentTop + 4 * ui;
+    const stars = MINIGAMES.reduce((sum, g) => sum + houseStars(p, g.id), 0);
+    const bosses = Object.values(p.world.bosses || {}).filter((b) => b.defeated).length;
+    const streak = currentStreak(p);
+    const line = (label, value) => {
+      text(this, m.x + 24, y, label, T.body(this, THEME.ink2)).setOrigin(0, 0.5).setDepth(603);
+      text(this, m.x + m.w - 24, y, value, T.bodyBold(this)).setOrigin(1, 0.5).setDepth(603);
+      y += 26 * ui;
+    };
+    line('Level', `${levelFromXp(p.xp)}  (${p.xp} XP)`);
+    line('Coins', String(p.coins));
+    line('Streak', streak > 1 ? `🔥 ${streak} days` : 'none yet');
+    line('House stars', `⭐ ${stars} of ${MINIGAMES.length * 3}`);
+    line('Bosses beaten', `${bosses} of 4`);
+    line('Errands done', `${errandsDone(p)} of 12`);
+    y += 4 * ui;
+    text(this, m.x + 24, y, badges.length ? 'BADGES' : 'No badges yet — play a game to earn your first!', T.caption(this)).setOrigin(0, 0.5).setDepth(603); y += 22 * ui;
+    badges.slice(0, 6).forEach((b) => { text(this, m.x + 24, y, `🏅 ${b.title}${m.w > 380 ? ` — ${b.desc}` : ''}`, T.small(this, THEME.ink2)).setOrigin(0, 0.5).setDepth(603); y += 24 * ui; });
+    if (badges.length > 6) { text(this, m.x + 24, y, `…and ${badges.length - 6} more`, T.small(this, THEME.ink3)).setOrigin(0, 0.5).setDepth(603); }
+    const bw = Math.min((m.w - 72) / 2, 180 * ui), bh = 46 * ui, by = m.y + m.h - 36 * ui;
+    button(this, w / 2 - bw / 2 - 8, by, bw, bh, 'Change my look', { variant: 'secondary', fontSize: 15, onClick: () => { this.state.home = false; this.scene.stop(S.World); this.scene.start(S.Profile, { edit: p.id }); } }).setDepth(603);
+    button(this, w / 2 + bw / 2 + 8, by, bw, bh, 'Back outside', { variant: 'primary', fontSize: 15, onClick: () => this.closeHome() }).setDepth(603);
+  }
+
+  // ---- Fishing ---------------------------------------------------------------------------------
+
+  /** { onCatch(loot) -> message|null } Wait for the tug, then pull in time. */
+  showFishing(opts) {
+    this.state.fishing = { phase: 'wait', loot: null, msg: null, onCatch: opts.onCatch || null };
+    if (this.joystick) this.joystick.release();
+    this.rebuild();
+    const [lo, hi] = FISH_WAIT_MS;
+    this.fishTimer = this.time.delayedCall(lo + Math.random() * (hi - lo), () => {
+      const f = this.state.fishing;
+      if (!f || f.phase !== 'wait') return;
+      f.phase = 'bite'; Sfx.pop(); this.rebuild();
+      this.fishTimer = this.time.delayedCall(FISH_BITE_MS, () => { const g = this.state.fishing; if (g && g.phase === 'bite') this.endFishing(null, 'It got away! Pull as soon as the float tugs.'); });
+    });
+  }
+
+  pullLine() {
+    const f = this.state.fishing;
+    if (!f || f.phase === 'done') return;
+    if (this.fishTimer) { this.fishTimer.remove(false); this.fishTimer = null; }
+    if (f.phase === 'wait') return this.endFishing(null, 'Too soon! Wait for the float to tug.');
+    const loot = rollFish(Math.random);
+    const message = f.onCatch ? f.onCatch(loot) : null;
+    this.endFishing(loot, loot.coins ? `You caught ${loot.name}!  +${loot.coins} coins` : `You caught ${loot.name}. Better luck next cast!`, message);
+    if (loot.coins >= 8) fireworks(this, this.w / 2, this.h * 0.3, { bursts: 2, spread: this.w * 0.25 });
+  }
+
+  endFishing(loot, msg, message = null) {
+    const f = this.state.fishing;
+    if (!f) return;
+    f.phase = 'done'; f.loot = loot; f.msg = msg; f.message = message;
+    if (loot && loot.coins) Sfx.correct(); else Sfx.wrong();
+    this.rebuild();
+  }
+
+  closeFishing() { if (this.fishTimer) { this.fishTimer.remove(false); this.fishTimer = null; } this.state.fishing = null; this.rebuild(); }
+
+  buildFishing(f) {
+    const { w, ui } = this;
+    const m = modal(this, { w: 400 * ui, h: (f.phase === 'done' && f.message ? 400 : 330) * ui, title: 'Gone fishing', accent: THEME.subjects.code.accent, depth: 600, dimAlpha: 0.4 });
+    const pond = this.add.graphics().setDepth(603);
+    const px = m.x + 24, py = m.contentTop, pw = m.w - 48, ph = 130 * ui;
+    pond.fillStyle(0x4aa8ff, 1); pond.fillRoundedRect(px, py, pw, ph, 16);
+    pond.fillStyle(0xc5e8ff, 0.7); for (let i = 0; i < 5; i++) pond.fillRoundedRect(px + 16 + i * (pw / 5), py + 20 + (i % 2) * 40, 26, 4, 2);
+    if (f.phase !== 'done') {
+      const bob = this.add.image(m.x + m.w / 2, py + ph * 0.5, 'bobber').setDisplaySize(30 * ui, 30 * ui).setDepth(604);
+      if (f.phase === 'wait') this.tweens.add({ targets: bob, y: bob.y + 5, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+      else {
+        this.tweens.add({ targets: bob, y: bob.y + 18, duration: 90, yoyo: true, repeat: -1 });
+        text(this, m.x + m.w / 2, py + 22 * ui, '!', T.at(this, 34, THEME.danger, { fontStyle: '700' })).setDepth(604);
+      }
+      text(this, w / 2, py + ph + 24 * ui, f.phase === 'wait' ? 'Wait for the float to tug…' : 'PULL NOW!', T.bodyBold(this, f.phase === 'wait' ? THEME.ink2 : THEME.danger)).setDepth(603);
+      button(this, w / 2, m.y + m.h - 40 * ui, Math.min(m.w - 48, 220 * ui), 50 * ui, 'Pull!', { variant: f.phase === 'bite' ? 'danger' : 'primary', fontSize: 20, onClick: () => this.pullLine() }).setDepth(603);
+    } else {
+      const big = this.add.text(m.x + m.w / 2, py + ph * 0.5, f.loot ? f.loot.emoji : '💧', { fontSize: Math.round(56 * ui) + 'px' }).setOrigin(0.5).setDepth(604);
+      if (f.loot) this.tweens.add({ targets: big, scale: 1.15, duration: 400, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+      const msgText = readable(this, w / 2, py + ph + 20 * ui, f.msg, T.bodyBold(this, f.loot && f.loot.coins ? THEME.successDark : THEME.ink2), { width: m.w - 48 }).setOrigin(0.5, 0).setDepth(603);
+      this.autoRead(msgText);
+      if (f.message) readable(this, w / 2, py + ph + 24 * ui + msgText.height + 12 * ui, f.message, T.small(this, THEME.ink), { width: m.w - 48 }).setOrigin(0.5, 0).setDepth(603);
+      button(this, w / 2, m.y + m.h - 40 * ui, Math.min(m.w - 48, 220 * ui), 46 * ui, 'Done', { variant: 'primary', onClick: () => this.closeFishing() }).setDepth(603);
+    }
   }
 
   // ---- Grass encounters ---------------------------------------------------------------------

@@ -5,7 +5,7 @@ export function defaultSave() {
   return { version: SAVE_VERSION, activeProfileId: null, settings: { sound: true, lastMode: 'roam' }, profiles: {}, deleted: {} };
 }
 
-export function newProfile({ name, avatar = 0, grade = 3, look = null, readAloud = 'tap', timers = 'on' }) {
+export function newProfile({ name, avatar = 0, grade = 3, look = null, readAloud = 'auto', timers = 'on' }) {
   const id = 'p_' + Math.random().toString(36).slice(2, 8);
   const now = Date.now();
   return {
@@ -30,6 +30,7 @@ export function migrate(data) {
   // Fill any fields that older profiles might miss.
   for (const p of Object.values(d.profiles || {})) {
     p.games ||= {}; p.coding ||= { levels: {} }; p.badges ||= []; p.mastery ||= {}; p.charms ||= {}; p.skills ||= {}; p.recentMisses ||= []; p.timers ||= 'on';
+    if (!p.readAloudChosen) p.readAloud = 'auto';   // read everything aloud unless the player picked otherwise
     p.world ||= { x: null, y: null, npcsTalked: [], coinsCollected: [] };
     p.world.unlockedZones = ['math', 'words', 'code', 'bible']; p.world.npcsTalked ||= []; p.world.coinsCollected ||= []; p.world.bosses ||= {};
   }

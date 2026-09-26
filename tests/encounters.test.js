@@ -65,3 +65,25 @@ describe('critters', () => {
     expect(CRITTER_MAX_PER_DAY).toBeGreaterThan(0);
   });
 });
+
+describe('fishing and the player\'s house', () => {
+  it('fishing loot is weighted and always valid', async () => {
+    const { FISH_LOOT, rollFish, FISH_MAX_PER_DAY, FISH_BITE_MS } = await import('../src/data/world/encounters.js');
+    const rnd = mulberry32(3);
+    const seen = new Set();
+    for (let i = 0; i < 300; i++) { const l = rollFish(rnd); expect(FISH_LOOT).toContain(l); seen.add(l.id); }
+    expect(seen.size).toBe(FISH_LOOT.length);
+    expect(FISH_LOOT.find((l) => l.message)).toBeTruthy();
+    expect(FISH_MAX_PER_DAY).toBeGreaterThan(0);
+    expect(FISH_BITE_MS).toBeGreaterThan(300);
+  });
+
+  it('the player\'s house has a walkable, reachable door and a sign stands beside Sam', () => {
+    const map = buildMap();
+    const reach = reachableFrom(map);
+    expect(isWalkable(map.data[map.home.door.ty][map.home.door.tx])).toBe(true);
+    expect(reach.has(`${map.home.door.tx},${map.home.door.ty}`)).toBe(true);
+    expect(map.buildings.find((b) => b.style === 'home')).toBeTruthy();
+    expect(Math.abs(map.signSpot.tx - map.npcSpots.signpost.tx) + Math.abs(map.signSpot.ty - map.npcSpots.signpost.ty)).toBe(1);
+  });
+});

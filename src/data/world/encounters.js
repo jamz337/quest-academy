@@ -51,6 +51,24 @@ export const CRITTERS = [
 ];
 export const CRITTER_MAX_PER_DAY = 12;
 
+// Fishing: stand facing water, cast, wait for the tug and pull at the right moment.
+export const FISH_MAX_PER_DAY = 8;
+export const FISH_WAIT_MS = [1500, 4500];   // random wait before the bite
+export const FISH_BITE_MS = 900;            // window to pull once the bobber tugs
+export const FISH_LOOT = [
+  { id: 'fish', emoji: '🐟', name: 'a little fish', coins: 4, weight: 40 },
+  { id: 'bigfish', emoji: '🐠', name: 'a big fish', coins: 8, weight: 20 },
+  { id: 'boot', emoji: '👢', name: 'an old boot', coins: 0, weight: 14 },
+  { id: 'bottle', emoji: '📜', name: 'a message in a bottle', coins: 3, weight: 16, message: true },
+  { id: 'gem', emoji: '💎', name: 'a shiny gem', coins: 15, weight: 10 }
+];
+export function rollFish(rnd) {
+  const total = FISH_LOOT.reduce((s, l) => s + l.weight, 0);
+  let r = rnd() * total;
+  for (const l of FISH_LOOT) { r -= l.weight; if (r < 0) return l; }
+  return FISH_LOOT[0];
+}
+
 /** What a sparkle hides. `rnd` is a 0..1 function. */
 export function rollEncounter(rnd) {
   const r = rnd();
