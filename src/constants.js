@@ -1,6 +1,9 @@
-export const TILE = 32;
+import { THEME, hex } from './ui/theme.js';
 
-// PICO-8 inspired palette, kept as hex numbers for Phaser and strings for canvas.
+export const TILE = 32;
+export { hex };
+
+// PICO-8 inspired palette for the pixel-art world only (Textures.js, WorldScene). UI code uses THEME from ui/theme.js.
 export const C = {
   navy: 0x1d2b53, purple: 0x7e2553, green: 0x008751, brown: 0xab5236,
   dark: 0x5f574f, grey: 0xc2c3c7, white: 0xfff1e8, red: 0xff004d,
@@ -8,12 +11,11 @@ export const C = {
   lavender: 0x83769c, pink: 0xff77a8, peach: 0xffccaa, black: 0x000000,
   panel: 0x2a3a6b, panelDark: 0x14203f
 };
-export const hex = (n) => '#' + n.toString(16).padStart(6, '0');
 
 export const SUBJECTS = {
-  math: { id: 'math', title: 'Math', color: C.blue, zone: 'Math Meadow' },
-  words: { id: 'words', title: 'English', color: C.lime, zone: 'Word Woods' },
-  code: { id: 'code', title: 'Coding', color: C.orange, zone: 'Code Cove' }
+  math: { id: 'math', title: 'Math', ...THEME.subjects.math, color: THEME.subjects.math.accent, zone: 'Math Meadow' },
+  words: { id: 'words', title: 'English', ...THEME.subjects.words, color: THEME.subjects.words.accent, zone: 'Word Woods' },
+  code: { id: 'code', title: 'Coding', ...THEME.subjects.code, color: THEME.subjects.code.accent, zone: 'Code Cove' }
 };
 
 export const GRADES = [2, 3, 4, 5, 6, 7, 8];

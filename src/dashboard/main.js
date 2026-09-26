@@ -3,6 +3,7 @@ import { MINIGAMES } from '../data/minigames.js';
 import { SUBJECTS } from '../constants.js';
 import { skillLabel } from '../data/skills.js';
 import { getBadge } from '../data/badges.js';
+import { CHARACTER_STYLES, OUTLINE, MOUTH } from '../data/avatars.js';
 
 const KEY = 'qa.cloud';
 const $ = (id) => document.getElementById(id);
@@ -94,19 +95,15 @@ function childCard(c) {
 }
 
 // Same colours as the in-game avatars, drawn as a simple face so the page needs no game assets.
-const STYLES = [
-  ['#ab5236', '#ffccaa', '#29adff'], ['#1a1423', '#ab5236', '#ff77a8'], ['#ffec27', '#ffccaa', '#00e436'], ['#5f574f', '#ffccaa', '#ffa300'],
-  ['#ff004d', '#ffccaa', '#83769c'], ['#1a1423', '#ffccaa', '#ffec27'], ['#7e2553', '#ab5236', '#c2c3c7'], ['#c2c3c7', '#ffccaa', '#ff004d']
-];
 function drawAvatar(canvas) {
-  const [hair, skin, top] = STYLES[Math.max(0, Math.min(7, Number(canvas.dataset.avatar) || 0))];
+  const { hair, skin, top } = CHARACTER_STYLES[Math.max(0, Math.min(7, Number(canvas.dataset.avatar) || 0))];
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#1a1423'; ctx.beginPath(); ctx.arc(24, 24, 24, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = OUTLINE; ctx.beginPath(); ctx.arc(24, 24, 24, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = top; ctx.beginPath(); ctx.arc(24, 24, 22, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = skin; ctx.fillRect(13, 14, 22, 22);
   ctx.fillStyle = hair; ctx.fillRect(11, 8, 26, 9); ctx.fillRect(11, 17, 4, 8); ctx.fillRect(33, 17, 4, 8);
-  ctx.fillStyle = '#1a1423'; ctx.fillRect(18, 24, 3, 4); ctx.fillRect(27, 24, 3, 4);
-  ctx.fillStyle = '#e0567a'; ctx.fillRect(21, 31, 6, 2);
+  ctx.fillStyle = OUTLINE; ctx.fillRect(18, 24, 3, 4); ctx.fillRect(27, 24, 3, 4);
+  ctx.fillStyle = MOUTH; ctx.fillRect(21, 31, 6, 2);
 }
 
 async function load() {

@@ -1,15 +1,15 @@
 // Block definitions for the touch program editor. Pure data, no Phaser.
-import { C } from '../../constants.js';
+import { THEME } from '../../ui/theme.js';
 
 export const BLOCKS = {
-  fwd: { id: 'fwd', label: 'Move ▲', color: C.blue, kind: 'primitive' },
-  left: { id: 'left', label: 'Turn ◀', color: C.lavender, kind: 'primitive' },
-  right: { id: 'right', label: 'Turn ▶', color: C.lavender, kind: 'primitive' },
-  pick: { id: 'pick', label: 'Pick up', color: C.yellow, kind: 'primitive' },
-  repeat: { id: 'repeat', label: 'Repeat N', color: C.orange, kind: 'container', hasCount: true },
-  if: { id: 'if', label: 'If path …', color: C.green, kind: 'container', hasCond: true, hasElse: true },
-  while: { id: 'while', label: 'Until goal', color: C.purple, kind: 'container' },
-  call: { id: 'call', label: 'Do F1', color: C.pink, kind: 'primitive' }
+  fwd: { id: 'fwd', label: 'Move ▲', color: THEME.block.fwd, kind: 'primitive' },
+  left: { id: 'left', label: 'Turn ◀', color: THEME.block.left, kind: 'primitive' },
+  right: { id: 'right', label: 'Turn ▶', color: THEME.block.right, kind: 'primitive' },
+  pick: { id: 'pick', label: 'Pick up', color: THEME.block.pick, kind: 'primitive' },
+  repeat: { id: 'repeat', label: 'Repeat N', color: THEME.block.repeat, kind: 'container', hasCount: true },
+  if: { id: 'if', label: 'If path …', color: THEME.block.if, kind: 'container', hasCond: true, hasElse: true },
+  while: { id: 'while', label: 'Until goal', color: THEME.block.while, kind: 'container' },
+  call: { id: 'call', label: 'Do F1', color: THEME.block.call, kind: 'primitive' }
 };
 
 export const BLOCK_LIST = Object.values(BLOCKS);

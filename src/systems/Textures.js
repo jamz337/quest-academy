@@ -2,8 +2,9 @@
 // To swap in real art later, load spritesheets with the same keys and frame layout and skip the generator.
 import { C, TILE, AVATAR_COUNT } from '../constants.js';
 import { mulberry32 } from './Rng.js';
+import { OUTLINE, MOUTH, BOOTS, CHARACTER_STYLES, NPC_STYLES } from '../data/avatars.js';
+export { CHARACTER_STYLES, NPC_STYLES };
 
-const OUTLINE = '#1a1423';
 const SHADOW = 'rgba(0,0,0,0.22)';
 const PAL = {
   '.': null, k: OUTLINE, w: '#fff1e8', s: '#ffccaa', h: '#ab5236', t: '#7a3a1e', r: '#ff004d', b: '#29adff',
@@ -72,7 +73,7 @@ const CHAR_SIDE2 = CHAR_SIDE.map((r, i) => SIDE_STEP[i] || r);
 function charPalette(colors) {
   return {
     ...PAL, H: colors.hair, J: shade(colors.hair, 0.65), S: colors.skin, T: colors.top, U: shade(colors.top, 0.72),
-    L: colors.legs, B: '#3b2f2f', r: colors.mouth || '#e0567a'
+    L: colors.legs, B: BOOTS, r: colors.mouth || MOUTH
   };
 }
 
@@ -80,31 +81,6 @@ function charPalette(colors) {
 export function characterTexture(scene, key, colors, scale = 1) {
   pixelTexture(scene, key, [CHAR_DOWN, CHAR_DOWN2, CHAR_UP, CHAR_UP2, CHAR_SIDE, CHAR_SIDE2], charPalette(colors), scale);
 }
-
-export const CHARACTER_STYLES = [
-  { hair: '#ab5236', skin: '#ffccaa', top: '#29adff', legs: '#1d2b53' },
-  { hair: '#1a1423', skin: '#ab5236', top: '#ff77a8', legs: '#7e2553' },
-  { hair: '#ffec27', skin: '#ffccaa', top: '#00e436', legs: '#008751' },
-  { hair: '#5f574f', skin: '#ffccaa', top: '#ffa300', legs: '#5f574f' },
-  { hair: '#ff004d', skin: '#ffccaa', top: '#83769c', legs: '#1d2b53' },
-  { hair: '#1a1423', skin: '#ffccaa', top: '#ffec27', legs: '#29adff' },
-  { hair: '#7e2553', skin: '#ab5236', top: '#c2c3c7', legs: '#1d2b53' },
-  { hair: '#c2c3c7', skin: '#ffccaa', top: '#ff004d', legs: '#1d2b53' }
-];
-
-// Extra NPC looks (index 8+) so villagers do not all resemble the player avatars.
-export const NPC_STYLES = [
-  { hair: '#fff1e8', skin: '#ffccaa', top: '#7e2553', legs: '#1d2b53' },
-  { hair: '#ab5236', skin: '#ffccaa', top: '#fff1e8', legs: '#ff004d' },
-  { hair: '#1a1423', skin: '#ab5236', top: '#ffec27', legs: '#5f574f' },
-  { hair: '#5f574f', skin: '#ffccaa', top: '#008751', legs: '#ab5236' },
-  { hair: '#ffa300', skin: '#ffccaa', top: '#29adff', legs: '#fff1e8' },
-  { hair: '#83769c', skin: '#ab5236', top: '#ff77a8', legs: '#1a1423' },
-  { hair: '#00e436', skin: '#ffccaa', top: '#5f574f', legs: '#29adff' },
-  { hair: '#c2c3c7', skin: '#ffccaa', top: '#ab5236', legs: '#7e2553' },
-  { hair: '#ff004d', skin: '#ab5236', top: '#00e436', legs: '#1d2b53' },
-  { hair: '#ffec27', skin: '#ffccaa', top: '#83769c', legs: '#008751' }
-];
 
 // The robot rotates in the maze, so it has no ground shadow.
 const ROBOT = [
