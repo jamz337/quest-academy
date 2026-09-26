@@ -35,10 +35,10 @@ function fillRect(data, x, y, w, h, id) {
 const hline = (data, x0, x1, y, id) => fillRect(data, Math.min(x0, x1), y, Math.abs(x1 - x0) + 1, 1, id);
 const vline = (data, x, y0, y1, id) => fillRect(data, x, Math.min(y0, y1), 1, Math.abs(y1 - y0) + 1, id);
 
-/** Sprinkle `id` over cells currently equal to `over` inside a rect with probability p. */
-function sprinkle(data, rnd, rect, over, id, p) {
+/** Sprinkle `id` over cells currently equal to `over` inside a rect with probability p; `placed` records the cells. */
+function sprinkle(data, rnd, rect, over, id, p, placed = null) {
   for (let ty = rect.y; ty < rect.y + rect.h; ty++) for (let tx = rect.x; tx < rect.x + rect.w; tx++) {
-    if (data[ty][tx] === over && rnd() < p) data[ty][tx] = id;
+    if (data[ty][tx] === over && rnd() < p) { data[ty][tx] = id; if (placed) placed.add(`${tx},${ty}`); }
   }
 }
 
@@ -76,11 +76,13 @@ export function buildMap() {
   fillRect(data, bv.x, bv.y, bv.w, bv.h, TID.village);
 
   // Scenery: flowers on plain grass, a few trees in the meadow and grass, dense trees in the woods.
+  // Scenery trees are remembered so the ones that land against roads or houses can be cleared at the end.
+  const scenery = new Set();
   sprinkle(data, rnd, { x: 0, y: 0, w: W, h: H }, TID.grass, TID.flower, 0.08);
-  sprinkle(data, rnd, { x: 0, y: 0, w: W, h: H }, TID.grass, TID.tree, 0.05);
-  sprinkle(data, rnd, m, TID.meadow, TID.tree, 0.03);
-  sprinkle(data, rnd, wd, TID.woods, TID.tree, 0.14);
-  sprinkle(data, rnd, { x: cv.x, y: cv.y, w: cv.w, h: 4 }, TID.cove, TID.tree, 0.05);
+  sprinkle(data, rnd, { x: 0, y: 0, w: W, h: H }, TID.grass, TID.tree, 0.05, scenery);
+  sprinkle(data, rnd, m, TID.meadow, TID.tree, 0.03, scenery);
+  sprinkle(data, rnd, wd, TID.woods, TID.tree, 0.14, scenery);
+  sprinkle(data, rnd, { x: cv.x, y: cv.y, w: cv.w, h: 4 }, TID.cove, TID.tree, 0.05, scenery);
 
   // Water: a pond in the village and the sea along the bottom of the cove with a wobbly shoreline.
   fillRect(data, 40, 21, 3, 3, TID.water);
@@ -89,14 +91,15 @@ export function buildMap() {
     vline(data, tx, top, H - 2, TID.water);
   }
 
-  // Walls of trees that seal off the locked regions (and the outer border).
-  hline(data, 0, W - 1, 0, TID.tree); hline(data, 0, W - 1, H - 1, TID.tree);
-  vline(data, 0, 0, H - 1, TID.tree); vline(data, W - 1, 0, H - 1, TID.tree);
-  vline(data, 29, 1, 13, TID.tree);            // words: west wall
-  hline(data, 29, W - 1, 13, TID.tree);        // words and village: shared wall
-  fillRect(data, 47, 1, W - 48, 12, TID.tree); // deep forest east of the woods
-  hline(data, 0, W - 1, 28, TID.tree);         // code: north wall
-  vline(data, 37, 14, 27, TID.tree);           // village: west wall
+  // Walls of trees that seal off each village (and the outer border). These are deliberate and never cleared.
+  const walls = new Set();
+  const wallRect = (x, y, w, h) => { fillRect(data, x, y, w, h, TID.tree); for (let ty = y; ty < y + h; ty++) for (let tx = x; tx < x + w; tx++) walls.add(`${tx},${ty}`); };
+  wallRect(0, 0, W, 1); wallRect(0, H - 1, W, 1); wallRect(0, 0, 1, H); wallRect(W - 1, 0, 1, H);
+  wallRect(29, 1, 1, 13);                      // words: west wall
+  wallRect(29, 13, W - 29, 1);                 // words and village: shared wall
+  wallRect(47, 1, W - 48, 12);                 // deep forest east of the woods
+  wallRect(0, 28, W, 1);                       // code: north wall
+  wallRect(37, 14, 1, 14);                     // village: west wall
 
   // Hub plaza and the roads out of it.
   fillRect(data, 21, 17, 7, 8, TID.path);
@@ -151,6 +154,20 @@ export function buildMap() {
   place('scribe', 'bible', 43, 14);
   place('fisherman', 'bible', 47, 14);
   npcSpots.signpost = { tx: 24, ty: 18 };
+
+  // Clear scenery trees that ended up touching a road, doorway, building or villager, so nothing is boxed in.
+  const BUILT = new Set([TID.path, TID.gateOpen, ...ROOF_TILES, ...WALL_TILES, ...DOOR_TILES]);
+  const groundAt = (tx, ty) => { const z = zones.find((zn) => tx >= zn.rect.x && tx < zn.rect.x + zn.rect.w && ty >= zn.rect.y && ty < zn.rect.y + zn.rect.h); return z ? { math: TID.meadow, words: TID.woods, code: TID.cove, bible: TID.village }[z.id] ?? TID.grass : TID.grass; };
+  for (const k of scenery) {
+    const [tx, ty] = k.split(',').map(Number);
+    if (data[ty][tx] !== TID.tree || walls.has(k)) continue;
+    let touching = false;
+    for (let dy = -1; dy <= 1 && !touching; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const t = data[ty + dy]?.[tx + dx];
+      if (t !== undefined && BUILT.has(t) && !walls.has(`${tx + dx},${ty + dy}`)) { touching = true; break; }
+    }
+    if (touching) data[ty][tx] = groundAt(tx, ty);
+  }
 
   const spawn = { tx: 24, ty: 22 };
 
