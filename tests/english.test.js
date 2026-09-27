@@ -6,6 +6,7 @@ import { PAIRS } from '../src/data/english/pairBank.js';
 import { generateRounds as wordRounds, scramble } from '../src/generators/english/words.js';
 import { generateRounds as grammarRounds, fillBlank } from '../src/generators/english/grammar.js';
 import { generateRounds as matchRounds } from '../src/generators/english/match.js';
+import { SKILL_LABELS } from '../src/data/skills.js';
 
 const BAND_OF_GRADE = { 2: 'A', 3: 'A', 4: 'B', 5: 'B', 6: 'C', 7: 'C', 8: 'C' };
 
@@ -58,7 +59,7 @@ describe('sentence bank + grammar', () => {
         expect(item.o).toHaveLength(3);
         expect(new Set(item.o).size).toBe(3);
         expect(item.a).toBeGreaterThanOrEqual(0); expect(item.a).toBeLessThan(3);
-        expect(skills[band]).toContain(item.k);
+        expect(Object.keys(SKILL_LABELS)).toContain(item.k);
       }
       for (const k of skills[band]) expect(SENTENCES[band].some((x) => x.k === k)).toBe(true);
     }

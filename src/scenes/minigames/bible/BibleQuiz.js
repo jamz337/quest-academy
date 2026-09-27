@@ -12,6 +12,7 @@ import { ProgressBar } from '../../../ui/ProgressBar.js';
 import { enter } from '../../../ui/motion.js';
 import { Sfx } from '../../../systems/Audio.js';
 import { prioritiseWeak, weakSkills } from '../../../systems/Practice.js';
+import { sheepFold, lampRow } from '../../../ui/Scenery.js';
 
 const KIND = { 'bible-quiz': 'quiz', 'bible-verse': 'verse' };
 
@@ -46,6 +47,10 @@ export class BibleQuiz extends MinigameScene {
     const s = this.state, ui = this.ui;
     const q = s.questions[s.idx];
     if (!q) return;
+    // Above the question: the shepherd's fold fills with sheep (Bible Quiz) or the scribe's lamps light up (Verse Builder).
+    const stripH = Math.min(90 * ui, area.h * 0.16);
+    this.drawScene({ x: area.x, y: area.y, w: area.w, h: stripH });
+    area = { x: area.x, y: area.y + stripH + 8, w: area.w, h: area.h - stripH - 8 };
     const cx = area.x + area.w / 2;
     const order = q.kind === 'order';
     const promptH = Math.min(area.h * (order ? 0.26 : 0.42), (order ? 130 : 230) * ui);
@@ -63,6 +68,24 @@ export class BibleQuiz extends MinigameScene {
     if (order) this.buildOrder(area, area.y + promptH + gap, q); else this.buildChoices(area, area.y + promptH + gap, q);
     enter(this, prompt, { from: 'up', distance: 12 });
     if (s.picked !== null && !s.right) this.explanationPanel(area, q, () => this.next());
+  }
+
+  drawScene(rect) {
+    const s = this.state, ui = this.ui, total = s.questions.length;
+    const justRight = s.picked !== null && s.right;
+    if (KIND[this.payload.gameId] === 'verse') {
+      const { flames } = lampRow(this, rect, { lit: s.correct, total, ui });
+      if (justRight && flames.length) { const f = flames[flames.length - 1]; f.setScale(0); this.tweens.add({ targets: f, scale: 1, duration: 420, ease: 'Back.Out' }); }
+      return;
+    }
+    const { startX, foldX, laneY } = sheepFold(this, rect, { inFold: s.correct - (justRight ? 1 : 0), total, ui });
+    if (justRight && this.textures.exists('sheep')) {
+      const i = s.correct - 1;
+      const target = foldX + 14 * ui + (i % 5) * ((Math.min(rect.w * 0.42, 190 * ui) - 28 * ui) / 4);
+      const lamb = this.add.sprite(startX, laneY - 6 * ui + Math.floor(i / 5) * 12 * ui, 'sheep', 0).setDisplaySize(24 * ui, 24 * ui).setFlipX(true);
+      if (this.anims.exists('sheep-walk')) lamb.play('sheep-walk', true);
+      this.tweens.add({ targets: lamb, x: target, duration: 800, ease: 'Sine.InOut', onComplete: () => { if (lamb.active) { lamb.stop(); lamb.setFrame(0); } } });
+    }
   }
 
   buildChoices(area, top, q) {

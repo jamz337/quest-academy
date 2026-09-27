@@ -1,12 +1,13 @@
 import { MinigameScene } from '../MinigameScene.js';
 import { THEME } from '../../../ui/theme.js';
 import { generateRounds } from '../../../generators/math/fractions.js';
-import { grid } from '../../../systems/Layout.js';
+import { grid, pointerPos } from '../../../systems/Layout.js';
 import { Sfx } from '../../../systems/Audio.js';
 import { T, text } from '../../../ui/TextStyles.js';
 import { button } from '../../../ui/Button.js';
 import { card } from '../../../ui/Card.js';
 import { enter } from '../../../ui/motion.js';
+import { prioritiseWeak, weakSkills } from '../../../systems/Practice.js';
 
 const TAU = Math.PI * 2;
 const PAR_MS = 120000;
@@ -17,7 +18,8 @@ export class FractionPizza extends MinigameScene {
   constructor() { super('MG_FractionPizza'); }
 
   initState() {
-    const rounds = generateRounds(this.payload.grade, this.rng, 8);
+    const grade = this.payload.grade;
+    const rounds = prioritiseWeak(generateRounds(grade, this.rng, 8), () => generateRounds(grade, this.rng, 10), weakSkills(this.profile));
     return { rounds, idx: 0, correct: 0, locked: false, picked: null, result: null, shaded: this.freshShade(rounds[0]), missed: {} };
   }
 
@@ -76,7 +78,8 @@ export class FractionPizza extends MinigameScene {
       text(this, cx, cy + radius + 16 * ui, info, T.small(this, THEME.ink2));
       if (!s.locked) {
         const zone = this.add.zone(cx, cy, radius * 2, radius * 2).setInteractive();
-        zone.on('pointerup', (p) => this.tapSlice(p.x - cx, p.y - cy, radius));
+        // Pointer coordinates are canvas pixels; the pizza is laid out in CSS pixels (see systems/Layout.js).
+        zone.on('pointerup', (pointer) => { const p = pointerPos(this, pointer); this.tapSlice(p.x - cx, p.y - cy, radius); });
       }
       button(this, ctrl.x + ctrl.w / 2, ctrl.y + ctrl.h / 2, Math.min(ctrl.w, 260 * ui), 56 * ui, 'Check',
         { variant: 'primary', fontSize: 22, onClick: () => this.check(), disabled: s.locked });
@@ -158,6 +161,8 @@ export class FractionPizza extends MinigameScene {
   resolve(right, r) {
     const s = this.state;
     s.locked = true; s.result = right ? 'right' : 'wrong';
+    const answer = r.kind === 'compare' ? r.labels[r.answer] : r.answer;
+    this.logQuestion({ skill: r.skill, prompt: r.prompt, answer, choices: r.choices || (r.kind === 'compare' ? r.labels : undefined) }, right);
     if (right) { s.correct += 1; this.correctFeedback(); }
     else { s.missed[r.skill] = (s.missed[r.skill] || 0) + 1; this.wrongFeedback(); }
     this.time.delayedCall(right ? 600 : 1300, () => this.next());

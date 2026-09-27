@@ -7,6 +7,7 @@ import { unlockErrand } from '../data/world/errands.js';
 import { ZONE_ORDER } from '../data/world/quests.js';
 import { recordSkills } from './Practice.js';
 import { applyGoal } from './Goals.js';
+import { REVIEW_XP } from './Review.js';
 
 // ---- Mastery: the better a player does in a subject, the harder its games get ----------------
 export const MASTERY_MAX = 3;
@@ -140,7 +141,9 @@ export function applyResult(profile, payload, raw) {
   const stars = isCoding ? raw.stars : starsFromAccuracy(raw.correct, raw.total);
   const timeBonus = raw.parTimeMs && raw.timeMs && raw.timeMs <= raw.parTimeMs ? 20 : 0;
   let coins = raw.coins ?? (isCoding ? stars * 10 : (raw.correct || 0) * 2 + stars * 5);
-  const xp = raw.xp ?? (isCoding ? stars * 40 : (raw.correct || 0) * 10 + stars * 15 + timeBonus);
+  const reviewXp = ((raw.reviewed && raw.reviewed.right) | 0) * REVIEW_XP;   // quick-review questions before the game
+  const xp = (raw.xp ?? (isCoding ? stars * 40 : (raw.correct || 0) * 10 + stars * 15 + timeBonus)) + reviewXp;
+  if (reviewXp) result.reviewXp = reviewXp;
   // A Golden Ticket (found in the grass) doubles the coins of the next game, then is spent.
   if (profile.charms?.doubleCoins) { coins *= 2; result.doubledCoins = true; delete profile.charms.doubleCoins; }
   const score = raw.score ?? (raw.correct || 0) * 10 + stars * 20 + (timeBonus ? 10 : 0);

@@ -153,6 +153,11 @@ export function buildMap() {
   place('shepherd', 'bible', 39, 14);
   place('scribe', 'bible', 43, 14);
   place('fisherman', 'bible', 47, 14);
+  // The newer villagers: one more house in each land, tucked off the main lanes.
+  place('balloon-seller', 'math', 12, 22);
+  place('frog-friend', 'words', 40, 9);
+  place('dj-bot', 'code', 44, 30);
+  place('ark-builder', 'bible', 42, 18);
   npcSpots.signpost = { tx: 24, ty: 18 };
   const signSpot = { tx: 24, ty: 17 };   // the wooden signpost right behind Sam, at the top of the plaza
 

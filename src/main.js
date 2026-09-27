@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { registerSW } from 'virtual:pwa-register';
 import { makeConfig } from './config.js';
-import { unlockAudio } from './systems/Audio.js';
+import { unlockAudio, audioReady } from './systems/Audio.js';
+import { primeSpeech } from './systems/Speech.js';
 import { scenes } from './scenes/index.js';
 import { dpr } from './systems/Layout.js';
 
@@ -65,9 +66,16 @@ if (params.has('debug')) {
   setInterval(report, 1000); report();
 }
 
-// Mobile browsers only start audio after a user gesture.
-const unlock = () => { unlockAudio(); window.removeEventListener('pointerdown', unlock); };
-window.addEventListener('pointerdown', unlock);
+// Mobile browsers only start audio after a user gesture, and iOS Safari is picky about which one: it wants a
+// sound started inside a touchend or click. Keep trying on every kind of gesture until the context runs, and
+// prime speech synthesis in the same gesture so read-aloud works without a tap on the speaker button.
+const GESTURES = ['pointerdown', 'touchend', 'click', 'keydown'];
+const unlock = () => {
+  primeSpeech();
+  if (!unlockAudio()) return;
+  for (const ev of GESTURES) window.removeEventListener(ev, unlock);
+};
+if (!audioReady()) for (const ev of GESTURES) window.addEventListener(ev, unlock, { passive: true });
 
 // Service worker: precache the whole app and switch to new builds automatically (the page reloads once
 // a new worker takes control, so nobody is left on a stale bundle).

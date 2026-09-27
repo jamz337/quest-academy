@@ -12,6 +12,7 @@ function stubObject(extra = {}) {
     setStrokeStyle() { return o; }, setFillStyle() { return o; }, setStyle() { return o; }, setColor() { return o; }, setPadding() { return o; },
     setWordWrapWidth() { return o; }, setFixedSize() { return o; }, setData(k, v) { o.data[k] = v; return o; }, getData(k) { return o.data[k]; },
     setInteractive() { return o; }, disableInteractive() { return o; }, removeInteractive() { return o; }, add() { return o; },
+    setFlipX() { return o; }, setFlipY() { return o; }, setMask() { return o; }, createGeometryMask() { return {}; }, removeAll() { return o; }, bringToTop() { return o; },
     destroy() { o.active = false; },
     on(ev, fn) { (o.handlers[ev] ||= []).push(fn); return o; }, once(ev, fn) { return o.on(ev, fn); }, off() { return o; },
     emit(ev, ...a) { (o.handlers[ev] || []).forEach((f) => f(...a)); },
@@ -27,7 +28,8 @@ function stubObject(extra = {}) {
 
 export function installPhaserMock() {
   vi.mock('phaser', () => {
-    class Scene { constructor(key) { this.key = key; } }
+    // Real scenes keep their key in sys.settings; putting it on `this.key` would shadow methods named key().
+    class Scene { constructor(key) { this.sys = { settings: { key }, isActive: () => true }; } }
     class Container {
       // Copy the inert stub onto the instance, but never shadow methods a subclass (Button, Card...) defines itself.
       constructor(scene, x, y) {
@@ -60,6 +62,7 @@ export function fakeSystems(target = {}, { width = 400, height = 700, syncTweens
       existing: (o) => { objs.push(o); return o; }
     },
     children: { list: objs },
+    make: { graphics: () => mk() },
     tweens: {
       killAll() {}, killTweensOf() {}, getTweensOf() { return []; },
       add(cfg) {

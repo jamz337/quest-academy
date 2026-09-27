@@ -11,6 +11,10 @@ import { ProgressBar } from '../../../ui/ProgressBar.js';
 import { enter } from '../../../ui/motion.js';
 import { Sfx } from '../../../systems/Audio.js';
 import { prioritiseWeak, weakSkills } from '../../../systems/Practice.js';
+import { raceTrack } from '../../../ui/Scenery.js';
+import { shake } from '../../../ui/motion.js';
+import { lookSpriteTexture } from '../../../systems/Textures.js';
+import { resolveLook } from '../../../data/avatars.js';
 
 const KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '−', '0', '.'];
 
@@ -57,6 +61,10 @@ export class NumberDash extends MinigameScene {
       s.introduced[q.skill] = true;
       if (example) return this.introPanel(area, q.skill, example, () => { s.qStart = Date.now(); this.rebuild(); });
     }
+    // The race track along the top: the player's runner dashes one step nearer the finish per right answer.
+    const stripH = Math.min(84 * ui, area.h * 0.17);
+    this.drawTrack({ x: area.x, y: area.y, w: area.w, h: stripH });
+    area = { x: area.x, y: area.y + stripH + 8, w: area.w, h: area.h - stripH - 8 };
     const promptH = Math.min(area.h * 0.34, 200 * ui);
     const cx = area.x + area.w / 2;
     const prompt = card(this, cx, area.y + promptH / 2, area.w, promptH);
@@ -73,6 +81,19 @@ export class NumberDash extends MinigameScene {
     if (typing) this.buildPad(area, gridTop, q); else this.buildChoices(area, gridTop, q);
     enter(this, prompt, { from: 'up', distance: 12 });
     if (s.picked !== null && !s.right) this.explanationPanel(area, q, () => this.next());
+  }
+
+  drawTrack(r) {
+    const s = this.state, ui = this.ui;
+    const justRight = s.picked !== null && s.right, justWrong = s.picked !== null && !s.right;
+    const key = lookSpriteTexture(this, resolveLook(this.profile));
+    const { runner, xFor } = raceTrack(this, r, { progress: s.correct - (justRight ? 1 : 0), total: s.questions.length, spriteKey: key, ui });
+    if (!runner) return;
+    if (justRight) {
+      runner.play(`${key}-side`, true);
+      this.tweens.add({ targets: runner, x: xFor(s.correct), duration: 420, ease: 'Sine.Out', onComplete: () => { if (runner.active) { runner.stop(); runner.setFrame(4); } } });
+      this.tweens.add({ targets: runner, y: runner.y - 6 * ui, duration: 140, yoyo: true, repeat: 1 });
+    } else if (justWrong) shake(this, runner, 5);
   }
 
   buildChoices(area, gridTop, q) {

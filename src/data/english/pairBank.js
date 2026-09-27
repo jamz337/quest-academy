@@ -21,7 +21,15 @@ export const PAIRS = {
     { l: 'kid', r: 'child', k: 'synonym' }, { l: 'friend', r: 'pal', k: 'synonym' },
     { l: 'rock', r: 'stone', k: 'synonym' }, { l: 'ship', r: 'boat', k: 'synonym' },
     { l: 'talk', r: 'speak', k: 'synonym' }, { l: 'fix', r: 'repair', k: 'synonym' },
-    { l: 'pick', r: 'choose', k: 'synonym' }, { l: 'shut', r: 'close', k: 'synonym' }
+    { l: 'pick', r: 'choose', k: 'synonym' }, { l: 'shut', r: 'close', k: 'synonym' },
+    { l: 'huge', r: 'giant', k: 'synonym' }, { l: 'cry', r: 'weep', k: 'synonym' },
+    { l: 'laugh', r: 'giggle', k: 'synonym' }, { l: 'sleep', r: 'snooze', k: 'synonym' },
+    { l: 'run', r: 'dash', k: 'synonym' }, { l: 'grab', r: 'take', k: 'synonym' },
+    { l: 'fall', r: 'tumble', k: 'synonym' }, { l: 'warm', r: 'toasty', k: 'synonym' },
+    { l: 'mean', r: 'unkind', k: 'synonym' }, { l: 'tasty', r: 'yummy', k: 'synonym' },
+    { l: 'tidy', r: 'neat', k: 'synonym' }, { l: 'sick', r: 'ill', k: 'synonym' },
+    { l: 'hurry', r: 'rush', k: 'synonym' }, { l: 'fun', r: 'enjoyable', k: 'synonym' },
+    { l: 'wrong', r: 'incorrect', k: 'synonym' }
   ],
   B: [
     { l: 'hot', r: 'cold', k: 'antonym' }, { l: 'big', r: 'small', k: 'antonym' },
@@ -45,7 +53,15 @@ export const PAIRS = {
     { l: 'wide', r: 'narrow', k: 'antonym' }, { l: 'simple', r: 'complex', k: 'antonym' },
     { l: 'asleep', r: 'awake', k: 'antonym' }, { l: 'buy', r: 'sell', k: 'antonym' },
     { l: 'push', r: 'pull', k: 'antonym' }, { l: 'win', r: 'lose', k: 'antonym' },
-    { l: 'laugh', r: 'cry', k: 'antonym' }
+    { l: 'laugh', r: 'cry', k: 'antonym' },
+    { l: 'inside', r: 'outside', k: 'antonym' }, { l: 'first', r: 'last', k: 'antonym' },
+    { l: 'young', r: 'old', k: 'antonym' }, { l: 'true', r: 'false', k: 'antonym' },
+    { l: 'left', r: 'right', k: 'antonym' }, { l: 'day', r: 'night', k: 'antonym' },
+    { l: 'north', r: 'south', k: 'antonym' }, { l: 'summer', r: 'winter', k: 'antonym' },
+    { l: 'float', r: 'sink', k: 'antonym' }, { l: 'remember', r: 'forget', k: 'antonym' },
+    { l: 'borrow', r: 'lend', k: 'antonym' }, { l: 'appear', r: 'vanish', k: 'antonym' },
+    { l: 'guilty', r: 'innocent', k: 'antonym' }, { l: 'major', r: 'minor', k: 'antonym' },
+    { l: 'attack', r: 'defend', k: 'antonym' }
   ],
   C: [
     { l: 'abundant', r: 'more than enough', k: 'definition' }, { l: 'ancient', r: 'very old', k: 'definition' },
@@ -67,6 +83,14 @@ export const PAIRS = {
     { l: 'inquire', r: 'to ask', k: 'definition' }, { l: 'ludicrous', r: 'ridiculous', k: 'definition' },
     { l: 'mimic', r: 'to copy or imitate', k: 'definition' }, { l: 'novice', r: 'a beginner', k: 'definition' },
     { l: 'plummet', r: 'to fall fast', k: 'definition' }, { l: 'timid', r: 'shy and fearful', k: 'definition' },
-    { l: 'verdict', r: 'a decision by a judge', k: 'definition' }, { l: 'wary', r: 'watchful and suspicious', k: 'definition' }
+    { l: 'verdict', r: 'a decision by a judge', k: 'definition' }, { l: 'wary', r: 'watchful and suspicious', k: 'definition' },
+    { l: 'abandon', r: 'to leave behind', k: 'definition' }, { l: 'accurate', r: 'exactly right', k: 'definition' },
+    { l: 'adapt', r: 'to change to fit', k: 'definition' }, { l: 'ample', r: 'plenty', k: 'definition' },
+    { l: 'bewilder', r: 'to confuse completely', k: 'definition' }, { l: 'brisk', r: 'quick and lively', k: 'definition' },
+    { l: 'conceal', r: 'to hide', k: 'definition' }, { l: 'durable', r: 'lasts a long time', k: 'definition' },
+    { l: 'feeble', r: 'weak', k: 'definition' }, { l: 'grateful', r: 'thankful', k: 'definition' },
+    { l: 'humble', r: 'not proud', k: 'definition' }, { l: 'linger', r: 'to stay longer', k: 'definition' },
+    { l: 'mend', r: 'to repair', k: 'definition' }, { l: 'persist', r: 'to keep going', k: 'definition' },
+    { l: 'reveal', r: 'to show', k: 'definition' }
   ]
 };

@@ -16,7 +16,7 @@ import { claimStreak, currentStreak } from '../systems/Streak.js';
 import { dailyGoal, familyGoal } from '../systems/Goals.js';
 import { getGame } from '../data/minigames.js';
 import { toast } from '../ui/Toast.js';
-import { Sfx } from '../systems/Audio.js';
+import { Sfx, audioReady, onUnlocked } from '../systems/Audio.js';
 import { resolveLook } from '../data/avatars.js';
 import { badgeTexture } from '../systems/Textures.js';
 
@@ -116,5 +116,12 @@ export class ModeSelectScene extends BaseScene {
     });
     enter(this, [pc, explore, challenge], { from: 'up', delay: 60, stagger: 70 });
     enter(this, [lb, acc, sw2, snd], { from: 'fade', delay: 260, stagger: 30 });
+
+    // Phones keep sound off until a tap: say so, and take the hint down as soon as the first tap unlocks it.
+    if (sound && !audioReady() && typeof window !== 'undefined') {
+      const hint = chip(this, w / 2, row1Y - rowH / 2 - 14 * ui, { text: `${EMOJI.soundOff} Tap anywhere to turn on sound`, originX: 0.5, color: THEME.warningSoft, textColor: THEME.warningDark, fontSize: 12, height: 24 * ui, shadow: 'none' });
+      const off = onUnlocked(() => { if (hint.active) hint.destroy(); });
+      this.events.once('shutdown', off);
+    }
   }
 }

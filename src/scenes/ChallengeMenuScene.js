@@ -66,14 +66,21 @@ export class ChallengeMenuScene extends BaseScene {
     const h = Math.min(c.h, 150 * ui);
     const k = card(this, c.x, c.y, c.w, h, { stroke: subject.soft, onTap: () => this.play(g) });
     const compact = h < 110 * ui;
+    if (compact && c.w >= 150 * ui) {
+      // Short but wide (a landscape screen): icon, title and stars in one row.
+      const r = Math.min(13 * ui, h * 0.3), ix = -c.w / 2 + 12 + r, starSize = Math.min(14 * ui, h * 0.36);
+      k.add([this.add.circle(ix, 0, r, subject.soft), this.add.text(ix, 0, g.icon, { fontSize: Math.round(r * 1.1) + 'px' }).setOrigin(0.5)]);
+      const starsW = 3 * (starSize + 4), titleW = c.w - (r * 2 + 20) - starsW - 16;
+      k.add(this.add.text(ix + r + 8, 0, g.title, { ...T.at(this, g.title.length > 14 ? 11 : 13, THEME.ink), wordWrap: { width: titleW }, align: 'left' }).setOrigin(0, 0.5));
+      k.add(new StarRow(this, c.w / 2 - 12 - starsW / 2, 0, rec ? rec.bestStars : 0, starSize));
+      return k;
+    }
     if (compact) {
-      // Short cards (four subjects on a small screen): icon beside the title, stars underneath.
-      const ty = -h * 0.2, r = 14 * ui;
-      const title = this.add.text(0, ty, g.title, T.at(this, 14, THEME.ink)).setOrigin(0, 0.5);
-      const ix = -(r * 2 + 8 + title.width) / 2 + r;
-      title.setX(ix + r + 8);
-      k.add([this.add.circle(ix, ty, r, subject.soft), this.add.text(ix, ty, g.icon, { fontSize: Math.round(16 * ui) + 'px' }).setOrigin(0.5), title]);
-      k.add(new StarRow(this, 0, h / 2 - 16 * ui, rec ? rec.bestStars : 0, 16 * ui));
+      // Short and narrow (four games per subject on a phone): icon on top, a small title, stars underneath.
+      const r = 13 * ui, iy = -h / 2 + r + 6 * ui;
+      k.add([this.add.circle(0, iy, r, subject.soft), this.add.text(0, iy, g.icon, { fontSize: Math.round(14 * ui) + 'px' }).setOrigin(0.5)]);
+      k.add(this.add.text(0, iy + r + 8 * ui, g.title, { ...T.at(this, c.w < 96 ? 10 : 12, THEME.ink), wordWrap: { width: c.w - 8 } }).setOrigin(0.5, 0));
+      k.add(new StarRow(this, 0, h / 2 - 10 * ui, rec ? rec.bestStars : 0, Math.min(12 * ui, (c.w - 12) / 3.6)));
       return k;
     }
     const iy = -h / 2 + 32 * ui;

@@ -78,6 +78,26 @@ export const NPCS = [
     id: 'fisherman', pitch: 0.9, rate: 1.05, voice: 'male', name: 'Fisherman Andrew', sprite: 'npc12', gameId: 'bible-match', zone: 'bible',
     lines: ['Just back from the lake with a full net!', 'Every person in the Bible has a story. Can you match each one to what they did?'],
     playPrompt: 'Want to play Who Am I?'
+  },
+  {
+    id: 'balloon-seller', pitch: 1.2, rate: 1.05, voice: 'female', name: 'Balloon Bea', sprite: 'npc13', gameId: 'math-balloons', zone: 'math',
+    lines: ['Balloons! Get your balloons! Every one has a number on it.', 'Pop the balloon with the right answer before it floats away over the meadow!'],
+    playPrompt: 'Want to play Balloon Pop?'
+  },
+  {
+    id: 'frog-friend', pitch: 1.1, rate: 1, voice: 'female', name: 'Lily Pad Lou', sprite: 'npc14', gameId: 'eng-frog', zone: 'words',
+    lines: ['Ribbit! My frog Hopper needs help crossing the pond.', 'Hop to the lily pad with the right word. Pick a wrong one and… splash!'],
+    playPrompt: 'Want to play Frog Hop?'
+  },
+  {
+    id: 'dj-bot', pitch: 1.25, rate: 1.1, voice: 'male', name: 'DJ Bolt', sprite: 'npc15', gameId: 'code-dance', zone: 'code',
+    lines: ['Bzzt! Welcome to the dance floor!', 'Watch my robot bust a move, then pick the program that made it dance.'],
+    playPrompt: 'Want to play Robot Dance?'
+  },
+  {
+    id: 'ark-builder', pitch: 0.9, rate: 0.95, voice: 'male', name: 'Japheth the Builder', sprite: 'npc16', gameId: 'bible-ark', zone: 'bible',
+    lines: ['Hammer and nails! Father Noah says the rain is coming.', 'Answer a question and another pair of animals climbs aboard. Fill the ark before the flood!'],
+    playPrompt: 'Want to play All Aboard the Ark?'
   }
 ];
 

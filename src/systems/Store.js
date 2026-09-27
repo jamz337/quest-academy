@@ -30,7 +30,7 @@ export function replaceSave(data) {
   return state.save;
 }
 
-export function getProfile() { return state.save.profiles[state.save.activeProfileId] || null; }
+export function getProfile() { return state.save ? state.save.profiles[state.save.activeProfileId] || null : null; }
 export function listProfiles() { return Object.values(state.save.profiles).sort((a, b) => b.updatedAt - a.updatedAt); }
 export function setActiveProfile(id) { state.save.activeProfileId = id; persist(); }
 export function createProfile(fields) {

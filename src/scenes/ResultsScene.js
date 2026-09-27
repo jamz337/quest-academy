@@ -89,7 +89,7 @@ export class ResultsScene extends BaseScene {
     if (result.blocksUsed !== undefined && result.par !== undefined) line('Blocks used', `${result.blocksUsed}  (par ${result.par})`);
     line('Time', formatTime(result.timeMs) + (result.timeBonus ? '  ⚡ bonus' : ''), result.timeBonus ? THEME.successDark : THEME.ink);
     line(result.doubledCoins ? 'Coins earned  🎫 doubled!' : 'Coins earned', `+${result.coins}`, THEME.warningDark);
-    line('XP earned', `+${result.xp}`, THEME.successDark);
+    line('XP earned', `+${result.xp}${result.reviewXp ? `  (review +${result.reviewXp})` : ''}`, THEME.successDark);
     if (result.newBest) { chip(this, w / 2, y, { text: '★ New best score!', originX: 0.5, color: THEME.warningSoft, textColor: THEME.warningDark, shadow: 'none' }); y += 30 * ui; }
     if (result.missedSkills && result.missedSkills.length) {
       text(this, w / 2, y, 'Practise: ' + result.missedSkills.slice(0, 3).map(skillLabel).join(', '), T.small(this, THEME.ink2)); y += 26 * ui;

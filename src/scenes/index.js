@@ -21,11 +21,15 @@ import { BugHunt } from './minigames/coding/BugHunt.js';
 import { PredictRobot } from './minigames/coding/PredictRobot.js';
 import { BossBattle } from './minigames/BossBattle.js';
 import { BibleQuiz } from './minigames/bible/BibleQuiz.js';
+import { BalloonPop } from './minigames/math/BalloonPop.js';
+import { FrogHop } from './minigames/english/FrogHop.js';
+import { RobotDance } from './minigames/coding/RobotDance.js';
+import { ArkAnimals } from './minigames/bible/ArkAnimals.js';
 
 // Order matters for render depth: later scenes draw on top when several are active.
 export const scenes = [
   BootScene, ProfileScene, ModeSelectScene, WorldScene, HudScene, ChallengeMenuScene, LevelSelectScene,
-  NumberDash, FractionPizza, PatternBridge, WordBuilder, GrammarGate, WordMatch,
-  RoboMaze, BugHunt, PredictRobot, BossBattle, BibleQuiz,
+  NumberDash, FractionPizza, PatternBridge, BalloonPop, WordBuilder, GrammarGate, WordMatch, FrogHop,
+  RoboMaze, BugHunt, PredictRobot, RobotDance, BossBattle, BibleQuiz, ArkAnimals,
   ResultsScene, PauseScene, AccountScene, LeaderboardScene, SkillsScene
 ];

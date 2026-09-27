@@ -8,8 +8,29 @@ function ac() {
   return ctx;
 }
 
-/** Call from the first user gesture so mobile browsers allow audio. */
-export function unlockAudio() { const a = ac(); if (a && a.state === 'suspended') a.resume(); }
+const unlockListeners = new Set();
+let unlockedOnce = false;
+
+/**
+ * Call from a user gesture so mobile browsers allow audio. iOS Safari only unlocks when a sound is actually
+ * started inside the gesture, so a silent buffer is played as well as resuming the context. Returns true
+ * once the context is running.
+ */
+export function unlockAudio() {
+  const a = ac(); if (!a) return false;
+  try {
+    if (a.state === 'suspended') a.resume();
+    const buf = a.createBuffer(1, 1, a.sampleRate), src = a.createBufferSource();
+    src.buffer = buf; src.connect(a.destination); src.start(0);
+  } catch { /* ignore */ }
+  const ready = a.state === 'running';
+  if (ready && !unlockedOnce) { unlockedOnce = true; for (const fn of unlockListeners) { try { fn(); } catch { /* ignore */ } } }
+  return ready;
+}
+/** True once the audio context is running (sound and music can be heard). */
+export const audioReady = () => { const a = ctx; return !!a && a.state === 'running'; };
+/** Called once, the first time audio is unlocked. */
+export function onUnlocked(fn) { if (unlockedOnce) fn(); else unlockListeners.add(fn); return () => unlockListeners.delete(fn); }
 export function setMuted(m) { muted = !!m; for (const fn of muteListeners) { try { fn(muted); } catch { /* ignore */ } } }
 export function isMuted() { return muted; }
 /** Music and other long-running sounds subscribe here to follow the sound setting. */

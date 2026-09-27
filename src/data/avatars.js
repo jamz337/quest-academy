@@ -29,7 +29,11 @@ export const NPC_STYLES = [
   { hair: '#ffc531', skin: '#ffd6b3', top: '#8b7fd6', legs: '#229c53' },
   { hair: '#7a4a2a', skin: '#b8794a', top: '#e8d9b5', legs: '#7a4a2a' },   // shepherd
   { hair: '#2d2a4a', skin: '#ffd6b3', top: '#8b5cf6', legs: '#625f7e' },   // scribe
-  { hair: '#a8613a', skin: '#b8794a', top: '#3d8bff', legs: '#2d2a4a' }    // fisherman
+  { hair: '#a8613a', skin: '#b8794a', top: '#3d8bff', legs: '#2d2a4a' },   // fisherman
+  { hair: '#ff6fae', skin: '#ffd6b3', top: '#ffc531', legs: '#3d8bff' },   // balloon seller
+  { hair: '#2ec46a', skin: '#b8794a', top: '#8fe07c', legs: '#229c53' },   // lily pad lou
+  { hair: '#3d8bff', skin: '#d6cfc4', top: '#2d2a4a', legs: '#7c5cff' },   // dj bot
+  { hair: '#625f7e', skin: '#c98a5a', top: '#a06a3e', legs: '#5a3a22' }    // ark builder
 ];
 
 // Swatches players can pick in the profile editor. The first entries mirror the preset colours above.

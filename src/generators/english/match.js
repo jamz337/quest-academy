@@ -6,8 +6,16 @@ import { bandFor } from '../../data/grades.js';
 export const ROUNDS = 3;
 export const PAIRS_PER_ROUND = 5;
 
-export function generateRounds(grade, rng, bank = PAIRS[bandFor(grade)]) {
-  const picked = rng.sample(bank, ROUNDS * PAIRS_PER_ROUND);
+/** `weak` (skill ids) puts pairs of those skills into the draw first, so a missed skill is revisited. */
+export function generateRounds(grade, rng, bank = PAIRS[bandFor(grade)], weak = []) {
+  const weakSet = new Set(weak || []);
+  const n = ROUNDS * PAIRS_PER_ROUND;
+  let picked = rng.sample(bank, n);
+  if (weakSet.size) {
+    const wanted = rng.sample(bank.filter((p) => weakSet.has(p.k)), Math.min(PAIRS_PER_ROUND, n));
+    const rest = rng.shuffle(bank.filter((p) => !wanted.includes(p))).slice(0, n - wanted.length);
+    picked = rng.shuffle([...wanted, ...rest]);
+  }
   const rounds = [];
   for (let r = 0; r < ROUNDS; r++) {
     const pairs = picked.slice(r * PAIRS_PER_ROUND, (r + 1) * PAIRS_PER_ROUND).map((p) => ({ ...p }));

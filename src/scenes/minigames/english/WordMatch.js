@@ -8,6 +8,8 @@ import { Sfx } from '../../../systems/Audio.js';
 import { T, text } from '../../../ui/TextStyles.js';
 import { card } from '../../../ui/Card.js';
 import { enter } from '../../../ui/motion.js';
+import { weakSkills } from '../../../systems/Practice.js';
+import { trail } from '../../../ui/Scenery.js';
 
 const PAR_MS = 120000;
 const TITLES = { synonym: 'Match the words that mean the same', antonym: 'Match the opposites', definition: 'Match each word to its meaning', people: 'Match each person to what they did' };
@@ -18,7 +20,7 @@ export class WordMatch extends MinigameScene {
 
   initState() {
     const bank = this.payload.gameId === 'bible-match' ? BIBLE_PAIRS[bandFor(this.payload.grade)] : undefined;
-    return { rounds: generateRounds(this.payload.grade, this.rng, bank), rIdx: 0, done: [], mistakes: {}, left: null, right: null,
+    return { rounds: generateRounds(this.payload.grade, this.rng, bank, weakSkills(this.profile)), rIdx: 0, done: [], mistakes: {}, left: null, right: null,
       first: null, flash: null, busy: false };
   }
 
@@ -31,6 +33,11 @@ export class WordMatch extends MinigameScene {
   buildGame(area) {
     const s = this.state, ui = this.ui, r = this.round;
     if (!r) return;
+    // The trail above: every matched pair adds a creature to the parade.
+    const stripH = Math.min(72 * ui, area.h * 0.14);
+    const { stamps } = trail(this, { x: area.x, y: area.y, w: area.w, h: stripH }, { count: s.done.length, theme: this.payload.subject === 'bible' ? 'bible' : 'safari', ui });
+    if (s.pop && stamps.length) { const t = stamps[stamps.length - 1]; t.setScale(0); this.tweens.add({ targets: t, scale: 1, duration: 360, ease: 'Back.Out' }); s.pop = false; }
+    area = { x: area.x, y: area.y + stripH + 8, w: area.w, h: area.h - stripH - 8 };
     const headH = 44 * ui;
     text(this, area.x + area.w / 2, area.y + headH / 2, TITLES[r.pairs[0].k] || 'Match the pairs', { ...T.bodyBold(this, THEME.ink2), wordWrap: { width: area.w - 16 } });
     const gap = 10 * ui;
@@ -41,10 +48,18 @@ export class WordMatch extends MinigameScene {
     const rect = { x: x0, y: area.y + headH, w: colW * 2 + gap, h: cardH * PAIRS_PER_ROUND + gap * (PAIRS_PER_ROUND - 1) };
     const cells = grid(rect, 2, PAIRS_PER_ROUND, gap);
     const made = [];
+    // Ropes join the pairs already matched, from the left card to wherever its partner sits on the right.
+    const rope = this.add.graphics();
     for (let row = 0; row < PAIRS_PER_ROUND; row++) {
       const lp = row, rp = r.right[row];
       made.push(this.makeCard(cells[row * 2], r.pairs[lp].l, this.cardStyle('L', lp), () => this.tap('L', lp)));
       made.push(this.makeCard(cells[row * 2 + 1], r.pairs[rp].r, this.cardStyle('R', rp), () => this.tap('R', rp)));
+      if (s.done.includes(this.key(lp))) {
+        const partnerRow = r.right.indexOf(lp);
+        const a = cells[row * 2], b = cells[partnerRow * 2 + 1];
+        rope.lineStyle(4 * ui, THEME.gold, 1); rope.lineBetween(a.x + colW / 2 - 6, a.y, b.x - colW / 2 + 6, b.y);
+        rope.fillStyle(THEME.warningDark, 1); rope.fillCircle(a.x + colW / 2 - 6, a.y, 4 * ui); rope.fillCircle(b.x - colW / 2 + 6, b.y, 4 * ui);
+      }
     }
     enter(this, made, { from: 'up', stagger: 30 });
   }
@@ -75,7 +90,7 @@ export class WordMatch extends MinigameScene {
     s[prop] = pairIdx;
     if (s.left === null || s.right === null) { s.first = side; this.rebuild(); return; }
     if (s.left === s.right) {
-      s.done.push(this.key(pairIdx)); s.left = s.right = null; s.first = null;
+      s.done.push(this.key(pairIdx)); s.left = s.right = null; s.first = null; s.pop = true;
       Sfx.correct(); this.rebuild();
       const roundDone = this.round.pairs.every((_, i) => s.done.includes(this.key(i)));
       if (roundDone) { s.busy = true; this.time.delayedCall(700, () => this.nextRound()); }

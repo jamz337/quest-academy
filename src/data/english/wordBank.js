@@ -23,7 +23,18 @@ export const WORDS = {
     { w: 'bread', h: 'You make toast from it' }, { w: 'green', h: 'The shade of grass and leaves' },
     { w: 'happy', h: 'Feeling glad and smiling' }, { w: 'water', h: 'You drink it and swim in it' },
     { w: 'cloud', h: 'White and fluffy in the sky' }, { w: 'clock', h: 'It tells the time' },
-    { w: 'sheep', h: 'A farm animal with a woolly coat' }, { w: 'plant', h: 'It grows in soil and needs sun' }
+    { w: 'sheep', h: 'A farm animal with a woolly coat' }, { w: 'plant', h: 'It grows in soil and needs sun' },
+    { w: 'jam', h: 'A sweet spread for toast' }, { w: 'fox', h: 'A red animal with a bushy tail' },
+    { w: 'owl', h: 'A bird that hoots at night' }, { w: 'web', h: 'A spider spins it' },
+    { w: 'ant', h: 'A tiny insect that works hard' }, { w: 'bus', h: 'A big vehicle that carries lots of people' },
+    { w: 'map', h: 'It shows you where to go' }, { w: 'pen', h: 'You write with it in ink' },
+    { w: 'zoo', h: 'A place to see wild animals' }, { w: 'wave', h: 'It rolls onto the beach' },
+    { w: 'lamp', h: 'It lights up a room' }, { w: 'corn', h: 'A yellow vegetable on a cob' },
+    { w: 'bell', h: 'It rings ding-dong' }, { w: 'gate', h: 'A door in a fence' },
+    { w: 'crab', h: 'It walks sideways on the beach' }, { w: 'goat', h: 'A farm animal with horns and a beard' },
+    { w: 'nurse', h: 'This person helps the doctor care for you' }, { w: 'sand', h: 'Tiny grains on the beach' },
+    { w: 'tiger', h: 'A big striped cat' }, { w: 'candy', h: 'Sweets you eat as a treat' },
+    { w: 'bench', h: 'A long seat in the park' }, { w: 'whale', h: 'The biggest animal in the sea' }
   ],
   B: [
     { w: 'planet', h: 'Earth and Mars are these' }, { w: 'forest', h: 'A place full of trees' },
@@ -48,7 +59,18 @@ export const WORDS = {
     { w: 'magnet', h: 'It pulls metal towards it' }, { w: 'museum', h: 'A building full of old and rare things' },
     { w: 'kitchen', h: 'The room where food is cooked' }, { w: 'blanket', h: 'It keeps you warm in bed' },
     { w: 'journey', h: 'A long trip from one place to another' }, { w: 'balloon', h: 'It floats when filled with air' },
-    { w: 'penguin', h: 'A black and white bird that cannot fly' }, { w: 'dolphin', h: 'A clever sea animal that leaps' }
+    { w: 'penguin', h: 'A black and white bird that cannot fly' }, { w: 'dolphin', h: 'A clever sea animal that leaps' },
+    { w: 'compass', h: 'It points north' }, { w: 'giraffe', h: 'The tallest animal, with a long neck' },
+    { w: 'volcano', h: 'A mountain that erupts' }, { w: 'meadow', h: 'A field of grass and flowers' },
+    { w: 'anchor', h: 'It keeps a boat in place' }, { w: 'blossom', h: 'Flowers on a tree in spring' },
+    { w: 'glacier', h: 'A slow river of ice' }, { w: 'puzzle', h: 'Pieces you fit together' },
+    { w: 'engine', h: 'It makes a car go' }, { w: 'helmet', h: 'It protects your head' },
+    { w: 'insect', h: 'A bug with six legs' }, { w: 'lantern', h: 'A light you can carry' },
+    { w: 'nectar', h: 'Sweet juice bees take from flowers' }, { w: 'oxygen', h: 'The gas we breathe' },
+    { w: 'parrot', h: 'A colourful bird that can talk' }, { w: 'shadow', h: 'The dark shape you make in the sun' },
+    { w: 'tunnel', h: 'A road that goes under the ground' }, { w: 'whistle', h: 'Blow it to make a shrill sound' },
+    { w: 'yogurt', h: 'A creamy food made from milk' }, { w: 'zipper', h: 'It fastens your jacket' },
+    { w: 'desert', h: 'A hot, dry, sandy place' }
   ],
   C: [
     { w: 'beautiful', h: 'Very pretty to look at' }, { w: 'necessary', h: 'Something you must have or do' },
@@ -78,6 +100,17 @@ export const WORDS = {
     { w: 'skeleton', h: 'All the bones in a body' }, { w: 'stomach', h: 'Food goes here after you swallow' },
     { w: 'straight', h: 'Not bent or curved' }, { w: 'dictionary', h: 'A book that explains words' },
     { w: 'disappear', h: 'To vanish from sight' }, { w: 'experiment', h: 'A scientific test' },
-    { w: 'potatoes', h: 'You make chips and mash from these' }, { w: 'shoulder', h: 'Your arm joins your body here' }
+    { w: 'potatoes', h: 'You make chips and mash from these' }, { w: 'shoulder', h: 'Your arm joins your body here' },
+    { w: 'accident', h: 'Something bad that happens by chance' }, { w: 'ambitious', h: 'Wanting very much to succeed' },
+    { w: 'astronaut', h: 'A person who travels into space' }, { w: 'awkward', h: 'Clumsy or uncomfortable' },
+    { w: 'mysterious', h: 'Strange and hard to explain' }, { w: 'curious', h: 'Wanting to find things out' },
+    { w: 'delicious', h: 'Tastes wonderful' }, { w: 'descend', h: 'To go down' },
+    { w: 'equipment', h: 'The tools you need for a job' }, { w: 'exaggerate', h: 'To make something sound bigger than it is' },
+    { w: 'familiar', h: 'Well known to you' }, { w: 'hurricane', h: 'A huge, violent storm' },
+    { w: 'invisible', h: 'Cannot be seen' }, { w: 'jealous', h: 'Wanting what someone else has' },
+    { w: 'legendary', h: 'Famous from old stories' }, { w: 'miniature', h: 'Very small' },
+    { w: 'necessity', h: 'Something you cannot do without' }, { w: 'persuade', h: 'To talk someone into something' },
+    { w: 'valuable', h: 'Worth a lot of money' }, { w: 'sincerely', h: 'Truly and honestly' },
+    { w: 'suspicious', h: 'Feeling that something is not right' }, { w: 'volunteer', h: 'Someone who helps without pay' }
   ]
 };

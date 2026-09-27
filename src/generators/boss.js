@@ -5,6 +5,7 @@ import { generateRound as patternRound } from './math/patterns.js';
 import { generateRounds as grammarRounds, fillBlank } from './english/grammar.js';
 import { generateRound as programRound } from './coding/programGen.js';
 import { DIR_NAME } from './coding/interpreter.js';
+import { programText } from './coding/text.js';
 import { numericDistractors, makeChoices } from './distractors.js';
 import { PAIRS } from '../data/english/pairBank.js';
 import { WORDS } from '../data/english/wordBank.js';
@@ -21,7 +22,8 @@ function mathQuestion(grade, rng) {
   return { prompt: (r.rule ? r.rule + '\n' : '') + shown, choices: r.choices, answer: r.answer, skill: r.skill };
 }
 
-function wordsQuestion(grade, rng) {
+/** One English question of any kind (grammar, word pairs or unscrambling). Also used by Frog Hop. */
+export function wordsQuestion(grade, rng) {
   const band = bandFor(grade);
   const kind = rng.pick(['grammar', 'grammar', 'match', 'build']);
   if (kind === 'grammar') {
@@ -38,17 +40,7 @@ function wordsQuestion(grade, rng) {
   return { prompt: `Unscramble: ${scramble(w.w, rng).join(' ').toUpperCase()}\n${w.h}`, choices: rng.shuffle([w.w, ...others.map((o) => o.w)]), answer: w.w, skill: 'spelling' };
 }
 
-/** Program as short lines a child can trace without seeing the grid. */
-export function programText(blocks, depth = 0) {
-  const pad = '  '.repeat(depth);
-  return blocks.map((b) => {
-    if (b.op === 'fwd') return pad + 'Move ▲';
-    if (b.op === 'left') return pad + 'Turn ◀';
-    if (b.op === 'right') return pad + 'Turn ▶';
-    if (b.op === 'repeat') return pad + `Repeat ${b.n}:\n` + programText(b.body, depth + 1);
-    return pad + b.op;
-  }).join('\n');
-}
+export { programText };
 
 function codeQuestion(grade, rng) {
   // Only straight-line and repeat programs: with no grid on screen the answer must follow from the text alone.

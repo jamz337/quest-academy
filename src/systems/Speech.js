@@ -9,6 +9,24 @@ const synth = () => (typeof window !== 'undefined' && 'speechSynthesis' in windo
 
 export const canSpeak = () => !!synth();
 
+let primed = false;
+/**
+ * iOS only lets a page speak after speech was first started inside a user gesture; a silent utterance from
+ * the first tap unlocks automatic reading for the rest of the session. Harmless elsewhere.
+ */
+export function primeSpeech() {
+  const s = synth();
+  if (!s || primed) return false;
+  primed = true;
+  try {
+    const u = new SpeechSynthesisUtterance(' ');
+    u.volume = 0; u.rate = 2;
+    s.speak(u);
+    if (s.getVoices) s.getVoices();   // kicks off voice loading on browsers that do it lazily
+  } catch { /* ignore */ }
+  return true;
+}
+
 /** Turn on-screen text into something natural to hear: blanks become "blank", arrows become words. */
 export function speakable(text) {
   return String(text || '')

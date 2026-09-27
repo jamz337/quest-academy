@@ -3,7 +3,9 @@
 export function send(res, status, body) {
   res.statusCode = status;
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
-  res.setHeader('Cache-Control', 'no-store');
+  // A handler that chose its own caching (the public leaderboard) keeps it; everything else is private.
+  const has = typeof res.getHeader === 'function' ? res.getHeader('Cache-Control') : res.headers && res.headers['Cache-Control'];
+  if (!has) res.setHeader('Cache-Control', 'no-store');
   res.end(JSON.stringify(body));
 }
 

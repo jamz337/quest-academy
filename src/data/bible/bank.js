@@ -21,7 +21,28 @@ export const QUIZ = {
     { q: 'How many loaves did the boy have when Jesus fed 5,000 people?', a: '5', o: ['2', '7', '12'], k: 'stories', ref: 'John 6:9' },
     { q: 'Who climbed a tree to see Jesus?', a: 'Zacchaeus', o: ['Peter', 'Matthew', 'Lazarus'], k: 'people', ref: 'Luke 19' },
     { q: 'What did Jesus walk on during a storm?', a: 'Water', o: ['Clouds', 'Sand', 'Fire'], k: 'stories', ref: 'Matthew 14' },
-    { q: 'Who was David’s best friend?', a: 'Jonathan', o: ['Saul', 'Samuel', 'Goliath'], k: 'people', ref: '1 Samuel 18' }
+    { q: 'Who was David’s best friend?', a: 'Jonathan', o: ['Saul', 'Samuel', 'Goliath'], k: 'people', ref: '1 Samuel 18' },
+    { q: 'What did Jesus give the crowd of 5,000 to eat?', a: 'Bread and fish', o: ['Cake and milk', 'Rice and beans', 'Soup and honey'], k: 'stories', ref: 'Matthew 14' },
+    { q: 'Who was Cain’s brother?', a: 'Abel', o: ['Seth', 'Noah', 'Enoch'], k: 'people', ref: 'Genesis 4' },
+    { q: 'How many days did God work on creation before he rested?', a: '6', o: ['3', '7', '10'], k: 'stories', ref: 'Genesis 1–2' },
+    { q: 'What did God tell Noah to bring onto the ark?', a: 'Two of every animal', o: ['All his friends', 'A big fish', 'Only the birds'], k: 'stories', ref: 'Genesis 6' },
+    { q: 'Where did baby Moses’ mother hide him?', a: 'In a basket on the river', o: ['In a cave', 'Under a bed', 'Up a tree'], k: 'stories', ref: 'Exodus 2' },
+    { q: 'Who found baby Moses in the river?', a: 'Pharaoh’s daughter', o: ['A shepherd', 'A fisherman', 'The king of Egypt'], k: 'people', ref: 'Exodus 2' },
+    { q: 'What did Jesus calm with the words “Peace, be still”?', a: 'A storm', o: ['A lion', 'A crowd', 'A fire'], k: 'stories', ref: 'Mark 4' },
+    { q: 'What did the good shepherd go out looking for?', a: 'A lost sheep', o: ['A lost goat', 'A lost donkey', 'A lost dove'], k: 'stories', ref: 'Luke 15' },
+    { q: 'Who brought gifts of gold, frankincense and myrrh to Jesus?', a: 'The wise men', o: ['The shepherds', 'The fishermen', 'The disciples'], k: 'stories', ref: 'Matthew 2' },
+    { q: 'What did the wise men follow to find Jesus?', a: 'A star', o: ['A map', 'A river', 'A rainbow'], k: 'stories', ref: 'Matthew 2' },
+    { q: 'Which prayer did Jesus teach his disciples?', a: 'The Lord’s Prayer', o: ['The Shepherd’s Prayer', 'The Morning Prayer', 'The Temple Prayer'], k: 'stories', ref: 'Matthew 6' },
+    { q: 'What was the name of Abraham’s son?', a: 'Isaac', o: ['Jacob', 'Joseph', 'Samuel'], k: 'people', ref: 'Genesis 21' },
+    { q: 'How many brothers did Joseph have?', a: '11', o: ['2', '7', '20'], k: 'people', ref: 'Genesis 37' },
+    { q: 'What did Jesus ride into Jerusalem?', a: 'A donkey', o: ['A horse', 'A camel', 'A chariot'], k: 'stories', ref: 'Matthew 21' },
+    { q: 'What did the boy Samuel hear in the night?', a: 'God calling his name', o: ['A lion roaring', 'A trumpet', 'The sea'], k: 'stories', ref: '1 Samuel 3' },
+    { q: 'Where was Jesus baptised?', a: 'In the Jordan River', o: ['In the Red Sea', 'In a well', 'In the Sea of Galilee'], k: 'places', ref: 'Matthew 3' },
+    { q: 'What job did Peter, Andrew, James and John have before they followed Jesus?', a: 'Fishermen', o: ['Farmers', 'Soldiers', 'Builders'], k: 'people', ref: 'Matthew 4' },
+    { q: 'What did the poor widow give to God at the temple?', a: 'Two small coins', o: ['A lamb', 'A gold ring', 'A loaf of bread'], k: 'stories', ref: 'Mark 12' },
+    { q: 'Where did Jesus grow up?', a: 'Nazareth', o: ['Bethlehem', 'Jerusalem', 'Egypt'], k: 'places', ref: 'Luke 2' },
+    { q: 'What did God make to give light at night?', a: 'The moon and stars', o: ['A lamp', 'Fire', 'The sun'], k: 'stories', ref: 'Genesis 1:16' },
+    { q: 'Who did Jesus say we should love as ourselves?', a: 'Our neighbour', o: ['Only our family', 'Only our friends', 'The king'], k: 'stories', ref: 'Mark 12:31' }
   ],
   B: [
     { q: 'What is the first book of the Bible?', a: 'Genesis', o: ['Exodus', 'Matthew', 'Psalms'], k: 'books', ref: 'Genesis 1' },
@@ -43,7 +64,28 @@ export const QUIZ = {
     { q: 'Who baptised Jesus in the Jordan River?', a: 'John the Baptist', o: ['Peter', 'Andrew', 'Elijah'], k: 'people', ref: 'Matthew 3' },
     { q: 'Whom did Jesus raise from the dead after four days?', a: 'Lazarus', o: ['Jairus', 'Stephen', 'Nicodemus'], k: 'stories', ref: 'John 11' },
     { q: 'Who wrote many of the Psalms?', a: 'David', o: ['Solomon', 'Moses', 'Paul'], k: 'books', ref: 'Psalms' },
-    { q: 'Which disciple doubted until he saw Jesus’ wounds?', a: 'Thomas', o: ['Philip', 'Peter', 'James'], k: 'people', ref: 'John 20' }
+    { q: 'Which disciple doubted until he saw Jesus’ wounds?', a: 'Thomas', o: ['Philip', 'Peter', 'James'], k: 'people', ref: 'John 20' },
+    { q: 'Which book comes right after Genesis?', a: 'Exodus', o: ['Leviticus', 'Numbers', 'Matthew'], k: 'books', ref: 'Exodus' },
+    { q: 'What did Moses’ staff turn into in front of Pharaoh?', a: 'A snake', o: ['A dove', 'A river', 'A tree'], k: 'stories', ref: 'Exodus 7' },
+    { q: 'What food did God send from heaven in the desert?', a: 'Manna', o: ['Bread rolls', 'Figs', 'Honey cakes'], k: 'stories', ref: 'Exodus 16' },
+    { q: 'How many commandments did God give to Moses?', a: '10', o: ['7', '12', '40'], k: 'stories', ref: 'Exodus 20' },
+    { q: 'Which judge was betrayed by Delilah?', a: 'Samson', o: ['Gideon', 'Samuel', 'Barak'], k: 'people', ref: 'Judges 16' },
+    { q: 'Which prophet anointed David as king?', a: 'Samuel', o: ['Nathan', 'Elijah', 'Eli'], k: 'people', ref: '1 Samuel 16' },
+    { q: 'Which king built the first temple in Jerusalem?', a: 'Solomon', o: ['David', 'Saul', 'Hezekiah'], k: 'people', ref: '1 Kings 6' },
+    { q: 'What did Jesus share with his disciples at the Last Supper?', a: 'Bread and wine', o: ['Fish and honey', 'Lamb and figs', 'Milk and dates'], k: 'stories', ref: 'Luke 22' },
+    { q: 'Who was the brother of Peter?', a: 'Andrew', o: ['John', 'Philip', 'Thomas'], k: 'people', ref: 'John 1' },
+    { q: 'On which day did Jesus rise from the dead?', a: 'The third day', o: ['The first day', 'The seventh day', 'The fortieth day'], k: 'stories', ref: 'Luke 24' },
+    { q: 'Who stopped to help the hurt man when the priest and Levite walked past?', a: 'The Good Samaritan', o: ['A soldier', 'A tax collector', 'A fisherman'], k: 'stories', ref: 'Luke 10' },
+    { q: 'What did the prodigal son do with his share of the money?', a: 'Wasted it all', o: ['Saved it', 'Gave it to the poor', 'Bought a farm'], k: 'stories', ref: 'Luke 15' },
+    { q: 'How many sons did Jacob have?', a: '12', o: ['7', '10', '2'], k: 'people', ref: 'Genesis 35' },
+    { q: 'Which prophet was fed by ravens by a brook?', a: 'Elijah', o: ['Elisha', 'Jonah', 'Amos'], k: 'people', ref: '1 Kings 17' },
+    { q: 'What is the last book of the Old Testament?', a: 'Malachi', o: ['Matthew', 'Zechariah', 'Daniel'], k: 'books', ref: 'Malachi' },
+    { q: 'How many Gospels are there?', a: '4', o: ['2', '5', '12'], k: 'books', ref: 'Matthew–John' },
+    { q: 'Who wrote the book of Acts?', a: 'Luke', o: ['Paul', 'Peter', 'Matthew'], k: 'books', ref: 'Acts 1' },
+    { q: 'On which sea did Jesus walk on the water?', a: 'The Sea of Galilee', o: ['The Red Sea', 'The Dead Sea', 'The Mediterranean Sea'], k: 'places', ref: 'Matthew 14' },
+    { q: 'Which bird brought Noah an olive leaf?', a: 'A dove', o: ['An eagle', 'A sparrow', 'An owl'], k: 'stories', ref: 'Genesis 8' },
+    { q: 'Who hid the Israelite spies in Jericho?', a: 'Rahab', o: ['Ruth', 'Esther', 'Deborah'], k: 'people', ref: 'Joshua 2' },
+    { q: 'How many lepers did Jesus heal, of whom only one came back to say thank you?', a: '10', o: ['3', '7', '12'], k: 'stories', ref: 'Luke 17' }
   ],
   C: [
     { q: 'How many books are in the New Testament?', a: '27', o: ['39', '66', '12'], k: 'books', ref: 'Contents page' },
@@ -65,7 +107,28 @@ export const QUIZ = {
     { q: 'Which two books of the Bible are named after women?', a: 'Ruth and Esther', o: ['Mary and Martha', 'Ruth and Naomi', 'Esther and Deborah'], k: 'books', ref: 'Ruth; Esther' },
     { q: 'Who wrote the most letters in the New Testament?', a: 'Paul', o: ['Peter', 'John', 'James'], k: 'books', ref: 'Romans–Philemon' },
     { q: 'In which city was Jesus crucified?', a: 'Jerusalem', o: ['Bethlehem', 'Nazareth', 'Capernaum'], k: 'places', ref: 'Luke 23' },
-    { q: 'Which Roman governor sentenced Jesus?', a: 'Pontius Pilate', o: ['Herod', 'Caesar', 'Felix'], k: 'people', ref: 'Matthew 27' }
+    { q: 'Which Roman governor sentenced Jesus?', a: 'Pontius Pilate', o: ['Herod', 'Caesar', 'Felix'], k: 'people', ref: 'Matthew 27' },
+    { q: 'How many books are in the Old Testament?', a: '39', o: ['27', '66', '12'], k: 'books', ref: 'Contents page' },
+    { q: 'Which king saw the writing on the wall?', a: 'Belshazzar', o: ['Nebuchadnezzar', 'Darius', 'Cyrus'], k: 'people', ref: 'Daniel 5' },
+    { q: 'Which Persian king let the Jews return to Jerusalem?', a: 'Cyrus', o: ['Darius', 'Xerxes', 'Artaxerxes'], k: 'people', ref: 'Ezra 1' },
+    { q: 'Which prophet saw a vision of a valley of dry bones?', a: 'Ezekiel', o: ['Isaiah', 'Jeremiah', 'Daniel'], k: 'people', ref: 'Ezekiel 37' },
+    { q: 'In which city did the Holy Spirit come at Pentecost?', a: 'Jerusalem', o: ['Antioch', 'Bethlehem', 'Nazareth'], k: 'places', ref: 'Acts 2' },
+    { q: 'Which short letter did Paul write about a runaway slave?', a: 'Philemon', o: ['Titus', 'Jude', 'Philippians'], k: 'books', ref: 'Philemon' },
+    { q: 'Who was the mother of Samuel?', a: 'Hannah', o: ['Ruth', 'Naomi', 'Sarah'], k: 'people', ref: '1 Samuel 1' },
+    { q: 'Which book is a collection of wise sayings, many by Solomon?', a: 'Proverbs', o: ['Psalms', 'Ecclesiastes', 'Job'], k: 'books', ref: 'Proverbs 1' },
+    { q: 'Which disciple walked on the water towards Jesus, then began to sink?', a: 'Peter', o: ['John', 'Andrew', 'James'], k: 'stories', ref: 'Matthew 14' },
+    { q: 'In which city were the believers first called Christians?', a: 'Antioch', o: ['Rome', 'Corinth', 'Ephesus'], k: 'places', ref: 'Acts 11:26' },
+    { q: 'Which prophet confronted King David about Bathsheba?', a: 'Nathan', o: ['Samuel', 'Gad', 'Elijah'], k: 'people', ref: '2 Samuel 12' },
+    { q: 'What was Paul’s trade?', a: 'Tentmaker', o: ['Fisherman', 'Carpenter', 'Tax collector'], k: 'people', ref: 'Acts 18:3' },
+    { q: 'From which mountain did Moses see the Promised Land before he died?', a: 'Mount Nebo', o: ['Mount Sinai', 'Mount Carmel', 'Mount Hermon'], k: 'places', ref: 'Deuteronomy 34' },
+    { q: 'Who was Timothy’s mentor?', a: 'Paul', o: ['Peter', 'Barnabas', 'Apollos'], k: 'people', ref: '2 Timothy 1' },
+    { q: 'How many days was Jonah inside the fish?', a: '3', o: ['1', '7', '40'], k: 'stories', ref: 'Jonah 1:17' },
+    { q: 'Which book of the Bible is a love song?', a: 'Song of Songs', o: ['Lamentations', 'Ruth', 'Hosea'], k: 'books', ref: 'Song of Songs' },
+    { q: 'Who became the first king of the northern kingdom after Israel split in two?', a: 'Jeroboam', o: ['Rehoboam', 'Ahab', 'Omri'], k: 'people', ref: '1 Kings 12' },
+    { q: 'Which prophet was lowered into a muddy cistern for his warnings?', a: 'Jeremiah', o: ['Isaiah', 'Ezekiel', 'Amos'], k: 'people', ref: 'Jeremiah 38' },
+    { q: 'On which island was Paul shipwrecked on his way to Rome?', a: 'Malta', o: ['Cyprus', 'Crete', 'Patmos'], k: 'places', ref: 'Acts 28' },
+    { q: 'Which book mourns the fall of Jerusalem in poems of grief?', a: 'Lamentations', o: ['Job', 'Ecclesiastes', 'Habakkuk'], k: 'books', ref: 'Lamentations' },
+    { q: 'What did Elisha tell Naaman to do to be healed of leprosy?', a: 'Wash seven times in the Jordan', o: ['Climb Mount Carmel', 'Fast for forty days', 'Offer a lamb'], k: 'stories', ref: '2 Kings 5' }
   ]
 };
 
@@ -83,7 +146,18 @@ export const VERSES = {
     { t: 'Be ___ and courageous.', a: 'strong', o: ['brave', 'kind', 'quiet'], ref: 'Joshua 1:9' },
     { t: 'Your word is a lamp to my ___.', a: 'feet', o: ['eyes', 'hands', 'heart'], ref: 'Psalm 119:105' },
     { t: 'Let the little ___ come to me.', a: 'children', o: ['birds', 'sheep', 'people'], ref: 'Matthew 19:14' },
-    { t: 'Trust in the Lord with all your ___.', a: 'heart', o: ['mind', 'might', 'days'], ref: 'Proverbs 3:5' }
+    { t: 'Trust in the Lord with all your ___.', a: 'heart', o: ['mind', 'might', 'days'], ref: 'Proverbs 3:5' },
+    { t: 'The Lord is my ___ and my shield.', a: 'strength', o: ['friend', 'light', 'song'], ref: 'Psalm 28:7' },
+    { t: 'Do to others as you would have them do to ___.', a: 'you', o: ['them', 'me', 'us'], ref: 'Luke 6:31' },
+    { t: 'The Lord is good to ___.', a: 'all', o: ['kings', 'some', 'me'], ref: 'Psalm 145:9' },
+    { t: 'A new command I give you: love one ___.', a: 'another', o: ['thing', 'day', 'song'], ref: 'John 13:34' },
+    { t: 'Jesus said, “I am the good ___.”', a: 'shepherd', o: ['king', 'teacher', 'fisherman'], ref: 'John 10:11' },
+    { t: 'Be still, and know that I am ___.', a: 'God', o: ['here', 'king', 'good'], ref: 'Psalm 46:10' },
+    { t: 'Every good and perfect ___ is from above.', a: 'gift', o: ['day', 'song', 'friend'], ref: 'James 1:17' },
+    { t: 'Jesus said, “I am the ___ of the world.”', a: 'light', o: ['king', 'hope', 'joy'], ref: 'John 8:12' },
+    { t: 'Do not be ___, for I am with you.', a: 'afraid', o: ['angry', 'slow', 'sad'], ref: 'Isaiah 41:10' },
+    { t: 'This is the day the Lord has made; let us ___ and be glad in it.', a: 'rejoice', o: ['rest', 'run', 'sleep'], ref: 'Psalm 118:24' },
+    { t: 'A friend loves at all ___.', a: 'times', o: ['homes', 'games', 'meals'], ref: 'Proverbs 17:17' }
   ],
   B: [
     { t: 'The Lord is my light and my ___.', a: 'salvation', o: ['shield', 'strength', 'song'], ref: 'Psalm 27:1' },
@@ -97,7 +171,17 @@ export const VERSES = {
     { t: 'Cast all your ___ on him because he cares for you.', a: 'anxiety', o: ['hopes', 'sins', 'plans'], ref: '1 Peter 5:7' },
     { t: 'For all have sinned and fall short of the ___ of God.', a: 'glory', o: ['love', 'law', 'house'], ref: 'Romans 3:23' },
     { t: 'Honour your father and your ___.', a: 'mother', o: ['brother', 'elders', 'king'], ref: 'Exodus 20:12' },
-    { t: 'The Lord is my rock, my fortress and my ___.', a: 'deliverer', o: ['teacher', 'banner', 'judge'], ref: 'Psalm 18:2' }
+    { t: 'The Lord is my rock, my fortress and my ___.', a: 'deliverer', o: ['teacher', 'banner', 'judge'], ref: 'Psalm 18:2' },
+    { t: 'Come to me, all you who are weary and burdened, and I will give you ___.', a: 'rest', o: ['gold', 'bread', 'work'], ref: 'Matthew 11:28' },
+    { t: 'Taste and see that the Lord is ___.', a: 'good', o: ['near', 'strong', 'wise'], ref: 'Psalm 34:8' },
+    { t: 'Ask and it will be given to you; seek and you will ___.', a: 'find', o: ['rest', 'win', 'see'], ref: 'Matthew 7:7' },
+    { t: 'The Lord is near to all who ___ on him.', a: 'call', o: ['wait', 'walk', 'look'], ref: 'Psalm 145:18' },
+    { t: 'Let everything that has breath ___ the Lord.', a: 'praise', o: ['fear', 'follow', 'seek'], ref: 'Psalm 150:6' },
+    { t: 'Greater love has no one than this: to lay down one’s life for one’s ___.', a: 'friends', o: ['family', 'country', 'king'], ref: 'John 15:13' },
+    { t: 'Do not let your hearts be ___.', a: 'troubled', o: ['proud', 'hardened', 'divided'], ref: 'John 14:1' },
+    { t: 'Blessed are the ___, for they will be called children of God.', a: 'peacemakers', o: ['meek', 'merciful', 'poor'], ref: 'Matthew 5:9' },
+    { t: 'I have hidden your word in my heart that I might not ___ against you.', a: 'sin', o: ['speak', 'fight', 'turn'], ref: 'Psalm 119:11' },
+    { t: 'Commit your way to the Lord; ___ in him.', a: 'trust', o: ['rest', 'hope', 'rejoice'], ref: 'Psalm 37:5' }
   ],
   C: [
     { t: 'For the wages of sin is death, but the gift of God is ___ life.', a: 'eternal', o: ['a new', 'abundant', 'holy'], ref: 'Romans 6:23' },
@@ -111,7 +195,18 @@ export const VERSES = {
     { t: 'Whatever you do, work at it with all your ___, as working for the Lord.', a: 'heart', o: ['might', 'skill', 'mind'], ref: 'Colossians 3:23' },
     { t: 'Create in me a clean heart, O God, and renew a right ___ within me.', a: 'spirit', o: ['mind', 'hope', 'path'], ref: 'Psalm 51:10' },
     { t: 'But those who hope in the Lord will renew their ___.', a: 'strength', o: ['faith', 'hearts', 'days'], ref: 'Isaiah 40:31' },
-    { t: 'Let your ___ shine before others.', a: 'light', o: ['love', 'faith', 'joy'], ref: 'Matthew 5:16' }
+    { t: 'Let your ___ shine before others.', a: 'light', o: ['love', 'faith', 'joy'], ref: 'Matthew 5:16' },
+    { t: 'Delight yourself in the Lord, and he will give you the desires of your ___.', a: 'heart', o: ['mind', 'life', 'hands'], ref: 'Psalm 37:4' },
+    { t: 'Therefore, if anyone is in Christ, the new ___ has come.', a: 'creation', o: ['covenant', 'kingdom', 'law'], ref: '2 Corinthians 5:17' },
+    { t: 'For we walk by faith, not by ___.', a: 'sight', o: ['works', 'law', 'fear'], ref: '2 Corinthians 5:7' },
+    { t: 'In all things God works for the ___ of those who love him.', a: 'good', o: ['glory', 'peace', 'joy'], ref: 'Romans 8:28' },
+    { t: 'Act justly, love ___ and walk humbly with your God.', a: 'mercy', o: ['truth', 'wisdom', 'peace'], ref: 'Micah 6:8' },
+    { t: 'The name of the Lord is a fortified ___; the righteous run to it and are safe.', a: 'tower', o: ['wall', 'city', 'rock'], ref: 'Proverbs 18:10' },
+    { t: 'Let us not become weary in doing ___.', a: 'good', o: ['work', 'right', 'well'], ref: 'Galatians 6:9' },
+    { t: 'Be joyful in hope, patient in affliction, faithful in ___.', a: 'prayer', o: ['love', 'service', 'trials'], ref: 'Romans 12:12' },
+    { t: 'Do not conform to the pattern of this ___.', a: 'world', o: ['age', 'city', 'crowd'], ref: 'Romans 12:2' },
+    { t: 'My grace is sufficient for you, for my power is made perfect in ___.', a: 'weakness', o: ['strength', 'faith', 'prayer'], ref: '2 Corinthians 12:9' },
+    { t: 'For where two or three gather in my name, there am I with ___.', a: 'them', o: ['you', 'all', 'power'], ref: 'Matthew 18:20' }
   ]
 };
 
@@ -126,7 +221,11 @@ export const PAIRS = {
     { l: 'Jesus', r: 'was born in Bethlehem', k: 'people' }, { l: 'Zacchaeus', r: 'climbed a tree to see Jesus', k: 'people' },
     { l: 'Peter', r: 'was a fisherman who followed Jesus', k: 'people' }, { l: 'Goliath', r: 'was the giant', k: 'people' },
     { l: 'Samson', r: 'was very strong', k: 'people' }, { l: 'Esther', r: 'was a brave queen', k: 'people' },
-    { l: 'Joshua', r: 'marched around Jericho', k: 'people' }
+    { l: 'Joshua', r: 'marched around Jericho', k: 'people' },
+    { l: 'Sarah', r: 'laughed when told she would have a baby', k: 'people' }, { l: 'Martha', r: 'was busy while Mary listened to Jesus', k: 'people' },
+    { l: 'The wise men', r: 'followed the star to Jesus', k: 'people' }, { l: 'The shepherds', r: 'heard the angels sing at Bethlehem', k: 'people' },
+    { l: 'Andrew', r: 'brought his brother Peter to Jesus', k: 'people' }, { l: 'Aaron', r: 'was the brother of Moses', k: 'people' },
+    { l: 'Cain', r: 'was jealous of his brother Abel', k: 'people' }, { l: 'The Good Samaritan', r: 'helped a hurt man on the road', k: 'people' }
   ],
   B: [
     { l: 'Solomon', r: 'was the wisest king', k: 'people' }, { l: 'Saul', r: 'was the first king of Israel', k: 'people' },
@@ -137,7 +236,11 @@ export const PAIRS = {
     { l: 'Jacob', r: 'wrestled with God all night', k: 'people' }, { l: 'Deborah', r: 'was a judge of Israel', k: 'people' },
     { l: 'Gideon', r: 'won with 300 soldiers', k: 'people' }, { l: 'Elisha', r: 'picked up Elijah’s cloak', k: 'people' },
     { l: 'Miriam', r: 'was the sister of Moses', k: 'people' }, { l: 'Nehemiah', r: 'rebuilt the walls of Jerusalem', k: 'people' },
-    { l: 'Rebekah', r: 'was the wife of Isaac', k: 'people' }
+    { l: 'Rebekah', r: 'was the wife of Isaac', k: 'people' },
+    { l: 'Hannah', r: 'prayed for a son and had Samuel', k: 'people' }, { l: 'Rahab', r: 'hid the spies in Jericho', k: 'people' },
+    { l: 'Boaz', r: 'married Ruth', k: 'people' }, { l: 'Nathan', r: 'was a prophet who spoke to King David', k: 'people' },
+    { l: 'Bartimaeus', r: 'was blind and called out to Jesus', k: 'people' }, { l: 'Jairus', r: 'had a daughter Jesus raised', k: 'people' },
+    { l: 'Zechariah', r: 'was the father of John the Baptist', k: 'people' }, { l: 'Delilah', r: 'tricked Samson', k: 'people' }
   ],
   C: [
     { l: 'Paul', r: 'was the apostle to the Gentiles', k: 'people' }, { l: 'Stephen', r: 'was the first martyr', k: 'people' },
@@ -148,7 +251,11 @@ export const PAIRS = {
     { l: 'Jeremiah', r: 'was the weeping prophet', k: 'people' }, { l: 'Pontius Pilate', r: 'was the Roman governor at the trial of Jesus', k: 'people' },
     { l: 'Nicodemus', r: 'visited Jesus at night', k: 'people' }, { l: 'Mary Magdalene', r: 'first saw the risen Jesus', k: 'people' },
     { l: 'Caleb', r: 'was a faithful spy', k: 'people' }, { l: 'Melchizedek', r: 'was priest and king of Salem', k: 'people' },
-    { l: 'Lydia', r: 'sold purple cloth', k: 'people' }
+    { l: 'Lydia', r: 'sold purple cloth', k: 'people' },
+    { l: 'Apollos', r: 'was a gifted preacher from Alexandria', k: 'people' }, { l: 'Silas', r: 'sang in prison with Paul', k: 'people' },
+    { l: 'Cornelius', r: 'was a Roman centurion who believed', k: 'people' }, { l: 'Naaman', r: 'was healed by washing in the Jordan', k: 'people' },
+    { l: 'Belshazzar', r: 'saw the writing on the wall', k: 'people' }, { l: 'Cyrus', r: 'let the Jews go home to Jerusalem', k: 'people' },
+    { l: 'Ezra', r: 'read the law to the people', k: 'people' }, { l: 'Priscilla', r: 'taught Apollos with her husband Aquila', k: 'people' }
   ]
 };
 
@@ -159,20 +266,29 @@ export const ORDER = {
     { title: 'David and Goliath', steps: ['Goliath challenges the Israelites', 'David picks five smooth stones', 'David swings his sling', 'Goliath falls down'], ref: '1 Samuel 17' },
     { title: 'Jonah', steps: ['God tells Jonah to go to Nineveh', 'Jonah sails the other way', 'A big fish swallows Jonah', 'Jonah goes to Nineveh at last'], ref: 'Jonah 1–3' },
     { title: 'The birth of Jesus', steps: ['Mary and Joseph travel to Bethlehem', 'There is no room at the inn', 'Jesus is born and laid in a manger', 'Shepherds come to see him'], ref: 'Luke 2' },
-    { title: 'Creation', steps: ['God makes light', 'God makes the sea and the land', 'God makes the animals', 'God rests on the seventh day'], ref: 'Genesis 1–2' }
+    { title: 'Creation', steps: ['God makes light', 'God makes the sea and the land', 'God makes the animals', 'God rests on the seventh day'], ref: 'Genesis 1–2' },
+    { title: 'The lost sheep', steps: ['A shepherd has a hundred sheep', 'One sheep wanders away', 'The shepherd searches until he finds it', 'He carries it home and celebrates'], ref: 'Luke 15' },
+    { title: 'Zacchaeus', steps: ['Zacchaeus is too short to see Jesus', 'He climbs a sycamore tree', 'Jesus calls him down by name', 'Zacchaeus gives back what he took'], ref: 'Luke 19' },
+    { title: 'The wise men', steps: ['A star rises in the east', 'The wise men visit King Herod', 'They find Jesus and give him gifts', 'They go home by another road'], ref: 'Matthew 2' }
   ],
   B: [
     { title: 'Joseph', steps: ['Joseph gets a coat of many colours', 'His brothers sell him into Egypt', 'Joseph explains Pharaoh’s dreams', 'Joseph forgives his brothers'], ref: 'Genesis 37–45' },
     { title: 'Moses and the Exodus', steps: ['Moses sees the burning bush', 'Ten plagues come upon Egypt', 'The Red Sea parts', 'Moses receives the Ten Commandments'], ref: 'Exodus 3–20' },
     { title: 'Daniel', steps: ['Daniel is taken to Babylon', 'Daniel keeps praying to God', 'Daniel is thrown to the lions', 'God shuts the lions’ mouths'], ref: 'Daniel 1–6' },
     { title: 'Easter', steps: ['Jesus rides into Jerusalem', 'Jesus shares the Last Supper', 'Jesus dies on the cross', 'Jesus rises on the third day'], ref: 'Luke 19–24' },
-    { title: 'Ruth', steps: ['Naomi’s husband and sons die', 'Ruth stays with Naomi', 'Ruth gathers grain in Boaz’s field', 'Ruth marries Boaz'], ref: 'Ruth 1–4' }
+    { title: 'Ruth', steps: ['Naomi’s husband and sons die', 'Ruth stays with Naomi', 'Ruth gathers grain in Boaz’s field', 'Ruth marries Boaz'], ref: 'Ruth 1–4' },
+    { title: 'The Good Samaritan', steps: ['A man is attacked on the road to Jericho', 'A priest and a Levite walk past', 'A Samaritan stops and bandages him', 'He pays for the man to stay at an inn'], ref: 'Luke 10' },
+    { title: 'Jesus feeds five thousand', steps: ['A crowd follows Jesus into the countryside', 'A boy offers five loaves and two fish', 'Jesus gives thanks and breaks the bread', 'Twelve baskets are left over'], ref: 'John 6' },
+    { title: 'Samuel', steps: ['Hannah prays for a son', 'Samuel serves in the temple with Eli', 'God calls Samuel in the night', 'Samuel becomes a prophet'], ref: '1 Samuel 1–3' }
   ],
   C: [
     { title: 'Paul', steps: ['Saul persecutes the church', 'A light blinds Saul on the road to Damascus', 'Paul preaches on missionary journeys', 'Paul writes letters from prison'], ref: 'Acts 9–28' },
     { title: 'Esther', steps: ['Esther becomes queen', 'Haman plots against the Jews', 'Esther risks her life before the king', 'The Jews are saved'], ref: 'Esther 2–9' },
     { title: 'Elijah', steps: ['Ravens feed Elijah by the brook', 'Elijah challenges the prophets of Baal', 'Fire falls on the altar', 'Elijah goes to heaven in a chariot'], ref: '1 Kings 17 – 2 Kings 2' },
     { title: 'The early church', steps: ['Jesus returns to heaven', 'The Holy Spirit comes at Pentecost', 'Stephen becomes the first martyr', 'Peter is freed from prison'], ref: 'Acts 1–12' },
-    { title: 'Nehemiah', steps: ['Nehemiah hears the walls are broken', 'The king lets him go to Jerusalem', 'The people rebuild the walls', 'Ezra reads the law to everyone'], ref: 'Nehemiah 1–8' }
+    { title: 'Nehemiah', steps: ['Nehemiah hears the walls are broken', 'The king lets him go to Jerusalem', 'The people rebuild the walls', 'Ezra reads the law to everyone'], ref: 'Nehemiah 1–8' },
+    { title: 'Pentecost', steps: ['The disciples wait in Jerusalem', 'A sound like a rushing wind fills the house', 'Tongues of fire rest on each of them', 'Peter preaches and three thousand believe'], ref: 'Acts 2' },
+    { title: 'Peter’s escape', steps: ['Herod puts Peter in prison', 'The church prays through the night', 'An angel wakes Peter and the chains fall off', 'Peter knocks at the door where they are praying'], ref: 'Acts 12' },
+    { title: 'The fiery furnace', steps: ['The king builds a golden statue', 'Shadrach, Meshach and Abednego refuse to bow', 'They are thrown into the fiery furnace', 'They walk out unharmed'], ref: 'Daniel 3' }
   ]
 };

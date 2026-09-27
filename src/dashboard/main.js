@@ -88,6 +88,9 @@ function childCard(c) {
   const wk = c.week || { plays: 0, stars: 0, minutes: 0 };
   const weekLine = wk.plays ? `This week: ${wk.plays} ${wk.plays === 1 ? 'game' : 'games'}, ${wk.stars} ★, ${wk.minutes} min` : 'No games this week yet';
   const badges = c.badges.length ? c.badges.map((id) => `<span class="badge">🏅 ${esc(getBadge(id)?.title || id)}</span>`).join('') : '<span class="muted">No badges yet.</span>';
+  const review = c.reviewQueue
+    ? `<div class="tip">📚 <b>${c.reviewDue}</b> ${c.reviewDue === 1 ? 'question is' : 'questions are'} due for a quick review at the start of the next game (${c.reviewQueue} in the queue). Each one comes back a day, three days and a week later until it sticks.</div>`
+    : '<div class="muted">Nothing waiting for review. Missed questions come back here on a spaced schedule.</div>';
   return `<section class="card">
     <div class="row"><canvas class="avatar" data-avatar="${c.avatar | 0}" data-look="${esc(JSON.stringify(c.look || null))}" width="48" height="48"></canvas>
       <div class="grow"><h2>${esc(c.name)}</h2><div class="muted">Grade ${c.grade} · last played ${when(c.lastPlayed)} · ${weekLine}</div></div></div>
@@ -97,12 +100,45 @@ function childCard(c) {
       <div class="stat"><b>${c.stars}</b><span>Stars of ${MINIGAMES.length * 3}</span></div><div class="stat"><b>${c.coins}</b><span>Coins</span></div>
       <div class="stat"><b>${c.codingLevels}</b><span>Mazes solved</span></div><div class="stat"><b>${c.minutes}</b><span>Minutes played</span></div>
     </div>
+    <h3>Last two weeks</h3>${activityChart(c.days || [])}
+    <h3>Skills over time</h3>${trendTable(c.skillTrend || [])}
     <h3>Skills to practise, and what helps at home</h3><div>${practise}</div>
+    <h3>Review queue</h3>${review}
     <h3>Questions missed recently</h3>${misses ? `<table><tr><th>When</th><th>Question</th><th>Answer</th><th>Skill</th></tr>${misses}</table>` : '<div class="muted">None recorded yet. Ask about these at dinner when they appear!</div>'}
     <h3>Badges</h3><div>${badges}</div>
     <h3>Games</h3><table><tr><th>Subject</th><th>Game</th><th>Best</th><th></th></tr>${gameRows}</table>
     <h3>Recent activity</h3>${recent ? `<table><tr><th>When</th><th>Game</th><th>Stars</th><th>Score</th><th></th></tr>${recent}</table>` : '<div class="muted">No games recorded yet. Results appear here after each game played while signed in.</div>'}
   </section>`;
+}
+
+/** Fourteen bars, one per day: games played, with stars as the label. */
+function activityChart(days) {
+  if (!days.length || !days.some((d) => d.plays)) return '<div class="muted">No games in the last two weeks.</div>';
+  const max = Math.max(1, ...days.map((d) => d.plays));
+  const W = 560, H = 120, pad = 22, bw = (W - pad * 2) / days.length;
+  const bars = days.map((d, i) => {
+    const h = (d.plays / max) * (H - 40), x = pad + i * bw + 3, y = H - 24 - h;
+    const label = new Date(d.day + 'T12:00:00Z').toLocaleDateString(undefined, { weekday: 'narrow' });
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${(bw - 6).toFixed(1)}" height="${h.toFixed(1)}" rx="5" fill="${d.plays ? 'var(--primary)' : 'var(--line)'}"><title>${d.day}: ${d.plays} games, ${d.stars} stars, ${d.minutes} min</title></rect>` +
+      (d.plays ? `<text x="${(x + (bw - 6) / 2).toFixed(1)}" y="${(y - 5).toFixed(1)}" text-anchor="middle" font-size="11" fill="var(--ink2)">${d.plays}</text>` : '') +
+      `<text x="${(x + (bw - 6) / 2).toFixed(1)}" y="${H - 8}" text-anchor="middle" font-size="10" fill="var(--ink3)">${esc(label)}</text>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Games played per day">${bars}</svg>`;
+}
+
+/** One row per skill: accuracy this week as a bar, and the change against the three weeks before. */
+function trendTable(rows) {
+  if (!rows.length) return '<div class="muted">Skill trends appear after a few games played while signed in.</div>';
+  const pct = (r, t) => (t ? Math.round((r / t) * 100) : null);
+  const body = rows.map((s) => {
+    const now = pct(s.right, s.total), before = pct(s.prevRight, s.prevTotal);
+    const shown = now ?? before;
+    const bar = shown === null ? '' : `<div style="background:var(--sunken);border-radius:999px;height:10px;overflow:hidden"><div style="width:${shown}%;height:10px;background:${shown >= 80 ? 'var(--success)' : shown >= 60 ? 'var(--warning)' : 'var(--danger)'}"></div></div>`;
+    const delta = now !== null && before !== null ? now - before : null;
+    const arrow = delta === null ? '<span class="muted">new</span>' : delta > 4 ? `<span class="subject-words">▲ ${delta}%</span>` : delta < -4 ? `<span style="color:var(--danger);font-weight:600">▼ ${-delta}%</span>` : '<span class="muted">steady</span>';
+    return `<tr><td>${esc(skillLabel(s.skill))}</td><td style="min-width:120px">${bar}</td><td>${shown === null ? '–' : shown + '%'}</td><td>${now === null ? '' : `${s.right}/${s.total}`}</td><td>${arrow}</td></tr>`;
+  }).join('');
+  return `<table><tr><th>Skill</th><th>This week</th><th></th><th>Right</th><th>vs before</th></tr>${body}</table>`;
 }
 
 // Same colours as the in-game avatars, drawn as a simple face so the page needs no game assets.

@@ -109,7 +109,7 @@ export class PatternBridge extends MinigameScene {
     if (s.locked) return;
     s.locked = true; s.picked = i;
     const right = r.choices[i] === r.answer;
-    this.logQuestion({ skill: r.skill, prompt: r.terms.map((t, j) => (j === r.missingIndex ? '?' : t)).join(', '), answer: r.answer }, right);
+    this.logQuestion({ skill: r.skill, prompt: (r.rule ? r.rule + '\n' : '') + r.terms.map((t, j) => (j === r.missingIndex ? '?' : t)).join(', '), answer: r.answer, choices: r.choices }, right);
     if (right) { s.correct += 1; this.correctFeedback(); }
     else { s.missed[r.skill] = (s.missed[r.skill] || 0) + 1; this.wrongFeedback(); }
     this.rebuild();

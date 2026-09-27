@@ -8,8 +8,9 @@ import { button, speakButton } from '../../../ui/Button.js';
 import { readable } from '../../../ui/ReadableText.js';
 import { card } from '../../../ui/Card.js';
 import { stripe } from '../../../ui/Panel.js';
-import { enter } from '../../../ui/motion.js';
+import { enter, shake } from '../../../ui/motion.js';
 import { prioritiseWeak, weakSkills } from '../../../systems/Practice.js';
+import { castleGate } from '../../../ui/Scenery.js';
 
 const PAR_MS = 90000;
 
@@ -45,6 +46,10 @@ export class GrammarGate extends MinigameScene {
       s.introduced[r.skill] = true;
       if (example) return this.introPanel(area, r.skill, example, () => this.rebuild());
     }
+    // The gate above: every right answer raises the portcullis a little; the last one opens the way.
+    const stripH = Math.min(112 * ui, area.h * 0.2);
+    this.drawGate({ x: area.x, y: area.y, w: area.w, h: stripH });
+    area = { x: area.x, y: area.y + stripH + 8, w: area.w, h: area.h - stripH - 8 };
     const gap = 12;
     const promptH = Math.min(area.h * 0.42, 260 * ui);
     const cx = area.x + area.w / 2;
@@ -73,12 +78,20 @@ export class GrammarGate extends MinigameScene {
     if (s.picked !== null && s.picked !== r.answer) this.explanationPanel(area, { ...r, prompt: fillBlank(r.sentence), answer: r.options[r.answer] }, () => this.next());
   }
 
+  drawGate(rect) {
+    const s = this.state, total = s.rounds.length;
+    const justRight = s.picked !== null && s.picked === this.round.answer, justWrong = s.picked !== null && !justRight;
+    const { bars, yFor } = castleGate(this, rect, { open: (s.correct - (justRight ? 1 : 0)) / total, ui: this.ui });
+    if (justRight) this.tweens.add({ targets: bars, y: yFor(s.correct / total), duration: 450, ease: 'Sine.InOut' });
+    else if (justWrong) shake(this, bars, 4);
+  }
+
   pick(i) {
     const s = this.state, r = this.round;
     if (s.locked) return;
     s.locked = true; s.picked = i;
     const right = i === r.answer;
-    this.logQuestion({ skill: r.skill, prompt: fillBlank(r.sentence), answer: r.options[r.answer] }, right);
+    this.logQuestion({ skill: r.skill, prompt: fillBlank(r.sentence), answer: r.options[r.answer], choices: r.options }, right);
     if (right) { s.correct += 1; this.correctFeedback(); }
     else { s.missed[r.skill] = (s.missed[r.skill] || 0) + 1; this.wrongFeedback(); }
     this.rebuild();

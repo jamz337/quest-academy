@@ -8,6 +8,7 @@ import { button, speakButton } from '../../../ui/Button.js';
 import { readable } from '../../../ui/ReadableText.js';
 import { card, tile } from '../../../ui/Card.js';
 import { enter, shake } from '../../../ui/motion.js';
+import { bookshelf } from '../../../ui/Scenery.js';
 
 const PAR_MS = 120000;
 const MAX_TRIES = 3;
@@ -19,7 +20,7 @@ export class WordBuilder extends MinigameScene {
   initState() {
     const rounds = generateRounds(this.payload.grade, this.rng, 8);
     return { rounds, idx: 0, correct: 0, slots: new Array(rounds[0].word.length).fill(null),
-      attempts: 0, hinted: false, result: null, locked: false, missed: 0 };
+      attempts: 0, hinted: false, result: null, locked: false, missed: 0, solved: [] };
   }
 
   get round() { return this.state.rounds[this.state.idx]; }
@@ -30,6 +31,11 @@ export class WordBuilder extends MinigameScene {
   buildGame(area) {
     const s = this.state, ui = this.ui, r = this.round;
     if (!r) return;
+    // The librarian's shelf: every word built becomes a book on it.
+    const stripH = Math.min(86 * ui, area.h * 0.16);
+    const { books } = bookshelf(this, { x: area.x, y: area.y, w: area.w, h: stripH }, { words: s.solved, slots: s.rounds.length, ui });
+    if (s.result === 'right' && books.length) { const b = books[books.length - 1]; b.setScale(0); this.tweens.add({ targets: b, scale: 1, duration: 380, ease: 'Back.Out' }); }
+    area = { x: area.x, y: area.y + stripH + 8, w: area.w, h: area.h - stripH - 8 };
     const hintH = 76 * ui;
     const hint = card(this, area.x + area.w / 2, area.y + hintH / 2, area.w, hintH);
     const hintText = readable(this, area.x + area.w / 2 - 16 * ui, area.y + hintH / 2, `Hint: ${r.hint}`, T.body(this), { width: area.w - 80 * ui });
@@ -119,7 +125,7 @@ export class WordBuilder extends MinigameScene {
     const typed = s.slots.map((ti) => r.scrambled[ti]).join('');
     s.locked = true;
     if (typed === r.word) {
-      s.correct += 1; s.result = 'right'; this.correctFeedback(); this.rebuild();
+      s.correct += 1; s.result = 'right'; s.solved.push(r.word); this.correctFeedback(); this.rebuild();
       this.time.delayedCall(600, () => this.next());
       return;
     }
