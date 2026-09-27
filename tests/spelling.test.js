@@ -14,19 +14,20 @@ const { SpellingScene } = await import('../src/scenes/SpellingScene.js');
 const { Rng } = await import('../src/systems/Rng.js');
 
 describe('spelling lists', () => {
-  it('exist for grades 2 and 4, with lowercase unique words, and map every grade to one of them', () => {
+  it('exist for grades 2 and 4, with unique words that keep their capitals, and map every grade to one of them', () => {
     expect(SPELLING_GRADES).toEqual([2, 4]);
     for (const g of SPELLING_GRADES) for (const l of SPELLING_LISTS[g]) {
       const words = listWords(l).map((e) => e.w);
       expect(words.length).toBeGreaterThanOrEqual(5);
       expect(new Set(words).size).toBe(words.length);
-      for (const w of words) expect(w).toMatch(/^[a-z'-]+$/);
+      for (const w of words) expect(w).toMatch(/^[a-zA-Z'-]+$/);
+      for (const e of listWords(l)) expect(e.pic, e.w).toBeTruthy();   // every word has a picture
       expect(getList(l.id)).toBe(l);
     }
     expect(spellingGradeFor(2)).toBe(2); expect(spellingGradeFor(3)).toBe(2); expect(spellingGradeFor(4)).toBe(4); expect(spellingGradeFor(8)).toBe(4);
     expect(listsForGrade(6)).toBe(SPELLING_LISTS[4]);
-    expect(listWords({ words: ['co-co-nut', { w: 'Because', s: 'A sentence.' }] })).toEqual([{ w: 'coconut', syl: 'co-co-nut', s: null }, { w: 'because', syl: 'because', s: 'A sentence.' }]);
-    expect(listWords(SPELLING_LISTS[4][0]).map((e) => e.w)).toContain('caribbean');
+    expect(listWords({ words: ['co-co-nut', { w: 'Because', s: 'A sentence.' }] })).toEqual([{ w: 'coconut', syl: 'co-co-nut', s: null, pic: null }, { w: 'Because', syl: 'Because', s: 'A sentence.', pic: null }]);
+    expect(listWords(SPELLING_LISTS[4][0]).map((e) => e.w)).toContain('Caribbean');
   });
 });
 
@@ -67,13 +68,19 @@ describe('spelling progress', () => {
     expect(markSpelling('becuase', 'because')).toMatchObject({ right: false });
     expect(markSpelling('becuase', 'because').marks.map((m) => m.ok)).toEqual([true, true, true, false, false, true, true]);
     expect(markSpelling('cat', 'cats').marks.at(-1)).toMatchObject({ ch: 's', missing: true });
-    expect(markSpelling('CATS', 'cats').right).toBe(true);
+    // Case counts: the right letters in the wrong case are marked amber, and the result says so.
+    expect(markSpelling('CATS', 'cats')).toMatchObject({ right: false, caseOnly: true });
+    expect(markSpelling('caribbean', 'Caribbean').marks[0]).toMatchObject({ ch: 'c', ok: false, wrongCase: true });
+    expect(markSpelling('caribbean', 'Caribbean').marks[1]).toMatchObject({ ch: 'a', ok: true, wrongCase: false });
+    expect(markSpelling('Caribbean', 'Caribbean')).toMatchObject({ right: true, caseOnly: false });
+    expect(markSpelling('Caribean', 'Caribbean').caseOnly).toBe(false);
   });
 
   it('pays session rewards, keeps list bests and survives a save round-trip; the dashboard summarises it', () => {
     const p = newProfile({ name: 'A', grade: 2 });
-    expect(sessionReward(10, 10)).toEqual({ coins: 30, xp: 70, stars: 3 });
-    expect(sessionReward(7, 10)).toEqual({ coins: 14, xp: 35, stars: 2 });
+    expect(sessionReward(10, 10)).toEqual({ coins: 30, bonus: 0, xp: 70, stars: 3 });
+    expect(sessionReward(7, 10)).toEqual({ coins: 14, bonus: 0, xp: 35, stars: 2 });
+    expect(sessionReward(7, 10, 5)).toMatchObject({ coins: 19, bonus: 5 });
     const r = finishSession(p, 'g2-1', 9, 10);
     expect(r.stars).toBe(3); expect(p.coins).toBe(18); expect(p.spelling.lists['g2-1']).toEqual({ best: 3, plays: 1 });
     const save = defaultSave(); save.profiles[p.id] = p;
@@ -218,7 +225,7 @@ describe('Spelling Bee teaching (headless)', () => {
     expect(letterRow(scene, { cx: 100, cy: 20, letters: [{ ch: 'a', look: 'ok' }, { ch: '', look: 'blank' }], size: 30, gap: 4 })).toHaveLength(2);
     expect(fitTile(11, 300, 6, 44, 18)).toBeCloseTo((300 - 60) / 11, 5);
     expect(fitTile(2, 300, 6, 44, 18)).toBe(44);
-    expect(keyFromEvent({ key: 'Q' })).toBe('q'); expect(keyFromEvent({ key: 'Backspace' })).toBe('⌫'); expect(keyFromEvent({ key: 'Shift' })).toBeNull();
+    expect(keyFromEvent({ key: 'Q' })).toBe('Q'); expect(keyFromEvent({ key: 'q' })).toBe('q'); expect(keyFromEvent({ key: 'Backspace' })).toBe('⌫'); expect(keyFromEvent({ key: 'Shift' })).toBeNull();
   });
 });
 
@@ -231,7 +238,7 @@ describe('sentences, patterns, tracing and the weekly test', () => {
   it('every list word has a sentence that uses it, and shared letter patterns are found', () => {
     for (const g of SPELLING_GRADES) for (const l of SPELLING_LISTS[g]) for (const e of listWords(l)) {
       expect(e.s, e.w).toBeTruthy();
-      expect(e.s.toLowerCase(), e.w).toContain(e.w);
+      expect(e.s.toLowerCase(), e.w).toContain(e.w.toLowerCase());
     }
     const g2 = findPatterns(listWords(SPELLING_LISTS[2][0]).map((e) => e.w));
     expect(g2.map((p) => p.letters)).toContain('er');
@@ -290,5 +297,119 @@ describe('sentences, patterns, tracing and the weekly test', () => {
     expect(spellingSummary(p).tests[0]).toMatchObject({ listId: 'g2-1', correct: 7 });
     for (let i = 0; i < 35; i++) recordTest(p, 'g2-1', i, 8, i);
     expect(p.spelling.tests.length).toBe(30);
+  });
+});
+
+const Speech = await import('../src/systems/Speech.js');
+const { ensureSpelling, comboBonus, totalRight } = await import('../src/systems/Spelling.js');
+const { letterKeyboard } = await import('../src/ui/SpellingWidgets.js');
+const { BADGES } = await import('../src/data/badges.js');
+
+describe('capitals, spoken letters, pictures and honey', () => {
+  const learn = (data) => { const s = new SpellingLearnScene(); fakeSystems(s); s.init(data); s.create({}); return s; };
+  const game = (data) => { const s = new SpellingGameScene(); fakeSystems(s); s.init(data); s.create({}); return s; };
+  const keyLabels = (scene) => scene.objs.filter((o) => o.active !== false && o.text && typeof o.text.text === 'string').map((o) => o.text.text);
+
+  it('keeps the capital C of Caribbean: the keyboard has a one-shot shift key and lowercase is marked as wrong case', () => {
+    Store.updateProfile((p) => { p.grade = 4; });
+    const s = game({ listId: 'g4-1' });
+    s.state.rounds[0] = { word: 'Caribbean', syllables: 'Car-ib-be-an', sentence: null, pic: '🏝️', mode: 'listen', blanks: [] };
+    s.state.phase = 'type'; s.rebuild();
+    expect(keyLabels(s)).toContain('q'); expect(keyLabels(s)).toContain('⇧');
+    s.type('⇧');
+    expect(s.state.shift).toBe(true);
+    expect(keyLabels(s)).toContain('Q'); expect(keyLabels(s)).not.toContain('q');
+    s.type('C');
+    expect(s.state.shift).toBe(false);   // shift covers one letter
+    for (const ch of 'aribbean') s.type(ch);
+    s.check();
+    expect(s.state.right).toBe(true);
+    // Typed all in lowercase: the letters are right but the case is not.
+    const t = game({ listId: 'g4-1' });
+    t.state.rounds[0] = { word: 'Caribbean', syllables: 'Car-ib-be-an', sentence: null, pic: '🏝️', mode: 'listen', blanks: [] };
+    t.state.phase = 'type'; t.rebuild();
+    for (const ch of 'caribbean') t.type(ch);
+    t.check();
+    expect(t.state.right).toBe(false); expect(t.state.caseOnly).toBe(true);
+    expect(t.objs.some((o) => typeof o.text === 'string' && o.text.includes('capital letters'))).toBe(true);
+    expect(t.objs.some((o) => typeof o.text === 'string' && o.text === 'It is spelt  Caribbean')).toBe(true);
+    // A physical keyboard types the case it sends.
+    const u = game({ listId: 'g4-1' });
+    u.state.rounds[0] = { word: 'Caribbean', syllables: 'Car-ib-be-an', sentence: null, pic: null, mode: 'listen', blanks: [] };
+    u.state.phase = 'type'; u.rebuild();
+    u.keyDown({ key: 'C' }); u.keyDown({ key: 'a' });
+    expect(u.state.typed).toBe('Ca');
+    // Old lowercase progress carries over to the capitalised key.
+    const p = newProfile({ name: 'B', grade: 4 });
+    p.spelling = { words: { caribbean: { right: 2, wrong: 0, streak: 2, heardRight: 1 } }, lists: {}, sessions: 0 };
+    ensureSpelling(p);
+    expect(p.spelling.words.Caribbean).toMatchObject({ right: 2 }); expect(p.spelling.words.caribbean).toBeUndefined();
+    const fake = fakeSystems({ ui: 1 });
+    expect(letterKeyboard(fake, { x: 0, y: 0, w: 300, h: 240 }, { onKey() {}, onCheck() {} }).keys).toHaveLength(29);
+    expect(letterKeyboard(fake, { x: 0, y: 0, w: 300, h: 240 }, { onKey() {}, onCheck() {}, onShift() {} }).keys).toHaveLength(30);
+  });
+
+  it('says each typed letter to a grade 2 child, in the game and while copying, but not to grade 4', () => {
+    Store.updateProfile((p) => { p.grade = 2; });
+    Speech.speak.mockClear();
+    const s = game({ listId: 'g2-1' });
+    if (s.state.phase === 'show') s.hideWord();
+    s.type('s'); s.type('⇧'); s.type('C'); s.type('⌫');
+    const said = Speech.speak.mock.calls.map((c) => c[0]);
+    expect(said).toContain('S'); expect(said).toContain('capital C');
+    expect(said.filter((x) => x === 'S' || x === 'capital C')).toHaveLength(2);   // backspace and shift say nothing
+    const l = learn({ listId: 'g2-1' });
+    while (l.state.stage === 'patterns') l.advance();
+    l.state.step = 'copy'; l.state.result = null; l.rebuild();
+    Speech.speak.mockClear();
+    l.type('h');
+    expect(Speech.speak).toHaveBeenCalledWith('H', expect.anything());
+    Store.updateProfile((p) => { p.grade = 4; });
+    Speech.speak.mockClear();
+    const g4 = game({ listId: 'g4-1' });
+    if (g4.state.phase === 'show') g4.hideWord();
+    g4.type('c');
+    expect(Speech.speak.mock.calls.map((c) => c[0])).not.toContain('C');
+    Store.updateProfile((p) => { p.grade = 2; });
+  });
+
+  it('shows the word picture, sends honey to the pot for each right answer and pays a bonus for a run of three', () => {
+    Store.updateProfile((p) => { p.spelling = { words: {}, lists: {}, sessions: 0 }; p.badges = []; });
+    const s = game({ listId: 'g2-1' });
+    expect(s.pic).toBeTruthy();   // every grade 2 word has a picture
+    expect(s.honey.text.text).toBe('🍯 0');
+    expect(comboBonus(2)).toBe(0); expect(comboBonus(3)).toBe(5); expect(comboBonus(6)).toBe(5);
+    let n = 0;
+    while (!s.state.done) {
+      if (s.state.phase === 'show') s.hideWord();
+      s.state.typed = s.target(); s.check(); n += 1;
+      if (n === 3) { expect(s.state.combo).toBe(3); expect(s.state.bonus).toBe(5); expect(s.honey.text.text).toBe('🍯 3'); }
+      if (s.state.phase === 'result') s.next();
+    }
+    expect(s.state.bestCombo).toBe(8);
+    expect(s.state.reward).toMatchObject({ bonus: 10, coins: 8 * 2 + 10 + 10 });
+    expect(s.state.newBadges).toContain('on-fire'); expect(s.state.newBadges).toContain('perfect');
+    expect(s.objs.some((o) => typeof o.text === 'string' && o.text.includes('best run 8 in a row'))).toBe(true);
+    // The weekly test hides the honey pot (nothing is revealed until the end).
+    const t = game({ listId: 'g2-1', test: true });
+    expect(t.honey).toBeNull();
+    expect(BADGES.find((b) => b.id === 'spelling-bee').test(Store.getProfile())).toBe(false);
+    Store.updateProfile((p) => { for (const e of listWords(SPELLING_LISTS[2][0])) p.spelling.words[e.w] = { right: 3, wrong: 0, streak: 3, heardRight: 3 }; });
+    expect(BADGES.find((b) => b.id === 'spelling-bee').test(Store.getProfile())).toBe(true);
+    expect(totalRight(Store.getProfile())).toBe(24);
+  });
+
+  it('the flash card shows the picture big, and copying a word first time adds honey', () => {
+    const l = learn({ listId: 'g2-1' });
+    while (l.state.stage === 'patterns') l.advance();
+    expect(l.state.step).toBe('card');
+    expect(l.pic).toBeTruthy();
+    expect(l.objs.some((o) => typeof o.text === 'string' && o.text === l.entry.pic)).toBe(true);
+    l.state.step = 'copy'; l.state.result = null; l.state.typed = ''; l.rebuild();
+    for (const ch of l.entry.word) l.type(ch);
+    l.checkCopy();
+    expect(l.state.result).toBe('right'); expect(l.state.honey).toBe(1); expect(l.state.firstTries).toBe(1);
+    expect(l.honey.text.text).toBe('🍯 1');
+    expect(l.objs.some((o) => typeof o.text === 'string' && o.text.includes('first time'))).toBe(true);
   });
 });

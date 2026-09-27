@@ -1,6 +1,8 @@
 import { NPCS } from './world/npcs.js';
 import { ERRANDS } from './world/errands.js';
 import { MINIGAMES, gamesForSubject } from './minigames.js';
+import { SPELLING_LISTS, listWords } from './spelling/lists.js';
+import { isLearned, totalRight } from '../systems/Spelling.js';
 
 const bestStars = (profile, id) => profile.games[id]?.bestStars || 0;
 const subjectStars = (profile, subject) => gamesForSubject(subject).reduce((s, g) => s + bestStars(profile, g.id), 0);
@@ -24,7 +26,10 @@ export const BADGES = [
   { id: 'helper', title: 'Helping Hand', desc: 'Finish 5 errands for the villagers', test: (p) => Object.values(p.world.errands || {}).filter((s) => s === 'done').length >= 5 },
   { id: 'errand-hero', title: 'Errand Hero', desc: 'Finish every errand', test: (p) => Object.values(p.world.errands || {}).filter((s) => s === 'done').length >= ERRANDS.length },
   { id: 'house-3', title: 'Three Stars', desc: 'Pass all three levels at a house', test: (p) => Object.values(p.games).some((g) => (g.gradeUp | 0) > 0 || (g.levels && [1, 2, 3].every((n) => (g.levels[n] || 0) >= 1))) },
-  { id: 'master', title: 'Master Mind', desc: 'Reach Master level in any subject', test: (p) => Object.values(p.mastery || {}).some((m) => (m.level | 0) >= 3) }
+  { id: 'master', title: 'Master Mind', desc: 'Reach Master level in any subject', test: (p) => Object.values(p.mastery || {}).some((m) => (m.level | 0) >= 3) },
+  { id: 'spelling-bee', title: 'Spelling Bee', desc: 'Learn every word on a spelling list', test: (p) => Object.values(SPELLING_LISTS).flat().some((l) => listWords(l).every((e) => isLearned(p, e.w))) },
+  { id: 'on-fire', title: 'On Fire', desc: 'Spell 5 words right in a row', test: (p, r) => !!(r && (r.spellingCombo | 0) >= 5) },
+  { id: 'honey-hunter', title: 'Honey Hunter', desc: 'Spell 100 words right', test: (p) => totalRight(p) >= 100 }
 ];
 
 export const getBadge = (id) => BADGES.find((b) => b.id === id);
