@@ -102,7 +102,7 @@ export class WorldScene extends Phaser.Scene {
     // Lifecycle
     this.onResize = () => this.applyZoom();
     this.onVisibility = () => { if (typeof document !== 'undefined' && document.hidden) this.savePosition(); };
-    this.onResumeBound = () => { Music.duck(false); this.onResume(); };
+    this.onResumeBound = () => { Music.play('lounge'); Music.duck(false); this.onResume(); };   // back from a game, or a duel's battle music
     this.onPauseBound = () => { this.stopPlayer(); Music.duck(true); };
     this.scale.on('resize', this.onResize);
     if (typeof document !== 'undefined') document.addEventListener('visibilitychange', this.onVisibility);

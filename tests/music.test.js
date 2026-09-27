@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { barEvents, LOUNGE, play, stop, isPlaying } from '../src/systems/Music.js';
+import { barEvents, battleEvents, LOUNGE, BATTLE, TRACKS, play, stop, isPlaying, currentTrack } from '../src/systems/Music.js';
 
 describe('lounge loop', () => {
   it('writes a full band for every bar of the progression, in time and in key', () => {
@@ -30,7 +30,30 @@ describe('lounge loop', () => {
 
   it('stays silent without Web Audio', () => {
     expect(play()).toBe(false);
+    expect(play('battle')).toBe(false);
     expect(isPlaying()).toBe(false);
+    expect(currentTrack()).toBe('battle');   // remembered, so the world can switch back to the lounge
     stop();
+    expect(currentTrack()).toBeNull();
+  });
+});
+
+describe('battle loop', () => {
+  it('drives every bar with stabs, a running bass and drums, adds the arpeggio in the second half and always for a boss', () => {
+    expect(Object.keys(TRACKS)).toEqual(['lounge', 'battle', 'boss']);
+    expect(TRACKS.battle.bpm).toBeGreaterThan(TRACKS.lounge.bpm);
+    for (let bar = 0; bar < 16; bar++) {
+      const ev = battleEvents(bar);
+      const parts = new Set(ev.map((e) => e.part));
+      for (const p of ['stab', 'bass', 'kick', 'snare', 'hat']) expect(parts.has(p), p).toBe(true);
+      expect(parts.has('arp')).toBe(bar >= 8);
+      expect(ev.filter((e) => e.part === 'bass')).toHaveLength(8);
+      const chord = BATTLE.bars[bar % 8];
+      expect(ev.filter((e) => e.part === 'stab' && e.at === 0).map((e) => e.midi)).toEqual(chord.chord);
+      for (const e of ev) { expect(e.at).toBeGreaterThanOrEqual(0); expect(e.at).toBeLessThan(4); expect(e.dur).toBeGreaterThan(0); }
+      for (const e of ev.filter((x) => x.part === 'bass')) expect([chord.root, chord.root + 7, chord.root + 12]).toContain(e.midi);
+    }
+    expect(battleEvents(0, 13, { boss: true }).some((e) => e.part === 'arp')).toBe(true);
+    expect(battleEvents(3)).toEqual(battleEvents(3));
   });
 });

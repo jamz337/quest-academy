@@ -21,6 +21,7 @@ import { ProgressBar } from '../../ui/ProgressBar.js';
 import { enter } from '../../ui/motion.js';
 import { Sfx } from '../../systems/Audio.js';
 import * as Store from '../../systems/Store.js';
+import * as Music from '../../systems/Music.js';
 
 const POOL = 24;   // more questions than any duel can use
 /** Button labels (tests find buttons by these). */
@@ -55,6 +56,11 @@ export class DuelScene extends MinigameScene {
       locked: false, picked: null, hit: null, qStart: Date.now(), bonusMs: 0, pausedAt: null, timeLimit,
       defeated: false, lost: false, missed: {}
     };
+  }
+
+  create(data) {
+    super.create(data);
+    Music.play(this.opp.kind === 'boss' ? 'boss' : 'battle');   // the world switches back to the lounge when it resumes
   }
 
   get partyHp() { return this.state.party.reduce((a, m) => a + Math.max(0, m.hp), 0); }

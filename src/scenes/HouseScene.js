@@ -61,7 +61,7 @@ export class HouseScene extends Phaser.Scene {
     Music.play();
 
     this.onResize = () => this.applyZoom();
-    this.onResumeBound = () => { Music.duck(false); this.onResume(); };
+    this.onResumeBound = () => { Music.play('lounge'); Music.duck(false); this.onResume(); };   // back from a game, or a duel's battle music
     this.onPauseBound = () => { this.stopPlayer(); Music.duck(true); };
     this.scale.on('resize', this.onResize);
     this.events.on('resume', this.onResumeBound);
