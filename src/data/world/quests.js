@@ -1,4 +1,4 @@
-// Zone quests: the checklist a player completes in a zone before its boss will fight, and the rule for
+// Zone quests: the checklist a player completes in a zone, the rule that wakes its boss (every duel won), and the rule for
 // which zones are open. Pure data over the profile so the Hud, gates, signpost and tests all agree.
 import { NPCS } from './npcs.js';
 import { BOSSES, bossForZone } from './bosses.js';
@@ -53,8 +53,8 @@ export function zoneQuests(profile, zone) {
   return quests;
 }
 
-/** True once every non-boss quest in the zone is complete. */
-export const bossReady = (profile, zone) => zoneQuests(profile, zone).filter((q) => q.id !== 'boss').every((q) => q.done);
+/** True once every villager of the zone has lost a duel: that is what opens the castle. The other quests are for stars and story. */
+export const bossReady = (profile, zone) => { const dv = duelVillagers(zone); return dv.length > 0 && duelsWon(profile, zone) >= dv.length; };
 
 /** The zone the player is working on: the first in order that is not cleared, else the last. */
 export function activeZone(profile) {

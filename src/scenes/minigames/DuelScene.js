@@ -2,6 +2,7 @@ import { MinigameScene } from './MinigameScene.js';
 import { THEME, mix } from '../../ui/theme.js';
 import { SUBJECTS } from '../../constants.js';
 import { bossQuestions } from '../../generators/boss.js';
+import { duelQuestions } from '../../generators/duel.js';
 import { tuningFor } from '../../data/grades.js';
 import { DUEL } from '../../data/world/duels.js';
 import { badgeTexture, lookSpriteTexture } from '../../systems/Textures.js';
@@ -47,7 +48,7 @@ export class DuelScene extends MinigameScene {
     const playerHp = boss ? boss.hearts : DUEL.playerHp, mangoHp = boss ? 0 : DUEL.mangoHp;
     const timeLimit = p.timers === false ? Infinity : boss ? boss.questionTimeMs : Math.round(tuningFor(p).questionTimeMs * DUEL.timeFactor);
     return {
-      questions: bossQuestions(p.subject, p.grade, this.rng, POOL),
+      questions: duel ? duelQuestions(duel.gameId, p.grade, this.rng, POOL) : bossQuestions(p.subject, p.grade, this.rng, POOL),
       idx: 0, correct: 0, oppHp: this.opp.hp, phase: 'menu',
       party: [{ id: 'player', name: (profile && profile.name) || 'You', hp: playerHp, max: playerHp }, { id: 'mango', name: 'Mango', hp: mangoHp, max: mangoHp }],
       logic: DUEL.logicUses, hidden: [], logicUsedOn: -1, charmsUsed: {}, useDoubleCoins: false,

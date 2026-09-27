@@ -101,17 +101,15 @@ describe('zone quests', () => {
     expect(bossReady(p, 'math')).toBe(false);
   });
 
-  it('the boss is ready once every other quest is done', () => {
+  it('the boss is ready once every villager of the land has lost a duel, whatever else is left', () => {
     const p = newProfile({ name: 'A', grade: 3 });
-    const map = buildMap();
-    p.world.npcsTalked = NPCS.filter((n) => n.zone === 'math').map((n) => n.id);
-    for (const g of gamesForSubject('math')) p.games[g.id] = { bestStars: 1, levels: { 1: 1, 2: 1, 3: 1 } };   // all three house levels passed
-    p.world.coinsCollected = map.coins.map((c, i) => (zoneAt(map, c.tx, c.ty) === 'math' ? i : -1)).filter((i) => i >= 0);
-    expect(bossReady(p, 'math')).toBe(false);   // the guide's errand is part of the chapter
-    p.world.errands = { abacus: 'done' };
-    expect(bossReady(p, 'math')).toBe(false);   // and every villager must lose a duel
-    p.world.duels = Object.fromEntries(NPCS.filter((n) => n.zone === 'math' && n.gameId).map((n) => [n.id, { won: true }]));
-    expect(bossReady(p, 'math')).toBe(true);
+    const villagers = NPCS.filter((n) => n.zone === 'math' && n.gameId);
+    expect(villagers.length).toBe(4);
+    p.world.duels = Object.fromEntries(villagers.slice(0, 3).map((n) => [n.id, { won: true }]));
+    expect(bossReady(p, 'math')).toBe(false);   // one villager still standing
+    p.world.duels[villagers[3].id] = { won: true };
+    expect(bossReady(p, 'math')).toBe(true);    // stars, coins and the errand are not required
+    expect(zoneQuests(p, 'math').find((q) => q.id === 'stars').done).toBe(false);
     expect(bossReady(p, 'words')).toBe(false);
   });
 

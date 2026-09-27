@@ -38,15 +38,15 @@ describe('The Academy Bell', () => {
     expect(map.bellSpot && isWalkable(map.data[map.bellSpot.ty][map.bellSpot.tx])).toBe(true);
   });
 
-  it('the guide\'s errand is one of the zone quests, so the castle only opens once it is run', () => {
+  it('the guide\'s errand is one of the zone quests, but the castle opens on the duels alone', () => {
     const p = newProfile({ name: 'A', grade: 3 });
     expect(zoneQuests(p, 'math').map((q) => q.id)).toEqual(['meet', 'stars', 'duels', 'errand', 'coins', 'boss']);
     expect(zoneQuests(p, 'math').find((q) => q.id === 'errand').title).toContain('Professor Plus');
     finishChapter(p, 'math', map);
     p.world.errands.abacus = 'carrying';
-    expect(bossReady(p, 'math')).toBe(false);
-    p.world.errands.abacus = 'done';
     expect(bossReady(p, 'math')).toBe(true);
+    p.world.duels = {};
+    expect(bossReady(p, 'math')).toBe(false);
   });
 
   it('missions unlock in story order and the journal state follows the chapters to the finale', () => {

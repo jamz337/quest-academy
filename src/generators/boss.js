@@ -15,34 +15,46 @@ import { bibleQuestion } from './bible/quiz.js';
 
 const DIR_WORD = { N: 'North ▲', E: 'East ▶', S: 'South ▼', W: 'West ◀' };
 
-function mathQuestion(grade, rng) {
-  if (rng.chance(0.6)) return generateQuestion(grade, rng);
+/** A number pattern with the missing term to pick. */
+export function patternQuestion(grade, rng) {
   const r = patternRound(grade, rng);
   const shown = r.terms.map((t, i) => (i === r.missingIndex ? '?' : String(t))).join(', ');
   return { prompt: (r.rule ? r.rule + '\n' : '') + shown, choices: r.choices, answer: r.answer, skill: r.skill };
 }
 
-/** One English question of any kind (grammar, word pairs or unscrambling). Also used by Frog Hop. */
-export function wordsQuestion(grade, rng) {
-  const band = bandFor(grade);
-  const kind = rng.pick(['grammar', 'grammar', 'match', 'build']);
-  if (kind === 'grammar') {
-    const [r] = grammarRounds(grade, rng, 1);
-    return { prompt: fillBlank(r.sentence), choices: r.options, answer: r.options[r.answer], skill: r.skill };
-  }
-  if (kind === 'match') {
-    const bank = PAIRS[band];
-    const [p, ...others] = rng.sample(bank, 4);
-    return { prompt: `Which word goes with "${p.l}"?`, choices: rng.shuffle([p.r, ...others.map((o) => o.r)]), answer: p.r, skill: p.k };
-  }
-  const bank = WORDS[band];
+function mathQuestion(grade, rng) {
+  return rng.chance(0.6) ? generateQuestion(grade, rng) : patternQuestion(grade, rng);
+}
+
+/** A fill-the-blank sentence. */
+export function grammarQuestion(grade, rng) {
+  const [r] = grammarRounds(grade, rng, 1);
+  return { prompt: fillBlank(r.sentence), choices: r.options, answer: r.options[r.answer], skill: r.skill };
+}
+
+/** Which word goes with this one (synonyms, opposites, meanings). */
+export function matchQuestion(grade, rng) {
+  const bank = PAIRS[bandFor(grade)];
+  const [p, ...others] = rng.sample(bank, 4);
+  return { prompt: `Which word goes with "${p.l}"?`, choices: rng.shuffle([p.r, ...others.map((o) => o.r)]), answer: p.r, skill: p.k };
+}
+
+/** Unscramble a word from its letters and a hint. */
+export function buildQuestion(grade, rng) {
+  const bank = WORDS[bandFor(grade)];
   const [w, ...others] = rng.sample(bank, 4);
   return { prompt: `Unscramble: ${scramble(w.w, rng).join(' ').toUpperCase()}\n${w.h}`, choices: rng.shuffle([w.w, ...others.map((o) => o.w)]), answer: w.w, skill: 'spelling' };
 }
 
+/** One English question of any kind (grammar, word pairs or unscrambling). Also used by Frog Hop. */
+export function wordsQuestion(grade, rng) {
+  const kind = rng.pick(['grammar', 'grammar', 'match', 'build']);
+  return kind === 'grammar' ? grammarQuestion(grade, rng) : kind === 'match' ? matchQuestion(grade, rng) : buildQuestion(grade, rng);
+}
+
 export { programText };
 
-function codeQuestion(grade, rng) {
+export function codeQuestion(grade, rng) {
   // Only straight-line and repeat programs: with no grid on screen the answer must follow from the text alone.
   const band = bandFor(grade) === 'A' ? 'A' : 'B';
   const r = programRound(rng, band);

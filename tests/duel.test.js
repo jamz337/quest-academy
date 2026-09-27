@@ -7,6 +7,9 @@ vi.mock('../src/systems/Speech.js', () => ({ speak: vi.fn(), stop: vi.fn(), rate
 
 const { DuelScene, LABELS } = await import('../src/scenes/minigames/DuelScene.js');
 const { duelFor, DUEL } = await import('../src/data/world/duels.js');
+const { duelQuestions, BY_GAME, fractionQuestion, bugQuestion, danceQuestion } = await import('../src/generators/duel.js');
+const { MINIGAMES } = await import('../src/data/minigames.js');
+const { Rng } = await import('../src/systems/Rng.js');
 const { bossForZone } = await import('../src/data/world/bosses.js');
 const { launch, DUEL_SCENE, BOSS_SCENE } = await import('../src/systems/MinigameLauncher.js');
 const { applyResult, gameGrade, mastery } = await import('../src/systems/Progression.js');
@@ -37,12 +40,52 @@ const q = (s) => s.state.questions[s.state.idx];
 const right = (s) => q(s).choices.indexOf(q(s).answer);
 const wrongIdx = (s) => q(s).choices.findIndex((c) => c !== q(s).answer);
 
+describe('duel questions follow the villager\'s own game', () => {
+  const TOPIC = {
+    'math-dash': ['add', 'sub', 'mult', 'div', 'decimal', 'integers', 'order-of-operations', 'percent', 'equations', 'squares', 'add100', 'sub100', 'decAdd', 'decSub'],
+    'math-pizza': ['fractions', 'compare', 'equivalent', 'fraction-add', 'convert'],
+    'math-bridge': ['skip-count', 'doubling', 'sequence', 'geometric', 'rule', 'squares'],
+    'eng-grammar': ['verb', 'article', 'pronoun', 'homophone', 'tense', 'adjective', 'adverb', 'agreement', 'vocab', 'punctuation', 'plural'],
+    'eng-builder': ['spelling'], 'eng-match': ['synonym', 'antonym', 'definition'],
+    'code-maze': ['sequence_code', 'repeat'], 'code-bug': ['sequence_code', 'repeat'], 'code-dance': ['sequence_code', 'repeat', 'conditional'],
+    'bible-verse': ['verses'], 'bible-quiz': ['stories', 'people', 'places', 'books'], 'bible-match': ['stories', 'people', 'places', 'books']
+  };
+  it('every villager game has a generator whose questions are well formed and on topic', () => {
+    for (const g of MINIGAMES) {
+      expect(BY_GAME[g.id], g.id).toBeTypeOf('function');
+      for (const grade of [2, 4, 7]) {
+        const qs = duelQuestions(g.id, grade, new Rng(grade * 31 + g.id.length), 6);
+        expect(qs.length, g.id).toBe(6);
+        for (const q of qs) {
+          expect(q.prompt, g.id).toBeTruthy();
+          expect(q.choices.length, g.id).toBeGreaterThanOrEqual(3);
+          expect(q.choices, g.id + ' ' + q.prompt).toContain(q.answer);
+          expect(new Set(q.choices).size, g.id + ' ' + q.prompt).toBe(q.choices.length);
+          if (TOPIC[g.id]) expect(TOPIC[g.id], g.id + ' ' + q.skill).toContain(q.skill);
+        }
+      }
+    }
+  });
+  it('fractions, bugs and dances read as questions', () => {
+    const rng = new Rng(5);
+    expect(fractionQuestion(2, rng).prompt).toMatch(/pizza|bigger/);
+    expect(fractionQuestion(7, rng).prompt).toMatch(/=|equals|percent|decimal/);
+    const b = bugQuestion(3, rng);
+    expect(b.prompt).toMatch(/Which line has the bug/); expect(b.answer).toMatch(/^Line \d+$/); expect(b.explain).toContain(b.answer);
+    const d = danceQuestion(3, rng);
+    expect(d.prompt).toMatch(/Which dance/); expect(d.choices).toContain(d.answer);
+  });
+});
+
 describe('a villager duel', () => {
   beforeEach(() => boot());
 
   it('opens on the command menu with the party at full health, and Solve shows the choices', () => {
     const s = makeScene();
     expect(s.opp).toMatchObject({ kind: 'villager', name: 'Professor Plus', hp: DUEL.npcHp, prop: '🧮' });
+    for (const qq of s.state.questions) expect(qq.prompt).toMatch(/^[\d.()−\-]+ [+−×÷] |x = \?|²|% of/);   // the Professor asks sums only
+    const chef = makeScene({ gameId: 'duel:chef-fraction', duel: duelFor('chef-fraction'), title: 'Chef Fraction' });
+    for (const qq of chef.state.questions) expect(['fractions', 'compare', 'equivalent', 'fraction-add', 'convert']).toContain(qq.skill);
     expect(s.state.party.map((m) => m.hp)).toEqual([DUEL.playerHp, DUEL.mangoHp]);
     expect(s.state.timeLimit).toBe(30000);   // band A 20 s × 1.5
     for (const l of [LABELS.solve, LABELS.logic, LABELS.items, LABELS.run]) expect(findButton(s, l), l).toBeTruthy();

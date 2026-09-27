@@ -494,7 +494,7 @@ export class WorldScene extends Phaser.Scene {
     const profile = Store.getProfile();
     const beaten = bossDefeated(profile, boss.zone);
     if (!beaten && !bossReady(profile, boss.zone)) {
-      const left = zoneQuests(profile, boss.zone).filter((q) => !q.done && q.id !== 'boss').map((q) => `• ${q.title} (${q.count}/${q.total})`);
+      const left = zoneQuests(profile, boss.zone).filter((q) => !q.done && q.id === 'duels').map((q) => `• ${q.title} (${q.count}/${q.total})`);
       hud.showDialog({ name: boss.name, voice: boss.voice, pitch: boss.pitch, rate: boss.rate, speaker: boss.id, lines: [...boss.locked, 'Still to do:\n' + left.join('\n')] });
       return;
     }
