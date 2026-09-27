@@ -4,6 +4,7 @@ import { generateAllTextures } from '../systems/Textures.js';
 import * as Store from '../systems/Store.js';
 import * as Cloud from '../systems/Cloud.js';
 import { allLayerPaths, LPC_BASE } from '../ui/LpcCharacter.js';
+import { MANGO_IMAGES, MANGO_BASE } from '../ui/FlatCharacter.js';
 
 const FONT_WAIT_MS = 1500;
 
@@ -13,6 +14,7 @@ export class BootScene extends Phaser.Scene {
   /** The Liberated Pixel Cup layers every character is built from. */
   preload() {
     for (const p of allLayerPaths()) this.load.image('lpc:' + p, LPC_BASE + p);
+    for (const k of MANGO_IMAGES) this.load.image(k, `${MANGO_BASE}${k}.png`);   // Mango's sprite cells and badge
   }
 
   create() {

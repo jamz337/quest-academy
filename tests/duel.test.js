@@ -7,7 +7,10 @@ vi.mock('../src/systems/Speech.js', () => ({ speak: vi.fn(), stop: vi.fn(), rate
 
 const { DuelScene, LABELS } = await import('../src/scenes/minigames/DuelScene.js');
 const { duelFor, DUEL } = await import('../src/data/world/duels.js');
-const { duelQuestions, BY_GAME, fractionQuestion, bugQuestion, danceQuestion } = await import('../src/generators/duel.js');
+const { duelQuestions, bossDuelQuestions, BY_GAME, fractionQuestion, bugQuestion, danceQuestion, mazeQuestion, predictQuestion, skillOf } = await import('../src/generators/duel.js');
+const { runToEnd, parseLevel } = await import('../src/generators/coding/interpreter.js');
+const { getLevel } = await import('../src/data/coding/levels.js');
+const { programText } = await import('../src/generators/coding/text.js');
 const { MINIGAMES } = await import('../src/data/minigames.js');
 const { Rng } = await import('../src/systems/Rng.js');
 const { bossForZone } = await import('../src/data/world/bosses.js');
@@ -47,7 +50,7 @@ describe('duel questions follow the villager\'s own game', () => {
     'math-bridge': ['skip-count', 'doubling', 'sequence', 'geometric', 'rule', 'squares'],
     'eng-grammar': ['verb', 'article', 'pronoun', 'homophone', 'tense', 'adjective', 'adverb', 'agreement', 'vocab', 'punctuation', 'plural'],
     'eng-builder': ['spelling'], 'eng-match': ['synonym', 'antonym', 'definition'],
-    'code-maze': ['sequence_code', 'repeat'], 'code-bug': ['sequence_code', 'repeat'], 'code-dance': ['sequence_code', 'repeat', 'conditional'],
+    'code-maze': ['sequence_code', 'repeat', 'conditional'], 'code-bug': ['sequence_code', 'repeat', 'conditional'], 'code-predict': ['sequence_code', 'repeat', 'conditional'], 'code-dance': ['sequence_code', 'repeat', 'conditional'],
     'bible-verse': ['verses'], 'bible-quiz': ['stories', 'people', 'places', 'books'], 'bible-match': ['stories', 'people', 'places', 'books']
   };
   it('every villager game has a generator whose questions are well formed and on topic', () => {
@@ -73,7 +76,98 @@ describe('duel questions follow the villager\'s own game', () => {
     const b = bugQuestion(3, rng);
     expect(b.prompt).toMatch(/Which line has the bug/); expect(b.answer).toMatch(/^Line \d+$/); expect(b.explain).toContain(b.answer);
     const d = danceQuestion(3, rng);
-    expect(d.prompt).toMatch(/Which dance/); expect(d.choices).toContain(d.answer);
+    expect(d.prompt).toMatch(/Which program/); expect(d.choices).toContain(d.answer);
+  });
+});
+
+/** programText lines back into a program (Move, Turn, Repeat with two-space nesting), for checking answers by running them. */
+function parseProgram(text) {
+  const lines = text.split('\n');
+  let i = 0;
+  const list = (depth) => {
+    const out = [];
+    while (i < lines.length) {
+      const line = lines[i], d = (line.match(/^ */) || [''])[0].length / 2, t = line.trim();
+      if (d < depth) break;
+      i += 1;
+      if (t === 'Move ▲') out.push({ op: 'fwd' });
+      else if (t === 'Turn ◀') out.push({ op: 'left' });
+      else if (t === 'Turn ▶') out.push({ op: 'right' });
+      else if (/^Repeat \d+:$/.test(t)) out.push({ op: 'repeat', n: Number(t.match(/\d+/)[0]), body: list(depth + 1) });
+      else if (/^If path \w+:$/.test(t)) {
+        const b = { op: 'if', cond: t.split(' ')[2].slice(0, -1), then: list(depth + 1), else: null };
+        if (i < lines.length && lines[i].trim() === 'Else:' && (lines[i].match(/^ */) || [''])[0].length / 2 === depth) { i += 1; b.else = list(depth + 1); }
+        out.push(b);
+      } else if (t === 'Until goal:') out.push({ op: 'while', cond: 'notGoal', body: list(depth + 1) });
+      else throw new Error('unknown line ' + t);
+    }
+    return out;
+  };
+  return { main: list(0), functions: {} };
+}
+
+describe('code duels match the four coding lessons', () => {
+  it('Robo Maze: the right program reaches the flag and the wrong ones do not, on a level drawn in the puzzle', () => {
+    for (let seed = 1; seed <= 12; seed++) {
+      const q = mazeQuestion(seed % 2 ? 2 : 5, new Rng(seed));
+      expect(q.code.kind).toBe('maze'); expect(q.code.choice).toBe('program'); expect(q.choices).toHaveLength(3);
+      const lv = getLevel(q.code.level.id);
+      expect(programText(lv.solution.main)).toBe(q.answer);
+      for (const c of q.choices) expect(runToEnd(parseProgram(c), lv).solved, c).toBe(c === q.answer);
+      expect(q.explain).toContain(lv.hint);
+    }
+  });
+  it('Predict the Robot: lettered markers on the floor, and the answer letter sits where the program really stops', () => {
+    for (let seed = 1; seed <= 12; seed++) {
+      const q = predictQuestion(seed % 2 ? 3 : 5, new Rng(seed * 7));
+      expect(q.code.kind).toBe('predict'); expect(q.code.choice).toBe('letter');
+      expect(q.choices.length).toBeGreaterThanOrEqual(3);
+      expect(q.choices).toEqual(q.code.markers.map((m) => m.letter));
+      const lv = parseLevel(q.code.level);
+      const end = runToEnd(parseProgram(q.code.program), q.code.level).end;
+      const hit = q.code.markers.find((m) => m.letter === q.answer);
+      expect([hit.x, hit.y]).toEqual([end.x, end.y]);
+      for (const m of q.code.markers) { expect(lv.walls[m.y][m.x]).toBe(false); expect(m.x === lv.start.x && m.y === lv.start.y).toBe(false); }
+      expect(q.code.robot).toEqual({ x: lv.start.x, y: lv.start.y, dir: lv.dir });
+    }
+  });
+  it('Bug Hunt: the numbered listing beside its maze, and the answer names a real line', () => {
+    const q = bugQuestion(4, new Rng(3));
+    expect(q.code.kind).toBe('bug'); expect(q.code.numbered).toBe(true); expect(q.code.choice).toBe('line');
+    const n = q.code.program.split('\n').length;
+    expect(n).toBeGreaterThanOrEqual(4);
+    expect(Number(q.answer.slice(5))).toBeLessThanOrEqual(n);
+    expect(q.prompt).toBe('Which line has the bug?');   // the listing is drawn, not spoken; the hint waits for the explanation
+    expect(q.explain).toContain(q.answer);
+  });
+  it('Robot Dance: the path the robot walked is drawn and ends where the answer program ends', () => {
+    const q = danceQuestion(3, new Rng(9));
+    expect(q.code.kind).toBe('dance'); expect(q.code.path.length).toBeGreaterThan(0);
+    const end = runToEnd(parseProgram(q.answer), q.code.level).end;
+    expect(q.code.robot).toEqual(end);
+    expect(q.code.path[q.code.path.length - 1].to).toEqual({ x: end.x, y: end.y });
+  });
+  it('the code boss mixes all four kinds without repeats; other bosses are unchanged', () => {
+    const qs = bossDuelQuestions('code', 4, new Rng(11), 24);
+    expect(new Set(qs.map((q) => q.code.kind)).size).toBe(4);
+    expect(new Set(qs.map((q) => q.key)).size).toBe(24);
+    expect(bossDuelQuestions('math', 4, new Rng(11), 6).every((q) => !q.code)).toBe(true);
+    expect(skillOf({ main: [{ op: 'if', cond: 'ahead', then: [{ op: 'fwd' }], else: null }] })).toBe('conditional');
+  });
+  it('the duel screen shows program choices as cards, doubles the clock for coding puzzles, and Logic hides one of three', () => {
+    boot();
+    const s = makeScene({ gameId: 'duel:robo-mechanic', duel: duelFor('robo-mechanic'), subject: 'code', title: 'Robo Mechanic' });
+    expect(q(s).code.kind).toBe('maze');
+    expect(s.limitFor()).toBe(s.state.timeLimit * 2);
+    click(findButton(s, LABELS.solve));
+    expect(q(s).choices.map((c) => findButton(s, c)).every(Boolean)).toBe(true);
+    s.state.qStart = Date.now() - s.state.timeLimit * 1.5; s.update();
+    expect(s.state.locked).toBe(false);   // still inside the doubled clock
+    click(findButton(s, LABELS.menu)); click(findButton(s, LABELS.logic));
+    expect(s.state.hidden).toHaveLength(1);
+    const hp = s.state.oppHp;
+    s.pick(right(s));
+    expect(s.state.oppHp).toBe(hp - 1);
   });
 });
 

@@ -17,7 +17,7 @@ function allBlocks(program) {
 }
 
 /** One random edit of a copy of the program, or null when the edit was not possible. */
-function mutate(program, rng) {
+export function mutate(program, rng) {
   const p = cloneProgram(program);
   const blocks = allBlocks(p);
   const kind = rng.pick(['turn', 'turn', 'repeat', 'addMove', 'dropMove', 'swap']);

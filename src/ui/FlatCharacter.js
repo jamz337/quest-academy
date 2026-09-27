@@ -5,6 +5,17 @@ export const FRAME = 96;
 export const PIXEL_FRAME = 64;
 export const WORLD_SCALE = 32 / PIXEL_FRAME;
 
+/**
+ * Since 2026-09-27 Mango is real pixel art cut from the reference pictures in art/mango-reference (see
+ * extract-sprites.js there): 'mango-front' (waving, faces the screen), 'mango-side' (with his headband, faces
+ * right) and 'mango-face' (his badge), loaded by BootScene from public/mango. The drawing below is only the
+ * fallback when those files are missing.
+ */
+export const MANGO_BASE = 'mango/';
+export const MANGO_IMAGES = ['mango-front', 'mango-side', 'mango-face'];
+/** Frames of the 'monkey' texture: waving, a hop mid-wave, a cheer, and the side view for duels (faces right). */
+export const MONKEY_FRAMES = { stand: 0, hop: 1, cheer: 2, side: 3 };
+
 /** The colours a finished Mango frame may contain (LPC-style ramps: light, mid and dark for the coat). */
 export const MONKEY_PALETTE = ['#a3b45a', '#7d8f3c', '#5a6a2a', '#f4dfc2', '#d9bd97', '#3a2a1a', '#ff9fc4', '#2d2a4a', '#ffffff', '#e0567a'];
 export const MONKEY_OUTLINE = '#1f1a12';

@@ -1,12 +1,13 @@
 import { MinigameScene } from './MinigameScene.js';
 import { THEME, mix } from '../../ui/theme.js';
 import { SUBJECTS } from '../../constants.js';
-import { bossQuestions } from '../../generators/boss.js';
-import { duelQuestions } from '../../generators/duel.js';
+import { duelQuestions, bossDuelQuestions } from '../../generators/duel.js';
+import { drawMiniMaze, drawProgram } from '../../ui/CodeView.js';
 import { tuningFor } from '../../data/grades.js';
 import { DUEL } from '../../data/world/duels.js';
 import { badgeTexture, lookSpriteTexture } from '../../systems/Textures.js';
 import { IDLE_FRAMES, LPC_FRAME } from '../../ui/LpcCharacter.js';
+import { MONKEY_FRAMES } from '../../ui/FlatCharacter.js';
 import { resolveLook } from '../../data/avatars.js';
 import { outfitOf, outfitId, snacksOf, useSnack } from '../../systems/Market.js';
 import { grid } from '../../systems/Layout.js';
@@ -49,7 +50,7 @@ export class DuelScene extends MinigameScene {
     const playerHp = boss ? boss.hearts : DUEL.playerHp, mangoHp = boss ? 0 : DUEL.mangoHp;
     const timeLimit = p.timers === false ? Infinity : boss ? boss.questionTimeMs : Math.round(tuningFor(p).questionTimeMs * DUEL.timeFactor);
     return {
-      questions: duel ? duelQuestions(duel.gameId, p.grade, this.rng, POOL) : bossQuestions(p.subject, p.grade, this.rng, POOL),
+      questions: duel ? duelQuestions(duel.gameId, p.grade, this.rng, POOL) : bossDuelQuestions(p.subject, p.grade, this.rng, POOL),
       idx: 0, correct: 0, oppHp: this.opp.hp, phase: 'menu',
       party: [{ id: 'player', name: (profile && profile.name) || 'You', hp: playerHp, max: playerHp }, { id: 'mango', name: 'Mango', hp: mangoHp, max: mangoHp }],
       logic: DUEL.logicUses, hidden: [], logicUsedOn: -1, charmsUsed: {}, useDoubleCoins: false,
@@ -75,8 +76,10 @@ export class DuelScene extends MinigameScene {
     const s = this.state, ui = this.ui, opp = this.opp;
     const q = s.questions[s.idx];
     if (!q) return;
-    const cx = area.x + area.w / 2;
-    const sceneH = this.portrait ? Math.min(area.h * 0.34, 300 * ui) : Math.min(area.h * 0.5, 360 * ui);
+    const cx = area.x + area.w / 2, code = q.code || null;
+    // A coding puzzle needs room for its maze: the scenery shrinks and, on a wide screen, the puzzle moves down
+    // into the bottom band between the party card and the commands.
+    const sceneH = this.portrait ? Math.min(area.h * (code ? 0.25 : 0.34), (code ? 210 : 300) * ui) : Math.min(area.h * (code ? 0.36 : 0.5), (code ? 260 : 360) * ui);
     const px = area.x + area.w * 0.22, ox = area.x + area.w * 0.78;
     this.drawScenery(area, sceneH, ox);
     const gy = area.y + sceneH * 0.86;
@@ -87,9 +90,9 @@ export class DuelScene extends MinigameScene {
     const pKey = lookSpriteTexture(this, resolveLook(profile), outfitOf(profile), outfitId(profile));
     const player = this.add.sprite(px, gy, pKey, IDLE_FRAMES.side).setFlipX(true).setScale(sc).setOrigin(0.5, 1);
     const pProp = this.add.text(px + 15 * sc, gy - 24 * sc, DUEL.playerProp, { fontSize: Math.round(9 * sc) + 'px' }).setOrigin(0.5);
-    const mango = this.add.sprite(px - 26 * sc, gy + 2, 'monkey', 0).setScale(sc * 0.6).setOrigin(0.5, 1);
+    const mango = this.add.sprite(px - 30 * sc, gy, 'monkey', s.defeated ? MONKEY_FRAMES.cheer : MONKEY_FRAMES.side).setScale(sc).setOrigin(0.5, 1);   // the side view faces right, towards the foe
     if (s.party[1].max > 0 && s.party[1].hp <= 0) mango.setTint(0x9a9a9a);
-    if (s.defeated && this.anims.exists && this.anims.exists('monkey-walk')) mango.play('monkey-walk', true);
+    if (s.defeated) this.tweens.add({ targets: mango, y: gy - 6 * sc, duration: 260, yoyo: true, repeat: -1, ease: 'Sine.Out' });   // cheering hops
 
     // The opponent faces left with its prop; a name chip and health bar float above.
     const oKey = opp.kind === 'boss' ? lookSpriteTexture(this, opp.look) : opp.sprite;
@@ -131,14 +134,29 @@ export class DuelScene extends MinigameScene {
 
     // The puzzle box: between the two in landscape, under the scenery on a phone.
     const gap = 10;
+    const partyW = this.portrait ? area.w * 0.44 : Math.min(area.w * (code ? 0.24 : 0.34), (code ? 240 : 300) * ui);
     const box = this.portrait
-      ? { x: area.x, y: area.y + sceneH + gap, w: area.w, h: Math.min(150 * ui, area.h * 0.2) }
-      : { x: cx - area.w * 0.22, y: area.y + 66 * ui, w: area.w * 0.44, h: sceneH - 80 * ui };
+      ? { x: area.x, y: area.y + sceneH + gap, w: area.w, h: code ? Math.min((code.choice === 'program' ? 240 : 300) * ui, area.h * (code.choice === 'program' ? 0.3 : 0.37)) : Math.min(150 * ui, area.h * 0.2) }
+      : code ? { x: area.x + partyW + gap, y: area.y + sceneH + gap, w: area.w * 0.4, h: area.y + area.h - (area.y + sceneH + gap) }
+        : { x: cx - area.w * 0.22, y: area.y + 66 * ui, w: area.w * 0.44, h: sceneH - 80 * ui };
     panel(this, box.x, box.y, box.w, box.h, { color: THEME.surface, alpha: 0.93, radius: THEME.radius.lg, shadow: 'md' });
-    text(this, box.x + box.w / 2, box.y + 16 * ui, `${(SUBJECTS[this.payload.subject]?.title || 'QUEST').toUpperCase()} DUEL PUZZLE`, T.caption(this, THEME.ink2));
-    const lines = q.prompt.split('\n').length;
-    const size = lines > 3 ? 13 : q.prompt.length > 28 ? 16 : q.prompt.length > 12 ? 22 : 28;
-    const question = readable(this, box.x + box.w / 2, box.y + box.h / 2 + 4 * ui, q.prompt, T.at(this, size, THEME.ink, { fontStyle: lines > 3 ? '500' : '700' }), { width: box.w - 32, align: lines > 3 ? 'left' : 'center' });
+    const caption = code ? `${code.title.toUpperCase()} DUEL` : `${(SUBJECTS[this.payload.subject]?.title || 'QUEST').toUpperCase()} DUEL PUZZLE`;
+    text(this, box.x + box.w / 2, box.y + 16 * ui, caption, T.caption(this, THEME.ink2));
+    let question;
+    if (code) {
+      // A coding puzzle: the question on one line, then the maze (and the program beside it) like the lesson screens.
+      question = readable(this, box.x + box.w / 2 - 12 * ui, box.y + 27 * ui, q.prompt, T.at(this, 14, THEME.ink, { fontStyle: '700' }), { width: box.w - 76 * ui, align: 'center' }).setOrigin(0.5, 0);
+      const top = question.y + question.height + 8 * ui, inner = { x: box.x + 10, y: top, w: box.w - 20, h: box.y + box.h - 18 * ui - top };
+      if (code.program) {
+        const gw = Math.min(inner.h, inner.w * 0.5);
+        drawMiniMaze(this, { x: inner.x, y: inner.y, w: gw, h: inner.h }, code);
+        drawProgram(this, { x: inner.x + gw + 10, y: inner.y, w: inner.w - gw - 10, h: inner.h }, code.program, { numbered: !!code.numbered });
+      } else drawMiniMaze(this, inner, code);
+    } else {
+      const lines = q.prompt.split('\n').length;
+      const size = lines > 3 ? 13 : q.prompt.length > 28 ? 16 : q.prompt.length > 12 ? 22 : 28;
+      question = readable(this, box.x + box.w / 2, box.y + box.h / 2 + 4 * ui, q.prompt, T.at(this, size, THEME.ink, { fontStyle: lines > 3 ? '500' : '700' }), { width: box.w - 32, align: lines > 3 ? 'left' : 'center' });
+    }
     speakButton(this, box.x + box.w - 22 * ui, box.y + 18 * ui, 34 * ui, question, { rate: this.speechRate * (opp.rate || 1), pitch: opp.pitch || 1, voice: opp.voice, speaker: opp.id });
     this.autoRead(question);
     this.timerBar = new ProgressBar(this, box.x + box.w / 2, box.y + box.h - 10 * ui, box.w - 40, 6 * ui, { color: THEME.success, value: 1 });
@@ -147,9 +165,9 @@ export class DuelScene extends MinigameScene {
     // The bottom band: the party on the left, commands on the right.
     const top = (this.portrait ? box.y + box.h : area.y + sceneH) + gap;
     const bandH = area.y + area.h - top;
-    const partyW = this.portrait ? area.w * 0.44 : Math.min(area.w * 0.34, 300 * ui);
     this.drawParty(area.x, top, partyW, bandH);
-    const cmd = { x: area.x + partyW + gap, y: top, w: area.w - partyW - gap, h: bandH };
+    const cmdX = code && !this.portrait ? box.x + box.w + gap : area.x + partyW + gap;   // past the puzzle on a wide screen
+    const cmd = { x: cmdX, y: top, w: area.x + area.w - cmdX, h: bandH };
     if (s.phase === 'items') this.drawItems(cmd); else this.drawCommands(cmd, q);
     if (s.hit && s.hit.startsWith('party') && this.partyHp > 0 && s.locked) this.explanationPanel(area, q, () => this.next());
   }
@@ -194,7 +212,7 @@ export class DuelScene extends MinigameScene {
     const profile = this.profile;
     s.party.forEach((m, i) => {
       const ry = -h / 2 + 8 + rowH * i + rowH / 2;
-      const key = m.id === 'player' ? badgeTexture(this, resolveLook(profile), outfitOf(profile), outfitId(profile)) : 'monkey';
+      const key = m.id === 'player' ? badgeTexture(this, resolveLook(profile), outfitOf(profile), outfitId(profile)) : (this.textures.exists('mango-face') ? 'mango-face' : 'monkey');
       const img = this.add.image(-w / 2 + 10 + size / 2, ry, key, 0).setDisplaySize(size, size);
       if (m.max > 0 && m.hp <= 0) img.setTint(0x9a9a9a);
       const tx = -w / 2 + 18 + size;
@@ -224,7 +242,23 @@ export class DuelScene extends MinigameScene {
     const cells = grid({ x: cmd.x, y: cmd.y + headH + 6, w: cmd.w, h: gh }, 2, 2, 8);
     const items = snacksOf(this.profile).length + CHARMS.filter((c) => this.hasCharm(c.id)).length;
     let buttons;
-    if (s.phase === 'solve') {
+    if (s.phase === 'solve' && q.code && q.code.choice === 'program') {
+      // Programs to choose from, one card each, listed as block rows like the lesson editors.
+      const n = q.choices.length, gapY = 6, top = cmd.y + headH + 6, availH = cmd.h - headH - 6;
+      const ch = Math.min((availH - gapY * (n - 1)) / n, 120 * ui), ccx = cmd.x + cmd.w / 2;
+      buttons = q.choices.map((choice, i) => {
+        const cy = top + i * (ch + gapY) + ch / 2;
+        if (s.hidden.includes(i)) return button(this, ccx, cy, cmd.w, ch, '—', { variant: 'ghost', disabled: true });
+        let stroke = THEME.line, color = THEME.surface, faded = false;
+        if (s.picked !== null) { if (choice === q.answer) { stroke = THEME.success; color = THEME.successSoft; } else if (i === s.picked) { stroke = THEME.danger; color = THEME.dangerSoft; } else faded = true; }
+        const k = card(this, ccx, cy, cmd.w, ch, { stroke, color, strokeWidth: 3, shadow: 'sm', onTap: s.picked === null && !s.locked ? () => this.pick(i) : null });
+        k.label = { text: choice };   // the choice this card stands for (tests find it like a button)
+        k.add(this.add.text(cmd.w / 2 - 10, -ch / 2 + 7, String.fromCharCode(65 + i), T.at(this, 12, THEME.ink3)).setOrigin(1, 0));
+        drawProgram(this, { x: -cmd.w / 2 + 10, y: -ch / 2 + 6, w: cmd.w - 44, h: ch - 12 }, choice, { into: k });
+        if (faded) k.setAlpha(0.45);
+        return k;
+      });
+    } else if (s.phase === 'solve') {
       buttons = q.choices.map((choice, i) => {
         const c = cells[i]; if (!c) return null;
         if (s.hidden.includes(i)) return button(this, c.x, c.y, c.w, c.h, '—', { variant: 'ghost', disabled: true });
@@ -268,10 +302,13 @@ export class DuelScene extends MinigameScene {
     this.tweens.add({ targets: dmg, y: y - 50 * this.ui, alpha: 0, duration: 700, ease: 'Cubic.easeOut' });
   }
 
+  /** The clock for the current question: coding puzzles get twice as long, there is a program to read. */
+  limitFor(q = this.state.questions[this.state.idx]) { return this.state.timeLimit * (q && q.code ? 2 : 1); }
+
   clockText() {
     const s = this.state;
     if (!Number.isFinite(s.timeLimit)) return '⏱ no clock';
-    const left = Math.max(0, s.timeLimit + s.bonusMs - (Date.now() - s.qStart));
+    const left = Math.max(0, this.limitFor() + s.bonusMs - (Date.now() - s.qStart));
     return `⏱ ${Math.ceil(left / 1000)}s`;
   }
 
@@ -399,7 +436,7 @@ export class DuelScene extends MinigameScene {
   update() {
     const s = this.state;
     if (this.finished || s.locked || s.phase === 'items' || s.phase === 'over' || !Number.isFinite(s.timeLimit)) return;
-    const limit = s.timeLimit + s.bonusMs;
+    const limit = this.limitFor() + s.bonusMs;
     const left = limit - (Date.now() - s.qStart), ratio = left / limit;
     if (this.timerBar && this.timerBar.active) this.timerBar.set(Math.max(0, ratio), ratio < 0.3 ? THEME.danger : ratio < 0.6 ? THEME.warning : THEME.success);
     const secs = Math.max(0, Math.ceil(left / 1000));

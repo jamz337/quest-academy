@@ -6,7 +6,7 @@ import { THEME } from '../ui/theme.js';
 import { mulberry32 } from './Rng.js';
 import { OUTLINE, MOUTH, BOOTS, CHARACTER_STYLES, NPC_STYLES, lookId } from '../data/avatars.js';
 export { CHARACTER_STYLES, NPC_STYLES };
-import { FRAME, PIXEL_FRAME, drawMonkey, pixelate } from '../ui/FlatCharacter.js';
+import { FRAME, PIXEL_FRAME, drawMonkey, pixelate, MONKEY_FRAMES } from '../ui/FlatCharacter.js';
 import { LPC_FRAME, LPC_COLS, allLayerPaths, composeSheet, drawOutfitBack, drawOutfitFront, drawBustFromSheet, walkRange } from '../ui/LpcCharacter.js';
 export { WORLD_SCALE as CHAR_WORLD_SCALE, IDLE_FRAMES } from '../ui/LpcCharacter.js';
 
@@ -476,7 +476,17 @@ export function generateAllTextures(scene) {
   pixelTexture(scene, 'robot', [ROBOT, ROBOT2]);
   pixelTexture(scene, 'sheep', [SHEEP, SHEEP2]);
   pixelTexture(scene, 'bunny', [BUNNY, BUNNY2]);
-  if (!scene.textures.exists('monkey')) {   // Mango: drawn with shapes, then pixelated to match the LPC people
+  if (!scene.textures.exists('monkey') && scene.textures.exists('mango-front') && scene.textures.exists('mango-side')) {   // Mango from the reference art
+    const P = PIXEL_FRAME, tex = scene.textures.createCanvas('monkey', P * 4, P), ctx = tex.getContext();
+    const front = scene.textures.get('mango-front').getSourceImage(), side = scene.textures.get('mango-side').getSourceImage();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(front, P * MONKEY_FRAMES.stand, 0); ctx.drawImage(front, P * MONKEY_FRAMES.hop, -3); ctx.drawImage(front, P * MONKEY_FRAMES.cheer, -1); ctx.drawImage(side, P * MONKEY_FRAMES.side, 0);
+    for (let i = 0; i < 4; i++) tex.add(i, 0, P * i, 0, P, P);
+    tex.refresh();
+    tex.setFilter(Phaser.Textures.FilterMode.NEAREST);
+    scene.textures.get('mango-face').setFilter(Phaser.Textures.FilterMode.NEAREST);
+  }
+  if (!scene.textures.exists('monkey')) {   // fallback: Mango drawn with shapes, then pixelated to match the LPC people
     const src = document.createElement('canvas'); src.width = FRAME * 2; src.height = FRAME;
     const sctx = src.getContext('2d');
     drawMonkey(sctx, 0, 0, { step: 0, shadow: false }); drawMonkey(sctx, FRAME, 0, { step: 1, shadow: false });
@@ -484,10 +494,10 @@ export function generateAllTextures(scene) {
     ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(src, 0, 0, FRAME * 2, FRAME, 0, 0, P * 2, P);
     pixelate(ctx, P * 2, P);
-    tex.add(0, 0, 0, 0, P, P); tex.add(1, 0, P, 0, P, P); tex.refresh();
+    tex.add(0, 0, 0, 0, P, P); tex.add(1, 0, P, 0, P, P); tex.add(2, 0, 0, 0, P, P); tex.add(3, 0, P, 0, P, P); tex.refresh();
     tex.setFilter(Phaser.Textures.FilterMode.NEAREST);
   }
-  for (const [key, rate] of [['sheep', 5], ['bunny', 8], ['monkey', 4]]) {
+  for (const [key, rate] of [['sheep', 5], ['bunny', 8], ['monkey', 5]]) {
     if (!scene.anims.exists(`${key}-walk`)) scene.anims.create({ key: `${key}-walk`, frames: scene.anims.generateFrameNumbers(key, { start: 0, end: 1 }), frameRate: rate, repeat: -1 });
   }
   const sheets = [...CHARACTER_STYLES.map((_, i) => `char${i}`), ...NPC_STYLES.map((_, i) => `npc${i}`)];

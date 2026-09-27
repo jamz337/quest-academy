@@ -1,18 +1,22 @@
-// Duel questions: one multiple-choice shape { prompt, choices, answer, skill } drawn from the villager's OWN
-// game, so Chef Fraction asks fractions, the Bridge Keeper patterns, the Gate Guard grammar, and so on.
-// Bosses keep mixing their whole subject (see boss.js).
+// Duel questions: one multiple-choice shape { prompt, choices, answer, skill, key?, explain?, code? } drawn from
+// the villager's OWN game, so Chef Fraction asks fractions, the Bridge Keeper patterns, the Gate Guard grammar,
+// and so on. The four coding villagers ask what their lessons teach and carry a `code` block the duel screen
+// draws as a mini maze and a block program: Robo Maze (which program reaches the flag), Predict the Robot
+// (where does it stop), Bug Hunt (which line is wrong) and Robot Dance (which program made this path).
+// Bosses mix their whole subject (see boss.js; the code boss mixes the four coding kinds).
 import { generateQuestion } from './math/arithmetic.js';
 import { gcd, frac } from './math/fractions.js';
-import { patternQuestion, grammarQuestion, matchQuestion, buildQuestion, wordsQuestion, codeQuestion } from './boss.js';
-import { danceRound } from './coding/dance.js';
+import { patternQuestion, grammarQuestion, matchQuestion, buildQuestion, wordsQuestion, bossQuestions } from './boss.js';
+import { danceRound, mutate } from './coding/dance.js';
 import { programText } from './coding/text.js';
-import { DIR_NAME } from './coding/interpreter.js';
-import { bugLevelsForBand } from '../data/coding/levels.js';
+import { parseLevel, runToEnd } from './coding/interpreter.js';
+import { generateRound as programRound } from './coding/programGen.js';
+import { bugLevelsForBand, levelsForBand } from '../data/coding/levels.js';
 import { quizQuestion, verseQuestion, whoQuestion, bibleQuestion } from './bible/quiz.js';
 import { QUIZ, VERSES, PAIRS } from '../data/bible/bank.js';
 import { bandFor } from '../data/grades.js';
 
-const DIR_WORD = { N: 'North ▲', E: 'East ▶', S: 'South ▼', W: 'West ◀' };
+const LETTERS = ['A', 'B', 'C', 'D'];
 
 /** 4 shuffled choices: the answer plus unique distractors (candidates first, then the fallback). */
 function choicesFor(answer, candidates, fallback, rng) {
@@ -65,43 +69,130 @@ export function fractionQuestion(grade, rng) {
   return { prompt: `${frac(num, den)} as a ${percent ? 'percent' : 'decimal'} is...`, choices, answer, skill: 'convert' };
 }
 
-/** Program lines in the order programText prints them, with the block that made each line. */
+// ---- Coding: the four lessons of Code Cove ------------------------------------------------------------
+
+/** Duels use the two lower bands like the lessons' first two tiers (band C blocks are shown fine, but not asked). */
+const codeBand = (grade) => (bandFor(grade) === 'A' ? 'A' : 'B');
+const plainLevel = (lv) => ({ id: lv.id, grid: lv.grid, startDir: lv.startDir });
+const hasOp = (list, ops) => (list || []).some((b) => ops.includes(b.op) || hasOp(b.body, ops) || hasOp(b.then, ops) || hasOp(b.else, ops));
+/** The skill a program exercises: conditionals beat loops beat plain sequences. */
+export const skillOf = (program) => (hasOp(program.main, ['if', 'while']) ? 'conditional' : hasOp(program.main, ['repeat']) ? 'repeat' : 'sequence_code');
+const gridKey = (level) => level.grid.join('/') + '@' + level.startDir;
+
+/** Program lines in the order programText prints them, with the block that made each line (Else lines have none). */
 function programLines(blocks, depth = 0) {
   const out = [];
   for (const b of blocks) {
-    out.push({ uid: b.uid, text: programText([{ ...b, body: [] }], depth).split('\n')[0] });
-    if (b.op === 'repeat') out.push(...programLines(b.body, depth + 1));
+    out.push({ uid: b.uid, text: programText([{ ...b, body: [], then: [], else: null }], depth).split('\n')[0] });
+    if (b.op === 'repeat' || b.op === 'while') out.push(...programLines(b.body, depth + 1));
+    if (b.op === 'if') {
+      out.push(...programLines(b.then, depth + 1));
+      if (b.else && b.else.length) { out.push({ uid: null, text: '  '.repeat(depth) + 'Else:' }); out.push(...programLines(b.else, depth + 1)); }
+    }
   }
   return out;
 }
 
-/** Bug Hunt in words: the program is shown with numbered lines; which line is the bug? */
+/** Robo Maze levels a duel can show: no functions, a short solution, a grid that fits the puzzle box. */
+const mazePool = (band) => levelsForBand(band).filter((lv) => !Object.keys(lv.solution.functions || {}).length && programText(lv.solution.main).split('\n').length <= 6 && lv.grid.length <= 9 && Math.max(...lv.grid.map((r) => r.length)) <= 10);
+
+/** Robo Maze: which of three programs walks the robot to the flag? The wrong ones are small edits that fail. */
+export function mazeQuestion(grade, rng) {
+  const band = codeBand(grade);
+  const pool = mazePool(band).length ? mazePool(band) : mazePool('A');
+  const build = (lv, wrongs) => {
+    const right = programText(lv.solution.main);
+    const choices = rng.shuffle([right, ...wrongs]);
+    return {
+      prompt: 'Which program reaches the flag?', choices, answer: right, skill: skillOf(lv.solution),
+      key: 'maze:' + lv.id + ':' + choices.join('|'),
+      explain: `${lv.hint} Follow the green program block by block and the robot lands on the flag.`,
+      code: { kind: 'maze', title: 'Robo Maze', level: plainLevel(lv), choice: 'program' }
+    };
+  };
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const lv = rng.pick(pool);
+    const right = programText(lv.solution.main), wrongs = [];
+    for (let i = 0; i < 60 && wrongs.length < 2; i++) {
+      const m = mutate(lv.solution, rng);
+      if (!m) continue;
+      const t = programText(m.main);
+      if (t === right || wrongs.includes(t) || runToEnd(m, lv).solved) continue;
+      wrongs.push(t);
+    }
+    if (wrongs.length === 2) return build(lv, wrongs);
+  }
+  // Practically unreachable: any level with a stop-short and a wrong-turn edit that both miss the flag.
+  const lv = pool[0];
+  const main = lv.solution.main;
+  const shorter = programText(main.slice(0, -1)), turned = programText([{ op: 'right' }, ...main]);
+  return build(lv, [shorter, turned].filter((t, i, a) => t !== programText(main) && a.indexOf(t) === i).slice(0, 2));
+}
+
+/** Predict the Robot: read the program, then say which lettered square the robot stops on. */
+export function predictQuestion(grade, rng) {
+  const band = codeBand(grade);
+  const r = programRound(rng, band);
+  const lv = parseLevel(r.level);
+  const key = (c) => `${c.x},${c.y}`;
+  const seen = new Set([key(r.end), key(lv.start)]);
+  const visited = [];
+  for (const st of r.steps) if (st.kind === 'move' && !seen.has(key(st.to))) { seen.add(key(st.to)); visited.push({ x: st.to.x, y: st.to.y }); }
+  const floor = [];
+  for (let y = 0; y < lv.h; y++) for (let x = 0; x < lv.w; x++) if (!lv.walls[y][x] && !seen.has(key({ x, y }))) floor.push({ x, y });
+  const cells = [{ x: r.end.x, y: r.end.y }, ...rng.shuffle(visited).slice(0, 3)];
+  const extra = rng.shuffle(floor);
+  while (cells.length < 4 && extra.length) cells.push(extra.pop());
+  const ordered = cells.slice(0, 4).sort((a, b) => a.y - b.y || a.x - b.x);   // letters read left to right, top to bottom
+  const markers = ordered.map((c, i) => ({ letter: LETTERS[i], x: c.x, y: c.y }));
+  const answer = markers.find((m) => m.x === r.end.x && m.y === r.end.y).letter;
+  const program = programText(r.program.main);
+  return {
+    prompt: 'Where will the robot stop?', choices: markers.map((m) => m.letter), answer, skill: skillOf(r.program),
+    key: 'predict:' + gridKey(r.level) + ':' + program,
+    explain: `Act it out from the start, one block at a time. The robot stops on ${answer}.`,
+    code: { kind: 'predict', title: 'Predict the Robot', level: plainLevel(r.level), program, robot: { x: lv.start.x, y: lv.start.y, dir: lv.dir }, markers, choice: 'letter' }
+  };
+}
+
+/** Bug Hunt: the program is listed with numbered lines beside its maze; which line is the bug? */
 export function bugQuestion(grade, rng) {
-  const band = bandFor(grade) === 'A' ? 'A' : 'B';
+  const band = codeBand(grade);
   // Only puzzles long enough to offer four different lines to pick from.
   const long = (list) => list.filter((lv) => programLines(lv.program.main).length >= 4);
   const pool = long(bugLevelsForBand(band)).length ? long(bugLevelsForBand(band)) : long(bugLevelsForBand('A'));
   const lv = rng.pick(pool);
   const lines = programLines(lv.program.main);
   const bugAt = Math.max(0, lines.findIndex((l) => l.uid === lv.fix.uid));
-  const listing = lines.map((l, i) => `${i + 1}. ${l.text}`).join('\n');
+  const listing = lines.map((l) => l.text).join('\n');
   const answer = `Line ${bugAt + 1}`;
   const others = lines.map((_, i) => i).filter((i) => i !== bugAt);
   const choices = rng.shuffle([answer, ...rng.shuffle(others).slice(0, 3).map((i) => `Line ${i + 1}`)]);
-  return { prompt: `${lv.hint}\nRobot faces ${DIR_WORD[lv.level.startDir]}\n${listing}\n\nWhich line has the bug?`, choices, answer, skill: band === 'B' ? 'repeat' : 'sequence_code', explain: `${lv.hint} Line ${bugAt + 1} (${lines[bugAt].text.trim()}) is the wrong block.` };
-}
-
-/** Robot Dance in words: which program ends where the robot must be? */
-export function danceQuestion(grade, rng) {
-  const band = bandFor(grade) === 'A' ? 'A' : 'B';
-  const r = danceRound(rng, band);
-  const moves = r.steps.filter((s) => s.kind === 'move').length;
-  const facing = DIR_WORD[DIR_NAME[r.end.dir]];
+  const start = parseLevel(lv.level);
   return {
-    prompt: `Robot faces ${DIR_WORD[r.level.startDir]}. Which dance moves it ${moves} square${moves === 1 ? '' : 's'} and ends facing ${facing}?`,
-    choices: r.choices.map((c) => c.text), answer: r.answer, skill: r.skill
+    prompt: 'Which line has the bug?', choices, answer, skill: skillOf(lv.program), key: 'bug:' + lv.id,
+    explain: `${lv.hint} Line ${bugAt + 1} (${lines[bugAt].text.trim()}) is the wrong block.`,
+    code: { kind: 'bug', title: 'Bug Hunt', level: plainLevel(lv.level), program: listing, numbered: true, robot: { x: start.start.x, y: start.start.y, dir: start.dir }, choice: 'line' }
   };
 }
+
+/** Robot Dance: the robot's path is drawn on the floor; which program did it follow? */
+export function danceQuestion(grade, rng) {
+  const band = codeBand(grade);
+  const r = danceRound(rng, band);
+  const path = r.steps.filter((s) => s.kind === 'move').map((s) => ({ from: s.from, to: s.to }));
+  const moves = path.length, turns = r.steps.filter((s) => s.kind === 'turn').length;
+  return {
+    prompt: 'Which program made this dance?',
+    choices: r.choices.map((c) => c.text), answer: r.answer, skill: r.skill,
+    key: 'dance:' + gridKey(r.level) + ':' + r.answer,
+    explain: `The robot moved ${moves} ${moves === 1 ? 'square' : 'squares'} and turned ${turns} ${turns === 1 ? 'time' : 'times'}. The green program is the one it followed.`,
+    code: { kind: 'dance', title: 'Robot Dance', level: plainLevel(r.level), robot: { x: r.end.x, y: r.end.y, dir: r.end.dir }, path, choice: 'program' }
+  };
+}
+
+/** The code boss mixes the four lessons. */
+export const codeDuelQuestion = (grade, rng) => rng.pick([mazeQuestion, predictQuestion, bugQuestion, danceQuestion])(grade, rng);
 
 const bibleOf = (kind) => (grade, rng) => {
   const band = bandFor(grade);
@@ -115,21 +206,28 @@ const bibleOf = (kind) => (grade, rng) => {
 export const BY_GAME = {
   'math-dash': generateQuestion, 'math-balloons': generateQuestion, 'math-pizza': fractionQuestion, 'math-bridge': patternQuestion,
   'eng-builder': buildQuestion, 'eng-grammar': grammarQuestion, 'eng-match': matchQuestion, 'eng-frog': wordsQuestion,
-  'code-maze': codeQuestion, 'code-predict': codeQuestion, 'code-bug': bugQuestion, 'code-dance': danceQuestion,
+  'code-maze': mazeQuestion, 'code-predict': predictQuestion, 'code-bug': bugQuestion, 'code-dance': danceQuestion,
   'bible-quiz': bibleOf('quiz'), 'bible-verse': bibleOf('verse'), 'bible-match': bibleOf('who'), 'bible-ark': bibleQuestion
 };
 
 export const duelQuestion = (gameId, grade, rng) => (BY_GAME[gameId] || generateQuestion)(Number(grade) || 3, rng);
 
-/** n questions from one game's topic at a grade, without repeats while the topic has enough of them (a small bank, like the bug puzzles, may repeat). */
-export function duelQuestions(gameId, grade, rng, n = 20) {
+/** n questions from a generator at a grade, without repeats while it has enough (a small bank may repeat). */
+function fill(gen, grade, rng, n) {
   const out = [], seen = new Set();
   let guard = 0;
   while (out.length < n && guard++ < n * 10) {
-    const q = duelQuestion(gameId, grade, rng);
-    if (seen.has(q.prompt)) continue;
-    seen.add(q.prompt); out.push(q);
+    const q = gen(Number(grade) || 3, rng);
+    const key = q.key || q.prompt;
+    if (seen.has(key)) continue;
+    seen.add(key); out.push(q);
   }
   while (out.length < n && out.length) out.push(out[out.length % seen.size]);
   return out;
 }
+
+/** n questions from one game's topic at a grade. */
+export const duelQuestions = (gameId, grade, rng, n = 20) => fill((g, r) => duelQuestion(gameId, g, r), grade, rng, n);
+
+/** A boss's questions: the whole subject; the code boss uses the four coding lessons. */
+export const bossDuelQuestions = (subject, grade, rng, n = 20) => (subject === 'code' ? fill(codeDuelQuestion, grade, rng, n) : bossQuestions(subject, grade, rng, n));
