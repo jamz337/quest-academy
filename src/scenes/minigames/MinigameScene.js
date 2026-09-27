@@ -6,7 +6,7 @@ import * as Launcher from '../../systems/MinigameLauncher.js';
 import { Sfx } from '../../systems/Audio.js';
 import { stop as stopSpeech, rateFor } from '../../systems/Speech.js';
 import * as Store from '../../systems/Store.js';
-import { explainQuestion } from '../../data/explanations.js';
+import { explainQuestion, explainSteps } from '../../data/explanations.js';
 import { skillLabel } from '../../data/skills.js';
 import { isNewSkill, markIntroduced } from '../../systems/Practice.js';
 import { dueReviews, recordReview } from '../../systems/Review.js';
@@ -111,6 +111,7 @@ export class MinigameScene extends BaseScene {
   get noTimers() { return this.payload.timers === false; }
   get profile() { return Store.getProfile(); }
   explain(q) { return explainQuestion(q, this.payload.subject); }
+  steps(q) { return explainSteps(q, this.payload.subject); }
 
   /** Record an answered question for the log (skill, right, time, whether an explanation was shown). */
   logQuestion(q, right) {
@@ -126,17 +127,41 @@ export class MinigameScene extends BaseScene {
   needsIntro(skill) { return !!skill && isNewSkill(this.profile, skill); }
   markIntroduced(skill) { Store.updateProfile((p) => markIntroduced(p, skill)); }
 
-  /** Worked-example card for a brand-new skill, filling the play area. `example` is a solved question's explanation. */
+  /**
+   * Worked-example card for a brand-new skill, filling the play area. `example` is { problem, steps } (a solved
+   * question and its working, one short step per line) or a plain string.
+   */
   introPanel(area, skill, example, onDone) {
     const { ui } = this;
-    const cx = area.x + area.w / 2, h = Math.min(area.h, 320 * ui), cy = area.y + h / 2;
-    const k = card(this, cx, cy, Math.min(area.w, 560 * ui), h, { stroke: this.subject.soft });
-    text(this, cx, cy - h / 2 + 34 * ui, `New skill: ${skillLabel(skill)}`, T.heading(this, this.subject.dark));
-    text(this, cx, cy - h / 2 + 62 * ui, 'Here is one worked out for you:', T.small(this, THEME.ink2));
-    const body = readable(this, cx, cy - 6 * ui, example, T.at(this, 18, THEME.ink, { fontStyle: '600' }), { width: Math.min(area.w, 560 * ui) - 56 });
-    speakButton(this, cx + Math.min(area.w, 560 * ui) / 2 - 30 * ui, cy - h / 2 + 34 * ui, 40 * ui, body, { rate: this.speechRate });
+    const ex = typeof example === 'string' ? { problem: '', steps: [example] } : example;
+    const steps = (ex.steps || []).filter(Boolean);
+    const w = Math.min(area.w, 560 * ui), cx = area.x + area.w / 2;
+    const headH = 76 * ui, problemH = ex.problem ? 50 * ui : 0, footH = 76 * ui;
+    // Lay the steps out first so the card can be sized to fit them (smaller type when they would not fit).
+    const numbered = steps.map((st, i) => `${i + 1}.  ${st}`).join('\n');
+    const room = area.h - headH - problemH - footH - 8 * ui;
+    let body = null;
+    for (const size of [16, 15, 14, 13]) {
+      if (body) body.destroy();
+      body = readable(this, 0, 0, numbered, T.at(this, size, THEME.ink, { fontStyle: '600' }), { width: w - 56, align: 'left', lineGap: 9 }).setOrigin(0, 0);
+      if (body.height <= room) break;
+    }
+    const h = Math.min(area.h, headH + problemH + body.height + footH);
+    const cy = area.y + h / 2, top = cy - h / 2;
+    const k = card(this, cx, cy, w, h, { stroke: this.subject.soft });
+    if (this.children && typeof this.children.bringToTop === 'function') this.children.bringToTop(body);   // above the card (the test mock has no display list)
+    const title = text(this, cx, top + 30 * ui, `New skill: ${skillLabel(skill)}`, T.heading(this, this.subject.dark));
+    if (title.width > w - 110 * ui) title.setFontSize(Math.round(17 * ui));
+    text(this, cx, top + 56 * ui, 'Watch how this one is done:', T.small(this, THEME.ink2));
+    if (ex.problem) {
+      const c = chip(this, cx, top + headH + problemH / 2, { text: ex.problem, originX: 0.5, color: this.subject.soft, textColor: this.subject.dark, fontSize: 20, height: 36 * ui, shadow: 'none' });
+      const cw = c.width || (c.text ? c.text.width + 32 : 0);
+      if (cw > w - 32) c.setScale((w - 32) / cw);
+    }
+    body.setPosition(cx - w / 2 + 28, top + headH + problemH);
+    speakButton(this, cx + w / 2 - 30 * ui, top + 30 * ui, 40 * ui, body, { rate: this.speechRate });
     this.autoRead(body);
-    button(this, cx, cy + h / 2 - 40 * ui, Math.min(220 * ui, area.w - 48), 48 * ui, 'Got it!', { variant: 'primary', onClick: () => { Sfx.click(); this.markIntroduced(skill); this.qStartAt = Date.now(); onDone(); } });
+    button(this, cx, top + h - 40 * ui, Math.min(220 * ui, area.w - 48), 48 * ui, 'Got it!', { variant: 'primary', onClick: () => { Sfx.click(); this.markIntroduced(skill); this.qStartAt = Date.now(); onDone(); } });
     enter(this, k, { from: 'up', distance: 12 });
   }
 

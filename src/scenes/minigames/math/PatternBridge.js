@@ -25,7 +25,7 @@ export class PatternBridge extends MinigameScene {
   exampleFor(skill) {
     for (let i = 0; i < 40; i++) {
       const r = generateRounds(this.payload.grade, this.rng, 1)[0];
-      if (r.skill === skill) return `${r.terms.map((t, j) => (j === r.missingIndex ? `[${t}]` : t)).join(', ')}.  ${this.explain(r)}`;
+      if (r.skill === skill) return { problem: r.terms.map((t, j) => (j === r.missingIndex ? `[${t}]` : t)).join(', '), steps: this.steps(r) };
     }
     return null;
   }

@@ -49,7 +49,7 @@ export class NumberDash extends MinigameScene {
   exampleFor(skill) {
     for (let i = 0; i < 40; i++) {
       const q = generateQuestion(this.payload.grade, this.rng);
-      if (q.skill === skill) return `${q.prompt.replace('\n', ' ')} → ${q.answer}.  ${this.explain(q)}`;
+      if (q.skill === skill) return { problem: `${q.prompt.replace('\n', ' ')} = ${q.answer}`, steps: this.steps(q) };
     }
     return null;
   }

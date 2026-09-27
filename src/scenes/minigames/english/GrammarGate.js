@@ -28,7 +28,7 @@ export class GrammarGate extends MinigameScene {
   exampleFor(skill) {
     for (let i = 0; i < 40; i++) {
       const r = generateRounds(this.payload.grade, this.rng, 1)[0];
-      if (r.skill === skill) return `${fillBlank(r.sentence, r.options[r.answer])}  ${this.explain({ ...r, answer: r.options[r.answer] })}`;
+      if (r.skill === skill) return { problem: fillBlank(r.sentence, r.options[r.answer]), steps: this.steps({ ...r, answer: r.options[r.answer] }) };
     }
     return null;
   }

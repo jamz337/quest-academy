@@ -1,12 +1,24 @@
-// Why an answer is what it is, in one or two child-sized sentences. Generators keep their prompts; this
-// module reads them back (arithmetic prompts are regular) or falls back to a per-skill explanation.
+// Why an answer is what it is, in short child-sized steps. Generators keep their prompts; this module reads
+// them back (arithmetic prompts are regular) or falls back to a per-skill explanation. Every explanation is
+// a list of steps (one short sentence each) so the worked-example card can show them one per line; the
+// one-string forms join the steps for places with less room.
 import { skillLabel } from './skills.js';
 
 const n = (s) => Number(String(s).replace(/[()]/g, ''));
 const fmt = (v) => (Number.isInteger(v) ? String(v) : String(Math.round(v * 100) / 100));
+const neg = (v) => (v < 0 ? `(${fmt(v)})` : fmt(v));
+const list = (arr) => arr.map(fmt).join(', ');
+/** Counting on or back from `from` by 1 for `count` steps, at most `max` numbers shown. */
+const countList = (from, count, dir, max = 10) => { const out = []; for (let i = 1; i <= Math.min(count, max); i++) out.push(from + dir * i); return out.join(', ') + (count > max ? '…' : ''); };
+/** Split a number into its big part (hundreds or tens) and the rest, for adding or taking away in two goes. */
+function chunk(y) {
+  if (y >= 100) return [y - (y % 100), y % 100];
+  if (y >= 10) return [y - (y % 10), y % 10];
+  return [y, 0];
+}
 
-/** Arithmetic: parse the prompt ("12 × 3", "x + 4 = 9\nx = ?", "25% of 80" …) and show the working. */
-export function mathExplanation(prompt, answer) {
+/** Arithmetic steps: parse the prompt ("12 × 3", "x + 4 = 9\nx = ?", "25% of 80" …). Null when it is not one we know. */
+export function mathSteps(prompt, answer) {
   const p = String(prompt || '').replace(/\s+/g, ' ').trim();
   const a = String(answer);
   let m;
@@ -14,99 +26,129 @@ export function mathExplanation(prompt, answer) {
   const re = (s) => new RegExp('^' + s.replace(/N/g, N) + '$');
   if ((m = p.match(re('N \\+ N × N')))) {
     const [x, y, z] = [n(m[1]), n(m[2]), n(m[3])];
-    return `Multiply before you add: ${y} × ${z} = ${y * z}, then ${x} + ${y * z} = ${a}.`;
+    return [`Do the times first: ${y} × ${z} = ${y * z}.`, `Then add: ${x} + ${y * z} = ${a}.`, `So ${x} + ${y} × ${z} = ${a}.`];
   }
   if ((m = p.match(re('N \\+ N')))) {
     const [x, y] = [n(m[1]), n(m[2])];
-    if (x < 0 || y < 0) return `Adding a negative number is like taking away: ${fmt(x)} + ${fmt(y)} = ${a}.`;
-    if (!Number.isInteger(x) || !Number.isInteger(y)) return `Line up the decimal points, then add: ${fmt(x)} + ${fmt(y)} = ${a}.`;
-    if (x + y <= 20) return `Start at ${x} and count on ${y}: ${x} + ${y} = ${a}.`;
-    return `Add the tens, then the ones: ${x} + ${y} = ${a}.`;
+    if (y < 0) return ['Adding a minus number means taking away.', `${neg(x)} + ${neg(y)} is the same as ${neg(x)} − ${fmt(-y)}.`, `So the answer is ${a}.`];
+    if (x < 0) return [`Start at ${neg(x)} on the number line.`, `Move ${fmt(y)} to the right.`, `You land on ${a}.`];
+    if (!Number.isInteger(x) || !Number.isInteger(y)) return ['Line up the decimal points.', `Add like whole numbers: ${fmt(x)} + ${fmt(y)} = ${a}.`, 'Keep the point in the same place.'];
+    if (x + y <= 20) return [`Start at ${x}.`, `Count on ${y} more: ${countList(x, y, 1)}.`, `So ${x} + ${y} = ${a}.`];
+    const [big, rest] = chunk(y);
+    if (rest === 0) return [`Add ${big} in one go: ${x} + ${big} = ${a}.`, `So ${x} + ${y} = ${a}.`];
+    return [`Add ${big} first: ${x} + ${big} = ${x + big}.`, `Now add ${rest}: ${x + big} + ${rest} = ${a}.`, `So ${x} + ${y} = ${a}.`];
   }
   if ((m = p.match(re('N − N')))) {
     const [x, y] = [n(m[1]), n(m[2])];
-    if (x < 0 || y < 0) return `Taking away a negative is the same as adding: ${fmt(x)} − ${fmt(y)} = ${a}.`;
-    if (!Number.isInteger(x) || !Number.isInteger(y)) return `Line up the decimal points, then subtract: ${fmt(x)} − ${fmt(y)} = ${a}.`;
-    return `Take ${y} away from ${x}: ${x} − ${y} = ${a}. Check: ${a} + ${y} = ${x}.`;
+    if (y < 0) return ['Taking away a minus number means adding.', `${neg(x)} − ${neg(y)} is the same as ${neg(x)} + ${fmt(-y)}.`, `So the answer is ${a}.`];
+    if (x < 0) return [`Start at ${neg(x)} on the number line.`, `Move ${fmt(y)} to the left.`, `You land on ${a}.`];
+    if (!Number.isInteger(x) || !Number.isInteger(y)) return ['Line up the decimal points.', `Take away like whole numbers: ${fmt(x)} − ${fmt(y)} = ${a}.`, 'Keep the point in the same place.'];
+    if (x <= 20) return [`Start at ${x}.`, `Count back ${y}: ${countList(x, y, -1)}.`, `So ${x} − ${y} = ${a}.`, `Check it: ${a} + ${y} = ${x}.`];
+    const [big, rest] = chunk(y);
+    const steps = rest === 0
+      ? [`Take away ${big}: ${x} − ${big} = ${a}.`]
+      : [`Take away ${big} first: ${x} − ${big} = ${x - big}.`, `Now take away ${rest}: ${x - big} − ${rest} = ${a}.`];
+    return [...steps, `So ${x} − ${y} = ${a}.`, `Check it: ${a} + ${y} = ${x}.`];
   }
   if ((m = p.match(re('N × N')))) {
     const [x, y] = [n(m[1]), n(m[2])];
-    if (x < 0 || y < 0) return `Two signs the same make a positive, different signs make a negative: ${fmt(x)} × ${fmt(y)} = ${a}.`;
-    const groups = Math.min(Math.abs(y), 6);
-    const list = Array.from({ length: groups }, (_, i) => x * (i + 1)).join(', ');
-    return `${x} × ${y} means ${y} groups of ${x}: ${list}${Math.abs(y) > 6 ? '…' : ''} = ${a}.`;
+    if (x < 0 || y < 0) {
+      const same = (x < 0) === (y < 0);
+      return [same ? 'Both signs are the same, so the answer is plus.' : 'The signs are different, so the answer is minus.', `${fmt(Math.abs(x))} × ${fmt(Math.abs(y))} = ${fmt(Math.abs(x * y))}.`, `So ${neg(x)} × ${neg(y)} = ${a}.`];
+    }
+    const groups = Math.min(Math.abs(y), 10);
+    const shown = Array.from({ length: groups }, (_, i) => x * (i + 1));
+    return [`${x} × ${y} means ${y} groups of ${x}.`, `Count in ${x}s: ${list(shown)}${Math.abs(y) > 10 ? '…' : ''}.`, `So ${x} × ${y} = ${a}.`];
   }
   if ((m = p.match(/^(\d+) ÷ (\d+)$/))) {
     const [x, y] = [n(m[1]), n(m[2])];
-    return `Ask "how many ${y}s make ${x}?" ${y} × ${a} = ${x}, so ${x} ÷ ${y} = ${a}.`;
+    const jumps = Math.min(Math.round(x / y), 10);
+    const shown = Array.from({ length: jumps }, (_, i) => y * (i + 1));
+    return [`${x} ÷ ${y} asks: how many ${y}s make ${x}?`, `Count in ${y}s: ${list(shown)}${x / y > 10 ? '…' : ''}.`, `That is ${a} jumps, and ${y} × ${a} = ${x}.`, `So ${x} ÷ ${y} = ${a}.`];
   }
   if ((m = p.match(/^(\d+)% of (\d+)$/))) {
     const [pc, base] = [n(m[1]), n(m[2])];
-    return `10% of ${base} is ${fmt(base / 10)}, so ${pc}% is ${pc / 10} of those: ${a}.`;
+    if (pc === 50) return ['50% means a half.', `Half of ${base} is ${base} ÷ 2 = ${a}.`];
+    if (pc === 25) return ['25% means a quarter.', `A quarter of ${base} is ${base} ÷ 4 = ${a}.`];
+    if (pc === 75) return ['75% means three quarters.', `A quarter of ${base} is ${fmt(base / 4)}.`, `Three of those: 3 × ${fmt(base / 4)} = ${a}.`];
+    if (pc % 10 === 0) return [`10% of ${base} is ${fmt(base / 10)}.`, `${pc}% is ${pc / 10} lots of 10%: ${pc / 10} × ${fmt(base / 10)} = ${a}.`];
+    return [`1% of ${base} is ${fmt(base / 100)}.`, `${pc}% is ${pc} lots of 1%: ${pc} × ${fmt(base / 100)} = ${a}.`];
   }
-  if ((m = p.match(/^x \+ (\d+) = (\d+) x = \?$/))) return `Undo the + ${m[1]}: x = ${m[2]} − ${m[1]} = ${a}.`;
-  if ((m = p.match(/^(\d+)x = (\d+) x = \?$/))) return `Undo the × ${m[1]}: x = ${m[2]} ÷ ${m[1]} = ${a}.`;
-  if ((m = p.match(/^(\d+)²$/))) return `${m[1]}² means ${m[1]} × ${m[1]} = ${a}.`;
+  if ((m = p.match(/^x \+ (\d+) = (\d+) x = \?$/))) return [`x + ${m[1]} = ${m[2]} asks: what plus ${m[1]} makes ${m[2]}?`, `Take ${m[1]} away from ${m[2]}: ${m[2]} − ${m[1]} = ${a}.`, `So x = ${a}.`];
+  if ((m = p.match(/^(\d+)x = (\d+) x = \?$/))) return [`${m[1]}x = ${m[2]} means ${m[1]} lots of x make ${m[2]}.`, `Share ${m[2]} into ${m[1]}: ${m[2]} ÷ ${m[1]} = ${a}.`, `So x = ${a}.`];
+  if ((m = p.match(/^(\d+)²$/))) return [`${m[1]}² means ${m[1]} × ${m[1]}.`, `${m[1]} × ${m[1]} = ${a}.`, `So ${m[1]}² = ${a}.`];
   return null;
 }
 
-/** Number patterns: from the round's terms, step and rule. */
-export function patternExplanation(r) {
+/** Arithmetic working as one string (the steps joined), or null. */
+export function mathExplanation(prompt, answer) { const s = mathSteps(prompt, answer); return s ? s.join(' ') : null; }
+
+/** Number pattern steps: from the round's terms, step and rule. */
+export function patternSteps(r) {
   if (!r || !r.terms) return null;
-  const shown = r.terms.join(', ');
-  if (r.rule) return `${r.rule.replace('Find term 5', '')} Put n = ${r.missingIndex + 1} into the rule and you get ${r.answer}. Sequence: ${shown}.`;
+  const shown = r.terms.map((t, j) => (j === r.missingIndex ? '?' : t)).join(', ');
+  const look = `Look at the numbers: ${shown}.`;
+  if (r.rule) return [look, `The rule is: ${r.rule.replace('Find term 5', '').trim()}`, `Put n = ${r.missingIndex + 1} into the rule.`, `You get ${r.answer}.`];
   const step = r.terms[1] - r.terms[0];
-  if (r.skill === 'doubling') return `Each number is double the one before: ${shown}. So the missing one is ${r.answer}.`;
-  if (r.skill === 'geometric') return `Each number is multiplied by ${r.terms[1] / r.terms[0]}: ${shown}. The missing one is ${r.answer}.`;
-  if (r.skill === 'squares') return `These are square numbers (1×1, 2×2, 3×3…): ${shown}. The missing one is ${r.answer}.`;
-  if (r.skill === 'sequence' && r.terms.length > 2 && r.terms[2] - r.terms[1] !== step) return `The pattern goes up and down by turns: ${shown}. The missing one is ${r.answer}.`;
-  return `Each number goes ${step >= 0 ? 'up' : 'down'} by ${Math.abs(step)}: ${shown}. The missing one is ${r.answer}.`;
+  const before = r.missingIndex > 0 ? r.terms[r.missingIndex - 1] : null;
+  if (r.skill === 'doubling') return [look, 'Each number is double the one before.', before !== null ? `${before} × 2 = ${r.answer}, so the missing one is ${r.answer}.` : `So the missing one is ${r.answer}.`];
+  if (r.skill === 'geometric') { const k = r.terms[1] / r.terms[0]; return [look, `Each number is ${k} times the one before.`, before !== null ? `${before} × ${k} = ${r.answer}, so the missing one is ${r.answer}.` : `So the missing one is ${r.answer}.`]; }
+  if (r.skill === 'squares') return [look, 'These are square numbers: 1×1, 2×2, 3×3 and so on.', `${r.missingIndex + 1} × ${r.missingIndex + 1} = ${r.answer}, so the missing one is ${r.answer}.`];
+  if (r.skill === 'sequence' && r.terms.length > 2 && r.terms[2] - r.terms[1] !== step) return [look, 'The pattern goes up and down by turns.', `So the missing one is ${r.answer}.`];
+  const dir = step >= 0 ? 'up' : 'down';
+  return [look, `Each number goes ${dir} by ${Math.abs(step)}.`, before !== null ? `${before} ${step >= 0 ? '+' : '−'} ${Math.abs(step)} = ${r.answer}, so the missing one is ${r.answer}.` : `So the missing one is ${r.answer}.`];
 }
 
-// Per-skill explanations for banks that have no working to show. {a} is the correct answer.
+/** Number pattern working as one string, or null. */
+export function patternExplanation(r) { const s = patternSteps(r); return s ? s.join(' ') : null; }
+
+// Per-skill explanations for banks that have no working to show, as steps. {a} is the correct answer.
 const BY_SKILL = {
-  verb: 'The verb has to match who is doing it: one person or thing takes -s (she runs), more than one does not (they run). Here it is "{a}".',
-  article: 'Use "an" before a vowel sound (an apple) and "a" before a consonant sound (a bike). Here it is "{a}".',
-  pronoun: 'A pronoun stands in for a name. Use I/he/she/they for the doer and me/him/her/them for who it happens to. Here it is "{a}".',
-  homophone: 'These words sound the same but mean different things, so think about the meaning. Here it is "{a}".',
-  tense: 'Past tense tells what already happened (walked); present tells what happens now (walks). Here it is "{a}".',
-  adjective: 'An adjective describes a noun (a red hat). Here it is "{a}".',
-  adverb: 'An adverb tells how something is done and often ends in -ly (walked slowly). Here it is "{a}".',
-  agreement: 'The subject and verb must agree: singular with singular, plural with plural. Here it is "{a}".',
-  vocab: 'Read the whole sentence and pick the word that makes the meaning work. Here it is "{a}".',
-  punctuation: 'Questions end with ?, strong feelings with !, and most sentences with a full stop. Here it is "{a}".',
-  plural: 'Most plurals add -s or -es; some change (child → children). Here it is "{a}".',
-  spelling: 'Say the word slowly and listen for each sound. It is spelt "{a}".',
-  synonym: 'Synonyms mean the same thing. The pair here is "{a}".',
-  antonym: 'Antonyms are opposites. The pair here is "{a}".',
-  definition: 'Match the word to its meaning. Here it is "{a}".',
-  fractions: 'The bottom number says how many equal slices; the top says how many to take. The answer is {a}.',
-  equivalent: 'Multiply or divide the top and bottom by the same number and the fraction stays equal. The answer is {a}.',
-  compare: 'With the same bottom number, the bigger top wins; otherwise make the bottoms the same first. The answer is {a}.',
-  'fraction-add': 'Make the bottom numbers the same, then add the tops. The answer is {a}.',
-  convert: 'Divide the top by the bottom to get a decimal (×100 for a percent). The answer is {a}.',
-  sequence_code: 'Read the program one block at a time and act it out. The answer is {a}.',
-  repeat: 'A Repeat block runs everything inside it that many times, so count the moves inside and multiply. The answer is {a}.',
-  conditional: 'An If block only runs its inside when the condition is true. The answer is {a}.',
-  people: 'Remember who did what. The answer is {a}.',
-  stories: 'Think back to the story. The answer is {a}.',
-  places: 'Picture where the story happens. The answer is {a}.',
-  books: 'Remember the order and names of the books. The answer is {a}.',
-  verses: 'Say the verse aloud a few times and the missing word will stick. The word is "{a}".'
+  verb: ['One person or thing gets an -s: she runs.', 'More than one gets no -s: they run.', 'Here it is "{a}".'],
+  article: ['Use "an" before a vowel sound: an apple.', 'Use "a" before other sounds: a bike.', 'Here it is "{a}".'],
+  pronoun: ['A pronoun stands in for a name.', 'Use I, he, she or they for the one doing it.', 'Use me, him, her or them for the one it happens to.', 'Here it is "{a}".'],
+  homophone: ['These words sound the same but mean different things.', 'Think about what the sentence means.', 'Here it is "{a}".'],
+  tense: ['Past tense tells what already happened: walked.', 'Present tense tells what happens now: walks.', 'Here it is "{a}".'],
+  adjective: ['An adjective describes a thing: a red hat.', 'Here it is "{a}".'],
+  adverb: ['An adverb tells how something is done.', 'It often ends in -ly: walked slowly.', 'Here it is "{a}".'],
+  agreement: ['One thing goes with a "one" verb: the dog barks.', 'Many things go with a "many" verb: the dogs bark.', 'Here it is "{a}".'],
+  vocab: ['Read the whole sentence.', 'Pick the word that makes it make sense.', 'Here it is "{a}".'],
+  punctuation: ['A question ends with a ?', 'A big feeling ends with a !', 'Most sentences end with a full stop.', 'Here it is "{a}".'],
+  plural: ['Most plurals add -s or -es: cats, boxes.', 'Some change: child becomes children.', 'Here it is "{a}".'],
+  spelling: ['Say the word slowly.', 'Listen for each sound.', 'It is spelt "{a}".'],
+  synonym: ['Synonyms mean the same thing.', 'The pair here is "{a}".'],
+  antonym: ['Antonyms are opposites.', 'The pair here is "{a}".'],
+  definition: ['Match the word to what it means.', 'Here it is "{a}".'],
+  fractions: ['The bottom number says how many equal slices.', 'The top number says how many to take.', 'The answer is {a}.'],
+  equivalent: ['Times or divide the top and bottom by the same number.', 'The fraction stays the same size.', 'The answer is {a}.'],
+  compare: ['Same bottom number? The bigger top wins.', 'Different bottoms? Make them the same first.', 'The answer is {a}.'],
+  'fraction-add': ['Make the bottom numbers the same.', 'Then add the tops.', 'The answer is {a}.'],
+  convert: ['Divide the top by the bottom to get a decimal.', 'Times by 100 for a percent.', 'The answer is {a}.'],
+  sequence_code: ['Read the program one block at a time.', 'Act out each move.', 'The answer is {a}.'],
+  repeat: ['A Repeat block runs its inside that many times.', 'Count the moves inside, then times by the repeats.', 'The answer is {a}.'],
+  conditional: ['An If block only runs when its check is true.', 'The answer is {a}.'],
+  people: ['Remember who did what.', 'The answer is {a}.'],
+  stories: ['Think back to the story.', 'The answer is {a}.'],
+  places: ['Picture where the story happens.', 'The answer is {a}.'],
+  books: ['Remember the order and names of the books.', 'The answer is {a}.'],
+  verses: ['Say the verse out loud a few times.', 'The missing word will stick.', 'The word is "{a}".']
 };
 
-/** Explanation for any question: { prompt, answer, skill, terms?, ref? }. Never empty. */
-export function explainQuestion(q, subject = null) {
-  if (!q) return '';
-  if (q.explain) return q.explain;
-  if (q.terms) return patternExplanation(q) || '';
-  const math = (subject === 'math' || /[+−×÷²%]|x = \?/.test(q.prompt || '')) ? mathExplanation(q.prompt, q.answer) : null;
+/** Steps for any question: { prompt, answer, skill, terms?, ref?, explain? }. Never empty. */
+export function explainSteps(q, subject = null) {
+  if (!q) return [];
+  if (q.explain) return Array.isArray(q.explain) ? q.explain : [String(q.explain)];
+  if (q.terms) return patternSteps(q) || [];
+  const math = (subject === 'math' || /[+−×÷²%]|x = \?/.test(q.prompt || '')) ? mathSteps(q.prompt, q.answer) : null;
   if (math) return math;
   const base = BY_SKILL[q.skill];
-  let out = base ? base.replace('{a}', String(q.answer)) : `The answer is ${q.answer}.`;
-  if (q.ref) out += ` You can read it in ${q.ref}.`;
+  const out = base ? base.map((s) => s.replace('{a}', String(q.answer))) : [`The answer is ${q.answer}.`];
+  if (q.ref) out.push(`You can read it in ${q.ref}.`);
   return out;
 }
+
+/** Explanation for any question as one string. Never empty. */
+export function explainQuestion(q, subject = null) { return explainSteps(q, subject).join(' '); }
 
 /** What a parent can do at home about a weak skill. */
 export const SKILL_TIPS = {
