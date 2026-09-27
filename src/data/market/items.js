@@ -1,9 +1,20 @@
 // The Cheapside market: everything coins can buy. Nothing here changes how the games play; it is looks for the
 // character, paint and floors for the house, and Bajan collector cards that each teach one fact.
 // kind: 'hat' | 'glasses' | 'back' (looks, drawn by ui/FlatCharacter.js from `style`), 'paint' | 'floor' (house
-// decor), 'card' (a set and a fact). `icon` is shown in the shop; looks are also previewed on the character.
+// decor), 'card' (a set and a fact), 'snack' (stackable treats used in duels, see data/world/duels.js). `icon` is
+// shown in the shop; looks are also previewed on the character.
 
 export const LOOK_KINDS = ['hat', 'glasses', 'back'];
+/** Kinds bought many times over and kept as counts (profile.inventory.snacks) rather than owned once. */
+export const STACKABLE_KINDS = ['snack'];
+
+/** Treats for duels: `effect` is { heal } hearts, { timeMs } on the clock, or { logic } extra hints. */
+const SNACKS = [
+  { id: 'snack-mango-juice', kind: 'snack', name: 'Mango juice', price: 15, icon: '🥭', desc: 'Heals 1 heart in a duel.', effect: { heal: 1 } },
+  { id: 'snack-coconut', kind: 'snack', name: 'Coconut water', price: 30, icon: '🥥', desc: 'Heals 2 hearts in a duel.', effect: { heal: 2 } },
+  { id: 'snack-hourglass', kind: 'snack', name: 'Hourglass', price: 20, icon: '⏳', desc: '10 more seconds on the duel clock.', effect: { timeMs: 10000 } },
+  { id: 'snack-fishcake', kind: 'snack', name: 'Fish cake', price: 25, icon: '🐟', desc: 'Mango gets one more Logic hint.', effect: { logic: 1 } }
+];
 
 const LOOKS = [
   { id: 'hat-cap', kind: 'hat', name: 'Blue cap', price: 60, icon: '🧢', desc: 'A sporty cap with a brim.', style: { shape: 'cap', colour: '#3d8bff' } },
@@ -75,7 +86,7 @@ const CARDS = CARD_SETS.flatMap((set) => set.cards.map(([name, fact], i) => ({
   id: `card-${set.id}-${i + 1}`, kind: 'card', set: set.id, name, price: set.price, icon: set.icon, desc: fact
 })));
 
-export const ITEMS = [...LOOKS, ...HOUSE, ...CARDS];
+export const ITEMS = [...LOOKS, ...HOUSE, ...CARDS, ...SNACKS];
 export const getItem = (id) => ITEMS.find((it) => it.id === id) || null;
 export const itemsOfKind = (kind) => ITEMS.filter((it) => it.kind === kind);
 export const cardsOfSet = (setId) => CARDS.filter((c) => c.set === setId);
@@ -84,5 +95,6 @@ export const cardsOfSet = (setId) => CARDS.filter((c) => c.set === setId);
 export const TABS = [
   { id: 'looks', title: 'Looks', icon: '🧢', kinds: ['hat', 'glasses', 'back'] },
   { id: 'house', title: 'House', icon: '🏠', kinds: ['paint', 'floor'] },
-  { id: 'cards', title: 'Cards', icon: '🃏', kinds: ['card'] }
+  { id: 'cards', title: 'Cards', icon: '🃏', kinds: ['card'] },
+  { id: 'snacks', title: 'Snacks', icon: '🥭', kinds: ['snack'] }
 ];

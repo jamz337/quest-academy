@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { duelFor, duelVillagers, duelsWon, DUEL } from '../src/data/world/duels.js';
 import { buildMap, reachableFrom, isWalkable, zoneAt, TID } from '../src/data/world/map.js';
 import { NPCS } from '../src/data/world/npcs.js';
 import { MINIGAMES } from '../src/data/minigames.js';
@@ -54,6 +55,20 @@ describe('world map', () => {
       const neighbours = [[0, 1], [0, -1], [1, 0], [-1, 0]].map(([dx, dy]) => zoneAt(map, g.tx + dx, g.ty + dy));
       expect(neighbours).toContain(g.zone);
     }
+  });
+});
+
+describe('duels', () => {
+  it('every villager with a game has a duel prop and lines, and the market and story folk do not duel', async () => {
+    const { NPCS } = await import('../src/data/world/npcs.js');
+    for (const n of NPCS.filter((x) => x.gameId)) {
+      expect(n.duel && n.duel.prop, n.id).toBeTruthy();
+      const d = duelFor(n.id);
+      expect(d.subject, n.id).toBeTruthy(); expect(d.hp).toBe(DUEL.npcHp); expect(d.win).toContain(n.name.split(' ')[0]);
+    }
+    expect(duelFor('signpost')).toBeNull(); expect(duelFor('vendor')).toBeNull(); expect(duelFor('nobody')).toBeNull();
+    expect(duelVillagers('math').length).toBeGreaterThan(2);
+    expect(duelsWon({ world: { duels: { 'prof-plus': { won: true }, 'chef-fraction': { won: false } } } }, 'math')).toBe(1);
   });
 });
 

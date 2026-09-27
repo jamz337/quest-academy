@@ -12,7 +12,7 @@ import { ZONE_NAMES } from './map.js';
 export const MENTOR_ID = 'hope';
 export const COMPANION = { id: 'mango', name: 'Mango', key: 'monkey' };
 export const FINALE_COINS = 100;
-export const MISSION_ORDER = ['guide', 'meet', 'stars', 'errand', 'coins', 'boss'];
+export const MISSION_ORDER = ['guide', 'meet', 'stars', 'duels', 'errand', 'coins', 'boss'];
 
 /** One chapter per land, in the order the story tells them. `piece` is the part of the bell its boss stole. */
 export const CHAPTERS = [
@@ -23,6 +23,7 @@ export const CHAPTERS = [
       guide: 'Professor Plus is on our side! He says the castle only opens for a true friend of the Meadow.',
       meet: 'Everyone in Math Meadow knows your name now!',
       stars: 'Every house in the Meadow has all its stars. The villagers are cheering!',
+      duels: 'Every villager in the Meadow has lost a duel to you. Count Chaos is getting nervous!',
       errand: 'The Professor has his abacus back. That is how you win a Meadow heart!',
       coins: 'The last hidden coin! Count Chaos cannot hide from us now.',
       ready: 'The castle gates are creaking open. Count Chaos is waiting, friend!',
@@ -36,6 +37,7 @@ export const CHAPTERS = [
       guide: 'The Owl Librarian says the Gremlin muddles every sentence it touches. We will un-muddle them!',
       meet: 'The whole of Word Woods has met you. Even the frogs are talking about it.',
       stars: 'All the stars in Word Woods are lit. What a reader you are!',
+      duels: 'Nobody in Word Woods can out-word you now. The Gremlin heard about it!',
       errand: 'The Owl has her book back. She says the trees whisper your name.',
       coins: 'Every coin in the woods is found. The Gremlin is running out of hiding places!',
       ready: 'The Gremlin\'s castle is open. Go and set the words straight!',
@@ -49,6 +51,7 @@ export const CHAPTERS = [
       guide: 'The Robo Mechanic says Glitch crashes every program on the beach. Let us debug the whole cove!',
       meet: 'All of Code Cove has said hello. Beep boop!',
       stars: 'Every house in the Cove shines with stars. Bug-free!',
+      duels: 'Every coder in the Cove has lost a duel to you. Glitch is glitching with worry!',
       errand: 'The robot is charged again. The Mechanic says you are a friend of the Cove.',
       coins: 'The last coin on the beach! Glitch has nowhere left to hide.',
       ready: 'Glitch\'s castle is open. Time to squash the Bug King!',
@@ -62,6 +65,7 @@ export const CHAPTERS = [
       guide: 'Shepherd Eli says a giant is only tall. Courage is taller!',
       meet: 'Everyone in Bible Village has welcomed you.',
       stars: 'Every house in the Village has all its stars. What a story you are writing!',
+      duels: 'The whole Village has duelled you and lost. Goliath is not laughing any more!',
       errand: 'The lost lamb is home with Eli. The whole village saw you carry her.',
       coins: 'The last coin in the Village. Goliath is next!',
       ready: 'Goliath has come out of his castle. Do not be afraid!',
@@ -98,6 +102,7 @@ export function chapterMissions(profile, zone) {
     { id: 'guide', title: `Talk to ${guide ? guide.name : 'the guide'}`, count: talked ? 1 : 0, total: 1, done: talked },
     { ...byId.meet, title: `Say hello to everyone in ${ZONE_NAMES[zone]}` },
     { ...byId.stars, title: 'Earn all the stars at every house' },
+    { ...byId.duels, title: 'Beat every villager in a duel' },
     byId.errand && { ...byId.errand, title: `Run ${guide ? guide.name + "'s" : 'the'} errand` },
     { ...byId.coins, title: 'Find the hidden coins' },
     { ...byId.boss, title: `Defeat ${bossForZone(zone)?.name || 'the boss'} for ${ch.pieceName}` }
@@ -175,6 +180,7 @@ export function clueFor(profile) {
   switch (m.id) {
     case 'guide': return `${guide ? guide.name : 'The guide'} is waiting in ${land}, ${way}.`;
     case 'meet': return `${m.total - m.count} villager${m.total - m.count === 1 ? '' : 's'} in ${land} still want to say hello. Walk up and press A!`;
+    case 'duels': return `${m.total - m.count} villager${m.total - m.count === 1 ? '' : 's'} in ${land} still want a duel. Talk to them and pick Duel!`;
     case 'stars': return `${m.total - m.count} house${m.total - m.count === 1 ? '' : 's'} in ${land} still need all three levels passed. The stars above each house show how far you are.`;
     case 'errand': { const e = errandFor(ch.guide); return e ? `${guide.name} has an errand: the ${e.item} is somewhere in ${ZONE_NAMES[e.zone]}. Ask, then look off the main roads!` : null; }
     case 'coins': return `${m.total - m.count} coin${m.total - m.count === 1 ? '' : 's'} still hidden along the roads of ${land}. Try the lanes off the main path.`;

@@ -5,6 +5,7 @@ import { BOSSES, bossForZone } from './bosses.js';
 import { gamesForSubject } from '../minigames.js';
 import { houseStars, HOUSE_LEVELS } from '../../systems/Progression.js';
 import { activeErrand, errandLine, errandFor, errandState } from './errands.js';
+import { duelsWon, duelVillagers } from './duels.js';
 import { ZONE_NAMES, buildMap, zoneAt } from './map.js';
 
 export const ZONE_ORDER = ['math', 'words', 'code', 'bible'];
@@ -44,6 +45,7 @@ export function zoneQuests(profile, zone) {
   const quests = [
     { id: 'meet', title: `Meet the ${ZONE_NAMES[zone]} villagers`, count: talked, total: villagers.length },
     { id: 'stars', title: `Pass all ${HOUSE_LEVELS} levels at each house`, count: finished, total: zoneGames.length },
+    { id: 'duels', title: 'Win a duel with each villager', count: duelsWon(p, zone), total: duelVillagers(zone).length },
     ...(errand ? [{ id: 'errand', title: `Run ${guide.name}'s errand: fetch the ${errand.item}`, count: errandState(p, errand.id) === 'done' ? 1 : 0, total: 1 }] : []),
     { id: 'coins', title: 'Find the hidden coins', count: found, total: coins.length }
   ].map((q) => ({ ...q, done: q.count >= q.total }));

@@ -1,20 +1,35 @@
 // Buying, wearing and using what the market sells. Everything lives on profile.inventory =
 // { owned: [itemId], equipped: { hat, glasses, back }, decor: { [roomId]: { wall?, floor? } }, spent, visited }.
-import { ITEMS, CARD_SETS, LOOK_KINDS, getItem, cardsOfSet } from '../data/market/items.js';
+import { ITEMS, CARD_SETS, LOOK_KINDS, STACKABLE_KINDS, getItem, cardsOfSet, itemsOfKind } from '../data/market/items.js';
 
 export function ensureInventory(profile) {
   const inv = profile.inventory || (profile.inventory = {});
-  inv.owned ||= []; inv.equipped ||= {}; inv.decor ||= {}; inv.spent |= 0; inv.visited = !!inv.visited;
+  inv.owned ||= []; inv.equipped ||= {}; inv.decor ||= {}; inv.spent |= 0; inv.visited = !!inv.visited; inv.snacks ||= {};
   return inv;
 }
 
 export const owns = (profile, id) => !!profile?.inventory?.owned?.includes(id);
 export const equipped = (profile, kind) => profile?.inventory?.equipped?.[kind] || null;
+export const isStackable = (item) => !!item && STACKABLE_KINDS.includes(item.kind);
+export const SNACK_MAX = 9;
+export const snackCount = (profile, id) => profile?.inventory?.snacks?.[id] | 0;
+/** The snacks a player carries: [{ item, count }] with count > 0, in catalogue order. */
+export const snacksOf = (profile) => itemsOfKind('snack').map((item) => ({ item, count: snackCount(profile, item.id) })).filter((s) => s.count > 0);
+/** Eat one snack: count down by one. Returns the item, or null when there was none. */
+export function useSnack(profile, id) {
+  const item = getItem(id);
+  if (!item || snackCount(profile, id) <= 0) return null;
+  const inv = ensureInventory(profile);
+  inv.snacks[id] -= 1;
+  if (inv.snacks[id] <= 0) delete inv.snacks[id];
+  return item;
+}
 
 /** Why an item cannot be bought right now, or null when it can. */
 export function buyBlock(profile, id) {
   const item = getItem(id);
   if (!item) return 'unknown';
+  if (isStackable(item)) return snackCount(profile, id) >= SNACK_MAX ? 'full' : (profile.coins || 0) < item.price ? 'coins' : null;
   if (owns(profile, id)) return 'owned';
   if ((profile.coins || 0) < item.price) return 'coins';
   return null;
@@ -27,7 +42,7 @@ export function buy(profile, id) {
   if (block) return { ok: false, reason: block, item };
   const inv = ensureInventory(profile);
   profile.coins -= item.price;
-  inv.owned.push(id);
+  if (isStackable(item)) inv.snacks[id] = snackCount(profile, id) + 1; else inv.owned.push(id);
   inv.spent += item.price;
   if (LOOK_KINDS.includes(item.kind)) inv.equipped[item.kind] = id;
   return { ok: true, item };
@@ -89,7 +104,8 @@ export function marketSummary(profile) {
   const owned = profile?.inventory?.owned || [];
   const byKind = {};
   for (const id of owned) { const it = getItem(id); if (it) byKind[it.kind] = (byKind[it.kind] | 0) + 1; }
-  return { items: owned.length, spent: profile?.inventory?.spent | 0, byKind, sets: cardSets(profile).map(({ name, owned: o, total }) => ({ name, owned: o, total })) };
+  const snacks = Object.values(profile?.inventory?.snacks || {}).reduce((a, b) => a + (b | 0), 0);
+  return { items: owned.length, snacks, spent: profile?.inventory?.spent | 0, byKind, sets: cardSets(profile).map(({ name, owned: o, total }) => ({ name, owned: o, total })) };
 }
 
 export { ITEMS };

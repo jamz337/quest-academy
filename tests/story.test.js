@@ -13,6 +13,7 @@ function finishChapter(p, zone, map) {
   p.world.npcsTalked = [...new Set([...(p.world.npcsTalked || []), ...NPCS.filter((n) => n.zone === zone).map((n) => n.id)])];
   for (const g of gamesForSubject(zone)) p.games[g.id] = { bestStars: 1, levels: { 1: 1, 2: 1, 3: 1 } };
   p.world.errands ||= {}; p.world.errands[errandFor(ZONE_GUIDE[zone]).id] = 'done';
+  p.world.duels ||= {}; for (const n of NPCS.filter((x) => x.zone === zone && x.gameId)) p.world.duels[n.id] = { won: true, attempts: 1, bestHp: 5, firstWinAt: 1 };
   p.world.coinsCollected = [...new Set([...(p.world.coinsCollected || []), ...map.coins.map((c, i) => (zoneAt(map, c.tx, c.ty) === zone ? i : -1)).filter((i) => i >= 0)])];
 }
 
@@ -26,7 +27,7 @@ describe('The Academy Bell', () => {
       expect(chapterGuideOk(c), c.zone).toBe(true);
       expect(ZONE_GUIDE[c.zone]).toBe(c.guide);
       expect(c.intro.length).toBeGreaterThanOrEqual(2);
-      for (const k of ['guide', 'meet', 'stars', 'errand', 'coins', 'ready', 'piece']) expect(c.lines[k], `${c.zone} ${k}`).toBeTruthy();
+      for (const k of ['guide', 'meet', 'stars', 'duels', 'errand', 'coins', 'ready', 'piece']) expect(c.lines[k], `${c.zone} ${k}`).toBeTruthy();
     }
     const pearl = NPCS.find((n) => n.id === MENTOR_ID);
     expect(pearl).toMatchObject({ zone: 'hub', story: 'mentor', gameId: null, sprite: 'npc17' });
@@ -39,7 +40,7 @@ describe('The Academy Bell', () => {
 
   it('the guide\'s errand is one of the zone quests, so the castle only opens once it is run', () => {
     const p = newProfile({ name: 'A', grade: 3 });
-    expect(zoneQuests(p, 'math').map((q) => q.id)).toEqual(['meet', 'stars', 'errand', 'coins', 'boss']);
+    expect(zoneQuests(p, 'math').map((q) => q.id)).toEqual(['meet', 'stars', 'duels', 'errand', 'coins', 'boss']);
     expect(zoneQuests(p, 'math').find((q) => q.id === 'errand').title).toContain('Professor Plus');
     finishChapter(p, 'math', map);
     p.world.errands.abacus = 'carrying';
@@ -61,7 +62,7 @@ describe('The Academy Bell', () => {
     expect(tutorialDone(p)).toBe(false); finishTutorial(p); expect(tutorialDone(p)).toBe(true); expect(p.story.tutorial).toBe(true);
     let m = chapterMissions(p, 'math');
     expect(m.map((x) => x.id)).toEqual(MISSION_ORDER);
-    expect(m.map((x) => x.available)).toEqual([true, false, false, false, false, false]);
+    expect(m.map((x) => x.available)).toEqual([true, false, false, false, false, false, false]);
     expect(m[0].title).toBe('Talk to Professor Plus');
     let st = storyState(p);
     expect(st).toMatchObject({ started: false, pieces: 0, chapter: 1, zone: 'math', ready: false, complete: false });
@@ -83,7 +84,7 @@ describe('The Academy Bell', () => {
     // Finish the chapter: Mango has something to say for each step, once.
     finishChapter(p, 'math', map);
     const fresh = newlyDone(p);
-    expect(fresh.map((f) => f.id)).toEqual(['guide', 'meet', 'stars', 'errand', 'coins', 'ready']);
+    expect(fresh.map((f) => f.id)).toEqual(['guide', 'meet', 'stars', 'duels', 'errand', 'coins', 'ready']);
     expect(fresh.find((f) => f.id === 'ready').line).toBe(CHAPTERS[0].lines.ready);
     fresh.forEach((f) => markAnnounced(p, f.key));
     expect(newlyDone(p)).toEqual([]);

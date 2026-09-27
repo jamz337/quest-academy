@@ -24,6 +24,8 @@ describe('save system', () => {
     const m = migrate(old);
     expect(m.version).toBe(1);
     expect(m.profiles.x.world.unlockedZones).toEqual(['math', 'words', 'code', 'bible']);
+    expect(m.profiles.x.world.duels).toEqual({});
+    expect(m.profiles.x.inventory.snacks).toEqual({});
     expect(m.settings.sound).toBe(true);
   });
 

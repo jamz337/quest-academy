@@ -5,7 +5,7 @@ installPhaserMock();
 vi.mock('../src/systems/Speech.js', () => ({ speak: vi.fn(), stop: vi.fn(), rateFor: () => 0.9, canSpeak: () => true, speakWords: () => null, primeSpeech: () => false }));
 
 const { ITEMS, CARD_SETS, TABS, getItem, itemsOfKind, cardsOfSet, LOOK_KINDS } = await import('../src/data/market/items.js');
-const { ensureInventory, owns, equipped, buyBlock, buy, equip, outfitOf, outfitId, applyDecor, roomDecor, cardSets, anySetComplete, purchases, marketSummary } = await import('../src/systems/Market.js');
+const { ensureInventory, owns, equipped, buyBlock, buy, equip, outfitOf, outfitId, applyDecor, roomDecor, cardSets, anySetComplete, purchases, marketSummary, snackCount, snacksOf, useSnack, SNACK_MAX } = await import('../src/systems/Market.js');
 const { newProfile, migrate } = await import('../src/systems/SaveSystem.js');
 const { BADGES } = await import('../src/data/badges.js');
 const { NPCS } = await import('../src/data/world/npcs.js');
@@ -26,7 +26,7 @@ describe('the market catalogue', () => {
       if (it.kind === 'paint') expect(typeof it.colour).toBe('number');
       if (it.kind === 'floor') expect(['oak', 'walnut', 'carpet', 'tiles', 'checker', 'parquet', 'stone']).toContain(it.floor);
     }
-    expect(TABS.map((t) => t.id)).toEqual(['looks', 'house', 'cards']);
+    expect(TABS.map((t) => t.id)).toEqual(['looks', 'house', 'cards', 'snacks']);
     for (const t of TABS) expect(t.kinds.flatMap((k) => itemsOfKind(k)).length).toBeGreaterThan(3);
     expect(CARD_SETS.map((s) => s.cards.length)).toEqual([11, 11, 6]);
     for (const set of CARD_SETS) for (const c of cardsOfSet(set.id)) { expect(c.desc.length).toBeGreaterThan(30); expect(c.price).toBe(set.price); }
@@ -44,11 +44,34 @@ describe('the market catalogue', () => {
   });
 });
 
+describe('snacks', () => {
+  it('stack up to nine, are eaten one at a time and never count as owned', () => {
+    const p = newProfile({ name: 'A', grade: 3 });
+    p.coins = 200;
+    expect(buy(p, 'snack-mango-juice').ok).toBe(true);
+    expect(buy(p, 'snack-mango-juice').ok).toBe(true);
+    expect(snackCount(p, 'snack-mango-juice')).toBe(2);
+    expect(owns(p, 'snack-mango-juice')).toBe(false);
+    expect(p.coins).toBe(170); expect(p.inventory.spent).toBe(30);
+    expect(buyBlock(p, 'snack-mango-juice')).toBeNull();
+    expect(snacksOf(p)).toEqual([{ item: getItem('snack-mango-juice'), count: 2 }]);
+    expect(useSnack(p, 'snack-mango-juice').effect).toEqual({ heal: 1 });
+    expect(useSnack(p, 'snack-mango-juice').effect).toEqual({ heal: 1 });
+    expect(useSnack(p, 'snack-mango-juice')).toBeNull();
+    expect(p.inventory.snacks).toEqual({});
+    p.inventory.snacks['snack-hourglass'] = SNACK_MAX;
+    expect(buyBlock(p, 'snack-hourglass')).toBe('full');
+    p.coins = 1;
+    expect(buyBlock(p, 'snack-coconut')).toBe('coins');
+    expect(marketSummary(p).snacks).toBe(SNACK_MAX);
+  });
+});
+
 describe('buying, wearing and using', () => {
   it('takes coins, keeps what was bought, wears looks, paints rooms and completes card sets', () => {
     const p = newProfile({ name: 'A', grade: 3 });
-    expect(p.inventory).toEqual({ owned: [], equipped: {}, decor: {}, spent: 0, visited: false });
-    expect(migrate({ version: 1, profiles: { x: { id: 'x', name: 'Old' } } }).profiles.x.inventory).toEqual({ owned: [], equipped: {}, decor: {}, spent: 0, visited: false });
+    expect(p.inventory).toEqual({ owned: [], equipped: {}, decor: {}, spent: 0, visited: false, snacks: {} });
+    expect(migrate({ version: 1, profiles: { x: { id: 'x', name: 'Old' } } }).profiles.x.inventory).toEqual({ owned: [], equipped: {}, decor: {}, spent: 0, visited: false, snacks: {} });
     p.coins = 100;
     expect(buyBlock(p, 'hat-crown')).toBe('coins');
     expect(buy(p, 'hat-crown').ok).toBe(false);
@@ -125,7 +148,16 @@ describe('the market screen (headless)', () => {
   it('shows the tabs, buys and wears a hat, refuses what cannot be afforded, and hands back to the world', () => {
     const s = market({ returnTo: 'World' });
     expect(Store.getProfile().inventory.visited).toBe(true);
-    expect(findButton(s, '🧢 Looks')).toBeTruthy(); expect(findButton(s, '🏠 House')).toBeTruthy(); expect(findButton(s, '🃏 Cards')).toBeTruthy();
+    expect(findButton(s, '🧢 Looks')).toBeTruthy(); expect(findButton(s, '🏠 House')).toBeTruthy(); expect(findButton(s, '🃏 Cards')).toBeTruthy(); expect(findButton(s, '🥭 Snacks')).toBeTruthy();
+    click(findButton(s, '🥭 Snacks'));
+    expect(s.state.tab).toBe('snacks');
+    expect(findButton(s, 'Buy · 15 🪙')).toBeTruthy();   // mango juice
+    click(findButton(s, 'Buy · 15 🪙'));
+    expect(snackCount(Store.getProfile(), 'snack-mango-juice')).toBe(1);
+    expect(findButton(s, 'Buy · 15 🪙')).toBeTruthy();   // still for sale: snacks stack
+    click(findButton(s, '🧢 Looks'));
+    Store.updateProfile((p) => { p.coins += 15; });
+    s.rebuild();
     expect(findButton(s, 'Buy · 60 🪙')).toBeTruthy();   // the blue cap
     click(findButton(s, 'Buy · 60 🪙'));
     const p = Store.getProfile();

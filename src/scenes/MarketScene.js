@@ -18,7 +18,7 @@ import { checkBadges } from '../systems/Progression.js';
 import { getBadge } from '../data/badges.js';
 import { TABS, getItem, itemsOfKind, LOOK_KINDS } from '../data/market/items.js';
 import { HOUSE_ROOMS } from '../data/social/house.js';
-import { ensureInventory, owns, equipped, buy, equip, applyDecor, roomDecor, outfitOf, outfitId, cardSets } from '../systems/Market.js';
+import { ensureInventory, owns, equipped, buy, equip, applyDecor, roomDecor, outfitOf, outfitId, cardSets, isStackable, snackCount, buyBlock } from '../systems/Market.js';
 
 /**
  * The Cheapside market: three tabs (looks, house, cards), a live preview of the player wearing what is chosen,
@@ -56,6 +56,7 @@ export class MarketScene extends BaseScene {
     const area = { x: 14 + sa.left, y, w: w - 28 - sa.left - sa.right, h: h - y - 14 - sa.bottom };
     if (s.tab === 'looks') this.buildLooks(area, p);
     else if (s.tab === 'house') this.buildHouse(area, p);
+    else if (s.tab === 'snacks') this.buildSnacks(area, p);
     else this.buildCards(area, p);
     if (s.fact) this.buildFact(s.fact);
     if (s.room) this.buildRoomPicker(s.room, p);
@@ -106,15 +107,17 @@ export class MarketScene extends BaseScene {
     const cards = shown.map((it, i) => {
       const col = i % cols, row = Math.floor(i / cols);
       const cx = grid.x + col * (cw + gap) + cw / 2, cy = grid.y + row * (ch + gap) + ch / 2;
-      const owned = owns(p, it.id), worn = LOOK_KINDS.includes(it.kind) && equipped(p, it.kind) === it.id, selected = s.selected === it.id;
+      const stack = isStackable(it), count = stack ? snackCount(p, it.id) : 0;
+      const owned = !stack && owns(p, it.id), worn = LOOK_KINDS.includes(it.kind) && equipped(p, it.kind) === it.id, selected = s.selected === it.id;
       const k = card(this, cx, cy, cw, ch, { stroke: selected ? THEME.warning : owned ? THEME.success : THEME.line, strokeWidth: selected ? 3 : 2, onTap: onTap ? () => onTap(it) : null });
       k.add(this.add.text(-cw / 2 + 12, -ch / 2 + 22 * ui, it.icon, { fontSize: Math.round(22 * ui) + 'px' }).setOrigin(0, 0.5));
       // The name sits beside the icon; an owned item wears a small tick chip at the top right, and the name leaves room for it.
       k.add(this.add.text(-cw / 2 + 12 + 30 * ui, -ch / 2 + 22 * ui, it.name, { ...T.at(this, 13, THEME.ink, { fontStyle: '700' }), wordWrap: { width: cw - 30 * ui - 24 - (owned ? 30 * ui : 0) } }).setOrigin(0, 0.5));
       if (owned) k.add(chip(this, cw / 2 - 8, -ch / 2 + 20 * ui, { text: worn ? '✓ on' : '✓', originX: 1, color: THEME.successSoft, textColor: THEME.successDark, fontSize: 11, height: 20 * ui, shadow: 'none' }));
+      if (count) k.add(chip(this, cw / 2 - 8, -ch / 2 + 20 * ui, { text: `×${count}`, originX: 1, color: THEME.warningSoft, textColor: THEME.warningDark, fontSize: 11, height: 20 * ui, shadow: 'none' }));
       const bw = cw - 24, bh = 30 * ui, by = ch / 2 - 22 * ui;
       if (!owned) {
-        const can = (p.coins || 0) >= it.price;
+        const can = !buyBlock(p, it.id);
         k.add(button(this, 0, by, bw, bh, `Buy · ${it.price} 🪙`, { variant: can ? 'warning' : 'ghost', fontSize: 13, disabled: !can, onClick: () => this.buyItem(it) }));
       } else if (LOOK_KINDS.includes(it.kind)) {
         k.add(button(this, 0, by, bw, bh, worn ? 'Take off' : 'Wear', { variant: worn ? 'secondary' : 'success', fontSize: 13, onClick: () => this.wear(it, !worn) }));
@@ -135,6 +138,13 @@ export class MarketScene extends BaseScene {
   }
 
   // ---- House and cards ------------------------------------------------------------------------------
+
+  /** Treats for duels; each can be bought again and again, up to a bag of nine. */
+  buildSnacks(area, p) {
+    const { ui } = this;
+    text(this, area.x + area.w / 2, area.y + 18 * ui, 'Treats for duels. Eat them from the Items menu when a villager challenges you!', { ...T.small(this, THEME.ink2), wordWrap: { width: area.w - 24 } });
+    this.itemGrid({ x: area.x, y: area.y + 44 * ui, w: area.w, h: area.h - 44 * ui }, itemsOfKind('snack'), p, null);
+  }
 
   buildHouse(area, p) {
     const { ui } = this;
@@ -184,7 +194,7 @@ export class MarketScene extends BaseScene {
   buyItem(it) {
     let result = null, badges = [];
     Store.updateProfile((p) => { result = buy(p, it.id); if (result.ok) badges = checkBadges(p); });
-    if (!result || !result.ok) { Sfx.wrong(); toast(this, result && result.reason === 'coins' ? 'Not enough coins yet. Play a game to earn more!' : 'You already have that.', { accent: THEME.danger }); return; }
+    if (!result || !result.ok) { Sfx.wrong(); toast(this, result && result.reason === 'coins' ? 'Not enough coins yet. Play a game to earn more!' : result && result.reason === 'full' ? 'Your bag is full of those!' : 'You already have that.', { accent: THEME.danger }); return; }
     Sfx.coin();
     this.state.selected = it.id;
     this.state.badges = badges;

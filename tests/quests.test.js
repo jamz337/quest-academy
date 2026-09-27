@@ -92,10 +92,11 @@ describe('zone quests', () => {
   it('lists villagers, stars and coins with progress, then the boss', () => {
     const p = newProfile({ name: 'A', grade: 3 });
     const q = zoneQuests(p, 'math');
-    expect(q.map((x) => x.id)).toEqual(['meet', 'stars', 'errand', 'coins', 'boss']);
+    expect(q.map((x) => x.id)).toEqual(['meet', 'stars', 'duels', 'errand', 'coins', 'boss']);
     expect(q[0].total).toBe(NPCS.filter((n) => n.zone === 'math' && n.gameId).length);
     expect(q[1].total).toBe(gamesForSubject('math').length);
-    expect(q[3].total).toBeGreaterThan(0);
+    expect(q[2].total).toBe(q[0].total);   // one duel per villager with a game
+    expect(q[4].total).toBeGreaterThan(0);
     expect(q.every((x) => !x.done)).toBe(true);
     expect(bossReady(p, 'math')).toBe(false);
   });
@@ -108,6 +109,8 @@ describe('zone quests', () => {
     p.world.coinsCollected = map.coins.map((c, i) => (zoneAt(map, c.tx, c.ty) === 'math' ? i : -1)).filter((i) => i >= 0);
     expect(bossReady(p, 'math')).toBe(false);   // the guide's errand is part of the chapter
     p.world.errands = { abacus: 'done' };
+    expect(bossReady(p, 'math')).toBe(false);   // and every villager must lose a duel
+    p.world.duels = Object.fromEntries(NPCS.filter((n) => n.zone === 'math' && n.gameId).map((n) => [n.id, { won: true }]));
     expect(bossReady(p, 'math')).toBe(true);
     expect(bossReady(p, 'words')).toBe(false);
   });
