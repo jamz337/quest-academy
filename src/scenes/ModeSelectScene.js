@@ -56,11 +56,15 @@ export class ModeSelectScene extends BaseScene {
     const ax = -chipW / 2 + 42 * ui, tx = -chipW / 2 + 82 * ui;
     pc.add(this.add.circle(ax, 0, 30 * ui, THEME.primarySoft));
     pc.add(this.add.image(ax, 0, badgeTexture(this, resolveLook(p))).setDisplaySize(52 * ui, 52 * ui));
-    pc.add(this.add.text(tx, -16 * ui, `${p.name}  ·  Grade ${p.grade}`, T.bodyBold(this)).setOrigin(0, 0.5));
+    pc.add(this.add.text(tx, -20 * ui, `${p.name}  ·  Grade ${p.grade}`, T.bodyBold(this)).setOrigin(0, 0.5));
     const streak = currentStreak(p);
-    pc.add(this.add.text(tx, 8 * ui, `Level ${lvl}${streak > 1 ? `  ·  🔥 ${streak}-day streak` : ''}`, T.small(this, THEME.ink2)).setOrigin(0, 0.5));
-    pc.add(new ProgressBar(this, tx + 56 * ui + 55 * ui, 8 * ui, 110 * ui, 8 * ui, { value: (p.xp - lo) / (hi - lo), color: THEME.primary }));
-    pc.add(chip(this, chipW / 2 - 14 * ui, 0, { text: String(p.coins), icon: 'coin', color: THEME.warningSoft, textColor: THEME.warningDark, originX: 1, shadow: 'none' }));
+    const coins = chip(this, chipW / 2 - 14 * ui, 0, { text: String(p.coins), icon: 'coin', color: THEME.warningSoft, textColor: THEME.warningDark, originX: 1, shadow: 'none' });
+    // Text and the XP bar each get their own line, sized to the room left of the coin chip so a long streak never overlaps.
+    const roomW = chipW / 2 - 14 * ui - coins.w - 12 - tx;
+    pc.add(this.add.text(tx, 3 * ui, `Level ${lvl}${streak > 1 ? `  ·  🔥 ${streak}-day streak` : ''}`, { ...T.small(this, THEME.ink2), wordWrap: { width: roomW } }).setOrigin(0, 0.5));
+    const barW = Math.max(60 * ui, Math.min(180 * ui, roomW));
+    pc.add(new ProgressBar(this, tx + barW / 2, 24 * ui, barW, 8 * ui, { value: (p.xp - lo) / (hi - lo), color: THEME.primary }));
+    pc.add(coins);
 
     // Today's goal and the family's weekly goal, under the profile card
     const goal = dailyGoal(p), game = getGame(goal.gameId);

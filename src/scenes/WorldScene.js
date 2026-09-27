@@ -165,7 +165,9 @@ export class WorldScene extends Phaser.Scene {
     const cam = this.cameras.main;
     if (!cam) return;
     const { min } = viewport(this);
-    cam.setZoom((min < 600 ? 2 : 3) * dpr());   // world zoom in CSS pixels, times the device pixel ratio
+    // World zoom in CSS pixels times the device pixel ratio, kept a whole number: a fractional zoom (3.75 on a
+    // 125% Windows display) puts tile edges between device pixels and hairline seams show along every tile.
+    cam.setZoom(Math.max(2, Math.round((min < 600 ? 2 : 3) * dpr())));
   }
 
   // ---- Hud bridge ----------------------------------------------------------------------------
