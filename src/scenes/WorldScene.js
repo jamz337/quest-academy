@@ -10,6 +10,7 @@ import { buildMap, zoneAt, isWalkable, groundUnder, TID, SOLID, ZONE_NAMES } fro
 import { NPCS } from '../data/world/npcs.js';
 import { BOSSES } from '../data/world/bosses.js';
 import { bossReady, bossDefeated, zoneQuests } from '../data/world/quests.js';
+import { duelFor, duelWon, duelId } from '../data/world/duels.js';
 import { InputController } from '../systems/InputController.js';
 import { viewport, dpr } from '../systems/Layout.js';
 import { Sfx } from '../systems/Audio.js';
@@ -350,9 +351,16 @@ export class WorldScene extends Phaser.Scene {
       lines = mentorLines(profile);
       if (fresh) onLater = () => this.storyBegun();
     } else if (npc.id === 'signpost') lines = [signpostLine(profile), ...npc.lines.slice(1)];
+    // Villagers with a game can also be duelled; they say so until they have been beaten.
+    const duel = duelFor(npc.id);
     if (npc.market) prompt = 'Come and see what is for sale?';
-    else lines = [...guideLines({ ...profile, world: { ...profile.world, npcsTalked: (profile.world.npcsTalked || []).filter((id) => id !== npc.id || !firstTalk) } }, npc.id), ...npc.lines];
-    hud.showDialog({ name: npc.name, voice: npc.voice, pitch: npc.pitch, rate: npc.rate, speaker: npc.id, lines, prompt, playLabel: npc.market ? 'Shop' : undefined, onPlay: npc.market ? () => this.openMarket() : npc.gameId ? () => this.playGame(npc) : null, onLater });
+    else if (duel && !duelWon(profile, npc.id)) lines = [...lines, duel.challenge];
+    if (!npc.market) lines = [...guideLines({ ...profile, world: { ...profile.world, npcsTalked: (profile.world.npcsTalked || []).filter((id) => id !== npc.id || !firstTalk) } }, npc.id), ...npc.lines];
+    hud.showDialog({
+      name: npc.name, voice: npc.voice, pitch: npc.pitch, rate: npc.rate, speaker: npc.id, lines, prompt, playLabel: npc.market ? 'Shop' : undefined,
+      onPlay: npc.market ? () => this.openMarket() : npc.gameId ? () => this.playGame(npc) : null, onLater,
+      secondary: duel && this.scene.get(Launcher.DUEL_SCENE) ? { label: duelWon(profile, npc.id) ? 'Duel again' : 'Duel', onClick: () => this.duelVillager(npc) } : null
+    });
     if (firstTalk) {
       hud.setCoins(Store.getProfile().coins);
       hud.awardCoins(HELLO_COINS);
@@ -503,6 +511,15 @@ export class WorldScene extends Phaser.Scene {
     Launcher.launch(this, boss.id, { source: 'roam', context: { bossId: boss.id, zoneId: boss.zone } });
   }
 
+  /** Challenge a villager to a duel (see DuelScene); the world pauses like it does for a game. */
+  duelVillager(npc) {
+    if (!duelFor(npc.id)) return;
+    this.stopPlayer();
+    this.savePosition();
+    if (this.scene.isActive(SCENES.Hud)) this.scene.sleep(SCENES.Hud);
+    Launcher.launch(this, duelId(npc.id), { source: 'roam', context: { npcId: npc.id, zoneId: npc.zone, duel: true } });
+  }
+
   playGame(npc) {
     const game = getGame(npc.gameId);
     if (!game || !this.scene.get(game.sceneKey)) {
@@ -549,6 +566,14 @@ export class WorldScene extends Phaser.Scene {
       this.time.delayedCall(300, () => { const sc = hud && hud.scene.isActive() ? hud : this; fireworks(sc, sc.w ? sc.w / 2 : this.player.x, sc.h ? sc.h * 0.35 : this.player.y, { bursts: 4, spread: 160 }); });
       this.time.delayedCall(1200, () => Decor.refreshBell(this));
       this.time.delayedCall(5000, () => this.finaleIfReady());
+    }
+    if (payload.duel) {
+      const s = this.npcs.find((x) => x.npc && x.npc.id === payload.duel.npcId);
+      if (result.won) {
+        if (s) this.tweens.add({ targets: s, angle: 14, yoyo: true, repeat: 3, duration: 90 });
+        this.time.delayedCall(300, () => this.say(`🏆 You won the duel with ${payload.duel.name}!`, { icon: 'star', accent: THEME.brand }));
+        if (result.newDuelWin) this.time.delayedCall(1800, () => { const q = zoneQuests(Store.getProfile(), payload.duel.npcId && s ? s.npc.zone : 'math').find((x) => x.id === 'duels'); if (q) this.say(`⚔️ Duels won in this land: ${q.count} of ${q.total}`, { accent: THEME.brand }); });
+      } else this.time.delayedCall(300, () => this.say(`${payload.duel.name} won this time. Have a snack and try again!`, { accent: THEME.ink3 }));
     }
     const slots = this.houseStarSprites && this.houseStarSprites[payload.gameId];
     if (result.newHouseStar && slots) {

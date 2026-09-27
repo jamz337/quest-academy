@@ -45,6 +45,7 @@ export class ResultsScene extends BaseScene {
       this.time.delayedCall(delay, () => { Sfx.unlock(); toast(this, `${zone} unlocked!`, { icon: 'coin', accent: THEME.success }); }); delay += 1400;
     }
     if (result.goal && result.goal.done) { this.time.delayedCall(delay, () => { Sfx.coin(); toast(this, `🎯 Today's goal done!  +${result.goal.coins} coins`, { icon: 'coin', accent: THEME.warning }); }); delay += 1400; }
+    if (result.newDuelWin) { this.time.delayedCall(delay, () => { Sfx.unlock(); toast(this, `⚔️ First win against ${this.sceneData.payload.duel.name}! The journal ticks a box.`, { icon: 'star', accent: THEME.brand }); }); delay += 1400; }
     if (result.familyBonus) { this.time.delayedCall(delay, () => { Sfx.fanfare(); toast(this, `👨‍👩‍👧 Family goal reached!  +${result.familyBonus} coins`, { icon: 'star', accent: THEME.success }); }); delay += 1400; }
     if (result.gradeUp) {
       this.time.delayedCall(delay, () => { Sfx.unlock(); toast(this, `📈 Grade up! ${this.sceneData.payload.title} now asks Grade ${result.gradeUp.to} questions`, { icon: 'star', accent: THEME.brand }); }); delay += 1400;
@@ -64,10 +65,10 @@ export class ResultsScene extends BaseScene {
     background(this, { accent: subject.accent, accent2: THEME.gold, dots: false });
     const m = modal(this, { w: 460 * ui, h: 540 * ui, accent: subject.accent, dim: false });
     let y = m.y + 44 * ui;
-    const boss = payload.boss;
-    const headline = boss ? (result.won ? boss.win : boss.lose) : HEADLINES[result.stars] || HEADLINES[0];
+    const boss = payload.boss, duel = payload.duel;
+    const headline = duel ? (result.won ? duel.win : duel.lose) : boss ? (result.won ? boss.win : boss.lose) : HEADLINES[result.stars] || HEADLINES[0];
     const head = text(this, w / 2, y, headline, { ...T.title(this), wordWrap: { width: m.w - 40 } });
-    y += 34 * ui;
+    y += Math.max(34 * ui, head.height + 10 * ui);   // a long headline wraps; keep the chip below it
     const tag = chip(this, w / 2, y, { text: payload.level ? `${payload.title}  ·  Level ${payload.level} of ${result.houseLevels || 3}` : payload.title, originX: 0.5, color: subject.soft, textColor: subject.dark, shadow: 'none' });
     y += 46 * ui;
     const stars = new StarRow(this, w / 2, y, 0, 56 * ui);
@@ -81,6 +82,10 @@ export class ResultsScene extends BaseScene {
       y += 30 * ui;
     };
     if (result.total !== undefined) line('Correct answers', `${result.correct} / ${result.total}`);
+    if (duel) {
+      line(`${duel.name.split(' ')[0]}'s health left`, `${result.hpLeft} / ${duel.hp}`, result.won ? THEME.successDark : THEME.danger);
+      line('Party hearts left', `♥ ${result.partyHp} / ${result.partyMax}`, THEME.danger);
+    }
     if (boss) {
       line('Boss health left', `${result.hpLeft} / ${boss.hp}`, result.won ? THEME.successDark : THEME.danger);
       line('Hearts left', '♥'.repeat(result.heartsLeft || 0) + '♡'.repeat(Math.max(0, (result.maxHearts || boss.hearts) - (result.heartsLeft || 0))), THEME.danger);

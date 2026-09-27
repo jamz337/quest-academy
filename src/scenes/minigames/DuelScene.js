@@ -1,5 +1,5 @@
 import { MinigameScene } from './MinigameScene.js';
-import { THEME } from '../../ui/theme.js';
+import { THEME, mix } from '../../ui/theme.js';
 import { SUBJECTS } from '../../constants.js';
 import { bossQuestions } from '../../generators/boss.js';
 import { tuningFor } from '../../data/grades.js';
@@ -152,8 +152,14 @@ export class DuelScene extends MinigameScene {
     const ui = this.ui, sub = this.subject;
     const g = this.add.graphics();
     const r = THEME.radius.lg;
-    g.fillGradientStyle(0x9fdcff, 0x9fdcff, 0xe6f7ff, 0xe6f7ff, 1);
-    g.fillRoundedRect(area.x, area.y, area.w, sceneH, { tl: r, tr: r, bl: 0, br: 0 });
+    // Sky: a rounded top in the deepest blue, then horizontal bands fading to the horizon (a gradient fill would
+    // show a diagonal seam across the rounded rect).
+    const skyH = sceneH * 0.62, bands = 8;
+    g.fillStyle(0x9fdcff, 1); g.fillRoundedRect(area.x, area.y, area.w, skyH, { tl: r, tr: r, bl: 0, br: 0 });
+    for (let i = 1; i < bands; i++) {
+      const t = i / bands;
+      g.fillStyle(mix(0x9fdcff, 0xe6f7ff, t), 1); g.fillRect(area.x, area.y + r + (skyH - r) * t, area.w, (skyH - r) / bands + 1);
+    }
     g.fillStyle(0xffe27a, 1); g.fillCircle(area.x + area.w * 0.12, area.y + sceneH * 0.2, 16 * ui);
     g.fillStyle(0xffffff, 0.9);
     for (const [fx, fy, fr] of [[0.32, 0.16, 12], [0.36, 0.18, 16], [0.41, 0.16, 11], [0.62, 0.26, 10], [0.66, 0.27, 14], [0.7, 0.25, 9]]) g.fillCircle(area.x + area.w * fx, area.y + sceneH * fy, fr * ui);
@@ -175,8 +181,9 @@ export class DuelScene extends MinigameScene {
   /** Portraits, names and hearts for the player and Mango. */
   drawParty(x, y, w, h) {
     const s = this.state, ui = this.ui, boss = this.opp.kind === 'boss';
-    const k = card(this, x + w / 2, y + h / 2, w, h, { stroke: THEME.line, shadow: 'md' });
     const rowH = Math.min(h / 2 - 6, 64 * ui), size = Math.min(44 * ui, rowH - 10);
+    h = Math.min(h, rowH * 2 + 16);   // the card hugs its two rows instead of stretching down the band
+    const k = card(this, x + w / 2, y + h / 2, w, h, { stroke: THEME.line, shadow: 'md' });
     const profile = this.profile;
     s.party.forEach((m, i) => {
       const ry = -h / 2 + 8 + rowH * i + rowH / 2;

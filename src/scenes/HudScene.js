@@ -237,7 +237,8 @@ export class HudScene extends BaseScene {
 
   /** { name, lines, onPlay?, onLater?, playLabel? } Play/Later appear after the last line. */
   showDialog(d) {
-    this.state.dialog = { name: d.name, lines: d.lines || [], idx: 0, onPlay: d.onPlay || null, onLater: d.onLater || null, playLabel: d.playLabel || 'Play', prompt: d.prompt || null, voice: d.voice || null, pitch: d.pitch || null, rate: d.rate || null, speaker: d.speaker || null };
+    this.state.dialog = { name: d.name, lines: d.lines || [], idx: 0, onPlay: d.onPlay || null, onLater: d.onLater || null, playLabel: d.playLabel || 'Play', prompt: d.prompt || null, voice: d.voice || null, pitch: d.pitch || null, rate: d.rate || null, speaker: d.speaker || null,
+      secondary: d.secondary && d.secondary.onClick ? { label: d.secondary.label || 'Duel', onClick: d.secondary.onClick } : null };
     this.actionFlag = false;
     if (this.joystick) this.joystick.release();
     this.rebuild();
@@ -254,7 +255,7 @@ export class HudScene extends BaseScene {
     const d = this.state.dialog;
     if (!d) return;
     const last = d.idx >= d.lines.length - 1;
-    if (last) { if (!d.onPlay) this.closeDialog(); return; }
+    if (last) { if (!d.onPlay && !d.secondary) this.closeDialog(); return; }
     d.idx += 1;
     Sfx.pop();
     this.rebuild();
@@ -270,7 +271,7 @@ export class HudScene extends BaseScene {
   buildDialog(d) {
     const { w, h, ui } = this;
     const last = d.idx >= d.lines.length - 1;
-    const showButtons = last && !!d.onPlay;
+    const showButtons = last && !!(d.onPlay || d.secondary);
     const pw = Math.min(w - 20, 520 * ui), ph = (showButtons ? 176 : 124) * ui;
     const px = (w - pw) / 2, py = h - ph - 14 - safeArea().bottom;
     const g = panel(this, px, py, pw, ph, { shadow: 'lg', radius: THEME.radius.xl });
@@ -287,9 +288,18 @@ export class HudScene extends BaseScene {
       const hint = last ? 'Tap to close' : 'Tap to continue  ▼';
       this.add.text(px + pw - 14, py + ph - 10, hint, T.small(this, THEME.ink3)).setOrigin(1, 1).setDepth(502);
     } else {
-      const bw = Math.min((pw - 48) / 2, 180 * ui), bh = 46 * ui, by = py + ph - 34 * ui;
-      button(this, px + pw / 2 - bw / 2 - 8, by, bw, bh, 'Later', { variant: 'ghost', fontSize: 17, onClick: () => this.closeDialog() }).setDepth(502);
-      button(this, px + pw / 2 + bw / 2 + 8, by, bw, bh, d.playLabel, { variant: 'primary', fontSize: 17, onClick: () => this.play() }).setDepth(502);
+      const bh = 46 * ui, by = py + ph - 34 * ui;
+      if (d.secondary) {
+        // Three choices: Later, the second action (a duel), and the game.
+        const bw = Math.min((pw - 56) / 3, 150 * ui);
+        button(this, px + pw / 2 - bw - 8, by, bw, bh, 'Later', { variant: 'ghost', fontSize: 15, onClick: () => this.closeDialog() }).setDepth(502);
+        button(this, px + pw / 2, by, bw, bh, d.secondary.label, { variant: 'brand', fontSize: 15, emoji: '⚔️', onClick: () => this.secondaryAction() }).setDepth(502);
+        button(this, px + pw / 2 + bw + 8, by, bw, bh, d.playLabel, { variant: 'primary', fontSize: 15, disabled: !d.onPlay, onClick: () => this.play() }).setDepth(502);
+      } else {
+        const bw = Math.min((pw - 48) / 2, 180 * ui);
+        button(this, px + pw / 2 - bw / 2 - 8, by, bw, bh, 'Later', { variant: 'ghost', fontSize: 17, onClick: () => this.closeDialog() }).setDepth(502);
+        button(this, px + pw / 2 + bw / 2 + 8, by, bw, bh, d.playLabel, { variant: 'primary', fontSize: 17, onClick: () => this.play() }).setDepth(502);
+      }
     }
     enter(this, [g, name, body], { from: 'up', distance: 16, stagger: 0 });
   }
@@ -299,6 +309,14 @@ export class HudScene extends BaseScene {
     this.state.dialog = null;
     this.rebuild();
     if (d && d.onPlay) d.onPlay();
+  }
+
+  /** The dialog's second action (a duel). */
+  secondaryAction() {
+    const d = this.state.dialog;
+    this.state.dialog = null;
+    this.rebuild();
+    if (d && d.secondary) d.secondary.onClick();
   }
 
   // ---- Menu --------------------------------------------------------------------------------
