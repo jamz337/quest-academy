@@ -25,10 +25,14 @@ import * as Encounters from './world/encounters.js';
 import * as Errands from './world/errands.js';
 import * as Fishing from './world/fishing.js';
 import * as Decor from './world/decor.js';
+import * as Companion from './world/companion.js';
+import { mentorLines, guideLines, signpostLine, startStory, bellPieces, claimFinale, CHAPTERS, MENTOR_ID } from '../data/world/story.js';
+import { checkBadges } from '../systems/Progression.js';
+import { getBadge } from '../data/badges.js';
 
 const SPEED = 110;          // px/s
 const TALK_DIST = 44;       // px between player and NPC centres
-const CHAR_SCALE = Critters.CHAR_SCALE;   // 16px sheets drawn at tile size
+const CHAR_SCALE = 1;   // character sheets are drawn at 32px, one tile
 const IDLE_FRAME = { down: 0, up: 2, side: 4 };
 const HELLO_COINS = 5;
 
@@ -66,6 +70,8 @@ export class WorldScene extends Phaser.Scene {
     Decor.createHouseStars(this);
     Errands.createErrandItem(this, profile);
     Decor.createLandmarks(this, profile);
+    Decor.createBellTower(this);
+    Companion.createCompanion(this);
     // Loading while standing in the doorway should not open the house until the player steps out and back in.
     this.atHomeDoor = !!this.map.home && Math.floor(this.player.x / TILE) === this.map.home.door.tx && Math.floor(this.player.y / TILE) === this.map.home.door.ty;
     this.bubble = this.add.image(0, 0, 'bubble').setScale(0.75).setDepth(20).setVisible(false);
@@ -85,6 +91,8 @@ export class WorldScene extends Phaser.Scene {
     this.zoneTimer = this.time.addEvent({ delay: 200, loop: true, callback: this.tick, callbackScope: this });
     this.tick();
     Music.play();   // relaxing lounge loop while exploring; ducked under games, stopped on leaving the world
+    // The first time in the world, Headmistress Hope comes over with the tale of the Academy Bell.
+    if (!profile.story || !profile.story.started) this.time.delayedCall(900, () => { const pearl = this.npcs.find((s) => s.npc && s.npc.id === MENTOR_ID); if (pearl && this.hud() && !this.hud().blocking) this.talk(pearl); });
 
     // Lifecycle
     this.onResize = () => this.applyZoom();
@@ -113,7 +121,7 @@ export class WorldScene extends Phaser.Scene {
     }
     const key = lookSpriteTexture(this, resolveLook(profile));
     this.player = this.physics.add.sprite(x, y, key, 0).setScale(CHAR_SCALE).setDepth(10);
-    this.player.body.setSize(10, 8).setOffset(3, 8);   // feet-sized box so doors and gaps feel fair
+    this.player.body.setSize(20, 14).setOffset(6, 16);   // feet-sized box so doors and gaps feel fair
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.layer);
     this.physics.add.collider(this.player, this.treeLayer);
@@ -275,9 +283,20 @@ export class WorldScene extends Phaser.Scene {
     Encounters.maybeSurprise(this, tx, ty);
     if (hud && p) { const line = errandLine(p); if (hud.state.carry !== line) hud.setCarry(line); }
     if (this.errandItem && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.errandItem.x, this.errandItem.y) < 22) Errands.pickUpItem(this);
+    if ((this.tickCount = (this.tickCount | 0) + 1) % 5 === 0) { Companion.announceStory(this); if (!(hud && hud.blocking)) this.finaleIfReady(); }   // about once a second
     const atDoor = this.map.home && tx === this.map.home.door.tx && ty === this.map.home.door.ty;
-    if (atDoor && !this.atHomeDoor && hud && !hud.blocking) { this.stopPlayer(); hud.showHome(); }
+    if (atDoor && !this.atHomeDoor && hud && !hud.blocking) this.enterHouse();
     this.atHomeDoor = atDoor;
+  }
+
+  /** Through the front door: the world is stopped (saving the position at the door) and the house scene takes over. */
+  enterHouse() {
+    this.stopPlayer();
+    Sfx.click();
+    this.savePosition();
+    // Stop the Hud now, not from our shutdown (which runs after the house has already looked for it).
+    if (this.scene.isActive(SCENES.Hud) || this.scene.isSleeping(SCENES.Hud)) this.scene.stop(SCENES.Hud);
+    this.scene.start(SCENES.House);
   }
 
   // ---- Interactions --------------------------------------------------------------------------
@@ -315,12 +334,51 @@ export class WorldScene extends Phaser.Scene {
       const at = gradeUps(profile, npc.gameId) ? ` at Grade ${gameGrade(profile, npc.gameId)}` : '';
       prompt = passed >= HOUSE_LEVELS ? `You have all ${HOUSE_LEVELS} stars here! Play level ${HOUSE_LEVELS} again?` : `${npc.playPrompt} Level ${level} of ${HOUSE_LEVELS}${at}${passed ? ` (${passed} star${passed > 1 ? 's' : ''} so far)` : ''}`;
     }
-    hud.showDialog({ name: npc.name, voice: npc.voice, pitch: npc.pitch, rate: npc.rate, speaker: npc.id, lines: npc.lines, prompt, onPlay: npc.gameId ? () => this.playGame(npc) : null });
+    // Story lines: the Headmistress tells the tale, chapter guides open their chapter, Sam points at the next step.
+    let lines = npc.lines;
+    let onLater = null;
+    if (npc.story === 'mentor') {
+      const fresh = !profile.story || !profile.story.started;
+      lines = mentorLines(profile);
+      if (fresh) onLater = () => this.storyBegun();
+    } else if (npc.id === 'signpost') lines = [signpostLine(profile), ...npc.lines.slice(1)];
+    else lines = [...guideLines({ ...profile, world: { ...profile.world, npcsTalked: (profile.world.npcsTalked || []).filter((id) => id !== npc.id || !firstTalk) } }, npc.id), ...npc.lines];
+    hud.showDialog({ name: npc.name, voice: npc.voice, pitch: npc.pitch, rate: npc.rate, speaker: npc.id, lines, prompt, onPlay: npc.gameId ? () => this.playGame(npc) : null, onLater });
     if (firstTalk) {
       hud.setCoins(Store.getProfile().coins);
       hud.awardCoins(HELLO_COINS);
       hud.notify(`+${HELLO_COINS} coins for saying hello!`, { icon: 'coin' });
     }
+  }
+
+  /** The Headmistress has told the tale: the story is on, and Mango pops by for the first time. */
+  storyBegun() {
+    Store.updateProfile((p) => startStory(p));
+    Companion.showCompanion(this);
+    this.time.delayedCall(600, () => Companion.companionSay(this, 'Let us go! Math Meadow is to the west.'));
+  }
+
+  /** Every piece is back: the Headmistress's finale, coins, the badge and the bell ringing. */
+  finaleIfReady() {
+    const p = Store.getProfile();
+    if (!p || bellPieces(p).length < CHAPTERS.length || (p.story && p.story.finale)) return;
+    const hud = this.hud();
+    if (!hud) return;
+    let badges = [];
+    Store.updateProfile((q) => { claimFinale(q); badges = checkBadges(q); });
+    Decor.refreshBell(this);
+    hud.setCoins(Store.getProfile().coins);
+    hud.showDialog({
+      name: 'Headmistress Hope', voice: 'female', pitch: 1.0, rate: 0.95, speaker: MENTOR_ID,
+      lines: ['You did it! Every piece of the Academy Bell is home.', 'Listen... it rings again, and the four lands are friends once more.', 'Here are 100 coins, and a badge only a true hero of Quest Academy can wear.'],
+      onLater: () => {
+        Sfx.fanfare();
+        const sc = hud.scene.isActive() ? hud : this;
+        fireworks(sc, sc.w ? sc.w / 2 : this.player.x, sc.h ? sc.h * 0.3 : this.player.y, { bursts: 6, spread: 200 });
+        hud.awardCoins(100);
+        badges.forEach((id, i) => this.time.delayedCall(1500 + i * 1400, () => this.say(`New badge: ${getBadge(id)?.title || id}`, { icon: 'star', accent: THEME.brand })));
+      }
+    });
   }
 
   /** Bosses fight only once the zone's other quests are done; afterwards they offer a rematch. */
@@ -394,6 +452,8 @@ export class WorldScene extends Phaser.Scene {
       const s = this.npcs.find((x) => x.boss && x.boss.id === payload.boss.id);
       if (s) this.poseDefeated(s);
       this.time.delayedCall(300, () => { const sc = hud && hud.scene.isActive() ? hud : this; fireworks(sc, sc.w ? sc.w / 2 : this.player.x, sc.h ? sc.h * 0.35 : this.player.y, { bursts: 4, spread: 160 }); });
+      this.time.delayedCall(1200, () => Decor.refreshBell(this));
+      this.time.delayedCall(5000, () => this.finaleIfReady());
     }
     const slots = this.houseStarSprites && this.houseStarSprites[payload.gameId];
     if (result.newHouseStar && slots) {
@@ -453,6 +513,7 @@ export class WorldScene extends Phaser.Scene {
     this.controls = null;
     const hud = this.scene.get(SCENES.Hud);
     if (hud && (this.scene.isActive(SCENES.Hud) || this.scene.isSleeping(SCENES.Hud))) this.scene.stop(SCENES.Hud);
+    Companion.destroyCompanion(this);
     this.player = null; this.npcs = []; this.nearNpc = null;
   }
 }

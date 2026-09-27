@@ -11,7 +11,8 @@ const SHADOW = 'rgba(0,0,0,0.22)';
 const PAL = {
   '.': null, k: OUTLINE, w: '#ffffff', s: '#ffd6b3', h: '#a8613a', t: '#7a4a2a', r: '#ff5c6c', b: '#3d8bff',
   n: '#2d2a4a', g: '#8fe07c', G: '#4fb84f', D: '#2f8a3a', y: '#ffc531', o: '#ff8f3f', p: '#ff6fae', l: '#8b7fd6',
-  d: '#625f7e', c: '#d6cfc4', v: '#7c5cff', x: SHADOW
+  d: '#625f7e', c: '#d6cfc4', v: '#7c5cff', x: SHADOW,
+  O: '#7d8f3c', f: '#f4dfc2', m: '#3a2a1a'   // Mango: olive coat, pale face, dark hands and feet
 };
 
 /** Darken (f < 1) or lighten (f > 1) a '#rrggbb' string. */
@@ -46,31 +47,212 @@ export function pixelTexture(scene, key, frames, palette = PAL, scale = 1) {
   tex.refresh();
 }
 
-// 16x16 chibi character template with a dark outline, a shaded side and a soft shadow under the feet.
-// Letters: k outline, H hair, J hair shade, S skin, T top, U top shade, L legs, B boots, r mouth, x shadow.
+// 32 x 32 chibi character template with a dark outline, a shaded side and a soft shadow under the feet.
+// Letters: k outline, H hair, J hair shade, S skin, T top, U top shade, L legs, B boots, r mouth, w eye light, x shadow.
 const CHAR_DOWN = [
-  '.....kkkkkk.....', '....kHHHHHHk....', '...kHHHHHHHJk...', '...kHHHHHHHJk...',
-  '...kHSSSSSSJk...', '...kSSSSSSSSk...', '...kSkSSSSkSk...', '...kSSSrrSSSk...',
-  '....kSSSSSSk....', '.....kTTTTk.....', '....kTTTTTUk....', '..kSkTTTTTUkSk..',
-  '....kTTTTTUk....', '....kLLkkLLk....', '....kBBkkBBk....', '....xxxxxxxx....'
+  '................................',
+  '............kkkkkkkk............',
+  '..........kkHHHHHHHHkk..........',
+  '.........kHHHHHHHHHHHJk.........',
+  '........kHHHHHHHHHHHHJJk........',
+  '........kHHHHHHHHHHHHJJk........',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHSSSHHSSSHSSSJJk.......',
+  '.......kHHSSSSSSSSSSSSJJk.......',
+  '.......kHHSkwSSSSSSkwSJJk.......',
+  '.......kHHSkkSSSSSSkkSJJk.......',
+  '........kSSkkSSSSSSkkSSk........',
+  '........kSSSSSSSSSSSSSSk........',
+  '.........kSSSSrrrrSSSSk.........',
+  '..........kkSSSSSSSSkk..........',
+  '............kSSSSSSk............',
+  '............kSSSSSSk............',
+  '..........kkTTTTTTTTkk..........',
+  '......kkkkTTTTTTTTTTUUkkkk......',
+  '......kTTTTTTTTTTTTTUUUUUk......',
+  '......kTTTTTTTTTTTTTUUUUUk......',
+  '......kTTTTTTTTTTTTTUUUUUk......',
+  '......kTTTTTTTTTTTTTUUUUUk......',
+  '......kSSkTTTTTkkTTTUUkSSk......',
+  '......kkk.kLLLk..kLLLk.kkk......',
+  '..........kLLLk..kLLLk..........',
+  '..........kkkkk..kkkkk..........',
+  '.........xxxxxxxxxxxxxx.........',
+  '................................'
 ];
-const STEP = { 13: '...kLLk..kLLk...', 14: '...kBBk..kBBk...' };
-const CHAR_DOWN2 = CHAR_DOWN.map((r, i) => STEP[i] || r);
+const CHAR_DOWN2 = [
+  '................................',
+  '............kkkkkkkk............',
+  '..........kkHHHHHHHHkk..........',
+  '.........kHHHHHHHHHHHJk.........',
+  '........kHHHHHHHHHHHHJJk........',
+  '........kHHHHHHHHHHHHJJk........',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHSSSHHSSSHSSSJJk.......',
+  '.......kHHSSSSSSSSSSSSJJk.......',
+  '.......kHHSkwSSSSSSkwSJJk.......',
+  '.......kHHSkkSSSSSSkkSJJk.......',
+  '........kSSkkSSSSSSkkSSk........',
+  '........kSSSSSSSSSSSSSSk........',
+  '.........kSSSSrrrrSSSSk.........',
+  '..........kkSSSSSSSSkk..........',
+  '............kSSSSSSk............',
+  '............kSSSSSSk............',
+  '..........kkTTTTTTTTkk..........',
+  '......kkkkTTTTTTTTTTUUkkkk......',
+  '......kTTTTTTTTTTTTTUUUUUk......',
+  '......kTTTTTTTTTTTTTUUUUUk......',
+  '......kTTTTTTTTTTTTTUUUUUk......',
+  '......kTTTTTTTTTTTTTUUUUUk......',
+  '......kSSkLLLLLkkTTTUUkSSk......',
+  '......kkk.kLLLk..kLLLk.kkk......',
+  '..........kkkkk..kLLLk..........',
+  '.................kkkkk..........',
+  '.........xxxxxxxxxxxxxx.........',
+  '................................'
+];
 const CHAR_UP = [
-  '.....kkkkkk.....', '....kHHHHHHk....', '...kHHHHHHHJk...', '...kHHHHHHHJk...',
-  '...kHHHHHHHJk...', '...kHHHHHHHJk...', '...kHHHHHHHJk...', '....kHHHHHJk....',
-  '.....kSSSSk.....', '.....kTTTTk.....', '....kTTTTTUk....', '..kSkTTTTTUkSk..',
-  '....kTTTTTUk....', '....kLLkkLLk....', '....kBBkkBBk....', '....xxxxxxxx....'
+  '................................',
+  '............kkkkkkkk............',
+  '..........kkHHHHHHHHkk..........',
+  '.........kHHHHHHHHHHHJk.........',
+  '........kHHHHHHHHHHHHJJk........',
+  '........kHHHHHHHHHHHHJJk........',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '........kHHHHHHHHHHHHJJk........',
+  '........kHHHHHHHHHHHHJJk........',
+  '.........kHHHHHHHHHHHJk.........',
+  '..........kkHHHHHHHHkk..........',
+  '............kHHHHHHk............',
+  '............kSSSSSSk............',
+  '..........kkTTTTTTTTkk..........',
+  '......kkkkTTTTTTTTTTUUkkkk......',
+  '......kTTTTTTTTTTTTTUUUUUk......',
+  '......kTTTTTTTTTTTTTUUUUUk......',
+  '......kTTTTTTTTTTTTTUUUUUk......',
+  '......kTTTTTTTTTTTTTUUUUUk......',
+  '......kSSkTTTTTkkTTTUUkSSk......',
+  '......kkk.kLLLk..kLLLk.kkk......',
+  '..........kLLLk..kLLLk..........',
+  '..........kkkkk..kkkkk..........',
+  '.........xxxxxxxxxxxxxx.........',
+  '................................'
 ];
-const CHAR_UP2 = CHAR_UP.map((r, i) => STEP[i] || r);
+const CHAR_UP2 = [
+  '................................',
+  '............kkkkkkkk............',
+  '..........kkHHHHHHHHkk..........',
+  '.........kHHHHHHHHHHHJk.........',
+  '........kHHHHHHHHHHHHJJk........',
+  '........kHHHHHHHHHHHHJJk........',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '........kHHHHHHHHHHHHJJk........',
+  '........kHHHHHHHHHHHHJJk........',
+  '.........kHHHHHHHHHHHJk.........',
+  '..........kkHHHHHHHHkk..........',
+  '............kHHHHHHk............',
+  '............kSSSSSSk............',
+  '..........kkTTTTTTTTkk..........',
+  '......kkkkTTTTTTTTTTUUkkkk......',
+  '......kTTTTTTTTTTTTTUUUUUk......',
+  '......kTTTTTTTTTTTTTUUUUUk......',
+  '......kTTTTTTTTTTTTTUUUUUk......',
+  '......kTTTTTTTTTTTTTUUUUUk......',
+  '......kSSkLLLLLkkTTTUUkSSk......',
+  '......kkk.kLLLk..kLLLk.kkk......',
+  '..........kkkkk..kLLLk..........',
+  '.................kkkkk..........',
+  '.........xxxxxxxxxxxxxx.........',
+  '................................'
+];
 const CHAR_SIDE = [
-  '.....kkkkkk.....', '....kHHHHHHk....', '...kHHHHHHHJk...', '...kHHHHHHHJk...',
-  '...kSSSHHHHJk...', '...kSSSSHHHJk...', '...kSkSSSHHJk...', '...kSrSSSHHJk...',
-  '....kSSSSHJk....', '.....kTTTTk.....', '....kTTTTTUk....', '....kTkSkTUk....',
-  '....kTTTTTUk....', '.....kLLLLk.....', '.....kBBBBk.....', '....xxxxxxxx....'
+  '................................',
+  '.............kkkkkk.............',
+  '...........kkHHHHHHkk...........',
+  '..........kHHHHHHHHHHk..........',
+  '.........kHHHHHHHHHHHJk.........',
+  '.........kHHHHHHHHHHHJk.........',
+  '........kHHHHHHHHHHHHJJk........',
+  '........kHHHHHHHHHHHHJJk........',
+  '........kHHHHHHHHHHHHJJk........',
+  '........kHHHHHHHHHHHHJJk........',
+  '........kSSSSHHSHHHHHJJk........',
+  '........kSSSSSSSHHHHHJJk........',
+  '........kSSkwSSSHHHHHJJk........',
+  '........kSSkkSSSHHHHHJJk........',
+  '.........kSkkSSSHHHHHJk.........',
+  '.........kSSSSSSHHHHHJk.........',
+  '..........rrSSSSHHHHHk..........',
+  '...........kkSSSHHHkk...........',
+  '.............kSSHHk.............',
+  '.............kSSSSk.............',
+  '............kTTTTTUk............',
+  '...........kTUUUTTUUk...........',
+  '...........kTUUUTTUUk...........',
+  '...........kTUUUTTUUk...........',
+  '...........kTUUUTTUUk...........',
+  '...........kTUUUTTUUk...........',
+  '...........kTSSSTTUUk...........',
+  '...........kLLLLLLLLk...........',
+  '...........kLLLLLLLLk...........',
+  '...........kkkkkkkkkk...........',
+  '.........xxxxxxxxxxxxxx.........',
+  '................................'
 ];
-const SIDE_STEP = { 13: '....kLLk.kLk....', 14: '...kBBk..kBBk...' };
-const CHAR_SIDE2 = CHAR_SIDE.map((r, i) => SIDE_STEP[i] || r);
+const CHAR_SIDE2 = [
+  '................................',
+  '.............kkkkkk.............',
+  '...........kkHHHHHHkk...........',
+  '..........kHHHHHHHHHHk..........',
+  '.........kHHHHHHHHHHHJk.........',
+  '.........kHHHHHHHHHHHJk.........',
+  '........kHHHHHHHHHHHHJJk........',
+  '........kHHHHHHHHHHHHJJk........',
+  '........kHHHHHHHHHHHHJJk........',
+  '........kHHHHHHHHHHHHJJk........',
+  '........kSSSSHHSHHHHHJJk........',
+  '........kSSSSSSSHHHHHJJk........',
+  '........kSSkwSSSHHHHHJJk........',
+  '........kSSkkSSSHHHHHJJk........',
+  '.........kSkkSSSHHHHHJk.........',
+  '.........kSSSSSSHHHHHJk.........',
+  '..........rrSSSSHHHHHk..........',
+  '...........kkSSSHHHkk...........',
+  '.............kSSHHk.............',
+  '.............kSSSSk.............',
+  '............kTTTTTUk............',
+  '...........kTUUUTTUUk...........',
+  '...........kTUUUTTUUk...........',
+  '...........kTUUUTTUUk...........',
+  '...........kTUUUTTUUk...........',
+  '...........kTUUUTTUUk...........',
+  '...........kTSSSkTUUk...........',
+  '.........kkLLLkk.kLLLk..........',
+  '.........kLLLk...kLLLk..........',
+  '.........kkkkk...kkkkk..........',
+  '.........xxxxxxxxxxxxxx.........',
+  '................................'
+];
 
 function charPalette(colors) {
   return {
@@ -79,9 +261,115 @@ function charPalette(colors) {
   };
 }
 
-/** Character sheet: frames 0-1 down, 2-3 up, 4-5 side (facing left; flipX for right). */
-export function characterTexture(scene, key, colors, scale = 1) {
-  pixelTexture(scene, key, [CHAR_DOWN, CHAR_DOWN2, CHAR_UP, CHAR_UP2, CHAR_SIDE, CHAR_SIDE2], charPalette(colors), scale);
+// The Headmistress: grey hair in a bun, round glasses, a long dress and a ruler in hand (yellow, dark tick marks).
+// Standing frames only; villagers do not walk.
+const HOPE_DOWN = [
+  '.............kkkkk..............',
+  '...........kkHHHHHkk............',
+  '..........kHHHHHHHHHkk..........',
+  '.........kHHHHHHHHHHHJk.........',
+  '........kHHHHHHHHHHHHJJk........',
+  '........kHHHHHHHHHHHHJJk........',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHSSSHHSSSHSSSJJk.......',
+  '.......kHkkkkkSSSkkkkkJJk.......',
+  '.......kHkwwwkSSSkwwwkJJk.......',
+  '.......kHkwkwkkkkkwkwkJJk.......',
+  '........kkwkwkSSSkwkwkSk........',
+  '........kkkkkkSSSkkkkkSk........',
+  '.........kSSSSrrrrSSSSk.........',
+  '..........kkSSSSSSSSkk....kkk...',
+  '............kSSSSSSk......kyk...',
+  '............kSSSSSSk......knk...',
+  '..........kkTTTTTTTTkkkkk.kyk...',
+  '......kkkkTTTTTTTTTTUUUUUkkyk...',
+  '......kTTTTTTTTTTTTTUUUUUkknk...',
+  '......kTTTTTTTTTTTTTUUUUUkkyk...',
+  '......kTTTTTTTTTTTTTUUUUUkkyk...',
+  '......kSSTTTTTTTTTTTUUUSSkknk...',
+  '......kSSTTTTTTTTTTTUUUSSkkyk...',
+  '.......kTTTTTTTTTTTTUUUUk.kyk...',
+  '.......kTTTTTTTTTTTTUUUUk.knk...',
+  '.......kkkkkkkkkkkkkkkkkk.kyk...',
+  '.........xxxxxxxxxxxxxx...kkk...',
+  '................................'
+];
+const HOPE_UP = [
+  '.............kkkkk..............',
+  '...........kkHHHHHkk............',
+  '..........kHHHHHHHHHkk..........',
+  '.........kHHHHHHHHHHHJk.........',
+  '........kHHHHHHHHHHHHJJk........',
+  '........kHHHHHHHHHHHHJJk........',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '.......kHHHHHHHHHHHHHJJJk.......',
+  '........kHHHHHHHHHHHHJJk........',
+  '........kHHHHHHHHHHHHJJk........',
+  '.........kHHHHHHHHHHHJk.........',
+  '..kkk.....kkHHHHHHHHkk..........',
+  '..kyk.......kHHHHHHk............',
+  '..knk.......kSSSSSSk............',
+  '..kyk.....kkTTTTTTTTkkkkk.......',
+  '..kyk.kkkkTTTTTTTTTTUUUUUk......',
+  '..knk.kTTTTTTTTTTTTTUUUUUk......',
+  '..kyk.kTTTTTTTTTTTTTUUUUUk......',
+  '..kyk.kTTTTTTTTTTTTTUUUUUk......',
+  '..knk.kSSTTTTTTTTTTTUUUSSk......',
+  '..kyk.kSSTTTTTTTTTTTUUUSSk......',
+  '..kyk..kTTTTTTTTTTTTUUUUk.......',
+  '..knk..kTTTTTTTTTTTTUUUUk.......',
+  '..kyk..kkkkkkkkkkkkkkkkkk.......',
+  '..kkk....xxxxxxxxxxxxxx.........',
+  '................................'
+];
+const HOPE_SIDE = [
+  '...............kkkkk............',
+  '.............kkHHHHHkk..........',
+  '...........kkHHHHHHHHk..........',
+  '..........kHHHHHHHHHHk..........',
+  '.........kHHHHHHHHHHHJk.........',
+  '.........kHHHHHHHHHHHJk.........',
+  '........kHHHHHHHHHHHHJJk........',
+  '........kHHHHHHHHHHHHJJk........',
+  '........kHHHHHHHHHHHHJJk........',
+  '........kHHHHHHHHHHHHJJk........',
+  '........kSSSSHHSHHHHHJJk........',
+  '........kkkkkkSSHHHHHJJk........',
+  '........kkwwwkSSHHHHHJJk........',
+  '........kkwkwkkSHHHHHJJk........',
+  '.........kwkwkSSHHHHHJk.........',
+  '.........kkkkkSSHHHHHJk.........',
+  '..........rrSSSSHHHHHk..........',
+  '.....kkk...kkSSSHHHkk...........',
+  '.....kyk.....kSSHHk.............',
+  '.....knk.....kSSSSk.............',
+  '.....kyk....kTTTTTUkkkk.........',
+  '.....kyk...kTUUUTTUUUUk.........',
+  '.....knk...kTUUUTTUUUUk.........',
+  '.....kyk...kTUUUTTUUUUk.........',
+  '.....kyk...kTUUUTTUUUUk.........',
+  '.....knk...kTSSSTTUUUUk.........',
+  '.....kyk.kkTTSSSTTUUUUk.........',
+  '.....kyk.kTTTTTTTTUUUUk.........',
+  '.....knk.kTTTTTTTTUUUUk.........',
+  '.....kyk.kkkkkkkkkkkkkk.........',
+  '.....kkk.xxxxxxxxxxxxxx.........',
+  '................................'
+];
+export const HOPE_FRAMES = [HOPE_DOWN, HOPE_DOWN, HOPE_UP, HOPE_UP, HOPE_SIDE, HOPE_SIDE];
+
+/** Character sheet: frames 0-1 down, 2-3 up, 4-5 side (facing left; flipX for right). `frames` swaps in a special body. */
+export function characterTexture(scene, key, colors, scale = 1, frames = null) {
+  pixelTexture(scene, key, frames || [CHAR_DOWN, CHAR_DOWN2, CHAR_UP, CHAR_UP2, CHAR_SIDE, CHAR_SIDE2], charPalette(colors), scale);
 }
 
 // The robot rotates in the maze, so it has no ground shadow.
@@ -110,6 +398,77 @@ const BUNNY = [
   '....kkkk..kkkk..', '....xxxxxxxxxx..', '................', '................'
 ];
 const BUNNY2 = BUNNY.map((r, i) => (i === 11 ? '...kcck....kcck.' : i === 12 ? '...kkkk....kkkk.' : r));
+
+// Mango the green monkey, 32 x 32 drawn at 1:1 (faces left; flipX for right): olive coat, pale face, curled tail.
+// The second frame waves.
+const MONKEY = [
+  '................................',
+  '.............kkkkkk.............',
+  '...........kkOOOOOOkk...........',
+  '..........kOOOOOOOOOOk..........',
+  '.....kk..kOOOOOOOOOOOOk..kk.....',
+  '....kOOkkOOOOOOOOOOOOOOkkOOk....',
+  '....kOpOkOOOffffffffOOOkOpOk....',
+  '....kOpOkOOffffffffffOOkOpOk....',
+  '.....kkkkOfffkffffkfffOkkkk.....',
+  '........kOfffkffffkfffOk........',
+  '........kOffffffffffffOk........',
+  '........kOOffffmmffffOOk........',
+  '.........kOOffffffffOOk.........',
+  '..........kOOOffffOOOk..........',
+  '...........kkOOOOOOkk...........',
+  '............kOOOOOOk............',
+  '..........kkOOOOOOOOkk..........',
+  '.........kOOOOffffOOOOk.........',
+  '........kOOOOffffffOOOOk........',
+  '.......kOOOOOffffffOOOOOk.......',
+  '.......kOOOOOffffffOOOOOk..kk...',
+  '.......kOOOOOOffffOOOOOOkkOOk...',
+  '.......kmmkOOOOOOOOOOkmmkOOOk...',
+  '........kk.kOOOOOOOOk.kkkOOk....',
+  '...........kOOOOOOOOk...kOk.....',
+  '...........kOOkkkkOOk...kOk.....',
+  '...........kOOk..kOOk...kk......',
+  '...........kOOk..kOOk...........',
+  '..........kmmmk..kmmmk..........',
+  '..........kkkkk..kkkkk..........',
+  '.........xxxxxxxxxxxxxxx........',
+  '................................'
+];
+const MONKEY2 = [
+  '................................',
+  '.............kkkkkk.............',
+  '...........kkOOOOOOkk...........',
+  '..........kOOOOOOOOOOk..........',
+  '.....kk..kOOOOOOOOOOOOk..kk.....',
+  '....kOOkkOOOOOOOOOOOOOOkkOOk....',
+  '....kOpOkOOOffffffffOOOkOpOk....',
+  '....kOpOkOOffffffffffOOkOpOk....',
+  '.....kkkkOfffkffffkfffOkkkk.....',
+  '........kOfffkffffkfffOk........',
+  '........kOffffffffffffOk........',
+  '........kOOffffmmffffOOk........',
+  '.........kOOffffffffOOk.........',
+  '..........kOOOffffOOOk..........',
+  '...........kkOOOOOOkk...........',
+  '............kOOOOOOk............',
+  '..........kkOOOOOOOOkk..........',
+  '.........kOOOOffffOOOOk.........',
+  '........kOOOOffffffOOOOk........',
+  '.......kOOOOOffffffOOOOOk.......',
+  '....kmmkOOOOOffffffOOOOOk..kk...',
+  '....kOOkOOOOOOffffOOOOOOkkOOk...',
+  '.....kkkOOOOOOOOOOOOOkmmkOOOk...',
+  '...........kOOOOOOOOk.kkkOOk....',
+  '...........kOOOOOOOOk...kOk.....',
+  '...........kOOkkkkOOk...kOk.....',
+  '...........kOOk..kOOk...kk......',
+  '...........kOOk..kOOk...........',
+  '..........kmmmk..kmmmk..........',
+  '..........kkkkk..kkkkk..........',
+  '.........xxxxxxxxxxxxxxx........',
+  '................................'
+];
 
 const TREE = [
   '......kkkk......', '....kkGGGGkk....', '...kGGgGGGGGk...', '..kGgggGGGGGDk..',
@@ -350,7 +709,7 @@ export function tilesTexture(scene) {
 }
 
 const BADGE = 80;   // badge frames are drawn at 2x and shown at ~40
-const BUST = CHAR_DOWN.slice(0, 13).map((r) => r.slice(2, 14));   // 12 x 13 pixels: head, shoulders and arms
+const BUST = CHAR_DOWN.slice(0, 26).map((r) => r.slice(5, 27));   // 22 x 26 pixels: head, shoulders and arms
 
 /** One round badge: coloured disc with a darker rim and the character from the shoulders up, clipped to the disc. */
 function paintBadge(ctx, x0, look) {
@@ -359,7 +718,7 @@ function paintBadge(ctx, x0, look) {
   ctx.save();
   ctx.beginPath(); ctx.arc(x0 + S / 2, S / 2, S / 2 - 3, 0, Math.PI * 2); ctx.clip();
   ctx.fillStyle = bg; ctx.fillRect(x0, 0, S, S);
-  blit(ctx, BUST, x0 + 10, 14, 5, charPalette(look));
+  blit(ctx, BUST, x0 + 7, 4, 3, charPalette(look));
   ctx.restore();
 }
 
@@ -464,16 +823,17 @@ export function generateAllTextures(scene) {
   avatarTexture(scene);
   tilesTexture(scene);
   CHARACTER_STYLES.forEach((st, i) => characterTexture(scene, `char${i}`, st));
-  NPC_STYLES.forEach((st, i) => characterTexture(scene, `npc${i}`, st));
+  NPC_STYLES.forEach((st, i) => characterTexture(scene, `npc${i}`, st, 1, st.body === 'headmistress' ? HOPE_FRAMES : null));
   pixelTexture(scene, 'robot', [ROBOT, ROBOT2]);
   pixelTexture(scene, 'sheep', [SHEEP, SHEEP2]);
   pixelTexture(scene, 'bunny', [BUNNY, BUNNY2]);
-  for (const [key, rate] of [['sheep', 5], ['bunny', 8]]) {
+  pixelTexture(scene, 'monkey', [MONKEY, MONKEY2], PAL, 1);   // already 32px: no scaling
+  for (const [key, rate] of [['sheep', 5], ['bunny', 8], ['monkey', 4]]) {
     if (!scene.anims.exists(`${key}-walk`)) scene.anims.create({ key: `${key}-walk`, frames: scene.anims.generateFrameNumbers(key, { start: 0, end: 1 }), frameRate: rate, repeat: -1 });
   }
   const sheets = [...CHARACTER_STYLES.map((_, i) => `char${i}`), ...NPC_STYLES.map((_, i) => `npc${i}`)];
   sheets.forEach((key) => walkAnims(scene, key));
   // The game renders anti-aliased (pixelArt: false); pixel-art sheets opt back in to crisp scaling.
-  ['tiles', 'robot', 'sheep', 'bunny', ...sheets].forEach((key) => scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST));
+  ['tiles', 'robot', 'sheep', 'bunny', 'monkey', ...sheets].forEach((key) => scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST));
   if (!scene.anims.exists('robot-walk')) scene.anims.create({ key: 'robot-walk', frames: scene.anims.generateFrameNumbers('robot', { start: 0, end: 1 }), frameRate: 8, repeat: -1 });
 }

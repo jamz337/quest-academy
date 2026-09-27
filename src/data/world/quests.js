@@ -4,10 +4,12 @@ import { NPCS } from './npcs.js';
 import { BOSSES, bossForZone } from './bosses.js';
 import { gamesForSubject } from '../minigames.js';
 import { houseStars, HOUSE_LEVELS } from '../../systems/Progression.js';
-import { activeErrand, errandLine } from './errands.js';
+import { activeErrand, errandLine, errandFor, errandState } from './errands.js';
 import { ZONE_NAMES, buildMap, zoneAt } from './map.js';
 
 export const ZONE_ORDER = ['math', 'words', 'code', 'bible'];
+/** The villager who guides each chapter of the Academy Bell story (see story.js); their errand is a quest. */
+export const ZONE_GUIDE = { math: 'prof-plus', words: 'owl-librarian', code: 'robo-mechanic', bible: 'shepherd' };
 const SUBJECT_OF_ZONE = { math: 'math', words: 'words', code: 'code', bible: 'bible' };
 
 let coinIndexByZone = null;
@@ -38,9 +40,11 @@ export function zoneQuests(profile, zone) {
   const coins = zoneCoins(zone);
   const found = coins.filter((i) => (world.coinsCollected || []).includes(i)).length;
   const boss = bossForZone(zone);
+  const guide = NPCS.find((n) => n.id === ZONE_GUIDE[zone]), errand = guide ? errandFor(guide.id) : null;
   const quests = [
     { id: 'meet', title: `Meet the ${ZONE_NAMES[zone]} villagers`, count: talked, total: villagers.length },
     { id: 'stars', title: `Pass all ${HOUSE_LEVELS} levels at each house`, count: finished, total: zoneGames.length },
+    ...(errand ? [{ id: 'errand', title: `Run ${guide.name}'s errand: fetch the ${errand.item}`, count: errandState(p, errand.id) === 'done' ? 1 : 0, total: 1 }] : []),
     { id: 'coins', title: 'Find the hidden coins', count: found, total: coins.length }
   ].map((q) => ({ ...q, done: q.count >= q.total }));
   if (boss) quests.push({ id: 'boss', title: `Defeat ${boss.name}`, count: bossDefeated(p, zone) ? 1 : 0, total: 1, done: bossDefeated(p, zone) });

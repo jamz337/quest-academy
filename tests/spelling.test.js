@@ -353,7 +353,8 @@ describe('capitals, spoken letters, pictures and honey', () => {
     Store.updateProfile((p) => { p.grade = 2; });
     Speech.speak.mockClear();
     const s = game({ listId: 'g2-1' });
-    if (s.state.phase === 'show') s.hideWord();
+    s.state.rounds[0] = { word: 'school', syllables: 'school', sentence: null, pic: '🏫', mode: 'listen', blanks: [] };   // a whole-word round, whatever the plan drew
+    s.state.phase = 'type'; s.rebuild();
     s.type('s'); s.type('⇧'); s.type('C'); s.type('⌫');
     const said = Speech.speak.mock.calls.map((c) => c[0]);
     expect(said).toContain('S'); expect(said).toContain('capital C');

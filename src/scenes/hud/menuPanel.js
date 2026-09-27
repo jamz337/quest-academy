@@ -7,8 +7,8 @@ import { modal } from '../../ui/Modal.js';
 import { Sfx } from '../../systems/Audio.js';
 import * as Store from '../../systems/Store.js';
 import { ZONE_NAMES } from '../../data/world/map.js';
-import { zoneQuests, activeZone, ZONE_ORDER, bossReady } from '../../data/world/quests.js';
-import { bossForZone } from '../../data/world/bosses.js';
+import { ZONE_ORDER, bossDefeated } from '../../data/world/quests.js';
+import { storyState, chapterFor, chapterMissions, chapterNumber, bellPieces, CHAPTERS } from '../../data/world/story.js';
 import { errandLine } from '../../data/world/errands.js';
 import { ensureExplored, exploredStats } from '../../data/world/explore.js';
 import { Minimap, paintMinimap } from '../../ui/Minimap.js';
@@ -22,7 +22,7 @@ export function buildMenu(hud) {
   let y = m.contentTop + 12 * ui + bh / 2;
   const page = (p) => { Sfx.click(); hud.state.menuPage = p; hud.rebuild(); };
   button(hud, w / 2, y, bw, bh, 'Resume', { variant: 'primary', onClick: () => hud.closeMenu() }).setDepth(603); y += bh + 12;
-  button(hud, w / 2, y, bw, bh, 'Quests', { variant: 'warning', onClick: () => page('quests') }).setDepth(603); y += bh + 12;
+  button(hud, w / 2, y, bw, bh, '🔔 Journal', { variant: 'warning', onClick: () => page('quests') }).setDepth(603); y += bh + 12;
   button(hud, w / 2, y, bw, bh, 'Map', { variant: 'success', onClick: () => page('map') }).setDepth(603); y += bh + 12;
   button(hud, w / 2, y, bw, bh, 'Challenge Mode', { variant: 'subject', subject: 'code', onClick: () => hud.leaveTo(SCENES.ChallengeMenu) }).setDepth(603); y += bh + 12;
   button(hud, w / 2, y, bw, bh, 'Home', { variant: 'secondary', onClick: () => hud.leaveTo(SCENES.ModeSelect) }).setDepth(603);
@@ -30,29 +30,50 @@ export function buildMenu(hud) {
 
 /** Checklist for the zone the player stands in (or the next one to clear), with the boss last. */
 export function buildQuests(hud) {
-  const { w, ui } = hud;
+  const { w, h, ui } = hud;
   const profile = Store.getProfile() || {};
-  const zone = ZONE_ORDER.includes(hud.state.zoneId) ? hud.state.zoneId : activeZone(profile);
-  const quests = zoneQuests(profile, zone);
-  const errand = errandLine(profile);
-  if (errand) quests.push({ id: 'errand', title: errand, count: 0, total: 1, done: false });   // sized into the modal below
-  const boss = bossForZone(zone);
-  const rowH = 34 * ui;
-  const m = modal(hud, { w: 400 * ui, h: 180 * ui + quests.length * rowH, title: `${ZONE_NAMES[zone]} quests`, accent: THEME.warning, depth: 600, dimAlpha: 0.45 });
-  let y = m.contentTop + 6 * ui;
-  const ready = boss && bossReady(profile, zone);
-  const done = quests.every((q) => q.done);
-  const sub = done ? 'Zone cleared! Explore the next land.' : ready ? `${boss.name} is waiting. Go and fight!` : 'Finish these to wake the boss.';
-  text(hud, w / 2, y, sub, T.small(hud, THEME.ink2)).setDepth(603); y += 24 * ui;
-  quests.forEach((q) => {
+  const st = storyState(profile);
+  // The chapter shown: the land the player is standing in, else the one the story is on.
+  const zone = ZONE_ORDER.includes(hud.state.zoneId) ? hud.state.zoneId : st.zone;
+  const ch = chapterFor(zone);
+  const missions = chapterMissions(profile, zone);
+  const compact = h < 720 * ui;   // short windows: tighter rows
+  const m = modal(hud, { w: 440 * ui, h: Math.min(h - 16, (250 + missions.length * (compact ? 27 : 31)) * ui), title: '🔔 The Academy Bell', accent: THEME.warning, depth: 600, dimAlpha: 0.5 });
+  let y = m.contentTop + 4 * ui;
+  // The bell: one slot per piece, lit as the bosses give them back.
+  const pieces = bellPieces(profile);
+  CHAPTERS.forEach((c, i) => {
+    const cx = w / 2 + (i - 1.5) * 34 * ui, have = pieces.includes(c.piece);
+    hud.add.circle(cx, y + 12 * ui, 13 * ui, have ? THEME.warningSoft : THEME.sunken, 1).setStrokeStyle(2, have ? THEME.warning : THEME.line).setDepth(603);
+    text(hud, cx, y + 12 * ui, have ? '🔔' : String(i + 1), have ? { fontSize: Math.round(14 * ui) + 'px' } : T.small(hud, THEME.ink3)).setDepth(604);
+  });
+  y += 32 * ui;
+  const headline = !st.started ? 'Headmistress Hope, by your house, has a tale for you.' : st.complete ? 'Every piece is home. The bell rings again!' : `${st.pieces} of ${CHAPTERS.length} pieces found`;
+  text(hud, w / 2, y, headline, T.small(hud, THEME.ink2)).setDepth(603); y += 22 * ui;
+  text(hud, w / 2, y, `Chapter ${chapterNumber(zone)}: ${ch ? ch.title : ZONE_NAMES[zone]}  ·  ${ZONE_NAMES[zone]}`, T.bodyBold(hud)).setDepth(603); y += 22 * ui;
+  const zoneDone = bossDefeated(profile, zone);
+  const next = zoneDone ? null : missions.find((q) => !q.done);
+  const sub = zoneDone ? (st.complete ? 'The Academy Bell is whole again. Explore as you please!' : 'This chapter is finished. On to the next land!') : next && next.id === 'boss' ? (ch ? ch.lines.ready : 'The castle is open!') : next ? `Next: ${next.title.toLowerCase()}` : '';
+  if (sub) text(hud, w / 2, y, sub, { ...T.small(hud, THEME.warningDark), wordWrap: { width: m.w - 48 }, align: 'center' }).setDepth(603);
+  y += 26 * ui;
+  // Rows share the space left above the Back button, so the list never runs into it.
+  const rowH = Math.max(20 * ui, Math.min((compact ? 27 : 31) * ui, (m.y + m.h - 70 * ui - y) / Math.max(1, missions.length)));
+  missions.forEach((q) => {
     const cy = y + rowH / 2;
-    const mark = q.done ? '✓' : q.id === 'boss' && !ready ? '🔒' : q.id === 'errand' ? '📜' : '○';
-    text(hud, m.x + 26, cy, mark, T.bodyBold(hud, q.done ? THEME.successDark : THEME.ink3)).setDepth(603);
-    text(hud, m.x + 48, cy, q.title, { ...T.body(hud, q.done ? THEME.ink2 : THEME.ink), wordWrap: { width: m.w - 130 } }).setOrigin(0, 0.5).setDepth(603);
+    const current = q === next;
+    if (current) hud.add.rectangle(m.x + m.w / 2, cy, m.w - 24, rowH - 3 * ui, THEME.warningSoft, 1).setDepth(602);
+    const mark = q.done ? '✓' : current ? '▶' : q.available ? '○' : '🔒';
+    text(hud, m.x + 26, cy, mark, T.bodyBold(hud, q.done ? THEME.successDark : current ? THEME.warningDark : THEME.ink3)).setDepth(603);
+    const label = text(hud, m.x + 48, cy, q.title, T.at(hud, compact ? 13 : 14, q.done ? THEME.ink2 : q.available ? THEME.ink : THEME.ink3, { fontStyle: current ? '700' : '500' })).setOrigin(0, 0.5).setDepth(603);
+    // A title too wide for the row is trimmed rather than wrapped, so every row stays one line.
+    const maxW = m.w - 124;
+    for (let t = q.title; label.width > maxW && t.length > 8; t = t.slice(0, -1)) label.setText(t.trimEnd().slice(0, -1) + '…');
     text(hud, m.x + m.w - 24, cy, `${q.count}/${q.total}`, T.small(hud, q.done ? THEME.successDark : THEME.ink2)).setOrigin(1, 0.5).setDepth(603);
     y += rowH;
   });
-  button(hud, w / 2, m.y + m.h - 36 * ui, Math.min(m.w - 48, 200 * ui), 44 * ui, 'Back', { variant: 'secondary', onClick: () => { hud.state.menuPage = 'menu'; hud.rebuild(); } }).setDepth(603);
+  const carrying = errandLine(profile);
+  if (carrying) text(hud, w / 2, y + 8 * ui, `📜 ${carrying}`, { ...T.small(hud, THEME.ink2), wordWrap: { width: m.w - 48 }, align: 'center' }).setDepth(603);
+  button(hud, w / 2, m.y + m.h - 34 * ui, Math.min(m.w - 48, 200 * ui), 42 * ui, 'Back', { variant: 'secondary', onClick: () => { hud.state.menuPage = 'menu'; hud.rebuild(); } }).setDepth(603);
 }
 
 /** The whole map, as far as it has been explored, with a legend. */

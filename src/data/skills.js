@@ -9,6 +9,7 @@ export const SKILL_LABELS = {
   adjective: 'adjectives', adverb: 'adverbs', agreement: 'subject-verb agreement', vocab: 'vocabulary', punctuation: 'punctuation', plural: 'plurals',
   synonym: 'synonyms', antonym: 'opposites', definition: 'word meanings',
   sequence_code: 'step-by-step instructions', repeat: 'repeat loops', conditional: 'if blocks', loops: 'loops',
-  people: 'Bible people', stories: 'Bible stories', places: 'Bible places', books: 'books of the Bible', verses: 'memory verses'
+  people: 'Bible people', stories: 'Bible stories', places: 'Bible places', books: 'books of the Bible', verses: 'memory verses',
+  barbados: 'Barbados facts'
 };
 export const skillLabel = (id) => SKILL_LABELS[id] || String(id).replace(/[-_]/g, ' ');

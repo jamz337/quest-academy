@@ -1,5 +1,6 @@
 // Pure helpers shared by the dashboard and leaderboard endpoints (unit-tested in tests/cloud.test.js).
 import { reviewable, dueAt } from '../../src/systems/Review.js';
+import { ROOMS } from '../../src/data/social/barbados.js';
 
 export const levelFromXp = (xp) => Math.floor(Math.sqrt(Math.max(0, xp) / 100)) + 1;
 const DAY = 86400000;
@@ -32,6 +33,12 @@ export function spellingSummary(p) {
   const tricky = words.filter(([, s]) => s.wrong > 0 && s.wrong >= s.right).map(([w]) => w).slice(0, 10);
   const tests = (p.spelling?.tests || []).slice(-8).reverse().map((t) => ({ listId: t.listId, correct: t.correct, total: t.total, at: t.at }));
   return { practised: words.length, learned: learned.length, tricky, sessions: p.spelling?.sessions | 0, tests };
+}
+
+/** Social studies in the house: each Barbados room's story read, quiz plays and best stars. */
+export function socialSummary(p) {
+  const rooms = ROOMS.map((r) => { const rec = p.social?.rooms?.[r.id] || {}; return { id: r.id, title: r.title, item: r.item, read: !!rec.read, plays: rec.plays | 0, best: rec.best | 0, lastCorrect: rec.lastCorrect ?? null, lastTotal: rec.lastTotal ?? null }; });
+  return { rooms, read: rooms.filter((r) => r.read).length, total: rooms.length, stars: rooms.reduce((n, r) => n + r.best, 0), maxStars: rooms.length * 3 };
 }
 
 /** Games, stars and minutes per day for the last `n` days, oldest first (empty days included). */
@@ -78,7 +85,7 @@ export function summarize(save, results = [], now = Date.now()) {
         week: { plays: week.length, stars: week.reduce((s, r) => s + (r.stars || 0), 0), xp: week.reduce((s, r) => s + (r.xp || 0), 0), minutes: Math.round(week.reduce((s, r) => s + (r.time_ms || 0), 0) / 60000) },
         weakSkills: weak, recentMisses: misses.slice(0, 10), mastery: p.mastery || {},
         reviewDue: misses.filter((m) => reviewable(m) && dueAt(m) <= now).length, reviewQueue: misses.filter(reviewable).length,
-        spelling: spellingSummary(p),
+        spelling: spellingSummary(p), social: socialSummary(p),
         skillTrend: skillTrend(rs, now), days: dailyActivity(rs, 14, now),
         xp: p.xp || 0, level: levelFromXp(p.xp || 0), coins: p.coins || 0, stars: totalStars(p),
         badges: p.badges || [], games: p.games || {},

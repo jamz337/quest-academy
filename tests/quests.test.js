@@ -92,10 +92,10 @@ describe('zone quests', () => {
   it('lists villagers, stars and coins with progress, then the boss', () => {
     const p = newProfile({ name: 'A', grade: 3 });
     const q = zoneQuests(p, 'math');
-    expect(q.map((x) => x.id)).toEqual(['meet', 'stars', 'coins', 'boss']);
+    expect(q.map((x) => x.id)).toEqual(['meet', 'stars', 'errand', 'coins', 'boss']);
     expect(q[0].total).toBe(NPCS.filter((n) => n.zone === 'math' && n.gameId).length);
     expect(q[1].total).toBe(gamesForSubject('math').length);
-    expect(q[2].total).toBeGreaterThan(0);
+    expect(q[3].total).toBeGreaterThan(0);
     expect(q.every((x) => !x.done)).toBe(true);
     expect(bossReady(p, 'math')).toBe(false);
   });
@@ -106,6 +106,8 @@ describe('zone quests', () => {
     p.world.npcsTalked = NPCS.filter((n) => n.zone === 'math').map((n) => n.id);
     for (const g of gamesForSubject('math')) p.games[g.id] = { bestStars: 1, levels: { 1: 1, 2: 1, 3: 1 } };   // all three house levels passed
     p.world.coinsCollected = map.coins.map((c, i) => (zoneAt(map, c.tx, c.ty) === 'math' ? i : -1)).filter((i) => i >= 0);
+    expect(bossReady(p, 'math')).toBe(false);   // the guide's errand is part of the chapter
+    p.world.errands = { abacus: 'done' };
     expect(bossReady(p, 'math')).toBe(true);
     expect(bossReady(p, 'words')).toBe(false);
   });

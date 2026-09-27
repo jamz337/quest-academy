@@ -17,6 +17,12 @@ export const NPCS = [
     playPrompt: null
   },
   {
+    // The mentor of the Academy Bell story: her lines come from data/world/story.js (see WorldScene.talk).
+    id: 'hope', pitch: 1.0, rate: 0.95, voice: 'female', name: 'Headmistress Hope', sprite: 'npc17', gameId: null, zone: 'hub', story: 'mentor',
+    lines: ['Come and see me whenever you want to know where the story stands.'],
+    playPrompt: null
+  },
+  {
     id: 'prof-plus', pitch: 0.85, rate: 0.9, voice: 'male', name: 'Professor Plus', sprite: 'npc0', gameId: 'math-dash', zone: 'math',
     lines: ['Ah, a new student! I love numbers that add up fast.', 'Quick sums make quick thinkers. Ready to race the clock?'],
     playPrompt: 'Want to play Number Dash?'

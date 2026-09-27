@@ -6,6 +6,7 @@ import { signpost } from '../../ui/Signpost.js';
 import { TID, ROOF_TILES, WALL_TILES, DOOR_TILES } from '../../data/world/map.js';
 import { NPCS } from '../../data/world/npcs.js';
 import { houseStars } from '../../systems/Progression.js';
+import { bellPieces, CHAPTERS } from '../../data/world/story.js';
 
 /**
  * One-off overlay baked into a RenderTexture: foam along shorelines, a soft inset edge around paths and
@@ -58,6 +59,46 @@ export function createLandmarks(w, profile) {
     const cx = (home.x + home.w / 2) * TILE, cy = (home.y - 0.35) * TILE;
     w.homePlate = w.add.text(cx, cy, `${profile.name}'s house`, { fontFamily: 'Fredoka, sans-serif', fontSize: '9px', color: '#2d2a4a', backgroundColor: '#fff8ef', padding: { x: 3, y: 1 } }).setOrigin(0.5).setDepth(4).setResolution(4);
   }
+}
+
+/**
+ * The bell tower at the top of the plaza: a wooden frame with a roof, and the Academy Bell hanging inside it,
+ * drawn piece by piece (crown, left side, right side, clapper) as the bosses give them back. Missing pieces are
+ * shown as faint outlines so the goal is always in view. The base cannot be walked through.
+ */
+export function createBellTower(w) {
+  const spot = w.map.bellSpot;
+  if (!spot) return;
+  const x = (spot.tx + 0.5) * TILE, y = (spot.ty + 1) * TILE - 4;
+  w.bellTower = { x, y, g: w.add.graphics().setDepth(4), label: w.add.text(x, y + 4, '', { fontFamily: 'Fredoka, sans-serif', fontSize: '7px', color: '#2d2a4a', backgroundColor: '#fff8ef', padding: { x: 2, y: 1 } }).setOrigin(0.5, 0).setDepth(4).setResolution(4) };
+  const post = w.add.rectangle(x, y - 6, 26, 10).setVisible(false);
+  w.physics.add.existing(post, true);
+  if (w.player) w.physics.add.collider(w.player, post);
+  refreshBell(w);
+}
+
+export function refreshBell(w) {
+  const t = w.bellTower, p = Store.getProfile();
+  if (!t || !t.g || !t.g.active || !p) return;
+  const g = t.g, x = t.x, y = t.y;
+  const have = new Set(bellPieces(p));
+  g.clear();
+  // Ground shadow, two posts, a crossbeam and a little tiled roof.
+  g.fillStyle(0x2d2a4a, 0.16); g.fillEllipse(x, y, 34, 8);
+  g.fillStyle(0x7a4a2a, 1); g.fillRect(x - 13, y - 46, 4, 46); g.fillRect(x + 9, y - 46, 4, 46);
+  g.fillStyle(0xa8613a, 1); g.fillRect(x - 12, y - 46, 2, 46); g.fillRect(x + 10, y - 46, 2, 46);
+  g.fillStyle(0x7a4a2a, 1); g.fillRect(x - 15, y - 48, 30, 4);
+  g.fillStyle(0xc45a3c, 1); g.fillTriangle(x - 19, y - 48, x + 19, y - 48, x, y - 60);
+  g.fillStyle(0x8a3a24, 1); g.fillTriangle(x - 19, y - 48, x + 19, y - 48, x, y - 50);
+  // The bell, piece by piece. Missing pieces: faint dotted ghosts.
+  const piece = (id, draw) => { if (have.has(id)) { g.fillStyle(0xffc531, 1); draw(); g.fillStyle(0xe09a12, 0.5); } else { g.fillStyle(0xfff1e8, 0.25); draw(); } };
+  const by = y - 40;   // top of the bell body
+  piece('crown', () => { g.fillRect(x - 3, by - 6, 6, 4); g.fillEllipse(x, by - 1, 12, 6); });
+  piece('left', () => { g.fillPoints([{ x: x - 4, y: by }, { x, y: by }, { x, y: by + 16 }, { x: x - 11, y: by + 16 }, { x: x - 11, y: by + 13 }, { x: x - 6, y: by + 8 }], true); });
+  piece('right', () => { g.fillPoints([{ x, y: by }, { x: x + 4, y: by }, { x: x + 6, y: by + 8 }, { x: x + 11, y: by + 13 }, { x: x + 11, y: by + 16 }, { x, y: by + 16 }], true); });
+  piece('clapper', () => { g.fillRect(x - 1, by + 12, 2, 6); g.fillCircle(x, by + 19, 2.5); });
+  if (have.size === CHAPTERS.length) { g.lineStyle(1, 0xffc531, 0.7); g.strokeCircle(x, by + 8, 16); g.strokeCircle(x, by + 8, 20); }
+  t.label.setText(have.size === CHAPTERS.length ? 'The Academy Bell' : `Academy Bell  ${have.size}/${CHAPTERS.length}`);
 }
 
 /** Three small stars above every villager's house, lit as the game's levels are passed. */

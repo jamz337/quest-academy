@@ -14,6 +14,7 @@ import { currentStreak } from '../../systems/Streak.js';
 import { houseStars } from '../../systems/Progression.js';
 import { MINIGAMES } from '../../data/minigames.js';
 import { exploredStats, ensureExplored } from '../../data/world/explore.js';
+import { socialProgress } from '../../systems/Social.js';
 
 export function buildHome(hud) {
   const { w, ui } = hud;
@@ -21,7 +22,7 @@ export function buildHome(hud) {
   if (!p) return;
   const badges = (p.badges || []).map((id) => getBadge(id)).filter(Boolean);
   const rows = Math.min(badges.length, 6);
-  const m = modal(hud, { w: 420 * ui, h: (326 + rows * 24) * ui, title: `${p.name}'s house`, accent: THEME.pink, depth: 600, dimAlpha: 0.45 });
+  const m = modal(hud, { w: 420 * ui, h: (352 + rows * 24) * ui, title: `${p.name}'s house`, accent: THEME.pink, depth: 600, dimAlpha: 0.45 });
   let y = m.contentTop + 4 * ui;
   const stars = MINIGAMES.reduce((sum, g) => sum + houseStars(p, g.id), 0);
   const bosses = Object.values(p.world.bosses || {}).filter((b) => b.defeated).length;
@@ -38,11 +39,13 @@ export function buildHome(hud) {
   line('Bosses beaten', `${bosses} of ${BOSSES.length}`);
   line('Errands done', `${errandsDone(p)} of ${ERRANDS.length}`);
   line('Map explored', `${Math.round(exploredStats(ensureExplored(p)).share * 100)}%`);
+  const social = socialProgress(p);
+  line('Barbados rooms', `📖 ${social.read} of ${social.total} read · ⭐ ${social.stars} of ${social.maxStars}`);
   y += 4 * ui;
   text(hud, m.x + 24, y, badges.length ? 'BADGES' : 'No badges yet — play a game to earn your first!', T.caption(hud)).setOrigin(0, 0.5).setDepth(603); y += 22 * ui;
   badges.slice(0, 6).forEach((b) => { text(hud, m.x + 24, y, `🏅 ${b.title}${m.w > 380 ? ` — ${b.desc}` : ''}`, T.small(hud, THEME.ink2)).setOrigin(0, 0.5).setDepth(603); y += 24 * ui; });
   if (badges.length > 6) { text(hud, m.x + 24, y, `…and ${badges.length - 6} more`, T.small(hud, THEME.ink3)).setOrigin(0, 0.5).setDepth(603); }
   const bw = Math.min((m.w - 72) / 2, 180 * ui), bh = 46 * ui, by = m.y + m.h - 36 * ui;
-  button(hud, w / 2 - bw / 2 - 8, by, bw, bh, 'Change my look', { variant: 'secondary', fontSize: 15, onClick: () => { hud.state.home = false; hud.scene.stop(SCENES.World); hud.scene.start(SCENES.Profile, { edit: p.id }); } }).setDepth(603);
-  button(hud, w / 2 + bw / 2 + 8, by, bw, bh, 'Back outside', { variant: 'primary', fontSize: 15, onClick: () => hud.closeHome() }).setDepth(603);
+  button(hud, w / 2 - bw / 2 - 8, by, bw, bh, 'Change my look', { variant: 'secondary', fontSize: 15, onClick: () => { hud.state.home = false; hud.scene.stop(hud.roamKey); hud.scene.start(SCENES.Profile, { edit: p.id }); } }).setDepth(603);
+  button(hud, w / 2 + bw / 2 + 8, by, bw, bh, hud.roamKey === SCENES.House ? 'Close' : 'Back outside', { variant: 'primary', fontSize: 15, onClick: () => hud.closeHome() }).setDepth(603);
 }

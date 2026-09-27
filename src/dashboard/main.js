@@ -5,6 +5,7 @@ import { skillLabel } from '../data/skills.js';
 import { skillTip } from '../data/explanations.js';
 import { getBadge } from '../data/badges.js';
 import { getList } from '../data/spelling/lists.js';
+import { roomFromGameId } from '../data/social/barbados.js';
 import { resolveLook, OUTLINE, MOUTH } from '../data/avatars.js';
 import { cssVars } from '../ui/theme.js';
 
@@ -76,7 +77,8 @@ function childCard(c) {
       <td>${stars(rec ? rec.bestStars : 0)}</td><td>${rec ? rec.plays + (rec.plays === 1 ? ' play' : ' plays') : '<span class="muted">not yet</span>'}</td></tr>`;
   }).join('');
   const recent = c.recent.map((r) => {
-    const g = MINIGAMES.find((x) => x.id === r.gameId) || (r.gameId === 'spelling' ? { icon: '🐝', title: 'Spelling Bee' } : r.gameId === 'spelling-test' ? { icon: '📝', title: 'Weekly spelling test' } : null);
+    const room = roomFromGameId(r.gameId);
+    const g = MINIGAMES.find((x) => x.id === r.gameId) || (r.gameId === 'spelling' ? { icon: '🐝', title: 'Spelling Bee' } : r.gameId === 'spelling-test' ? { icon: '📝', title: 'Weekly spelling test' } : room ? { icon: room.item, title: `${room.title} quiz` } : null);
     const detail = r.total ? `${r.correct} / ${r.total}` : r.levelId ? `level ${r.levelId}` : '';
     return `<tr><td>${when(r.at)}</td><td>${g ? g.icon + ' ' + esc(g.title) : esc(r.gameId)}</td><td>${stars(r.stars)}</td><td>${detail}</td><td>+${r.xp} XP</td></tr>`;
   }).join('');
@@ -100,6 +102,11 @@ function childCard(c) {
       (sp.tricky.length ? `<div class="tip">Still tricky: ${sp.tricky.map((w) => `<span class="skill">${esc(w)}</span>`).join(' ')} <span class="muted">Try them out loud at home, then let them type the word into the Spelling Bee.</span></div>` : '<div class="muted">No tricky words at the moment.</div>') +
       (testRows ? `<h3>Weekly spelling tests</h3><table><tr><th>When</th><th>List</th><th>Score</th><th></th></tr>${testRows}</table>` : '<div class="muted">No weekly test taken yet. It is the "Weekly test" button on each list: every word from hearing alone, no hints.</div>')
     : '<div class="muted">No spelling practice yet. The Spelling Bee is on the home screen.</div>';
+  const so = c.social || { rooms: [], read: 0, total: 0, stars: 0, maxStars: 0 };
+  const socialRows = so.rooms.map((r) => `<tr><td>${r.item} ${esc(r.title)}</td><td>${r.read ? 'read' : '<span class="muted">not yet</span>'}</td><td>${stars(r.best)}</td><td>${r.plays ? `${r.plays} ${r.plays === 1 ? 'quiz' : 'quizzes'}${r.lastTotal ? `, last ${r.lastCorrect} / ${r.lastTotal}` : ''}` : '<span class="muted">no quiz yet</span>'}</td></tr>`).join('');
+  const social = so.total
+    ? `<div class="tip">🏠 <b>${so.read}</b> of ${so.total} room stories read, <b>${so.stars}</b> of ${so.maxStars} stars. Each room of the player's house tells a story about Barbados (the flag, the National Heroes, the parishes, the symbols, Crop Over) and ends with a five-question quiz.</div><table><tr><th>Room</th><th>Story</th><th>Best</th><th></th></tr>${socialRows}</table>`
+    : '';
   const review = c.reviewQueue
     ? `<div class="tip">📚 <b>${c.reviewDue}</b> ${c.reviewDue === 1 ? 'question is' : 'questions are'} due for a quick review at the start of the next game (${c.reviewQueue} in the queue). Each one comes back a day, three days and a week later until it sticks.</div>`
     : '<div class="muted">Nothing waiting for review. Missed questions come back here on a spaced schedule.</div>';
@@ -116,6 +123,7 @@ function childCard(c) {
     <h3>Skills over time</h3>${trendTable(c.skillTrend || [])}
     <h3>Skills to practise, and what helps at home</h3><div>${practise}</div>
     <h3>Spelling Bee</h3>${spelling}
+    <h3>Social studies: Barbados</h3>${social || '<div class="muted">Walk into the house on the map to find the rooms.</div>'}
     <h3>Review queue</h3>${review}
     <h3>Questions missed recently</h3>${misses ? `<table><tr><th>When</th><th>Question</th><th>Answer</th><th>Skill</th></tr>${misses}</table>` : '<div class="muted">None recorded yet. Ask about these at dinner when they appear!</div>'}
     <h3>Badges</h3><div>${badges}</div>

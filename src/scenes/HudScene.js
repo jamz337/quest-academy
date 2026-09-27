@@ -18,6 +18,7 @@ import { Minimap, paintMinimap } from '../ui/Minimap.js';
 import { ensureExplored } from '../data/world/explore.js';
 import { buildHome } from './hud/homePanel.js';
 import * as FishingPanel from './hud/fishingPanel.js';
+import * as CookingPanel from './hud/cookingPanel.js';
 import { buildEncounter } from './hud/encounterPanel.js';
 import { buildMenu } from './hud/menuPanel.js';
 
@@ -30,7 +31,7 @@ export class HudScene extends BaseScene {
   constructor() { super(SCENES.Hud); }
 
   create(data) {
-    this.state = { coins: 0, zone: '', zoneId: null, carry: null, dialog: null, encounter: null, home: false, fishing: null, menuOpen: false, menuPage: 'menu' };
+    this.state = { coins: 0, zone: '', zoneId: null, carry: null, dialog: null, encounter: null, home: false, fishing: null, cooking: null, menuOpen: false, menuPage: 'menu' };
     this.actionFlag = false;
     this.lastMinimap = null;
     super.create(data);
@@ -61,13 +62,13 @@ export class HudScene extends BaseScene {
   /** Dialog and menu animate in when they open; everything else redraws quietly. */
   enterKey() {
     const s = this.state;
-    return (s.dialog ? 'd' + s.dialog.idx : '') + (s.menuOpen ? 'm' + s.menuPage : '') + (s.encounter ? 'e' + s.encounter.kind + (s.encounter.picked ?? '') : '') + (s.home ? 'h' : '') + (s.fishing ? 'f' + s.fishing.phase : '');
+    return (s.dialog ? 'd' + s.dialog.idx : '') + (s.menuOpen ? 'm' + s.menuPage : '') + (s.encounter ? 'e' + s.encounter.kind + (s.encounter.picked ?? '') : '') + (s.home ? 'h' : '') + (s.fishing ? 'f' + s.fishing.phase : '') + (s.cooking ? 'c' + s.cooking.phase + s.cooking.step : '');
   }
 
   get dialogOpen() { return !!this.state.dialog; }
   get menuOpen() { return this.state.menuOpen; }
   /** True while the world should stand still. */
-  get blocking() { return this.dialogOpen || this.menuOpen || !!this.state.encounter || this.state.home || !!this.state.fishing; }
+  get blocking() { return this.dialogOpen || this.menuOpen || !!this.state.encounter || this.state.home || !!this.state.fishing || !!this.state.cooking; }
 
   /** Returns true once per press of the action button (or a tap on the dialog). */
   takeAction() { const a = this.actionFlag; this.actionFlag = false; return a; }
@@ -97,13 +98,21 @@ export class HudScene extends BaseScene {
     if (s.encounter) buildEncounter(this, s.encounter);
     if (s.home) buildHome(this);
     if (s.fishing) FishingPanel.buildFishing(this, s.fishing);
+    if (s.cooking) CookingPanel.buildCooking(this, s.cooking);
     if (s.menuOpen) buildMenu(this);
   }
 
   // ---- Minimap -------------------------------------------------------------------------------
 
-  /** The overworld's map, when the world is running. */
-  worldMap() { const world = this.scene.get(SCENES.World); return world && world.map ? world.map : null; }
+  /** The roaming scene under this Hud: the player's house when they are inside it, else the world. */
+  get roamKey() { return this.scene.isActive(SCENES.House) || this.scene.isPaused(SCENES.House) ? SCENES.House : SCENES.World; }
+
+  /** The overworld's map, when the world is running (inside the house there is no minimap). */
+  worldMap() {
+    if (this.roamKey !== SCENES.World) return null;
+    const world = this.scene.get(SCENES.World);
+    return world && world.map && (this.scene.isActive(SCENES.World) || this.scene.isPaused(SCENES.World)) ? world.map : null;
+  }
 
   buildMinimap(right, top) {
     const map = this.worldMap(), profile = Store.getProfile();
@@ -138,6 +147,10 @@ export class HudScene extends BaseScene {
   showFishing(opts) { FishingPanel.showFishing(this, opts); }
   pullLine() { FishingPanel.pullLine(this); }
   closeFishing() { FishingPanel.closeFishing(this); }
+
+  /** The kitchen stove (see hud/cookingPanel.js). */
+  showCooking() { CookingPanel.showCooking(this); }
+  closeCooking() { CookingPanel.closeCooking(this); }
 
   /** { kind: 'quiz'|'chest'|'gift', q?, coins?, gift?, subject?, onAnswer?(right), onClose? } */
   showEncounter(e) {
@@ -284,20 +297,22 @@ export class HudScene extends BaseScene {
     if (this.state.menuOpen || this.blocking) return;
     this.state.menuOpen = true; this.state.menuPage = page;
     if (this.joystick) this.joystick.release();
-    if (this.scene.isActive(SCENES.World)) this.scene.pause(SCENES.World);
+    const roam = this.roamKey;
+    if (this.scene.isActive(roam)) this.scene.pause(roam);
     this.rebuild();
   }
 
   closeMenu() {
     this.state.menuOpen = false;
     this.rebuild();
-    if (this.scene.isPaused(SCENES.World)) this.scene.resume(SCENES.World);
+    const roam = this.roamKey;
+    if (this.scene.isPaused(roam)) this.scene.resume(roam);
   }
 
-  /** Stop the world (which saves its position on shutdown) and this Hud, then start another screen. */
+  /** Stop the world or house (the world saves its position on shutdown) and this Hud, then start another screen. */
   leaveTo(key) {
     this.state.menuOpen = false;
-    this.scene.stop(SCENES.World);
+    this.scene.stop(this.roamKey);
     this.scene.start(key);
   }
 }

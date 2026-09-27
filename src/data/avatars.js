@@ -33,7 +33,8 @@ export const NPC_STYLES = [
   { hair: '#ff6fae', skin: '#ffd6b3', top: '#ffc531', legs: '#3d8bff' },   // balloon seller
   { hair: '#2ec46a', skin: '#b8794a', top: '#8fe07c', legs: '#229c53' },   // lily pad lou
   { hair: '#3d8bff', skin: '#d6cfc4', top: '#2d2a4a', legs: '#7c5cff' },   // dj bot
-  { hair: '#625f7e', skin: '#c98a5a', top: '#a06a3e', legs: '#5a3a22' }    // ark builder
+  { hair: '#625f7e', skin: '#c98a5a', top: '#a06a3e', legs: '#5a3a22' },   // ark builder
+  { hair: '#e8e2d8', skin: '#b8794a', top: '#1d2b53', legs: '#625f7e', body: 'headmistress' }    // headmistress hope: grey bun, glasses, dress, ruler
 ];
 
 // Swatches players can pick in the profile editor. The first entries mirror the preset colours above.
