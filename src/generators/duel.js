@@ -121,7 +121,7 @@ export const BY_GAME = {
 
 export const duelQuestion = (gameId, grade, rng) => (BY_GAME[gameId] || generateQuestion)(Number(grade) || 3, rng);
 
-/** n questions from one game's topic at a grade, with no repeated prompts. */
+/** n questions from one game's topic at a grade, without repeats while the topic has enough of them (a small bank, like the bug puzzles, may repeat). */
 export function duelQuestions(gameId, grade, rng, n = 20) {
   const out = [], seen = new Set();
   let guard = 0;
@@ -130,5 +130,6 @@ export function duelQuestions(gameId, grade, rng, n = 20) {
     if (seen.has(q.prompt)) continue;
     seen.add(q.prompt); out.push(q);
   }
+  while (out.length < n && out.length) out.push(out[out.length % seen.size]);
   return out;
 }
