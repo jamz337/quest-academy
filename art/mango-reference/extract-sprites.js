@@ -54,6 +54,18 @@ const SIDE = dataUrl('Gemini_Generated_Image_f7mxvnf7mxvnf7mx.jpg', 'image/jpeg'
       const out = new Uint8Array(W * H); for (let i = 0; i < W * H; i++) out[i] = m[i] || (hole[i] >= 0 && hs[hole[i]] <= maxHole) ? 1 : 0;
       return out;
     }
+    /** Sand and white count as background only where they connect to the picture's edge through background:
+     *  enclosed cream (Mango's face and belly) stays; enclosed grass or sky (inside the tail curl) still goes. */
+    function keepEnclosedCream(id, m) {
+      const { width: W, height: H, data } = id, px = (i) => [data[i * 4], data[i * 4 + 1], data[i * 4 + 2]];
+      const bg = (i) => isBg(...px(i)), reach = new Uint8Array(W * H), st = [];
+      for (let x = 0; x < W; x++) for (const y of [0, H - 1]) { const i = y * W + x; if (bg(i)) { reach[i] = 1; st.push(i); } }
+      for (let y = 0; y < H; y++) for (const x of [0, W - 1]) { const i = y * W + x; if (bg(i) && !reach[i]) { reach[i] = 1; st.push(i); } }
+      while (st.length) { const p = st.pop(), x = p % W, y = (p / W) | 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy; if (nx < 0 || ny < 0 || nx >= W || ny >= H) continue; const q = ny * W + nx; if (!reach[q] && bg(q)) { reach[q] = 1; st.push(q); } } }
+      const out = new Uint8Array(W * H);
+      for (let i = 0; i < W * H; i++) { const [r, g, b] = px(i); out[i] = m[i] || (data[i * 4 + 3] > 100 && !reach[i] && !isGrass(r, g, b) && !isSky(r, g, b)) ? 1 : 0; }
+      return out;
+    }
     function bbox(m, W, H) { let x0 = W, y0 = H, x1 = -1, y1 = -1; for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (m[y * W + x]) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); } return { x0, y0, x1, y1, w: x1 - x0 + 1, h: y1 - y0 + 1 }; }
     /** Estimate the source's pixel size from the period of colour edges inside the box. */
     function pixelSize(id, m, bb) {
@@ -137,7 +149,7 @@ const SIDE = dataUrl('Gemini_Generated_Image_f7mxvnf7mxvnf7mx.jpg', 'image/jpeg'
     async function cut(src, crop, { targetH, k = 18, ps: forcePs, align = null, palette = null } = {}) {
       const img = await load(src);
       const id = draw(img, crop);
-      let m = mask(id); m = largest(m, id.width, id.height); m = fillHoles(m, id.width, id.height);
+      let m = mask(id); m = keepEnclosedCream(id, m); m = largest(m, id.width, id.height); m = fillHoles(m, id.width, id.height);
       const bb = bbox(m, id.width, id.height);
       const est = pixelSize(id, m, bb);
       let ps = forcePs || (targetH ? bb.h / targetH : est), phX = 0, phY = 0;
