@@ -20,7 +20,7 @@ import { safeArea } from '../systems/Layout.js';
 import { Rng } from '../systems/Rng.js';
 import { checkBadges } from '../systems/Progression.js';
 import { getBadge } from '../data/badges.js';
-import { getRoom, roomGameId } from '../data/social/barbados.js';
+import { getRoom, roomGameId, pageText } from '../data/social/barbados.js';
 import { pictureTexture, isDrawnPicture } from '../ui/Pictures.js';
 import { markRead, finishRoom, roomRecord, SOCIAL_SKILL } from '../systems/Social.js';
 
@@ -93,8 +93,9 @@ export class HouseRoomScene extends BaseScene {
     stripe(this, cx - 24 * ui, area.y + 10 * ui, 48 * ui, this.room.colour, 5 * ui);
     const pic = this.add.text(cx, area.y + 30 * ui + picSize / 2, page.pic, { fontSize: Math.round(picSize * 0.72) + 'px' }).setOrigin(0.5);
     enter(this, pic, { from: 'pop' });
-    const size = page.text.length > 220 ? 15 : page.text.length > 160 ? 16 : 18;
-    const body = readable(this, cx, area.y + 30 * ui + picSize + 18 * ui, page.text, T.at(this, size, THEME.ink), { width: area.w - 40, align: 'center', lineGap: 5 * ui });
+    const story = pageText(page, Store.getProfile()?.grade);
+    const size = story.length > 220 ? 15 : story.length > 160 ? 16 : 18;
+    const body = readable(this, cx, area.y + 30 * ui + picSize + 18 * ui, story, T.at(this, size, THEME.ink), { width: area.w - 40, align: 'center', lineGap: 5 * ui });
     body.setOrigin(0.5, 0);
     const how = { rate: this.speechRate };
     const sb = speakButton(this, area.x + area.w - 30 * ui, area.y + 28 * ui, 40 * ui, body, how);

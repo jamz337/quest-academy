@@ -26,7 +26,7 @@ import * as Errands from './world/errands.js';
 import * as Fishing from './world/fishing.js';
 import * as Decor from './world/decor.js';
 import * as Companion from './world/companion.js';
-import { mentorLines, guideLines, signpostLine, startStory, bellPieces, claimFinale, CHAPTERS, MENTOR_ID } from '../data/world/story.js';
+import { mentorLines, guideLines, signpostLine, startStory, bellPieces, claimFinale, finishTutorial, tutorialDone, CHAPTERS, MENTOR_ID } from '../data/world/story.js';
 import { checkBadges } from '../systems/Progression.js';
 import { getBadge } from '../data/badges.js';
 
@@ -91,8 +91,10 @@ export class WorldScene extends Phaser.Scene {
     this.zoneTimer = this.time.addEvent({ delay: 200, loop: true, callback: this.tick, callbackScope: this });
     this.tick();
     Music.play();   // relaxing lounge loop while exploring; ducked under games, stopped on leaving the world
-    // The first time in the world, Headmistress Hope comes over with the tale of the Academy Bell.
-    if (!profile.story || !profile.story.started) this.time.delayedCall(900, () => { const pearl = this.npcs.find((s) => s.npc && s.npc.id === MENTOR_ID); if (pearl && this.hud() && !this.hud().blocking) this.talk(pearl); });
+    // The first time in the world, Headmistress Hope comes over with the tale of the Academy Bell, and Mango
+    // then teaches the first steps; a save that stopped part-way through the lesson picks it up again.
+    if (!profile.story || !profile.story.started) this.time.delayedCall(700, () => this.introSequence());
+    else if (!tutorialDone(profile)) this.time.delayedCall(700, () => this.startLesson());
 
     // Lifecycle
     this.onResize = () => this.applyZoom();
@@ -215,6 +217,7 @@ export class WorldScene extends Phaser.Scene {
     if (!this.player || !this.player.body) return;
     const hud = this.hud();
     const inp = this.controls.read();
+    if (this.introRunning) { this.stopPlayer(); this.wasBlocked = true; this.bubble.setVisible(false); return; }
 
     if (hud && hud.blocking) {
       this.stopPlayer();
@@ -281,6 +284,7 @@ export class WorldScene extends Phaser.Scene {
       if (hud) hud.updateMinimap({ tx, ty, explored, repaint, markers: this.mapMarkers(p) });
     }
     Encounters.maybeSurprise(this, tx, ty);
+    this.lessonTick();
     if (hud && p) { const line = errandLine(p); if (hud.state.carry !== line) hud.setCarry(line); }
     if (this.errandItem && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.errandItem.x, this.errandItem.y) < 22) Errands.pickUpItem(this);
     if ((this.tickCount = (this.tickCount | 0) + 1) % 5 === 0) { Companion.announceStory(this); if (!(hud && hud.blocking)) this.finaleIfReady(); }   // about once a second
@@ -351,11 +355,80 @@ export class WorldScene extends Phaser.Scene {
     }
   }
 
-  /** The Headmistress has told the tale: the story is on, and Mango pops by for the first time. */
+  /** The Headmistress has told the tale: the story is on, and Mango starts the first-steps lesson. */
   storyBegun() {
     Store.updateProfile((p) => startStory(p));
-    Companion.showCompanion(this);
-    this.time.delayedCall(600, () => Companion.companionSay(this, 'Let us go! Math Meadow is to the west.'));
+    this.startLesson();
+  }
+
+  // ---- First entry: the Headmistress comes over, then Mango's lesson --------------------------
+
+  get hopeSprite() { return this.npcs.find((s) => s.npc && s.npc.id === MENTOR_ID) || null; }
+  get touchDevice() { try { return !!this.sys.game.device.input.touch; } catch { return false; } }
+
+  /** The camera finds the Headmistress, she walks over to the player (or simply appears if far away), and talks. */
+  introSequence() {
+    const hope = this.hopeSprite, hud = this.hud();
+    if (!hope || !this.player || !hud) return;
+    if (hud.blocking) { this.time.delayedCall(1000, () => this.introSequence()); return; }
+    this.introRunning = true;
+    this.stopPlayer();
+    const cam = this.cameras.main;
+    const tx = this.player.x - 34, ty = this.player.y + 2;
+    const arrive = () => {
+      hope.refreshBody(); this.hopeMoved = true;
+      cam.startFollow(this.player, true, 0.12, 0.12);
+      this.time.delayedCall(250, () => { this.introRunning = false; this.wasBlocked = true; this.talk(hope); });
+    };
+    if (Phaser.Math.Distance.Between(hope.x, hope.y, this.player.x, this.player.y) > 10 * TILE) {
+      hope.setAlpha(0).setPosition(tx, ty);
+      this.tweens.add({ targets: hope, alpha: 1, duration: 500, onComplete: arrive });
+      return;
+    }
+    cam.stopFollow();
+    cam.pan(hope.x, hope.y, 700, 'Sine.easeInOut');
+    this.time.delayedCall(900, () => {
+      if (!hope.active) return;
+      hope.setFrame(IDLE_FRAME.side).setFlipX(tx > hope.x);
+      this.tweens.add({ targets: hope, x: tx, y: ty, duration: 1300, ease: 'Sine.InOut', onComplete: arrive });
+      cam.pan(this.player.x, this.player.y, 1300, 'Sine.easeInOut');
+    });
+  }
+
+  /** Step one: walk. Step two: talk to Sam. The hint chip on the Hud says what to do; Mango cheers each step. */
+  startLesson() {
+    if (!this.player || tutorialDone(Store.getProfile())) return;
+    this.lesson = 'move';
+    this.lessonStart = { x: this.player.x, y: this.player.y };
+    const hud = this.hud();
+    if (hud) hud.setHint(this.touchDevice ? '👆 Drag the joystick at the bottom left to walk' : '⌨️ Walk with the arrow keys or W A S D');
+    Companion.showCompanion(this, this.touchDevice ? 'First, let us walk! Drag the joystick at the bottom left.' : 'First, let us walk! Use the arrow keys or W A S D.');
+  }
+
+  lessonTick() {
+    if (!this.lesson || !this.player) return;
+    const hud = this.hud(), p = Store.getProfile();
+    if (hud && hud.blocking) return;
+    if (this.lesson === 'move' && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.lessonStart.x, this.lessonStart.y) > 48) {
+      this.lesson = 'talk';
+      if (hud) hud.setHint('🪧 Walk up to Signpost Sam and press A to talk');
+      Companion.mangoVisit(this, 'Great walking! Now go to Sam by the signpost and press A to talk to him.', { accent: THEME.success });
+    } else if (this.lesson === 'talk' && p && (p.world.npcsTalked || []).includes('signpost')) {
+      this.lesson = null;
+      Store.updateProfile((q) => finishTutorial(q));
+      if (hud) hud.setHint(null);
+      Companion.mangoVisit(this, 'You have got it! Off to Math Meadow, to the west.', { accent: THEME.success });
+      this.hopeGoesHome();
+    }
+  }
+
+  /** After the lesson the Headmistress walks back to her spot by the house. */
+  hopeGoesHome() {
+    const hope = this.hopeSprite, spot = this.map.npcSpots[MENTOR_ID];
+    if (!hope || !spot || !this.hopeMoved) return;
+    const hx = (spot.tx + 0.5) * TILE, hy = (spot.ty + 0.5) * TILE;
+    hope.setFrame(IDLE_FRAME.side).setFlipX(hx > hope.x);
+    this.tweens.add({ targets: hope, x: hx, y: hy, duration: 1400, ease: 'Sine.InOut', onComplete: () => { if (hope.active) { hope.setFrame(IDLE_FRAME.down); hope.refreshBody(); } this.hopeMoved = false; } });
   }
 
   /** Every piece is back: the Headmistress's finale, coins, the badge and the bell ringing. */

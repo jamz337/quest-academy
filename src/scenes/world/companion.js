@@ -19,7 +19,7 @@ export function createCompanion(w) {
 }
 
 /** The first visit, right after the tale: a wave and the way to the first land. */
-export function showCompanion(w) { mangoVisit(w, 'Let us go! Math Meadow is to the west.', { accent: THEME.success }); }
+export function showCompanion(w, line = 'Let us go! Math Meadow is to the west.') { mangoVisit(w, line, { accent: THEME.success }); }
 
 /** Kept for the world's update loop: Mango stays where he landed, nothing to do per frame. */
 export function updateCompanion() {}

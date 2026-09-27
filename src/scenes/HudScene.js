@@ -31,7 +31,7 @@ export class HudScene extends BaseScene {
   constructor() { super(SCENES.Hud); }
 
   create(data) {
-    this.state = { coins: 0, zone: '', zoneId: null, carry: null, dialog: null, encounter: null, home: false, fishing: null, cooking: null, menuOpen: false, menuPage: 'menu' };
+    this.state = { coins: 0, zone: '', zoneId: null, carry: null, dialog: null, encounter: null, home: false, fishing: null, cooking: null, hint: null, menuOpen: false, menuPage: 'menu' };
     this.actionFlag = false;
     this.lastMinimap = null;
     super.create(data);
@@ -93,6 +93,13 @@ export class HudScene extends BaseScene {
 
     // Bottom-right: round action button
     if (!this.blocking) this.buildActionButton(w - 56 * ui - sa.right, h - 56 * ui - sa.bottom, 72 * ui);
+    // The first-steps hint, pulsing above the joystick.
+    if (s.hint && !this.blocking) {
+      const c = chip(this, w / 2, h - 118 * ui - sa.bottom, { text: s.hint, color: THEME.warningSoft, textColor: THEME.warningDark, fontSize: 14, height: 34 * ui, stroke: THEME.warning });
+      c.x = w / 2 - c.w / 2;
+      c.setDepth(310);
+      this.tweens.add({ targets: c, scaleX: 1.04, scaleY: 1.04, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+    }
 
     if (s.dialog) this.buildDialog(s.dialog);
     if (s.encounter) buildEncounter(this, s.encounter);
@@ -213,6 +220,9 @@ export class HudScene extends BaseScene {
     });
     this.time.delayedCall(1800, () => { if (this.state.coins < target) this.setCoins(target); });
   }
+  /** A persistent hint for the first-steps lesson; null clears it. */
+  setHint(text) { const t = text || null; if (this.state.hint !== t) { this.state.hint = t; this.rebuild(); } }
+
   setZone(name, id = null) {
     this.state.zone = name || ''; this.state.zoneId = id;
     if (this.zoneChip && this.zoneChip.active) { this.zoneChip.setText(this.state.zone); this.zoneChip.setVisible(!!this.state.zone); }

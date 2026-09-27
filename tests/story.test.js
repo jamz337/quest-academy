@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { newProfile, migrate } from '../src/systems/SaveSystem.js';
-import { CHAPTERS, MISSION_ORDER, chapterMissions, storyState, mentorLines, guideLines, signpostLine, newlyDone, markAnnounced, startStory, claimFinale, bellPieces, chapterGuideOk, ensureStory, clueFor, FINALE_COINS, MENTOR_ID } from '../src/data/world/story.js';
+import { CHAPTERS, MISSION_ORDER, chapterMissions, storyState, mentorLines, guideLines, signpostLine, newlyDone, markAnnounced, startStory, claimFinale, bellPieces, chapterGuideOk, ensureStory, clueFor, finishTutorial, tutorialDone, FINALE_COINS, MENTOR_ID } from '../src/data/world/story.js';
 import { zoneQuests, bossReady, ZONE_ORDER, ZONE_GUIDE } from '../src/data/world/quests.js';
 import { NPCS } from '../src/data/world/npcs.js';
 import { ERRANDS, errandFor } from '../src/data/world/errands.js';
@@ -52,6 +52,13 @@ describe('The Academy Bell', () => {
     const p = newProfile({ name: 'A', grade: 3 });
     expect(p.story).toEqual({ started: false, announced: [], finale: false });
     expect(migrate({ version: 1, profiles: { x: { id: 'x', name: 'Old' } } }).profiles.x.story).toEqual({ started: false, announced: [], finale: false });
+    // The tale: five lines for older players, four short ones for grades 2 and 3.
+    const older = newProfile({ name: 'O', grade: 5 }), young = newProfile({ name: 'Y', grade: 2 });
+    expect(mentorLines(older)).toHaveLength(5);
+    expect(mentorLines(young)).toHaveLength(4); expect(mentorLines(young)[0]).toContain('Headmistress Hope');
+    expect(mentorLines(young).join(' ').length).toBeLessThan(mentorLines(older).join(' ').length);
+    expect(mentorLines(p)).toEqual(mentorLines(young));   // grade 3 hears the short telling too
+    expect(tutorialDone(p)).toBe(false); finishTutorial(p); expect(tutorialDone(p)).toBe(true); expect(p.story.tutorial).toBe(true);
     let m = chapterMissions(p, 'math');
     expect(m.map((x) => x.id)).toEqual(MISSION_ORDER);
     expect(m.map((x) => x.available)).toEqual([true, false, false, false, false, false]);

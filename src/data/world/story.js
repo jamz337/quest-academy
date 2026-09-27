@@ -75,7 +75,7 @@ export const chapterNumber = (zone) => CHAPTERS.findIndex((c) => c.zone === zone
 
 export function ensureStory(profile) {
   const s = profile.story || (profile.story = {});
-  s.started = !!s.started; s.announced ||= []; s.finale = !!s.finale;
+  s.started = !!s.started; s.announced ||= []; s.finale = !!s.finale; s.tutorial = !!s.tutorial;
   return s;
 }
 
@@ -122,6 +122,14 @@ export function storyState(profile) {
 /** What Headmistress Hope says: the whole tale the first time, then where the story stands. */
 export function mentorLines(profile) {
   const st = storyState(profile);
+  if (!st.started && (Number(profile?.grade) || 4) <= 3) {
+    return [
+      'Hello! I am Headmistress Hope. I run Quest Academy.',
+      'Long ago our big bell rang every morning. Then four bosses stole it, one piece each.',
+      'Please find the four pieces and ring the bell again. The villagers in each land will help you.',
+      'Mango the monkey will pop by to cheer you on. Start in Math Meadow, to the west!'
+    ];
+  }
   if (!st.started) {
     return [
       'Welcome, student! I am Headmistress Hope, head of Quest Academy. I have been waiting for someone like you.',
@@ -201,6 +209,10 @@ export function markAnnounced(profile, key) {
 
 /** Mark the story as begun (the Headmistress has told the tale). */
 export function startStory(profile) { ensureStory(profile).started = true; }
+
+/** The first-steps lesson (walk, then talk to Sam) has been finished. */
+export function finishTutorial(profile) { ensureStory(profile).tutorial = true; }
+export const tutorialDone = (profile) => !!profile?.story?.tutorial;
 
 /** The finale pays once: coins and the Bell Ringer badge are handled by the caller. Returns true the first time. */
 export function claimFinale(profile) {

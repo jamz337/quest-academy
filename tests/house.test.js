@@ -4,7 +4,7 @@ import { installPhaserMock, fakeSystems, findButton, click } from './helpers/pha
 installPhaserMock();
 vi.mock('../src/systems/Speech.js', () => ({ speak: vi.fn(), stop: vi.fn(), rateFor: () => 0.9, canSpeak: () => true, speakWords: () => null, primeSpeech: () => false }));
 
-const { ROOMS, getRoom, roomGameId, roomFromGameId } = await import('../src/data/social/barbados.js');
+const { ROOMS, getRoom, roomGameId, roomFromGameId, pageText } = await import('../src/data/social/barbados.js');
 const { HOUSE_W, HOUSE_H, HOUSE_ROOMS, EXHIBITS, FURNITURE, SIGNS, EXIT, SPAWN, DOORWAYS, wallTiles, roomAt, furnitureAt, isFloor, onExit, reachableFloor } = await import('../src/data/social/house.js');
 const { RECIPES, DISTRACTORS, stepChoices } = await import('../src/data/social/recipes.js');
 const { TV_FACTS, FRIDGE_FACTS, BOOK_FACTS, pickFact } = await import('../src/data/social/facts.js');
@@ -22,9 +22,15 @@ describe('Barbados rooms', () => {
     for (const r of ROOMS) {
       expect(r.title && r.item && r.intro, r.id).toBeTruthy();
       expect(r.story.length).toBeGreaterThanOrEqual(4);
-      for (const p of r.story) { expect(p.pic).toBeTruthy(); expect(p.text.length).toBeGreaterThan(80); expect(p.text.length).toBeLessThan(330); }
+      for (const p of r.story) {
+        expect(p.pic).toBeTruthy(); expect(p.text.length).toBeGreaterThan(80); expect(p.text.length).toBeLessThan(330);
+        // The short telling for grades 2 and 3: present, shorter, and under 200 characters.
+        expect(p.short, `${r.id} short`).toBeTruthy(); expect(p.short.length).toBeLessThan(p.text.length); expect(p.short.length).toBeLessThan(200);
+        expect(pageText(p, 2)).toBe(p.short); expect(pageText(p, 3)).toBe(p.short); expect(pageText(p, 4)).toBe(p.text); expect(pageText(p, undefined)).toBe(p.text);
+      }
       expect(r.quiz).toHaveLength(5);
       const text = r.story.map((p) => p.text.toLowerCase()).join(' ');
+      const shortText = r.story.map((p) => p.short.toLowerCase()).join(' ');
       for (const q of r.quiz) {
         expect(q.choices).toHaveLength(4);
         expect(new Set(q.choices).size).toBe(4);
@@ -33,6 +39,7 @@ describe('Barbados rooms', () => {
         // The answer (the first choice) can be found in the story, so a careful reader always has it.
         const key = q.choices[0].toLowerCase().replace(/^the /, '').split(/[ ,]/)[0];
         expect(text, `${r.id}: ${q.q}`).toContain(key);
+        expect(shortText, `${r.id} (short): ${q.q}`).toContain(key);
       }
     }
     expect(ROOMS.filter((r) => r.quiz.some((q) => q.pics)).length).toBe(5);   // every room has a picture question
