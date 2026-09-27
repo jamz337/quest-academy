@@ -3,7 +3,7 @@
 export const BOSSES = [
   {
     id: 'boss-math', voice: 'male', pitch: 0.75, rate: 0.95, zone: 'math', subject: 'math', name: 'Count Chaos', title: 'Terror of the Times Tables',
-    look: { hair: '#2d2a4a', skin: '#b8794a', top: '#7e2553', legs: '#2d2a4a', bg: '#7e2553' },
+    look: { sex: 'boy', skin: 'bronze', hairStyle: 'spiked', hair: 'black', topStyle: 'polo', top: 'maroon', bottomStyle: 'pants', bottom: 'black', shoes: 'black', eyes: 'red', bg: '#7e2553' },
     hp: 8, hearts: 3, questionTimeMs: 14000,
     intro: ['So YOU are the one collecting stars in my meadow.', 'Numbers obey ME here. Answer wrong and you lose a heart.', 'Beat me and the meadow is truly yours. Ready?'],
     locked: ['Not yet, little student. Finish every task in Math Meadow first.', 'Then come back and we will see who really rules the numbers.'],
@@ -13,7 +13,7 @@ export const BOSSES = [
   },
   {
     id: 'boss-words', voice: 'female', pitch: 1.4, rate: 1.15, zone: 'words', subject: 'words', name: 'The Grammar Gremlin', title: 'Muddler of Sentences',
-    look: { hair: '#2ec46a', skin: '#8fe07c', top: '#625f7e', legs: '#2d2a4a', bg: '#2f8a3a' },
+    look: { sex: 'girl', skin: 'green', hairStyle: 'high_ponytail', hair: 'green', topStyle: 'tshirt', top: 'slate', bottomStyle: 'skirt', bottom: 'black', shoes: 'black', eyes: 'purple', bg: '#2f8a3a' },
     hp: 8, hearts: 3, questionTimeMs: 16000,
     intro: ['Hee hee! I mix up every word in these woods.', 'Think you can un-muddle them faster than I muddle?', 'Beat me and the woods are yours. Let us play!'],
     locked: ['Hee hee, not so fast! The woods still have tasks for you.', 'Meet everyone, earn your stars, then come find me.'],
@@ -23,7 +23,7 @@ export const BOSSES = [
   },
   {
     id: 'boss-code', voice: 'male', pitch: 1.2, rate: 1.1, zone: 'code', subject: 'code', name: 'Glitch the Bug King', title: 'Crasher of Programs',
-    look: { hair: '#ff5c6c', skin: '#d6cfc4', top: '#2d2a4a', legs: '#625f7e', bg: '#1d2b53' },
+    look: { sex: 'boy', skin: 'blue', hairStyle: 'spiked', hair: 'red', topStyle: 'tshirt', top: 'black', bottomStyle: 'pants', bottom: 'gray', shoes: 'black', eyes: 'yellow', bg: '#1d2b53' },
     hp: 8, hearts: 3, questionTimeMs: 20000,
     intro: ['BZZT. A new programmer in my cove?', 'Read my programs and predict what my robots do. Get it wrong and… BZZT!', 'Beat me and you are the champion of Quest Academy. Begin!'],
     locked: ['BZZT. Access denied. Complete the cove tasks first.', 'Then return and face the Bug King.'],
@@ -33,7 +33,7 @@ export const BOSSES = [
   },
   {
     id: 'boss-bible', voice: 'male', pitch: 0.5, rate: 0.85, zone: 'bible', subject: 'bible', name: 'Goliath', title: 'Giant of Gath', scale: 1.6,
-    look: { hair: '#2d2a4a', skin: '#c98a5a', top: '#b08d3a', legs: '#6b4630', bg: '#7a4a2a' },
+    look: { sex: 'boy', skin: 'taupe', hairStyle: 'curly_short', hair: 'black', topStyle: 'tshirt', top: 'tan', bottomStyle: 'pants', bottom: 'brown', shoes: 'brown', eyes: 'brown', bg: '#7a4a2a' },
     hp: 8, hearts: 3, questionTimeMs: 22000,
     intro: ['WHO dares to stand before Goliath? You are only a child!', 'A shepherd boy once faced me with a sling. You will face me with what you know.', 'Answer my questions about the Book, or run home. Well?'],
     locked: ['Ha! You have not even walked the village yet.', 'Meet the villagers, learn their stories, then come and face me.'],

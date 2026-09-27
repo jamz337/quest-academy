@@ -1,6 +1,7 @@
 // Pure helpers shared by the dashboard and leaderboard endpoints (unit-tested in tests/cloud.test.js).
 import { reviewable, dueAt } from '../../src/systems/Review.js';
 import { ROOMS } from '../../src/data/social/barbados.js';
+import { marketSummary } from '../../src/systems/Market.js';
 
 export const levelFromXp = (xp) => Math.floor(Math.sqrt(Math.max(0, xp) / 100)) + 1;
 const DAY = 86400000;
@@ -85,7 +86,7 @@ export function summarize(save, results = [], now = Date.now()) {
         week: { plays: week.length, stars: week.reduce((s, r) => s + (r.stars || 0), 0), xp: week.reduce((s, r) => s + (r.xp || 0), 0), minutes: Math.round(week.reduce((s, r) => s + (r.time_ms || 0), 0) / 60000) },
         weakSkills: weak, recentMisses: misses.slice(0, 10), mastery: p.mastery || {},
         reviewDue: misses.filter((m) => reviewable(m) && dueAt(m) <= now).length, reviewQueue: misses.filter(reviewable).length,
-        spelling: spellingSummary(p), social: socialSummary(p),
+        spelling: spellingSummary(p), social: socialSummary(p), market: marketSummary(p),
         skillTrend: skillTrend(rs, now), days: dailyActivity(rs, 14, now),
         xp: p.xp || 0, level: levelFromXp(p.xp || 0), coins: p.coins || 0, stars: totalStars(p),
         badges: p.badges || [], games: p.games || {},

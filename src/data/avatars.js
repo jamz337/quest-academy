@@ -1,70 +1,78 @@
-// Colour styles for the 8 player avatars and 10 villagers. Pure data, no Phaser: the parent dashboard
-// draws the same faces from these values so it needs no game assets.
+// Looks for players and villagers, built from the Liberated Pixel Cup sprite layers (see ui/LpcCharacter.js).
+// A look is { sex, skin, hairStyle, hair, topStyle, top, bottomStyle, bottom, shoes, eyes, bg }: the colour fields
+// are palette variant names from the pack, `bg` is the badge background as '#rrggbb'. Pure data, no Phaser: the
+// parent dashboard composes the same faces.
+import { SKIN_TONES, HAIR_COLOURS, CLOTH_COLOURS, EYE_COLOURS, SKIN_VARIANTS, HAIR_VARIANTS, CLOTH_VARIANTS, EYE_VARIANTS, HAIR_STYLES as LPC_HAIR, TOP_STYLES, BOTTOM_STYLES } from '../ui/LpcCharacter.js';
+
 export const OUTLINE = '#2d2a4a';
 export const MOUTH = '#e0567a';
 export const BOOTS = '#3b2f2f';
+export const SEXES = ['boy', 'girl'];
+export const HAIR_STYLES = Object.keys(LPC_HAIR);
+export const TOPS = Object.keys(TOP_STYLES);
+export const BOTTOMS = Object.keys(BOTTOM_STYLES);
+export { SKIN_TONES, HAIR_COLOURS, CLOTH_COLOURS, EYE_COLOURS, SKIN_VARIANTS, HAIR_VARIANTS, CLOTH_VARIANTS, EYE_VARIANTS };
 
+/** The eight presets on the profile screen: four boys and four girls. */
 export const CHARACTER_STYLES = [
-  { hair: '#a8613a', skin: '#ffd6b3', top: '#3d8bff', legs: '#2d2a4a' },
-  { hair: '#2d2a4a', skin: '#b8794a', top: '#ff6fae', legs: '#7c5cff' },
-  { hair: '#ffc531', skin: '#ffd6b3', top: '#2ec46a', legs: '#229c53' },
-  { hair: '#625f7e', skin: '#ffd6b3', top: '#ff8f3f', legs: '#625f7e' },
-  { hair: '#ff5c6c', skin: '#ffd6b3', top: '#8b7fd6', legs: '#2d2a4a' },
-  { hair: '#2d2a4a', skin: '#ffd6b3', top: '#ffc531', legs: '#3d8bff' },
-  { hair: '#7c5cff', skin: '#b8794a', top: '#d6cfc4', legs: '#2d2a4a' },
-  { hair: '#d6cfc4', skin: '#ffd6b3', top: '#ff5c6c', legs: '#2d2a4a' }
+  { sex: 'boy', skin: 'brown', hairStyle: 'dreadlocks_short', hair: 'black', topStyle: 'tshirt', top: 'blue', bottomStyle: 'shorts', bottom: 'navy', shoes: 'white', eyes: 'brown', bg: '#3d8bff' },
+  { sex: 'girl', skin: 'bronze', hairStyle: 'curly_long', hair: 'dark_brown', topStyle: 'tshirt', top: 'pink', bottomStyle: 'skirt', bottom: 'purple', shoes: 'brown', eyes: 'brown', bg: '#ff6fae' },
+  { sex: 'boy', skin: 'light', hairStyle: 'plain', hair: 'blonde', topStyle: 'polo', top: 'green', bottomStyle: 'pants', bottom: 'brown', shoes: 'brown', eyes: 'blue', bg: '#2ec46a' },
+  { sex: 'girl', skin: 'amber', hairStyle: 'high_ponytail', hair: 'chestnut', topStyle: 'tshirt', top: 'orange', bottomStyle: 'pants', bottom: 'blue', shoes: 'white', eyes: 'green', bg: '#ff8f3f' },
+  { sex: 'girl', skin: 'black', hairStyle: 'twists_straight', hair: 'black', topStyle: 'polo', top: 'purple', bottomStyle: 'shorts', bottom: 'yellow', shoes: 'black', eyes: 'brown', bg: '#8b7fd6' },
+  { sex: 'boy', skin: 'olive', hairStyle: 'curly_short', hair: 'black', topStyle: 'tshirt', top: 'yellow', bottomStyle: 'pants', bottom: 'navy', shoes: 'brown', eyes: 'brown', bg: '#ffc531' },
+  { sex: 'girl', skin: 'taupe', hairStyle: 'braid', hair: 'dark_brown', topStyle: 'tshirt', top: 'teal', bottomStyle: 'skirt', bottom: 'red', shoes: 'brown', eyes: 'gray', bg: '#7c5cff' },
+  { sex: 'boy', skin: 'bronze', hairStyle: 'afro', hair: 'black', topStyle: 'polo', top: 'red', bottomStyle: 'shorts', bottom: 'black', shoes: 'white', eyes: 'brown', bg: '#ff5c6c' }
 ];
 
-// Extra NPC looks so villagers do not all resemble the player avatars.
+/** The villagers, in npc0.. order (see world/npcs.js). `body` and `outfit` add a special body or worn items. */
 export const NPC_STYLES = [
-  { hair: '#ffffff', skin: '#ffd6b3', top: '#7c5cff', legs: '#2d2a4a' },
-  { hair: '#a8613a', skin: '#ffd6b3', top: '#ffffff', legs: '#ff5c6c' },
-  { hair: '#2d2a4a', skin: '#b8794a', top: '#ffc531', legs: '#625f7e' },
-  { hair: '#625f7e', skin: '#ffd6b3', top: '#229c53', legs: '#a8613a' },
-  { hair: '#ff8f3f', skin: '#ffd6b3', top: '#3d8bff', legs: '#ffffff' },
-  { hair: '#8b7fd6', skin: '#b8794a', top: '#ff6fae', legs: '#2d2a4a' },
-  { hair: '#2ec46a', skin: '#ffd6b3', top: '#625f7e', legs: '#3d8bff' },
-  { hair: '#d6cfc4', skin: '#ffd6b3', top: '#a8613a', legs: '#7c5cff' },
-  { hair: '#ff5c6c', skin: '#b8794a', top: '#2ec46a', legs: '#2d2a4a' },
-  { hair: '#ffc531', skin: '#ffd6b3', top: '#8b7fd6', legs: '#229c53' },
-  { hair: '#7a4a2a', skin: '#b8794a', top: '#e8d9b5', legs: '#7a4a2a' },   // shepherd
-  { hair: '#2d2a4a', skin: '#ffd6b3', top: '#8b5cf6', legs: '#625f7e' },   // scribe
-  { hair: '#a8613a', skin: '#b8794a', top: '#3d8bff', legs: '#2d2a4a' },   // fisherman
-  { hair: '#ff6fae', skin: '#ffd6b3', top: '#ffc531', legs: '#3d8bff' },   // balloon seller
-  { hair: '#2ec46a', skin: '#b8794a', top: '#8fe07c', legs: '#229c53' },   // lily pad lou
-  { hair: '#3d8bff', skin: '#d6cfc4', top: '#2d2a4a', legs: '#7c5cff' },   // dj bot
-  { hair: '#625f7e', skin: '#c98a5a', top: '#a06a3e', legs: '#5a3a22' },   // ark builder
-  { hair: '#e8e2d8', skin: '#b8794a', top: '#1d2b53', legs: '#625f7e', body: 'headmistress' }    // headmistress hope: grey bun, glasses, dress, ruler
+  { sex: 'boy', skin: 'light', hairStyle: 'plain', hair: 'white', topStyle: 'polo', top: 'purple', bottomStyle: 'pants', bottom: 'navy', shoes: 'brown', eyes: 'blue' },          // professor plus
+  { sex: 'girl', skin: 'light', hairStyle: 'bob', hair: 'chestnut', topStyle: 'tshirt', top: 'white', bottomStyle: 'skirt', bottom: 'red', shoes: 'black', eyes: 'green' },        // chef fraction
+  { sex: 'boy', skin: 'bronze', hairStyle: 'buzzcut', hair: 'black', topStyle: 'tshirt', top: 'yellow', bottomStyle: 'pants', bottom: 'gray', shoes: 'brown', eyes: 'brown' },     // bridge keeper
+  { sex: 'girl', skin: 'light', hairStyle: 'long', hair: 'gray', topStyle: 'polo', top: 'green', bottomStyle: 'skirt', bottom: 'brown', shoes: 'brown', eyes: 'brown' },          // owl librarian
+  { sex: 'boy', skin: 'light', hairStyle: 'spiked', hair: 'ginger', topStyle: 'polo', top: 'blue', bottomStyle: 'pants', bottom: 'white', shoes: 'black', eyes: 'blue' },        // gate guard
+  { sex: 'girl', skin: 'bronze', hairStyle: 'ponytail', hair: 'purple', topStyle: 'tshirt', top: 'pink', bottomStyle: 'shorts', bottom: 'black', shoes: 'brown', eyes: 'brown' }, // safari ranger
+  { sex: 'girl', skin: 'light', hairStyle: 'bob', hair: 'green', topStyle: 'tshirt', top: 'gray', bottomStyle: 'pants', bottom: 'blue', shoes: 'black', eyes: 'gray' },           // robo mechanic
+  { sex: 'boy', skin: 'light', hairStyle: 'curly_short', hair: 'gray', topStyle: 'tshirt', top: 'brown', bottomStyle: 'shorts', bottom: 'purple', shoes: 'brown', eyes: 'brown' }, // bug catcher
+  { sex: 'boy', skin: 'bronze', hairStyle: 'plain', hair: 'redhead', topStyle: 'polo', top: 'green', bottomStyle: 'pants', bottom: 'black', shoes: 'brown', eyes: 'brown' },      // signpost sam
+  { sex: 'girl', skin: 'light', hairStyle: 'long', hair: 'blonde', topStyle: 'tshirt', top: 'purple', bottomStyle: 'skirt', bottom: 'green', shoes: 'brown', eyes: 'blue' },      // fortune teller
+  { sex: 'boy', skin: 'bronze', hairStyle: 'curly_short', hair: 'dark_brown', topStyle: 'tshirt', top: 'tan', bottomStyle: 'pants', bottom: 'brown', shoes: 'brown', eyes: 'brown' }, // shepherd
+  { sex: 'girl', skin: 'light', hairStyle: 'braid', hair: 'black', topStyle: 'polo', top: 'lavender', bottomStyle: 'skirt', bottom: 'gray', shoes: 'brown', eyes: 'brown' },      // scribe
+  { sex: 'boy', skin: 'bronze', hairStyle: 'plain', hair: 'chestnut', topStyle: 'tshirt', top: 'blue', bottomStyle: 'shorts', bottom: 'navy', shoes: 'brown', eyes: 'brown' },    // fisherman
+  { sex: 'girl', skin: 'light', hairStyle: 'high_ponytail', hair: 'pink', topStyle: 'tshirt', top: 'yellow', bottomStyle: 'skirt', bottom: 'blue', shoes: 'white', eyes: 'blue' }, // balloon seller
+  { sex: 'girl', skin: 'bronze', hairStyle: 'braid', hair: 'green', topStyle: 'tshirt', top: 'green', bottomStyle: 'shorts', bottom: 'forest', shoes: 'brown', eyes: 'green' },  // lily pad lou
+  { sex: 'boy', skin: 'taupe', hairStyle: 'spiked', hair: 'blue', topStyle: 'tshirt', top: 'black', bottomStyle: 'pants', bottom: 'purple', shoes: 'white', eyes: 'blue' },       // dj bolt
+  { sex: 'boy', skin: 'brown', hairStyle: 'afro', hair: 'black', topStyle: 'polo', top: 'brown', bottomStyle: 'pants', bottom: 'leather', shoes: 'brown', eyes: 'brown' },        // ark builder
+  { sex: 'girl', skin: 'brown', hairStyle: 'bangs', hair: 'gray', topStyle: 'polo', top: 'navy', bottomStyle: 'skirt', bottom: 'navy', shoes: 'black', eyes: 'brown', body: 'headmistress' },   // headmistress hope
+  { sex: 'girl', skin: 'black', hairStyle: 'bob', hair: 'black', topStyle: 'tshirt', top: 'orange', bottomStyle: 'skirt', bottom: 'green', shoes: 'brown', eyes: 'brown', outfit: { hat: { shape: 'sun', colour: '#ffc531' } } }   // auntie vee
 ];
 
-// Swatches players can pick in the profile editor. The first entries mirror the preset colours above.
-export const HAIR_COLORS = ['#2d2a4a', '#a8613a', '#7a4a2a', '#ffc531', '#ff8f3f', '#ff5c6c', '#625f7e', '#d6cfc4', '#ffffff', '#7c5cff', '#ff6fae', '#3d8bff', '#2ec46a'];
-export const CLOTHES_COLORS = ['#3d8bff', '#ff6fae', '#2ec46a', '#ff8f3f', '#8b7fd6', '#ffc531', '#d6cfc4', '#ff5c6c', '#7c5cff', '#229c53', '#2d2a4a', '#ffffff', '#a8613a'];
+// Badge backgrounds players can pick in the profile editor.
 export const BG_COLORS = ['#3d8bff', '#ff6fae', '#2ec46a', '#ff8f3f', '#8b7fd6', '#ffc531', '#ff5c6c', '#7c5cff', '#4aa8ff', '#f3e2ad', '#2d2a4a', '#ffffff', '#5cc45a'];
 
 const HEX = /^#[0-9a-f]{6}$/i;
+const ALLOWED = {
+  sex: SEXES, skin: SKIN_VARIANTS, hairStyle: HAIR_STYLES, hair: HAIR_VARIANTS, topStyle: TOPS, top: CLOTH_VARIANTS,
+  bottomStyle: BOTTOMS, bottom: CLOTH_VARIANTS, shoes: CLOTH_VARIANTS, eyes: EYE_VARIANTS
+};
 
-/** Keep only valid '#rrggbb' overrides from a stored look; anything else is dropped. Returns null when nothing is set. */
+/** Keep only valid overrides from a stored look; anything else (including old colour codes) is dropped. */
 export function sanitizeLook(look) {
   if (!look || typeof look !== 'object') return null;
   const out = {};
-  for (const k of ['hair', 'top', 'bg']) if (typeof look[k] === 'string' && HEX.test(look[k])) out[k] = look[k].toLowerCase();
+  for (const [k, allowed] of Object.entries(ALLOWED)) if (allowed.includes(look[k])) out[k] = look[k];
+  if (typeof look.bg === 'string' && HEX.test(look.bg)) out.bg = look.bg.toLowerCase();
   return Object.keys(out).length ? out : null;
 }
 
-/**
- * The colours a profile is drawn with: its preset (`avatar` index) with any `look` overrides on top.
- * `bg` is the badge background; it defaults to the top colour so profiles without a look render as before.
- */
+/** The look a profile is drawn with: its preset (`avatar` index) with any `look` overrides on top. */
 export function resolveLook(profile) {
   const idx = Math.max(0, Math.min(CHARACTER_STYLES.length - 1, Number(profile?.avatar) || 0));
-  const st = CHARACTER_STYLES[idx];
-  const o = sanitizeLook(profile?.look) || {};
-  const top = o.top || st.top;
-  return { hair: o.hair || st.hair, skin: st.skin, top, legs: st.legs, bg: o.bg || top };
+  return { ...CHARACTER_STYLES[idx], ...(sanitizeLook(profile?.look) || {}) };
 }
 
 /** Stable id for a resolved look, used as a texture key suffix. */
 export function lookId(look) {
-  return [look.hair, look.skin, look.top, look.legs, look.bg].map((c) => c.slice(1)).join('');
+  return ['sex', 'skin', 'hairStyle', 'hair', 'topStyle', 'top', 'bottomStyle', 'bottom', 'shoes', 'eyes', 'bg', 'body'].map((k) => String(look[k] || '')).join('|');
 }

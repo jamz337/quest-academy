@@ -6,6 +6,7 @@ import { THEME } from '../../ui/theme.js';
 import * as Store from '../../systems/Store.js';
 import { Sfx } from '../../systems/Audio.js';
 import { COMPANION, newlyDone, markAnnounced, storyState, clueFor } from '../../data/world/story.js';
+import { WORLD_SCALE } from '../../ui/FlatCharacter.js';
 
 const STAY_MS = 3400;             // how long Mango stays after speaking
 const CLUE_EVERY_MS = [110000, 170000];   // a clue every two to three minutes of exploring
@@ -40,7 +41,7 @@ function nextVisit(w) {
   if (!v || !w.player || !w.textures.exists(COMPANION.key)) return;
   const side = w.player.x > w.map.width * TILE / 2 ? -1 : 1;   // arrive from the roomier side
   const from = { x: w.player.x + side * 110, y: w.player.y + 6 }, to = { x: w.player.x + side * HOP, y: w.player.y + 6 };
-  const c = w.add.sprite(from.x, from.y, COMPANION.key, 0).setDepth(9).setAlpha(0).setFlipX(side > 0);
+  const c = w.add.sprite(from.x, from.y, COMPANION.key, 0).setScale(WORLD_SCALE).setDepth(9).setAlpha(0).setFlipX(side > 0);
   w.mango = c;
   c.anims.play(`${COMPANION.key}-walk`, true);
   w.tweens.add({ targets: c, alpha: 1, duration: 200 });

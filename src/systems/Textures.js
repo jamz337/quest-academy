@@ -6,6 +6,9 @@ import { THEME } from '../ui/theme.js';
 import { mulberry32 } from './Rng.js';
 import { OUTLINE, MOUTH, BOOTS, CHARACTER_STYLES, NPC_STYLES, lookId } from '../data/avatars.js';
 export { CHARACTER_STYLES, NPC_STYLES };
+import { FRAME, drawMonkey } from '../ui/FlatCharacter.js';
+import { LPC_FRAME, LPC_COLS, allLayerPaths, composeSheet, drawOutfitBack, drawOutfitFront, drawBustFromSheet, walkRange } from '../ui/LpcCharacter.js';
+export { WORLD_SCALE as CHAR_WORLD_SCALE, IDLE_FRAMES } from '../ui/LpcCharacter.js';
 
 const SHADOW = 'rgba(0,0,0,0.22)';
 const PAL = {
@@ -47,329 +50,50 @@ export function pixelTexture(scene, key, frames, palette = PAL, scale = 1) {
   tex.refresh();
 }
 
-// 32 x 32 chibi character template with a dark outline, a shaded side and a soft shadow under the feet.
-// Letters: k outline, H hair, J hair shade, S skin, T top, U top shade, L legs, B boots, r mouth, w eye light, x shadow.
-const CHAR_DOWN = [
-  '................................',
-  '............kkkkkkkk............',
-  '..........kkHHHHHHHHkk..........',
-  '.........kHHHHHHHHHHHJk.........',
-  '........kHHHHHHHHHHHHJJk........',
-  '........kHHHHHHHHHHHHJJk........',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHSSSHHSSSHSSSJJk.......',
-  '.......kHHSSSSSSSSSSSSJJk.......',
-  '.......kHHSkwSSSSSSkwSJJk.......',
-  '.......kHHSkkSSSSSSkkSJJk.......',
-  '........kSSkkSSSSSSkkSSk........',
-  '........kSSSSSSSSSSSSSSk........',
-  '.........kSSSSrrrrSSSSk.........',
-  '..........kkSSSSSSSSkk..........',
-  '............kSSSSSSk............',
-  '............kSSSSSSk............',
-  '..........kkTTTTTTTTkk..........',
-  '......kkkkTTTTTTTTTTUUkkkk......',
-  '......kTTTTTTTTTTTTTUUUUUk......',
-  '......kTTTTTTTTTTTTTUUUUUk......',
-  '......kTTTTTTTTTTTTTUUUUUk......',
-  '......kTTTTTTTTTTTTTUUUUUk......',
-  '......kSSkTTTTTkkTTTUUkSSk......',
-  '......kkk.kLLLk..kLLLk.kkk......',
-  '..........kLLLk..kLLLk..........',
-  '..........kkkkk..kkkkk..........',
-  '.........xxxxxxxxxxxxxx.........',
-  '................................'
-];
-const CHAR_DOWN2 = [
-  '................................',
-  '............kkkkkkkk............',
-  '..........kkHHHHHHHHkk..........',
-  '.........kHHHHHHHHHHHJk.........',
-  '........kHHHHHHHHHHHHJJk........',
-  '........kHHHHHHHHHHHHJJk........',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHSSSHHSSSHSSSJJk.......',
-  '.......kHHSSSSSSSSSSSSJJk.......',
-  '.......kHHSkwSSSSSSkwSJJk.......',
-  '.......kHHSkkSSSSSSkkSJJk.......',
-  '........kSSkkSSSSSSkkSSk........',
-  '........kSSSSSSSSSSSSSSk........',
-  '.........kSSSSrrrrSSSSk.........',
-  '..........kkSSSSSSSSkk..........',
-  '............kSSSSSSk............',
-  '............kSSSSSSk............',
-  '..........kkTTTTTTTTkk..........',
-  '......kkkkTTTTTTTTTTUUkkkk......',
-  '......kTTTTTTTTTTTTTUUUUUk......',
-  '......kTTTTTTTTTTTTTUUUUUk......',
-  '......kTTTTTTTTTTTTTUUUUUk......',
-  '......kTTTTTTTTTTTTTUUUUUk......',
-  '......kSSkLLLLLkkTTTUUkSSk......',
-  '......kkk.kLLLk..kLLLk.kkk......',
-  '..........kkkkk..kLLLk..........',
-  '.................kkkkk..........',
-  '.........xxxxxxxxxxxxxx.........',
-  '................................'
-];
-const CHAR_UP = [
-  '................................',
-  '............kkkkkkkk............',
-  '..........kkHHHHHHHHkk..........',
-  '.........kHHHHHHHHHHHJk.........',
-  '........kHHHHHHHHHHHHJJk........',
-  '........kHHHHHHHHHHHHJJk........',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '........kHHHHHHHHHHHHJJk........',
-  '........kHHHHHHHHHHHHJJk........',
-  '.........kHHHHHHHHHHHJk.........',
-  '..........kkHHHHHHHHkk..........',
-  '............kHHHHHHk............',
-  '............kSSSSSSk............',
-  '..........kkTTTTTTTTkk..........',
-  '......kkkkTTTTTTTTTTUUkkkk......',
-  '......kTTTTTTTTTTTTTUUUUUk......',
-  '......kTTTTTTTTTTTTTUUUUUk......',
-  '......kTTTTTTTTTTTTTUUUUUk......',
-  '......kTTTTTTTTTTTTTUUUUUk......',
-  '......kSSkTTTTTkkTTTUUkSSk......',
-  '......kkk.kLLLk..kLLLk.kkk......',
-  '..........kLLLk..kLLLk..........',
-  '..........kkkkk..kkkkk..........',
-  '.........xxxxxxxxxxxxxx.........',
-  '................................'
-];
-const CHAR_UP2 = [
-  '................................',
-  '............kkkkkkkk............',
-  '..........kkHHHHHHHHkk..........',
-  '.........kHHHHHHHHHHHJk.........',
-  '........kHHHHHHHHHHHHJJk........',
-  '........kHHHHHHHHHHHHJJk........',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '........kHHHHHHHHHHHHJJk........',
-  '........kHHHHHHHHHHHHJJk........',
-  '.........kHHHHHHHHHHHJk.........',
-  '..........kkHHHHHHHHkk..........',
-  '............kHHHHHHk............',
-  '............kSSSSSSk............',
-  '..........kkTTTTTTTTkk..........',
-  '......kkkkTTTTTTTTTTUUkkkk......',
-  '......kTTTTTTTTTTTTTUUUUUk......',
-  '......kTTTTTTTTTTTTTUUUUUk......',
-  '......kTTTTTTTTTTTTTUUUUUk......',
-  '......kTTTTTTTTTTTTTUUUUUk......',
-  '......kSSkLLLLLkkTTTUUkSSk......',
-  '......kkk.kLLLk..kLLLk.kkk......',
-  '..........kkkkk..kLLLk..........',
-  '.................kkkkk..........',
-  '.........xxxxxxxxxxxxxx.........',
-  '................................'
-];
-const CHAR_SIDE = [
-  '................................',
-  '.............kkkkkk.............',
-  '...........kkHHHHHHkk...........',
-  '..........kHHHHHHHHHHk..........',
-  '.........kHHHHHHHHHHHJk.........',
-  '.........kHHHHHHHHHHHJk.........',
-  '........kHHHHHHHHHHHHJJk........',
-  '........kHHHHHHHHHHHHJJk........',
-  '........kHHHHHHHHHHHHJJk........',
-  '........kHHHHHHHHHHHHJJk........',
-  '........kSSSSHHSHHHHHJJk........',
-  '........kSSSSSSSHHHHHJJk........',
-  '........kSSkwSSSHHHHHJJk........',
-  '........kSSkkSSSHHHHHJJk........',
-  '.........kSkkSSSHHHHHJk.........',
-  '.........kSSSSSSHHHHHJk.........',
-  '..........rrSSSSHHHHHk..........',
-  '...........kkSSSHHHkk...........',
-  '.............kSSHHk.............',
-  '.............kSSSSk.............',
-  '............kTTTTTUk............',
-  '...........kTUUUTTUUk...........',
-  '...........kTUUUTTUUk...........',
-  '...........kTUUUTTUUk...........',
-  '...........kTUUUTTUUk...........',
-  '...........kTUUUTTUUk...........',
-  '...........kTSSSTTUUk...........',
-  '...........kLLLLLLLLk...........',
-  '...........kLLLLLLLLk...........',
-  '...........kkkkkkkkkk...........',
-  '.........xxxxxxxxxxxxxx.........',
-  '................................'
-];
-const CHAR_SIDE2 = [
-  '................................',
-  '.............kkkkkk.............',
-  '...........kkHHHHHHkk...........',
-  '..........kHHHHHHHHHHk..........',
-  '.........kHHHHHHHHHHHJk.........',
-  '.........kHHHHHHHHHHHJk.........',
-  '........kHHHHHHHHHHHHJJk........',
-  '........kHHHHHHHHHHHHJJk........',
-  '........kHHHHHHHHHHHHJJk........',
-  '........kHHHHHHHHHHHHJJk........',
-  '........kSSSSHHSHHHHHJJk........',
-  '........kSSSSSSSHHHHHJJk........',
-  '........kSSkwSSSHHHHHJJk........',
-  '........kSSkkSSSHHHHHJJk........',
-  '.........kSkkSSSHHHHHJk.........',
-  '.........kSSSSSSHHHHHJk.........',
-  '..........rrSSSSHHHHHk..........',
-  '...........kkSSSHHHkk...........',
-  '.............kSSHHk.............',
-  '.............kSSSSk.............',
-  '............kTTTTTUk............',
-  '...........kTUUUTTUUk...........',
-  '...........kTUUUTTUUk...........',
-  '...........kTUUUTTUUk...........',
-  '...........kTUUUTTUUk...........',
-  '...........kTUUUTTUUk...........',
-  '...........kTSSSkTUUk...........',
-  '.........kkLLLkk.kLLLk..........',
-  '.........kLLLk...kLLLk..........',
-  '.........kkkkk...kkkkk..........',
-  '.........xxxxxxxxxxxxxx.........',
-  '................................'
-];
+// ---- Characters from the Liberated Pixel Cup pack ----------------------------------------------------
 
-function charPalette(colors) {
-  return {
-    ...PAL, H: colors.hair, J: shade(colors.hair, 0.65), S: colors.skin, T: colors.top, U: shade(colors.top, 0.72),
-    L: colors.legs, B: BOOTS, r: colors.mouth || MOUTH
-  };
+const composed = new Map();   // lookId(+outfit) -> composed 576 x 256 canvas
+
+/** The pack's layer images, as loaded by BootScene ('lpc:' + path). */
+function lpcImages(scene) {
+  const out = {};
+  for (const p of allLayerPaths()) { const k = 'lpc:' + p; if (scene.textures.exists(k)) out[p] = scene.textures.get(k).getSourceImage(); }
+  return out;
 }
 
-// The Headmistress: grey hair in a bun, round glasses, a long dress and a ruler in hand (yellow, dark tick marks).
-// Standing frames only; villagers do not walk.
-const HOPE_DOWN = [
-  '.............kkkkk..............',
-  '...........kkHHHHHkk............',
-  '..........kHHHHHHHHHkk..........',
-  '.........kHHHHHHHHHHHJk.........',
-  '........kHHHHHHHHHHHHJJk........',
-  '........kHHHHHHHHHHHHJJk........',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHSSSHHSSSHSSSJJk.......',
-  '.......kHkkkkkSSSkkkkkJJk.......',
-  '.......kHkwwwkSSSkwwwkJJk.......',
-  '.......kHkwkwkkkkkwkwkJJk.......',
-  '........kkwkwkSSSkwkwkSk........',
-  '........kkkkkkSSSkkkkkSk........',
-  '.........kSSSSrrrrSSSSk.........',
-  '..........kkSSSSSSSSkk....kkk...',
-  '............kSSSSSSk......kyk...',
-  '............kSSSSSSk......knk...',
-  '..........kkTTTTTTTTkkkkk.kyk...',
-  '......kkkkTTTTTTTTTTUUUUUkkyk...',
-  '......kTTTTTTTTTTTTTUUUUUkknk...',
-  '......kTTTTTTTTTTTTTUUUUUkkyk...',
-  '......kTTTTTTTTTTTTTUUUUUkkyk...',
-  '......kSSTTTTTTTTTTTUUUSSkknk...',
-  '......kSSTTTTTTTTTTTUUUSSkkyk...',
-  '.......kTTTTTTTTTTTTUUUUk.kyk...',
-  '.......kTTTTTTTTTTTTUUUUk.knk...',
-  '.......kkkkkkkkkkkkkkkkkk.kyk...',
-  '.........xxxxxxxxxxxxxx...kkk...',
-  '................................'
-];
-const HOPE_UP = [
-  '.............kkkkk..............',
-  '...........kkHHHHHkk............',
-  '..........kHHHHHHHHHkk..........',
-  '.........kHHHHHHHHHHHJk.........',
-  '........kHHHHHHHHHHHHJJk........',
-  '........kHHHHHHHHHHHHJJk........',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '.......kHHHHHHHHHHHHHJJJk.......',
-  '........kHHHHHHHHHHHHJJk........',
-  '........kHHHHHHHHHHHHJJk........',
-  '.........kHHHHHHHHHHHJk.........',
-  '..kkk.....kkHHHHHHHHkk..........',
-  '..kyk.......kHHHHHHk............',
-  '..knk.......kSSSSSSk............',
-  '..kyk.....kkTTTTTTTTkkkkk.......',
-  '..kyk.kkkkTTTTTTTTTTUUUUUk......',
-  '..knk.kTTTTTTTTTTTTTUUUUUk......',
-  '..kyk.kTTTTTTTTTTTTTUUUUUk......',
-  '..kyk.kTTTTTTTTTTTTTUUUUUk......',
-  '..knk.kSSTTTTTTTTTTTUUUSSk......',
-  '..kyk.kSSTTTTTTTTTTTUUUSSk......',
-  '..kyk..kTTTTTTTTTTTTUUUUk.......',
-  '..knk..kTTTTTTTTTTTTUUUUk.......',
-  '..kyk..kkkkkkkkkkkkkkkkkk.......',
-  '..kkk....xxxxxxxxxxxxxx.........',
-  '................................'
-];
-const HOPE_SIDE = [
-  '...............kkkkk............',
-  '.............kkHHHHHkk..........',
-  '...........kkHHHHHHHHk..........',
-  '..........kHHHHHHHHHHk..........',
-  '.........kHHHHHHHHHHHJk.........',
-  '.........kHHHHHHHHHHHJk.........',
-  '........kHHHHHHHHHHHHJJk........',
-  '........kHHHHHHHHHHHHJJk........',
-  '........kHHHHHHHHHHHHJJk........',
-  '........kHHHHHHHHHHHHJJk........',
-  '........kSSSSHHSHHHHHJJk........',
-  '........kkkkkkSSHHHHHJJk........',
-  '........kkwwwkSSHHHHHJJk........',
-  '........kkwkwkkSHHHHHJJk........',
-  '.........kwkwkSSHHHHHJk.........',
-  '.........kkkkkSSHHHHHJk.........',
-  '..........rrSSSSHHHHHk..........',
-  '.....kkk...kkSSSHHHkk...........',
-  '.....kyk.....kSSHHk.............',
-  '.....knk.....kSSSSk.............',
-  '.....kyk....kTTTTTUkkkk.........',
-  '.....kyk...kTUUUTTUUUUk.........',
-  '.....knk...kTUUUTTUUUUk.........',
-  '.....kyk...kTUUUTTUUUUk.........',
-  '.....kyk...kTUUUTTUUUUk.........',
-  '.....knk...kTSSSTTUUUUk.........',
-  '.....kyk.kkTTSSSTTUUUUk.........',
-  '.....kyk.kTTTTTTTTUUUUk.........',
-  '.....knk.kTTTTTTTTUUUUk.........',
-  '.....kyk.kkkkkkkkkkkkkk.........',
-  '.....kkk.xxxxxxxxxxxxxx.........',
-  '................................'
-];
-export const HOPE_FRAMES = [HOPE_DOWN, HOPE_DOWN, HOPE_UP, HOPE_UP, HOPE_SIDE, HOPE_SIDE];
+/** A look composed into one walking sheet (cached), with any worn market items and the special body drawn on. */
+export function composeLookCanvas(scene, look, outfit = null, outfitKey = '') {
+  const key = lookId(look) + '|' + outfitKey;
+  if (composed.has(key)) return composed.get(key);
+  const W = LPC_COLS * LPC_FRAME, H = 4 * LPC_FRAME;
+  const canvas = document.createElement('canvas'); canvas.width = W; canvas.height = H;
+  const sheet = document.createElement('canvas'); sheet.width = W; sheet.height = H;
+  const scratch = document.createElement('canvas'); scratch.width = W; scratch.height = H;
+  composeSheet(sheet.getContext('2d', { willReadFrequently: true }), look, lpcImages(scene), scratch);
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = false;
+  drawOutfitBack(ctx, outfit);
+  ctx.drawImage(sheet, 0, 0);
+  drawOutfitFront(ctx, outfit, look.body || null);
+  composed.set(key, canvas);
+  return canvas;
+}
 
-/** Character sheet: frames 0-1 down, 2-3 up, 4-5 side (facing left; flipX for right). `frames` swaps in a special body. */
-export function characterTexture(scene, key, colors, scale = 1, frames = null) {
-  pixelTexture(scene, key, frames || [CHAR_DOWN, CHAR_DOWN2, CHAR_UP, CHAR_UP2, CHAR_SIDE, CHAR_SIDE2], charPalette(colors), scale);
+/**
+ * Character sheet texture: 36 frames of 64 px (row * 9 + column; rows up, left, down, right; column 0 standing,
+ * 1..8 walking), shown at WORLD_SCALE in the world. opts: { outfit, outfitKey }.
+ */
+export function characterTexture(scene, key, look, scale = 1, opts = null) {
+  if (scene.textures.exists(key)) return;
+  const W = LPC_COLS * LPC_FRAME, H = 4 * LPC_FRAME;
+  const tex = scene.textures.createCanvas(key, W, H);
+  const ctx = tex.getContext();
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(composeLookCanvas(scene, look, opts && opts.outfit, (opts && opts.outfitKey) || ''), 0, 0);
+  for (let r = 0; r < 4; r++) for (let c = 0; c < LPC_COLS; c++) tex.add(r * LPC_COLS + c, 0, c * LPC_FRAME, r * LPC_FRAME, LPC_FRAME, LPC_FRAME);
+  tex.refresh();
+  tex.setFilter(Phaser.Textures.FilterMode.NEAREST);
+  void scale;
 }
 
 // The robot rotates in the maze, so it has no ground shadow.
@@ -398,77 +122,6 @@ const BUNNY = [
   '....kkkk..kkkk..', '....xxxxxxxxxx..', '................', '................'
 ];
 const BUNNY2 = BUNNY.map((r, i) => (i === 11 ? '...kcck....kcck.' : i === 12 ? '...kkkk....kkkk.' : r));
-
-// Mango the green monkey, 32 x 32 drawn at 1:1 (faces left; flipX for right): olive coat, pale face, curled tail.
-// The second frame waves.
-const MONKEY = [
-  '................................',
-  '.............kkkkkk.............',
-  '...........kkOOOOOOkk...........',
-  '..........kOOOOOOOOOOk..........',
-  '.....kk..kOOOOOOOOOOOOk..kk.....',
-  '....kOOkkOOOOOOOOOOOOOOkkOOk....',
-  '....kOpOkOOOffffffffOOOkOpOk....',
-  '....kOpOkOOffffffffffOOkOpOk....',
-  '.....kkkkOfffkffffkfffOkkkk.....',
-  '........kOfffkffffkfffOk........',
-  '........kOffffffffffffOk........',
-  '........kOOffffmmffffOOk........',
-  '.........kOOffffffffOOk.........',
-  '..........kOOOffffOOOk..........',
-  '...........kkOOOOOOkk...........',
-  '............kOOOOOOk............',
-  '..........kkOOOOOOOOkk..........',
-  '.........kOOOOffffOOOOk.........',
-  '........kOOOOffffffOOOOk........',
-  '.......kOOOOOffffffOOOOOk.......',
-  '.......kOOOOOffffffOOOOOk..kk...',
-  '.......kOOOOOOffffOOOOOOkkOOk...',
-  '.......kmmkOOOOOOOOOOkmmkOOOk...',
-  '........kk.kOOOOOOOOk.kkkOOk....',
-  '...........kOOOOOOOOk...kOk.....',
-  '...........kOOkkkkOOk...kOk.....',
-  '...........kOOk..kOOk...kk......',
-  '...........kOOk..kOOk...........',
-  '..........kmmmk..kmmmk..........',
-  '..........kkkkk..kkkkk..........',
-  '.........xxxxxxxxxxxxxxx........',
-  '................................'
-];
-const MONKEY2 = [
-  '................................',
-  '.............kkkkkk.............',
-  '...........kkOOOOOOkk...........',
-  '..........kOOOOOOOOOOk..........',
-  '.....kk..kOOOOOOOOOOOOk..kk.....',
-  '....kOOkkOOOOOOOOOOOOOOkkOOk....',
-  '....kOpOkOOOffffffffOOOkOpOk....',
-  '....kOpOkOOffffffffffOOkOpOk....',
-  '.....kkkkOfffkffffkfffOkkkk.....',
-  '........kOfffkffffkfffOk........',
-  '........kOffffffffffffOk........',
-  '........kOOffffmmffffOOk........',
-  '.........kOOffffffffOOk.........',
-  '..........kOOOffffOOOk..........',
-  '...........kkOOOOOOkk...........',
-  '............kOOOOOOk............',
-  '..........kkOOOOOOOOkk..........',
-  '.........kOOOOffffOOOOk.........',
-  '........kOOOOffffffOOOOk........',
-  '.......kOOOOOffffffOOOOOk.......',
-  '....kmmkOOOOOffffffOOOOOk..kk...',
-  '....kOOkOOOOOOffffOOOOOOkkOOk...',
-  '.....kkkOOOOOOOOOOOOOkmmkOOOk...',
-  '...........kOOOOOOOOk.kkkOOk....',
-  '...........kOOOOOOOOk...kOk.....',
-  '...........kOOkkkkOOk...kOk.....',
-  '...........kOOk..kOOk...kk......',
-  '...........kOOk..kOOk...........',
-  '..........kmmmk..kmmmk..........',
-  '..........kkkkk..kkkkk..........',
-  '.........xxxxxxxxxxxxxxx........',
-  '................................'
-];
 
 const TREE = [
   '......kkkk......', '....kkGGGGkk....', '...kGGgGGGGGk...', '..kGgggGGGGGDk..',
@@ -709,16 +362,15 @@ export function tilesTexture(scene) {
 }
 
 const BADGE = 80;   // badge frames are drawn at 2x and shown at ~40
-const BUST = CHAR_DOWN.slice(0, 26).map((r) => r.slice(5, 27));   // 22 x 26 pixels: head, shoulders and arms
 
-/** One round badge: coloured disc with a darker rim and the character from the shoulders up, clipped to the disc. */
-function paintBadge(ctx, x0, look) {
-  const bg = look.bg || look.top, S = BADGE;
+/** One round badge: coloured disc with a darker rim and the character's head and shoulders, clipped to the disc. */
+function paintBadge(scene, ctx, x0, look, outfit = null, outfitKey = '') {
+  const bg = look.bg || '#3d8bff', S = BADGE;
   ctx.fillStyle = shade(bg, 0.82); ctx.beginPath(); ctx.arc(x0 + S / 2, S / 2, S / 2, 0, Math.PI * 2); ctx.fill();
   ctx.save();
   ctx.beginPath(); ctx.arc(x0 + S / 2, S / 2, S / 2 - 3, 0, Math.PI * 2); ctx.clip();
   ctx.fillStyle = bg; ctx.fillRect(x0, 0, S, S);
-  blit(ctx, BUST, x0 + 7, 4, 3, charPalette(look));
+  drawBustFromSheet(ctx, composeLookCanvas(scene, look, outfit, outfitKey), x0 + S / 2, S * 0.52, 62);
   ctx.restore();
 }
 
@@ -727,27 +379,26 @@ export function avatarTexture(scene) {
   if (scene.textures.exists('avatar')) return;
   const tex = scene.textures.createCanvas('avatar', BADGE * AVATAR_COUNT, BADGE);
   const ctx = tex.getContext();
-  CHARACTER_STYLES.forEach((st, i) => { paintBadge(ctx, i * BADGE, st); tex.add(i, 0, i * BADGE, 0, BADGE, BADGE); });
+  CHARACTER_STYLES.forEach((st, i) => { paintBadge(scene, ctx, i * BADGE, st); tex.add(i, 0, i * BADGE, 0, BADGE, BADGE); });
   tex.refresh();
 }
 
-/** Badge for a resolved look (see data/avatars.js resolveLook): built on first use and cached by colour. Returns the texture key. */
-export function badgeTexture(scene, look) {
-  const key = 'badge:' + lookId(look);
+/** Badge for a resolved look (see data/avatars.js resolveLook): built on first use and cached. Returns the texture key. */
+export function badgeTexture(scene, look, outfit = null, outfitKey = '') {
+  const key = 'badge:' + lookId(look) + (outfitKey ? ':' + outfitKey : '');
   if (!scene.textures.exists(key)) {
     const tex = scene.textures.createCanvas(key, BADGE, BADGE);
-    paintBadge(tex.getContext(), 0, look);
+    paintBadge(scene, tex.getContext(), 0, look, outfit, outfitKey);
     tex.refresh();
   }
   return key;
 }
 
 /** Walking sheet plus -down/-up/-side animations for a resolved look. Returns the texture key. */
-export function lookSpriteTexture(scene, look) {
-  const key = 'look:' + lookId(look);
+export function lookSpriteTexture(scene, look, outfit = null, outfitKey = '') {
+  const key = 'look:' + lookId(look) + (outfitKey ? ':' + outfitKey : '');
   if (!scene.textures.exists(key)) {
-    characterTexture(scene, key, look);
-    scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST);
+    characterTexture(scene, key, look, 1, outfit ? { outfit, outfitKey } : null);
     walkAnims(scene, key);
   }
   return key;
@@ -755,9 +406,7 @@ export function lookSpriteTexture(scene, look) {
 
 function walkAnims(scene, key) {
   if (scene.anims.exists(`${key}-down`)) return;
-  scene.anims.create({ key: `${key}-down`, frames: scene.anims.generateFrameNumbers(key, { start: 0, end: 1 }), frameRate: 6, repeat: -1 });
-  scene.anims.create({ key: `${key}-up`, frames: scene.anims.generateFrameNumbers(key, { start: 2, end: 3 }), frameRate: 6, repeat: -1 });
-  scene.anims.create({ key: `${key}-side`, frames: scene.anims.generateFrameNumbers(key, { start: 4, end: 5 }), frameRate: 6, repeat: -1 });
+  for (const pose of ['down', 'up', 'side']) scene.anims.create({ key: `${key}-${pose}`, frames: scene.anims.generateFrameNumbers(key, walkRange(pose)), frameRate: 12, repeat: -1 });
 }
 
 function star(g, cx, cy, r, color) {
@@ -823,17 +472,22 @@ export function generateAllTextures(scene) {
   avatarTexture(scene);
   tilesTexture(scene);
   CHARACTER_STYLES.forEach((st, i) => characterTexture(scene, `char${i}`, st));
-  NPC_STYLES.forEach((st, i) => characterTexture(scene, `npc${i}`, st, 1, st.body === 'headmistress' ? HOPE_FRAMES : null));
+  NPC_STYLES.forEach((st, i) => characterTexture(scene, `npc${i}`, st, 1, st.outfit ? { outfit: st.outfit, outfitKey: 'npc' + i } : null));
   pixelTexture(scene, 'robot', [ROBOT, ROBOT2]);
   pixelTexture(scene, 'sheep', [SHEEP, SHEEP2]);
   pixelTexture(scene, 'bunny', [BUNNY, BUNNY2]);
-  pixelTexture(scene, 'monkey', [MONKEY, MONKEY2], PAL, 1);   // already 32px: no scaling
+  if (!scene.textures.exists('monkey')) {   // Mango, drawn flat like the characters
+    const tex = scene.textures.createCanvas('monkey', FRAME * 2, FRAME), ctx = tex.getContext();
+    drawMonkey(ctx, 0, 0, { step: 0 }); drawMonkey(ctx, FRAME, 0, { step: 1 });
+    tex.add(0, 0, 0, 0, FRAME, FRAME); tex.add(1, 0, FRAME, 0, FRAME, FRAME); tex.refresh();
+    tex.setFilter(Phaser.Textures.FilterMode.LINEAR);
+  }
   for (const [key, rate] of [['sheep', 5], ['bunny', 8], ['monkey', 4]]) {
     if (!scene.anims.exists(`${key}-walk`)) scene.anims.create({ key: `${key}-walk`, frames: scene.anims.generateFrameNumbers(key, { start: 0, end: 1 }), frameRate: rate, repeat: -1 });
   }
   const sheets = [...CHARACTER_STYLES.map((_, i) => `char${i}`), ...NPC_STYLES.map((_, i) => `npc${i}`)];
   sheets.forEach((key) => walkAnims(scene, key));
   // The game renders anti-aliased (pixelArt: false); pixel-art sheets opt back in to crisp scaling.
-  ['tiles', 'robot', 'sheep', 'bunny', 'monkey', ...sheets].forEach((key) => scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST));
+  ['tiles', 'robot', 'sheep', 'bunny'].forEach((key) => scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST));
   if (!scene.anims.exists('robot-walk')) scene.anims.create({ key: 'robot-walk', frames: scene.anims.generateFrameNumbers('robot', { start: 0, end: 1 }), frameRate: 8, repeat: -1 });
 }

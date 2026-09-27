@@ -319,6 +319,17 @@ export class HudScene extends BaseScene {
     if (this.scene.isPaused(roam)) this.scene.resume(roam);
   }
 
+  /** Open the market over the world or house: pause it, sleep this Hud, and come back on 'market:done'. */
+  openMarket() {
+    const roam = this.roamKey;
+    this.state.menuOpen = false;
+    const scene = this.scene.get(roam);
+    if (scene && scene.savePosition) scene.savePosition();
+    if (this.scene.isActive(roam)) this.scene.pause(roam);
+    this.scene.sleep();
+    this.scene.launch(SCENES.Market, { returnTo: roam });
+  }
+
   /** Stop the world or house (the world saves its position on shutdown) and this Hud, then start another screen. */
   leaveTo(key) {
     this.state.menuOpen = false;

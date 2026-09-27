@@ -8,16 +8,17 @@ import { viewport, dpr } from '../systems/Layout.js';
 import { Sfx } from '../systems/Audio.js';
 import { toast } from '../ui/Toast.js';
 import { resolveLook } from '../data/avatars.js';
-import { lookSpriteTexture } from '../systems/Textures.js';
+import { lookSpriteTexture, CHAR_WORLD_SCALE, IDLE_FRAMES } from '../systems/Textures.js';
 import { HOUSE_W, HOUSE_H, HOUSE_ROOMS, FURNITURE, EXHIBITS, SIGNS, WINDOWS, EXIT, SPAWN, wallTiles, roomAt, onExit } from '../data/social/house.js';
 import { getRoom } from '../data/social/barbados.js';
 import { TV_FACTS, FRIDGE_FACTS, BOOK_FACTS, pickFact } from '../data/social/facts.js';
 import { roomRecord } from '../systems/Social.js';
+import { outfitOf, outfitId, roomDecor } from '../systems/Market.js';
 import { drawFurniture, drawExhibit } from './house/furniture.js';
 
 const SPEED = 110;
 const USE_DIST = 26;          // px from the centre of the tile you stand on to use something
-const IDLE_FRAME = { down: 0, up: 2, side: 4 };
+const IDLE_FRAME = IDLE_FRAMES;
 const FONT = 'Fredoka, sans-serif';
 
 /**
@@ -67,6 +68,8 @@ export class HouseScene extends Phaser.Scene {
     this.events.on('pause', this.onPauseBound);
     this.onRoomDone = (e) => this.afterRoom(e);
     this.events.on('room:done', this.onRoomDone);
+    this.onMarketDone = () => this.refreshOutfit();
+    this.events.on('market:done', this.onMarketDone);
     this.events.once('shutdown', () => this.cleanup());
     const hud = this.hud();
     if (hud) hud.banner(`${profile.name}'s house`, { accent: THEME.pink });
@@ -75,6 +78,12 @@ export class HouseScene extends Phaser.Scene {
   // ---- Drawing --------------------------------------------------------------------------------
 
   roomColour(room) { return room && room.exhibit ? getRoom(room.exhibit).colour : THEME.pink; }
+
+  /** A room's floor style and wall colour: what was bought and applied at the market, else the room's own. */
+  roomStyle(room) {
+    const d = roomDecor(Store.getProfile(), room.id);
+    return { floor: d.floor || room.floor, wall: d.wall !== undefined ? d.wall : room.wall };
+  }
 
   /** Floors, walls, windows, rugs, furniture and exhibits baked into one texture; the signs sit on top as text. */
   drawInterior() {
@@ -107,20 +116,21 @@ export class HouseScene extends Phaser.Scene {
       oak: [0xe9c9a0, 0xd9b285], walnut: [0xc79b6b, 0xa97f52], carpet: [0xf1d3da, 0xe8c2cb], stone: [0xd8d3ca, 0xc9c3b8],
       tiles: [0xe3ddf2, 0xd3cce8], parquet: [0xe6c79c, 0xd6b487], checker: [0xf6f1e8, 0x3b3550]
     };
-    const [base, alt] = styles[r.floor] || styles.oak;
+    const [base, alt] = styles[this.roomStyle(r).floor] || styles.oak;
     g.fillStyle(base, 1); g.fillRect(x0, y0, w, h);
-    if (r.floor === 'oak' || r.floor === 'walnut') {
+    const floorStyle = this.roomStyle(r).floor;
+    if (floorStyle === 'oak' || floorStyle === 'walnut') {
       g.fillStyle(alt, 0.5);
       for (let row = 0; row < r.h * 2; row++) { g.fillRect(x0, y0 + row * half, w, 1); for (let col = row % 2; col < r.w * 2; col += 2) g.fillRect(x0 + col * half + (row % 2) * 8, y0 + row * half, 1, half); }
-    } else if (r.floor === 'carpet') {
+    } else if (floorStyle === 'carpet') {
       g.fillStyle(alt, 0.7); for (let y = 6; y < h; y += 12) for (let x = ((y / 12) % 2) * 6 + 4; x < w; x += 12) g.fillRect(x0 + x, y0 + y, 2, 2);
-    } else if (r.floor === 'stone' || r.floor === 'tiles') {
-      const t = r.floor === 'stone' ? TILE : half;
+    } else if (floorStyle === 'stone' || floorStyle === 'tiles') {
+      const t = floorStyle === 'stone' ? TILE : half;
       g.fillStyle(alt, 0.6); for (let y = 0; y < h; y += t) g.fillRect(x0, y0 + y, w, 1); for (let x = 0; x < w; x += t) g.fillRect(x0 + x, y0, 1, h);
-    } else if (r.floor === 'parquet') {
+    } else if (floorStyle === 'parquet') {
       g.fillStyle(alt, 0.55); for (let y = 0; y < r.h * 2; y++) for (let x = 0; x < r.w * 2; x++) if ((x + y) % 2) g.fillRect(x0 + x * half, y0 + y * half, half, half);
       g.fillStyle(0xffffff, 0.15); for (let y = 0; y < r.h * 2; y++) for (let x = 0; x < r.w * 2; x++) if ((x + y) % 2) g.fillRect(x0 + x * half, y0 + y * half, half, 1);
-    } else if (r.floor === 'checker') {
+    } else if (floorStyle === 'checker') {
       g.fillStyle(alt, 0.85); for (let y = 0; y < r.h * 2; y++) for (let x = 0; x < r.w * 2; x++) if ((x + y) % 2) g.fillRect(x0 + x * half, y0 + y * half, half, half);
     }
     // A rug where there is open floor: the living room, bedroom, dining room and hall.
@@ -140,7 +150,7 @@ export class HouseScene extends Phaser.Scene {
       const x = tx * TILE, y = ty * TILE;
       const below = ty + 1 < HOUSE_H && !this.walls.has(`${tx},${ty + 1}`) ? roomAt(tx, ty + 1) : null;
       if (below) {
-        g.fillStyle(below.wall, 1); g.fillRect(x, y, TILE, TILE);
+        g.fillStyle(this.roomStyle(below).wall, 1); g.fillRect(x, y, TILE, TILE);
         g.fillStyle(0x4a4036, 1); g.fillRect(x, y, TILE, 3);
         g.fillStyle(0xffffff, 0.35); g.fillRect(x, y + 3, TILE, 2);
         g.fillStyle(0xd8cfc2, 1); g.fillRect(x, y + TILE - 5, TILE, 5);
@@ -187,9 +197,9 @@ export class HouseScene extends Phaser.Scene {
   }
 
   createPlayer(profile) {
-    const key = lookSpriteTexture(this, resolveLook(profile));
-    this.player = this.physics.add.sprite(SPAWN.tx * TILE, SPAWN.ty * TILE, key, IDLE_FRAME.up).setDepth(10);
-    this.player.body.setSize(20, 14).setOffset(6, 16);
+    const key = lookSpriteTexture(this, resolveLook(profile), outfitOf(profile), outfitId(profile));
+    this.player = this.physics.add.sprite(SPAWN.tx * TILE, SPAWN.ty * TILE, key, IDLE_FRAME.up).setScale(CHAR_WORLD_SCALE).setDepth(10);
+    this.player.body.setSize(28, 16).setOffset(18, 46);
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.solids);
   }
@@ -354,6 +364,14 @@ export class HouseScene extends Phaser.Scene {
     this.scene.start(SCENES.Profile, { edit: p.id });
   }
 
+  /** Redraw the player in the outfit they wear now (after the market). */
+  refreshOutfit() {
+    const p = Store.getProfile();
+    if (!p || !this.player) return;
+    const key = lookSpriteTexture(this, resolveLook(p), outfitOf(p), outfitId(p));
+    if (this.player.texture.key !== key) { const f = this.player.frame.name; this.player.setTexture(key, f); }
+  }
+
   /** Pause the house, sleep the Hud and open the room's story and quiz on top. */
   openRoom(roomId) {
     if (this.scene.isActive(SCENES.Hud)) this.scene.sleep(SCENES.Hud);
@@ -399,6 +417,7 @@ export class HouseScene extends Phaser.Scene {
     this.events.off('resume', this.onResumeBound);
     this.events.off('pause', this.onPauseBound);
     this.events.off('room:done', this.onRoomDone);
+    this.events.off('market:done', this.onMarketDone);
     try { if (this.tickTimer) this.tickTimer.remove(false); } catch { /* clock gone */ }
     this.tickTimer = null;
     try { if (this.controls) this.controls.destroy(); } catch { /* keyboard plugin gone */ }

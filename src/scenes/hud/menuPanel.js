@@ -12,20 +12,32 @@ import { storyState, chapterFor, chapterMissions, chapterNumber, bellPieces, CHA
 import { errandLine } from '../../data/world/errands.js';
 import { ensureExplored, exploredStats } from '../../data/world/explore.js';
 import { Minimap, paintMinimap } from '../../ui/Minimap.js';
+import { creditLines } from '../../ui/Credits.js';
 
 export function buildMenu(hud) {
   if (hud.state.menuPage === 'quests') return buildQuests(hud);
   if (hud.state.menuPage === 'map') return buildMapPage(hud);
+  if (hud.state.menuPage === 'credits') return buildCreditsPage(hud);
   const { w, ui } = hud;
-  const m = modal(hud, { w: 320 * ui, h: 424 * ui, title: 'Paused', accent: THEME.primary, depth: 600, dimAlpha: 0.45 });
+  const m = modal(hud, { w: 320 * ui, h: 520 * ui, title: 'Paused', accent: THEME.primary, depth: 600, dimAlpha: 0.45 });
   const bw = m.w - 48, bh = 50 * ui;
   let y = m.contentTop + 12 * ui + bh / 2;
   const page = (p) => { Sfx.click(); hud.state.menuPage = p; hud.rebuild(); };
   button(hud, w / 2, y, bw, bh, 'Resume', { variant: 'primary', onClick: () => hud.closeMenu() }).setDepth(603); y += bh + 12;
   button(hud, w / 2, y, bw, bh, '🔔 Journal', { variant: 'warning', onClick: () => page('quests') }).setDepth(603); y += bh + 12;
   button(hud, w / 2, y, bw, bh, 'Map', { variant: 'success', onClick: () => page('map') }).setDepth(603); y += bh + 12;
+  button(hud, w / 2, y, bw, bh, '🧺 Market', { variant: 'warning', onClick: () => { Sfx.click(); hud.openMarket(); } }).setDepth(603); y += bh + 12;
   button(hud, w / 2, y, bw, bh, 'Challenge Mode', { variant: 'subject', subject: 'code', onClick: () => hud.leaveTo(SCENES.ChallengeMenu) }).setDepth(603); y += bh + 12;
-  button(hud, w / 2, y, bw, bh, 'Home', { variant: 'secondary', onClick: () => hud.leaveTo(SCENES.ModeSelect) }).setDepth(603);
+  button(hud, w / 2, y, bw, bh, 'Home', { variant: 'secondary', onClick: () => hud.leaveTo(SCENES.ModeSelect) }).setDepth(603); y += bh + 4;
+  button(hud, w / 2, y + 6 * ui, bw, 30 * ui, 'Art credits', { variant: 'ghost', fontSize: 13, onClick: () => page('credits') }).setDepth(603);
+}
+
+/** Who drew the characters (the pack's licences ask for this to be easy to find). */
+export function buildCreditsPage(hud) {
+  const { w, h, ui } = hud;
+  const m = modal(hud, { w: Math.min(w - 16, 520 * ui), h: Math.min(h - 16, 560 * ui), title: 'Art credits', accent: THEME.brand, depth: 600, dimAlpha: 0.5 });
+  creditLines(hud, m.x + 20, m.contentTop + 4 * ui, m.w - 40, 603, m.y + m.h - 64 * ui);
+  button(hud, w / 2, m.y + m.h - 34 * ui, Math.min(m.w - 48, 200 * ui), 42 * ui, 'Back', { variant: 'secondary', onClick: () => { hud.state.menuPage = 'menu'; hud.rebuild(); } }).setDepth(603);
 }
 
 /** Checklist for the zone the player stands in (or the next one to clear), with the boss last. */

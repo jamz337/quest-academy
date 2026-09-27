@@ -163,6 +163,10 @@ export function buildMap() {
   // Headmistress Hope waits on the path by the player's front door; the bell tower stands at the top of the plaza.
   npcSpots.hope = { tx: 21, ty: 19 }; data[19][21] = TID.path;
   const bellSpot = { tx: 28, ty: 17 }; data[17][28] = TID.path; data[16][28] = TID.grass;
+  // Auntie Vee's market stall just off the plaza's east edge; she stands on the path in front of it.
+  npcSpots.vendor = { tx: 27, ty: 21 }; data[21][27] = TID.path;
+  const marketSpot = { tx: 28, ty: 20, w: 2, h: 2 };
+  for (let y = 20; y <= 21; y++) for (let x = 28; x <= 29; x++) data[y][x] = TID.grass;
 
   // The player's own house in the hub, in the classic red-roof style, with a path to the plaza.
   const homeDoor = building(data, 18, 15, 3, 3, { roof: TID.roof, wall: TID.wall, door: TID.door });
@@ -195,7 +199,7 @@ export function buildMap() {
     { tx: 42, ty: 17 }, { tx: 45, ty: 22 }, { tx: 50, ty: 25 }
   ];
 
-  return { width: W, height: H, data, spawn, zones, gates, npcSpots, bossSpots, buildings, coins, signSpot, bellSpot, home };
+  return { width: W, height: H, data, spawn, zones, gates, npcSpots, bossSpots, buildings, coins, signSpot, bellSpot, marketSpot, home };
 }
 
 /** Ground tile shown beneath a tree (trees are drawn on an overlay layer so the local ground shows through). */

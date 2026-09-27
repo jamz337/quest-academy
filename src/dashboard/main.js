@@ -6,7 +6,8 @@ import { skillTip } from '../data/explanations.js';
 import { getBadge } from '../data/badges.js';
 import { getList } from '../data/spelling/lists.js';
 import { roomFromGameId } from '../data/social/barbados.js';
-import { resolveLook, OUTLINE, MOUTH } from '../data/avatars.js';
+import { resolveLook } from '../data/avatars.js';
+import { layersFor, composeSheet, drawBustFromSheet, LPC_BASE } from '../ui/LpcCharacter.js';
 import { cssVars } from '../ui/theme.js';
 
 // The page's CSS variables come from the same tokens as the game so the two never drift.
@@ -107,6 +108,10 @@ function childCard(c) {
   const social = so.total
     ? `<div class="tip">🏠 <b>${so.read}</b> of ${so.total} room stories read, <b>${so.stars}</b> of ${so.maxStars} stars. Each room of the player's house tells a story about Barbados (the flag, the National Heroes, the parishes, the symbols, Crop Over) and ends with a five-question quiz.</div><table><tr><th>Room</th><th>Story</th><th>Best</th><th></th></tr>${socialRows}</table>`
     : '';
+  const mk = c.market || { items: 0, spent: 0, sets: [] };
+  const market = mk.items
+    ? `<div class="tip">🧺 <b>${mk.items}</b> ${mk.items === 1 ? 'item' : 'items'} bought for <b>${mk.spent}</b> coins. Cards: ${mk.sets.map((s) => `${esc(s.name)} ${s.owned}/${s.total}`).join(', ')}.</div>`
+    : '<div class="muted">Nothing bought yet. Coins from games can be spent at Auntie Vee\'s stall on the plaza: hats, paint for the house, and Barbados collector cards.</div>';
   const review = c.reviewQueue
     ? `<div class="tip">📚 <b>${c.reviewDue}</b> ${c.reviewDue === 1 ? 'question is' : 'questions are'} due for a quick review at the start of the next game (${c.reviewQueue} in the queue). Each one comes back a day, three days and a week later until it sticks.</div>`
     : '<div class="muted">Nothing waiting for review. Missed questions come back here on a spaced schedule.</div>';
@@ -124,6 +129,7 @@ function childCard(c) {
     <h3>Skills to practise, and what helps at home</h3><div>${practise}</div>
     <h3>Spelling Bee</h3>${spelling}
     <h3>Social studies: Barbados</h3>${social || '<div class="muted">Walk into the house on the map to find the rooms.</div>'}
+    <h3>Market</h3>${market}
     <h3>Review queue</h3>${review}
     <h3>Questions missed recently</h3>${misses ? `<table><tr><th>When</th><th>Question</th><th>Answer</th><th>Skill</th></tr>${misses}</table>` : '<div class="muted">None recorded yet. Ask about these at dinner when they appear!</div>'}
     <h3>Badges</h3><div>${badges}</div>
@@ -162,20 +168,26 @@ function trendTable(rows) {
   return `<table><tr><th>Skill</th><th>This week</th><th></th><th>Right</th><th>vs before</th></tr>${body}</table>`;
 }
 
-// Same colours as the in-game avatars, drawn as a simple face so the page needs no game assets.
-function drawAvatar(canvas) {
+// The same face as in the game, composed from the Liberated Pixel Cup layers in public/lpc.
+const lpcImages = {};
+function loadImage(path) {
+  if (lpcImages[path]) return Promise.resolve(lpcImages[path]);
+  return new Promise((resolve) => { const img = new Image(); img.onload = () => { lpcImages[path] = img; resolve(img); }; img.onerror = () => resolve(null); img.src = LPC_BASE + path; });
+}
+async function drawAvatar(canvas) {
   let look = null;
   try { look = JSON.parse(canvas.dataset.look || 'null'); } catch { /* ignore */ }
-  const { hair, skin, top, bg } = resolveLook({ avatar: Number(canvas.dataset.avatar) || 0, look });
+  const l = resolveLook({ avatar: Number(canvas.dataset.avatar) || 0, look });
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = OUTLINE; ctx.beginPath(); ctx.arc(24, 24, 24, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(24, 24, 22, 0, Math.PI * 2); ctx.clip();
-  ctx.fillStyle = bg; ctx.fillRect(0, 0, 48, 48);
-  ctx.fillStyle = top; ctx.fillRect(9, 38, 30, 12);   // shoulders
-  ctx.fillStyle = skin; ctx.fillRect(13, 14, 22, 22);
-  ctx.fillStyle = hair; ctx.fillRect(11, 8, 26, 9); ctx.fillRect(11, 17, 4, 8); ctx.fillRect(33, 17, 4, 8);
-  ctx.fillStyle = OUTLINE; ctx.fillRect(18, 24, 3, 4); ctx.fillRect(27, 24, 3, 4);
-  ctx.fillStyle = MOUTH; ctx.fillRect(21, 31, 6, 2);
+  ctx.fillStyle = l.bg || '#3d8bff'; ctx.beginPath(); ctx.arc(24, 24, 24, 0, Math.PI * 2); ctx.fill();
+  const layers = layersFor(l);
+  await Promise.all(layers.map((x) => loadImage(x.path)));
+  const sheet = document.createElement('canvas'); sheet.width = 576; sheet.height = 256;
+  const scratch = document.createElement('canvas'); scratch.width = 576; scratch.height = 256;
+  composeSheet(sheet.getContext('2d', { willReadFrequently: true }), l, lpcImages, scratch);
+  ctx.save(); ctx.beginPath(); ctx.arc(24, 24, 22, 0, Math.PI * 2); ctx.clip();
+  drawBustFromSheet(ctx, sheet, 24, 25, 38);
+  ctx.restore();
 }
 
 async function load() {

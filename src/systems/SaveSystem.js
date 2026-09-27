@@ -10,7 +10,7 @@ export function newProfile({ name, avatar = 0, grade = 3, look = null, readAloud
   const now = Date.now();
   return {
     id, name: String(name || 'Player').slice(0, 14), avatar, look, grade, readAloud, timers,
-    createdAt: now, updatedAt: now, coins: 0, xp: 0, badges: [], mastery: {}, charms: {}, skills: {}, recentMisses: [], goal: null, timers: 'on', spelling: { words: {}, lists: {}, sessions: 0 }, social: { rooms: {} }, story: { started: false, announced: [], finale: false },
+    createdAt: now, updatedAt: now, coins: 0, xp: 0, badges: [], mastery: {}, charms: {}, skills: {}, recentMisses: [], goal: null, timers: 'on', spelling: { words: {}, lists: {}, sessions: 0 }, social: { rooms: {} }, story: { started: false, announced: [], finale: false }, inventory: { owned: [], equipped: {}, decor: {}, spent: 0, visited: false },
     games: {}, coding: { levels: {} },
     world: { x: null, y: null, unlockedZones: ['math', 'words', 'code', 'bible'], npcsTalked: [], coinsCollected: [], bosses: {} }
   };
@@ -33,6 +33,7 @@ export function migrate(data) {
     p.spelling ||= { words: {}, lists: {}, sessions: 0 };
     p.social ||= { rooms: {} };
     p.story ||= { started: false, announced: [], finale: false };
+    p.inventory ||= { owned: [], equipped: {}, decor: {}, spent: 0, visited: false };
     if (!p.readAloudChosen) p.readAloud = 'auto';   // read everything aloud unless the player picked otherwise
     p.world ||= { x: null, y: null, npcsTalked: [], coinsCollected: [] };
     p.world.unlockedZones = ['math', 'words', 'code', 'bible']; p.world.npcsTalked ||= []; p.world.coinsCollected ||= []; p.world.bosses ||= {};

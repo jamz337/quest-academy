@@ -4,6 +4,8 @@ import { ModeSelectScene } from './ModeSelectScene.js';
 import { WorldScene } from './WorldScene.js';
 import { HouseScene } from './HouseScene.js';
 import { HouseRoomScene } from './HouseRoomScene.js';
+import { MarketScene } from './MarketScene.js';
+import { CreditsScene } from './CreditsScene.js';
 import { HudScene } from './HudScene.js';
 import { ChallengeMenuScene } from './ChallengeMenuScene.js';
 import { LevelSelectScene } from './LevelSelectScene.js';
@@ -36,5 +38,5 @@ export const scenes = [
   BootScene, ProfileScene, ModeSelectScene, WorldScene, HouseScene, HudScene, ChallengeMenuScene, LevelSelectScene,
   NumberDash, FractionPizza, PatternBridge, BalloonPop, WordBuilder, GrammarGate, WordMatch, FrogHop,
   RoboMaze, BugHunt, PredictRobot, RobotDance, BossBattle, BibleQuiz, ArkAnimals,
-  ResultsScene, PauseScene, AccountScene, LeaderboardScene, SkillsScene, SpellingScene, SpellingLearnScene, SpellingGameScene, HouseRoomScene
+  ResultsScene, PauseScene, AccountScene, LeaderboardScene, SkillsScene, SpellingScene, SpellingLearnScene, SpellingGameScene, HouseRoomScene, MarketScene, CreditsScene
 ];

@@ -1,4 +1,5 @@
 import { BaseScene } from './BaseScene.js';
+import { outfitOf, outfitId } from '../systems/Market.js';
 import { SCENES } from '../constants.js';
 import { THEME } from '../ui/theme.js';
 import * as Store from '../systems/Store.js';
@@ -55,7 +56,7 @@ export class ModeSelectScene extends BaseScene {
     const lvl = levelFromXp(p.xp), lo = xpForLevel(lvl), hi = xpForLevel(lvl + 1);
     const ax = -chipW / 2 + 42 * ui, tx = -chipW / 2 + 82 * ui;
     pc.add(this.add.circle(ax, 0, 30 * ui, THEME.primarySoft));
-    pc.add(this.add.image(ax, 0, badgeTexture(this, resolveLook(p))).setDisplaySize(52 * ui, 52 * ui));
+    pc.add(this.add.image(ax, 0, badgeTexture(this, resolveLook(p), outfitOf(p), outfitId(p))).setDisplaySize(52 * ui, 52 * ui));
     pc.add(this.add.text(tx, -20 * ui, `${p.name}  ·  Grade ${p.grade}`, T.bodyBold(this)).setOrigin(0, 0.5));
     const streak = currentStreak(p);
     const coins = chip(this, chipW / 2 - 14 * ui, 0, { text: String(p.coins), icon: 'coin', color: THEME.warningSoft, textColor: THEME.warningDark, originX: 1, shadow: 'none' });
@@ -136,6 +137,8 @@ export class ModeSelectScene extends BaseScene {
     });
     enter(this, [pc, explore, challenge, bee], { from: 'up', delay: 60, stagger: 70 });
     enter(this, [lb, acc, sw2, snd], { from: 'fade', delay: 260, stagger: 30 });
+    const cr = text(this, w / 2, h - 8 * ui - safeArea().bottom, 'Art credits', T.small(this, THEME.ink3)).setOrigin(0.5, 1).setInteractive({ useHandCursor: true });
+    cr.on('pointerup', () => this.go(SCENES.Credits));
 
     // Phones keep sound off until a tap: say so, and take the hint down as soon as the first tap unlocks it.
     if (sound && !audioReady() && typeof window !== 'undefined') {

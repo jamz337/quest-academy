@@ -15,7 +15,7 @@ import { viewport, dpr } from '../systems/Layout.js';
 import { Sfx } from '../systems/Audio.js';
 import { toast } from '../ui/Toast.js';
 import { resolveLook } from '../data/avatars.js';
-import { lookSpriteTexture } from '../systems/Textures.js';
+import { lookSpriteTexture, CHAR_WORLD_SCALE, IDLE_FRAMES } from '../systems/Textures.js';
 import { gameGrade, gradeUps, nextHouseLevel, HOUSE_LEVELS } from '../systems/Progression.js';
 import { errandLine } from '../data/world/errands.js';
 import { ensureExplored, reveal } from '../data/world/explore.js';
@@ -28,12 +28,13 @@ import * as Decor from './world/decor.js';
 import * as Companion from './world/companion.js';
 import { mentorLines, guideLines, signpostLine, startStory, bellPieces, claimFinale, finishTutorial, tutorialDone, CHAPTERS, MENTOR_ID } from '../data/world/story.js';
 import { checkBadges } from '../systems/Progression.js';
+import { outfitOf, outfitId } from '../systems/Market.js';
 import { getBadge } from '../data/badges.js';
 
 const SPEED = 110;          // px/s
 const TALK_DIST = 44;       // px between player and NPC centres
-const CHAR_SCALE = 1;   // character sheets are drawn at 32px, one tile
-const IDLE_FRAME = { down: 0, up: 2, side: 4 };
+const CHAR_SCALE = CHAR_WORLD_SCALE;   // character frames are drawn large and shown one tile tall
+const IDLE_FRAME = IDLE_FRAMES;
 const HELLO_COINS = 5;
 
 /**
@@ -71,6 +72,7 @@ export class WorldScene extends Phaser.Scene {
     Errands.createErrandItem(this, profile);
     Decor.createLandmarks(this, profile);
     Decor.createBellTower(this);
+    Decor.createMarketStall(this);
     Companion.createCompanion(this);
     // Loading while standing in the doorway should not open the house until the player steps out and back in.
     this.atHomeDoor = !!this.map.home && Math.floor(this.player.x / TILE) === this.map.home.door.tx && Math.floor(this.player.y / TILE) === this.map.home.door.ty;
@@ -107,6 +109,8 @@ export class WorldScene extends Phaser.Scene {
     this.events.on('pause', this.onPauseBound);
     this.onGameDone = (e) => this.afterGame(e.payload, e.result);
     this.events.on('minigame:done', this.onGameDone);
+    this.onMarketDone = () => this.refreshOutfit();
+    this.events.on('market:done', this.onMarketDone);
     this.events.once('shutdown', () => this.cleanup());
   }
 
@@ -121,9 +125,9 @@ export class WorldScene extends Phaser.Scene {
       const row = this.map.data[ty];
       if (row && row[tx] !== undefined && isWalkable(row[tx])) { x = w.x; y = w.y; }
     }
-    const key = lookSpriteTexture(this, resolveLook(profile));
-    this.player = this.physics.add.sprite(x, y, key, 0).setScale(CHAR_SCALE).setDepth(10);
-    this.player.body.setSize(20, 14).setOffset(6, 16);   // feet-sized box so doors and gaps feel fair
+    const key = lookSpriteTexture(this, resolveLook(profile), outfitOf(profile), outfitId(profile));
+    this.player = this.physics.add.sprite(x, y, key, IDLE_FRAME.down).setScale(CHAR_SCALE).setDepth(10);
+    this.player.body.setSize(28, 16).setOffset(18, 46);   // feet-sized box (frame units) so doors and gaps feel fair
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.layer);
     this.physics.add.collider(this.player, this.treeLayer);
@@ -136,7 +140,7 @@ export class WorldScene extends Phaser.Scene {
       const spot = this.map.npcSpots[def.id];
       if (!spot) continue;
       const key = this.textures.exists(def.sprite) ? def.sprite : 'npc0';
-      const s = this.npcGroup.create((spot.tx + 0.5) * TILE, (spot.ty + 0.5) * TILE, key, 0);
+      const s = this.npcGroup.create((spot.tx + 0.5) * TILE, (spot.ty + 0.5) * TILE, key, IDLE_FRAME.down);
       s.setScale(CHAR_SCALE).setDepth(5).refreshBody();
       s.body.setSize(22, 22);
       s.npc = def;
@@ -146,7 +150,7 @@ export class WorldScene extends Phaser.Scene {
     for (const boss of BOSSES) {
       const spot = this.map.bossSpots[boss.zone];
       if (!spot) continue;
-      const s = this.npcGroup.create((spot.tx + 0.5) * TILE, (spot.ty + 0.5) * TILE, lookSpriteTexture(this, boss.look), 0);
+      const s = this.npcGroup.create((spot.tx + 0.5) * TILE, (spot.ty + 0.5) * TILE, lookSpriteTexture(this, boss.look), IDLE_FRAME.down);
       s.setScale(CHAR_SCALE * (boss.scale || 1.3)).setDepth(5).refreshBody();
       s.body.setSize(26, 26);
       s.boss = boss;
@@ -346,13 +350,31 @@ export class WorldScene extends Phaser.Scene {
       lines = mentorLines(profile);
       if (fresh) onLater = () => this.storyBegun();
     } else if (npc.id === 'signpost') lines = [signpostLine(profile), ...npc.lines.slice(1)];
+    if (npc.market) prompt = 'Come and see what is for sale?';
     else lines = [...guideLines({ ...profile, world: { ...profile.world, npcsTalked: (profile.world.npcsTalked || []).filter((id) => id !== npc.id || !firstTalk) } }, npc.id), ...npc.lines];
-    hud.showDialog({ name: npc.name, voice: npc.voice, pitch: npc.pitch, rate: npc.rate, speaker: npc.id, lines, prompt, onPlay: npc.gameId ? () => this.playGame(npc) : null, onLater });
+    hud.showDialog({ name: npc.name, voice: npc.voice, pitch: npc.pitch, rate: npc.rate, speaker: npc.id, lines, prompt, playLabel: npc.market ? 'Shop' : undefined, onPlay: npc.market ? () => this.openMarket() : npc.gameId ? () => this.playGame(npc) : null, onLater });
     if (firstTalk) {
       hud.setCoins(Store.getProfile().coins);
       hud.awardCoins(HELLO_COINS);
       hud.notify(`+${HELLO_COINS} coins for saying hello!`, { icon: 'coin' });
     }
+  }
+
+  /** Pause the world, sleep the Hud and open the market on top; 'market:done' brings us back. */
+  openMarket() {
+    this.stopPlayer();
+    this.savePosition();
+    if (this.scene.isActive(SCENES.Hud)) this.scene.sleep(SCENES.Hud);
+    this.scene.pause();
+    this.scene.launch(SCENES.Market, { returnTo: SCENES.World });
+  }
+
+  /** The player may have bought or changed a hat: redraw them in the outfit they wear now. */
+  refreshOutfit() {
+    const p = Store.getProfile();
+    if (!p || !this.player) return;
+    const key = lookSpriteTexture(this, resolveLook(p), outfitOf(p), outfitId(p));
+    if (this.player.texture.key !== key) { const f = this.player.frame.name; this.player.setTexture(key, f); }
   }
 
   /** The Headmistress has told the tale: the story is on, and Mango starts the first-steps lesson. */
@@ -579,6 +601,7 @@ export class WorldScene extends Phaser.Scene {
     this.events.off('resume', this.onResumeBound);
     this.events.off('pause', this.onPauseBound);
     this.events.off('minigame:done', this.onGameDone);
+    this.events.off('market:done', this.onMarketDone);
     try { if (this.zoneTimer) this.zoneTimer.remove(false); } catch { /* clock already gone */ }
     try { if (this.critterTimer) this.critterTimer.remove(false); } catch { /* clock already gone */ }
     this.zoneTimer = null; this.critterTimer = null; this.critters = [];

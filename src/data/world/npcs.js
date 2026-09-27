@@ -23,6 +23,12 @@ export const NPCS = [
     playPrompt: null
   },
   {
+    // The market vendor: talking to her opens the Cheapside market (see WorldScene.talk).
+    id: 'vendor', pitch: 1.08, rate: 1.02, voice: 'female', name: 'Auntie Vee', sprite: 'npc18', gameId: null, zone: 'hub', market: true,
+    lines: ['Mangoes, coconuts, and something for you! Every coin you earn can buy a treat here.', 'Hats and glasses to wear, paint for your house, and cards that teach you about Barbados.'],
+    playPrompt: null
+  },
+  {
     id: 'prof-plus', pitch: 0.85, rate: 0.9, voice: 'male', name: 'Professor Plus', sprite: 'npc0', gameId: 'math-dash', zone: 'math',
     lines: ['Ah, a new student! I love numbers that add up fast.', 'Quick sums make quick thinkers. Ready to race the clock?'],
     playPrompt: 'Want to play Number Dash?'

@@ -14,6 +14,8 @@ import { prioritiseWeak, weakSkills } from '../../../systems/Practice.js';
 import { raceTrack } from '../../../ui/Scenery.js';
 import { shake } from '../../../ui/motion.js';
 import { lookSpriteTexture } from '../../../systems/Textures.js';
+import { outfitOf, outfitId } from '../../../systems/Market.js';
+import { IDLE_FRAMES } from '../../../ui/LpcCharacter.js';
 import { resolveLook } from '../../../data/avatars.js';
 
 const KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '−', '0', '.'];
@@ -86,12 +88,12 @@ export class NumberDash extends MinigameScene {
   drawTrack(r) {
     const s = this.state, ui = this.ui;
     const justRight = s.picked !== null && s.right, justWrong = s.picked !== null && !s.right;
-    const key = lookSpriteTexture(this, resolveLook(this.profile));
+    const key = lookSpriteTexture(this, resolveLook(this.profile), outfitOf(this.profile), outfitId(this.profile));
     const { runner, xFor } = raceTrack(this, r, { progress: s.correct - (justRight ? 1 : 0), total: s.questions.length, spriteKey: key, ui });
     if (!runner) return;
     if (justRight) {
       runner.play(`${key}-side`, true);
-      this.tweens.add({ targets: runner, x: xFor(s.correct), duration: 420, ease: 'Sine.Out', onComplete: () => { if (runner.active) { runner.stop(); runner.setFrame(4); } } });
+      this.tweens.add({ targets: runner, x: xFor(s.correct), duration: 420, ease: 'Sine.Out', onComplete: () => { if (runner.active) { runner.stop(); runner.setFrame(IDLE_FRAMES.side); } } });
       this.tweens.add({ targets: runner, y: runner.y - 6 * ui, duration: 140, yoyo: true, repeat: 1 });
     } else if (justWrong) shake(this, runner, 5);
   }

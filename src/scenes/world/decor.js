@@ -101,6 +101,27 @@ export function refreshBell(w) {
   t.label.setText(have.size === CHAPTERS.length ? 'The Academy Bell' : `Academy Bell  ${have.size}/${CHAPTERS.length}`);
 }
 
+/** Auntie Vee's market stall: a striped awning over a wooden counter piled with fruit, and a little sign. */
+export function createMarketStall(w) {
+  const spot = w.map.marketSpot;
+  if (!spot) return;
+  const x = (spot.tx + spot.w / 2) * TILE, y = (spot.ty + spot.h) * TILE - 6;   // x centre, y the counter's base
+  const g = w.add.graphics().setDepth(4);
+  g.fillStyle(0x2d2a4a, 0.16); g.fillEllipse(x, y + 2, 64, 10);
+  g.fillStyle(0x7a4a2a, 1); g.fillRect(x - 28, y - 44, 4, 44); g.fillRect(x + 24, y - 44, 4, 44);   // posts
+  g.fillStyle(0xb07a4f, 1); g.fillRoundedRect(x - 30, y - 22, 60, 22, 3);                          // counter
+  g.fillStyle(0x7a5033, 1); g.fillRect(x - 30, y - 22, 60, 3);
+  const fruit = [[x - 18, y - 26, 0xff8f3f], [x - 6, y - 27, 0xffc531], [x + 8, y - 26, 0x2ec46a], [x + 20, y - 27, 0x8a5a3c]];
+  for (const [fx, fy, c] of fruit) { g.fillStyle(0xd6cfc4, 1); g.fillEllipse(fx, fy + 3, 14, 6); g.fillStyle(c, 1); g.fillCircle(fx - 3, fy - 1, 3.5); g.fillCircle(fx + 3, fy - 1, 3.5); g.fillCircle(fx, fy - 4, 3.5); }
+  for (let i = 0; i < 8; i++) { g.fillStyle(i % 2 ? 0xffffff : 0xff5c6c, 1); g.fillRect(x - 34 + i * 8.5, y - 52, 8.5, 10); }   // striped awning
+  g.fillStyle(0xd94656, 1); g.fillRect(x - 34, y - 54, 68, 3);
+  for (let i = 0; i < 8; i++) { g.fillStyle(i % 2 ? 0xffffff : 0xff5c6c, 1); g.fillTriangle(x - 34 + i * 8.5, y - 42, x - 34 + (i + 1) * 8.5, y - 42, x - 34 + i * 8.5 + 4.25, y - 37); }
+  w.add.text(x, y - 60, 'Cheapside Market', { fontFamily: 'Fredoka, sans-serif', fontSize: '7px', color: '#2d2a4a', backgroundColor: '#fff8ef', padding: { x: 3, y: 1 } }).setOrigin(0.5).setDepth(4).setResolution(4);
+  const post = w.add.rectangle(x, y - 12, 62, 24).setVisible(false);
+  w.physics.add.existing(post, true);
+  if (w.player) w.physics.add.collider(w.player, post);
+}
+
 /** Three small stars above every villager's house, lit as the game's levels are passed. */
 export function createHouseStars(w) {
   w.houseStarSprites = {};

@@ -26,7 +26,7 @@ export function raceTrack(scene, r, { progress = 0, total = 10, spriteKey = null
   g.fillStyle(THEME.success, 1); g.fillRect(x0 - 12 * ui, ty - 22 * ui, 2, 22 * ui); g.fillTriangle(x0 - 10 * ui, ty - 22 * ui, x0 + 2 * ui, ty - 17 * ui, x0 - 10 * ui, ty - 12 * ui);
   let runner = null;
   if (spriteKey && scene.textures.exists(spriteKey)) {
-    runner = scene.add.sprite(xFor(progress), ty + th / 2 - 8 * ui, spriteKey, 4).setDisplaySize(28 * ui, 28 * ui).setFlipX(true);
+    runner = scene.add.sprite(xFor(progress), ty + th / 2 - 8 * ui, spriteKey, 9).setDisplaySize(28 * ui, 28 * ui).setFlipX(true);   // frame 9: standing, facing left
   }
   return { runner, xFor, trackY: ty + th / 2 - 8 * ui };
 }

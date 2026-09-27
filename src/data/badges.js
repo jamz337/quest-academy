@@ -4,6 +4,7 @@ import { MINIGAMES, gamesForSubject } from './minigames.js';
 import { SPELLING_LISTS, listWords } from './spelling/lists.js';
 import { isLearned, totalRight } from '../systems/Spelling.js';
 import { socialProgress } from '../systems/Social.js';
+import { purchases, anySetComplete } from '../systems/Market.js';
 
 const bestStars = (profile, id) => profile.games[id]?.bestStars || 0;
 const subjectStars = (profile, subject) => gamesForSubject(subject).reduce((s, g) => s + bestStars(profile, g.id), 0);
@@ -32,6 +33,8 @@ export const BADGES = [
   { id: 'on-fire', title: 'On Fire', desc: 'Spell 5 words right in a row', test: (p, r) => !!(r && (r.spellingCombo | 0) >= 5) },
   { id: 'honey-hunter', title: 'Honey Hunter', desc: 'Spell 100 words right', test: (p) => totalRight(p) >= 100 },
   { id: 'bajan-reader', title: 'Bajan Reader', desc: 'Read the story in every room of your house', test: (p) => { const s = socialProgress(p); return s.total > 0 && s.read >= s.total; } },
+  { id: 'shopper', title: 'Market Day', desc: 'Buy something at the Cheapside market', test: (p) => purchases(p) >= 1 },
+  { id: 'collector', title: 'Card Collector', desc: 'Complete a set of Barbados cards', test: (p) => anySetComplete(p) },
   { id: 'bell-ringer', title: 'Bell Ringer', desc: 'Bring back every piece of the Academy Bell', test: (p) => !!p.story?.finale },
   { id: 'bajan-scholar', title: 'Bajan Scholar', desc: '3 stars in every room of your house', test: (p) => { const s = socialProgress(p); return s.total > 0 && s.mastered >= s.total; } }
 ];
