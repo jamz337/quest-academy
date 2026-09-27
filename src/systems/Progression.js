@@ -111,8 +111,9 @@ export function unlockedZones() { return [...ZONE_ORDER]; }
 function applyBossResult(profile, payload, raw, result) {
   const won = !!raw.won;
   const stars = won ? Math.max(1, Math.min(3, raw.heartsLeft | 0)) : 0;
-  const coins = raw.coins ?? (raw.correct || 0) * 2 + (won ? 50 : 0);
+  let coins = raw.coins ?? (raw.correct || 0) * 2 + (won ? 50 : 0);
   const xp = raw.xp ?? (raw.correct || 0) * 10 + (won ? 150 : 0);
+  if (raw.useDoubleCoins && profile.charms?.doubleCoins) { coins *= 2; result.doubledCoins = true; delete profile.charms.doubleCoins; }
   Object.assign(result, { stars, coins, xp, score: (raw.correct || 0) * 10 + stars * 50, timeBonus: 0, passed: won, newBest: false });
   profile.world.bosses ||= {};
   const rec = profile.world.bosses[payload.boss.zone] || { defeated: false, attempts: 0, bestStars: 0, firstWinAt: null };
@@ -124,12 +125,40 @@ function applyBossResult(profile, payload, raw, result) {
 }
 
 /**
+ * Score a villager duel. raw: { won, hpLeft, partyHp, partyMax, correct, total, missedSkills, useDoubleCoins }.
+ * Stars come from how much of the party's health is left; the first win against each villager counts for the
+ * zone's duel quest.
+ */
+function applyDuelResult(profile, payload, raw, result) {
+  const won = !!raw.won, hp = Math.max(0, raw.partyHp | 0), max = Math.max(1, raw.partyMax | 0 || 5);
+  const stars = won ? (hp >= max ? 3 : hp >= Math.ceil(max / 2) ? 2 : 1) : 0;
+  let coins = raw.coins ?? (raw.correct || 0) * 2 + (won ? 20 : 0);
+  const xp = raw.xp ?? (raw.correct || 0) * 8 + (won ? 60 : 0);
+  if (raw.useDoubleCoins && profile.charms?.doubleCoins) { coins *= 2; result.doubledCoins = true; delete profile.charms.doubleCoins; }
+  Object.assign(result, { stars, coins, xp, score: (raw.correct || 0) * 10 + stars * 30, timeBonus: 0, passed: won, newBest: false });
+  profile.world.duels ||= {};
+  const rec = profile.world.duels[payload.duel.npcId] || { won: false, attempts: 0, bestHp: 0, firstWinAt: null };
+  rec.attempts += 1;
+  if (won && !rec.won) { rec.firstWinAt = Date.now(); result.newDuelWin = true; }
+  rec.won = rec.won || won;
+  rec.bestHp = Math.max(rec.bestHp, won ? hp : 0);
+  profile.world.duels[payload.duel.npcId] = rec;
+  recordSkills(profile, { seen: raw.seenSkills || [], missed: raw.missedSkills || [] });
+}
+
+/**
  * Apply a raw minigame outcome to the profile and return the full result record.
  * raw: { correct, total, timeMs, parTimeMs?, stars?, coins?, xp?, levelId?, solved?, blocksUsed?, par?, attempts?, missedSkills?, aborted? }
  */
 export function applyResult(profile, payload, raw) {
   const result = { gameId: payload.gameId, band: payload.band, aborted: !!raw.aborted, ...raw };
   if (result.aborted) return result;
+  if (payload.duel) {
+    applyDuelResult(profile, payload, raw, result);
+    profile.coins += result.coins;
+    profile.xp += result.xp;
+    return finishResult(profile, result);
+  }
   if (payload.boss) {
     applyBossResult(profile, payload, raw, result);
     profile.coins += result.coins;

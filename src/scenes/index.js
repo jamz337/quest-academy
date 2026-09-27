@@ -26,7 +26,7 @@ import { WordMatch } from './minigames/english/WordMatch.js';
 import { RoboMaze } from './minigames/coding/RoboMaze.js';
 import { BugHunt } from './minigames/coding/BugHunt.js';
 import { PredictRobot } from './minigames/coding/PredictRobot.js';
-import { BossBattle } from './minigames/BossBattle.js';
+import { DuelScene } from './minigames/DuelScene.js';
 import { BibleQuiz } from './minigames/bible/BibleQuiz.js';
 import { BalloonPop } from './minigames/math/BalloonPop.js';
 import { FrogHop } from './minigames/english/FrogHop.js';
@@ -37,6 +37,6 @@ import { ArkAnimals } from './minigames/bible/ArkAnimals.js';
 export const scenes = [
   BootScene, ProfileScene, ModeSelectScene, WorldScene, HouseScene, HudScene, ChallengeMenuScene, LevelSelectScene,
   NumberDash, FractionPizza, PatternBridge, BalloonPop, WordBuilder, GrammarGate, WordMatch, FrogHop,
-  RoboMaze, BugHunt, PredictRobot, RobotDance, BossBattle, BibleQuiz, ArkAnimals,
+  RoboMaze, BugHunt, PredictRobot, RobotDance, DuelScene, BibleQuiz, ArkAnimals,
   ResultsScene, PauseScene, AccountScene, LeaderboardScene, SkillsScene, SpellingScene, SpellingLearnScene, SpellingGameScene, HouseRoomScene, MarketScene, CreditsScene
 ];

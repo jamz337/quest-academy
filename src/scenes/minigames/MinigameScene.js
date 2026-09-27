@@ -40,7 +40,7 @@ export class MinigameScene extends BaseScene {
     this.qStartAt = Date.now();
     this.state = this.initState();
     // Spaced review: a few questions missed in earlier games of this subject come back before this one starts.
-    this.review = payload.boss || payload.noReview ? [] : dueReviews(this.profile, payload.subject);
+    this.review = payload.boss || payload.duel || payload.noReview ? [] : dueReviews(this.profile, payload.subject);
     this.reviewIdx = 0; this.reviewPicked = null; this.reviewRight = 0;
     // Scenes are reused between launches, so the wrapper always goes around the class's own enterKey.
     delete this.enterKey;

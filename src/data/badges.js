@@ -28,6 +28,8 @@ export const BADGES = [
   { id: 'helper', title: 'Helping Hand', desc: 'Finish 5 errands for the villagers', test: (p) => Object.values(p.world.errands || {}).filter((s) => s === 'done').length >= 5 },
   { id: 'errand-hero', title: 'Errand Hero', desc: 'Finish every errand', test: (p) => Object.values(p.world.errands || {}).filter((s) => s === 'done').length >= ERRANDS.length },
   { id: 'house-3', title: 'Three Stars', desc: 'Pass all three levels at a house', test: (p) => Object.values(p.games).some((g) => (g.gradeUp | 0) > 0 || (g.levels && [1, 2, 3].every((n) => (g.levels[n] || 0) >= 1))) },
+  { id: 'duelist', title: 'Duelist', desc: 'Win your first duel', test: (p) => Object.values(p.world?.duels || {}).some((d) => d && d.won) },
+  { id: 'duel-master', title: 'Duel Master', desc: 'Beat every villager in a duel', test: (p) => { const ids = Object.entries(p.world?.duels || {}).filter(([, d]) => d && d.won).map(([id]) => id); return ids.length >= 16; } },
   { id: 'master', title: 'Master Mind', desc: 'Reach Master level in any subject', test: (p) => Object.values(p.mastery || {}).some((m) => (m.level | 0) >= 3) },
   { id: 'spelling-bee', title: 'Spelling Bee', desc: 'Learn every word on a spelling list', test: (p) => Object.values(SPELLING_LISTS).flat().some((l) => listWords(l).every((e) => isLearned(p, e.w))) },
   { id: 'on-fire', title: 'On Fire', desc: 'Spell 5 words right in a row', test: (p, r) => !!(r && (r.spellingCombo | 0) >= 5) },
