@@ -25,7 +25,7 @@ export const AVATAR_COUNT = 8;
 export const SCENES = {
   Boot: 'Boot', Profile: 'Profile', ModeSelect: 'ModeSelect', World: 'World', Hud: 'Hud',
   ChallengeMenu: 'ChallengeMenu', LevelSelect: 'LevelSelect', Results: 'Results', Pause: 'Pause',
-  Account: 'Account', Leaderboard: 'Leaderboard', Skills: 'Skills'
+  Account: 'Account', Leaderboard: 'Leaderboard', Skills: 'Skills', Spelling: 'Spelling', SpellingLearn: 'SpellingLearn', SpellingGame: 'SpellingGame'
 };
 
 export const SAVE_KEY = 'qa.save';

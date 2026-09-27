@@ -25,6 +25,15 @@ export function skillTrend(results, now = Date.now()) {
   return Object.values(by).sort((a, b) => (b.total + b.prevTotal) - (a.total + a.prevTotal)).slice(0, 12);
 }
 
+/** Spelling progress: words learned (spelled right three times from hearing), practised, and the tricky ones. */
+export function spellingSummary(p) {
+  const words = Object.entries(p.spelling?.words || {});
+  const learned = words.filter(([, s]) => (s.heardRight | 0) >= 3).map(([w]) => w);
+  const tricky = words.filter(([, s]) => s.wrong > 0 && s.wrong >= s.right).map(([w]) => w).slice(0, 10);
+  const tests = (p.spelling?.tests || []).slice(-8).reverse().map((t) => ({ listId: t.listId, correct: t.correct, total: t.total, at: t.at }));
+  return { practised: words.length, learned: learned.length, tricky, sessions: p.spelling?.sessions | 0, tests };
+}
+
 /** Games, stars and minutes per day for the last `n` days, oldest first (empty days included). */
 export function dailyActivity(results, n = 14, now = Date.now()) {
   const days = [];
@@ -69,6 +78,7 @@ export function summarize(save, results = [], now = Date.now()) {
         week: { plays: week.length, stars: week.reduce((s, r) => s + (r.stars || 0), 0), xp: week.reduce((s, r) => s + (r.xp || 0), 0), minutes: Math.round(week.reduce((s, r) => s + (r.time_ms || 0), 0) / 60000) },
         weakSkills: weak, recentMisses: misses.slice(0, 10), mastery: p.mastery || {},
         reviewDue: misses.filter((m) => reviewable(m) && dueAt(m) <= now).length, reviewQueue: misses.filter(reviewable).length,
+        spelling: spellingSummary(p),
         skillTrend: skillTrend(rs, now), days: dailyActivity(rs, 14, now),
         xp: p.xp || 0, level: levelFromXp(p.xp || 0), coins: p.coins || 0, stars: totalStars(p),
         badges: p.badges || [], games: p.games || {},

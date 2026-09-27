@@ -4,6 +4,7 @@ import { SUBJECTS } from '../constants.js';
 import { skillLabel } from '../data/skills.js';
 import { skillTip } from '../data/explanations.js';
 import { getBadge } from '../data/badges.js';
+import { getList } from '../data/spelling/lists.js';
 import { resolveLook, OUTLINE, MOUTH } from '../data/avatars.js';
 import { cssVars } from '../ui/theme.js';
 
@@ -75,7 +76,7 @@ function childCard(c) {
       <td>${stars(rec ? rec.bestStars : 0)}</td><td>${rec ? rec.plays + (rec.plays === 1 ? ' play' : ' plays') : '<span class="muted">not yet</span>'}</td></tr>`;
   }).join('');
   const recent = c.recent.map((r) => {
-    const g = MINIGAMES.find((x) => x.id === r.gameId);
+    const g = MINIGAMES.find((x) => x.id === r.gameId) || (r.gameId === 'spelling' ? { icon: '🐝', title: 'Spelling Bee' } : r.gameId === 'spelling-test' ? { icon: '📝', title: 'Weekly spelling test' } : null);
     const detail = r.total ? `${r.correct} / ${r.total}` : r.levelId ? `level ${r.levelId}` : '';
     return `<tr><td>${when(r.at)}</td><td>${g ? g.icon + ' ' + esc(g.title) : esc(r.gameId)}</td><td>${stars(r.stars)}</td><td>${detail}</td><td>+${r.xp} XP</td></tr>`;
   }).join('');
@@ -88,6 +89,17 @@ function childCard(c) {
   const wk = c.week || { plays: 0, stars: 0, minutes: 0 };
   const weekLine = wk.plays ? `This week: ${wk.plays} ${wk.plays === 1 ? 'game' : 'games'}, ${wk.stars} ★, ${wk.minutes} min` : 'No games this week yet';
   const badges = c.badges.length ? c.badges.map((id) => `<span class="badge">🏅 ${esc(getBadge(id)?.title || id)}</span>`).join('') : '<span class="muted">No badges yet.</span>';
+  const sp = c.spelling || { practised: 0, learned: 0, tricky: [], sessions: 0, tests: [] };
+  const testRows = (sp.tests || []).map((t) => {
+    const list = getList(t.listId);
+    const pct = t.total ? Math.round((t.correct / t.total) * 100) : 0;
+    return `<tr><td>${when(new Date(t.at).toISOString())}</td><td>${esc(list ? list.title : t.listId)}</td><td><b>${t.correct} / ${t.total}</b></td><td><span class="${pct >= 80 ? 'subject-words' : pct >= 50 ? 'subject-code' : 'subject-bible'}">${pct}%</span></td></tr>`;
+  }).join('');
+  const spelling = sp.practised || testRows
+    ? `<div class="tip">🐝 <b>${sp.learned}</b> ${sp.learned === 1 ? 'word' : 'words'} learned of ${sp.practised} practised, over ${sp.sessions} ${sp.sessions === 1 ? 'session' : 'sessions'}.</div>` +
+      (sp.tricky.length ? `<div class="tip">Still tricky: ${sp.tricky.map((w) => `<span class="skill">${esc(w)}</span>`).join(' ')} <span class="muted">Try them out loud at home, then let them type the word into the Spelling Bee.</span></div>` : '<div class="muted">No tricky words at the moment.</div>') +
+      (testRows ? `<h3>Weekly spelling tests</h3><table><tr><th>When</th><th>List</th><th>Score</th><th></th></tr>${testRows}</table>` : '<div class="muted">No weekly test taken yet. It is the "Weekly test" button on each list: every word from hearing alone, no hints.</div>')
+    : '<div class="muted">No spelling practice yet. The Spelling Bee is on the home screen.</div>';
   const review = c.reviewQueue
     ? `<div class="tip">📚 <b>${c.reviewDue}</b> ${c.reviewDue === 1 ? 'question is' : 'questions are'} due for a quick review at the start of the next game (${c.reviewQueue} in the queue). Each one comes back a day, three days and a week later until it sticks.</div>`
     : '<div class="muted">Nothing waiting for review. Missed questions come back here on a spaced schedule.</div>';
@@ -103,6 +115,7 @@ function childCard(c) {
     <h3>Last two weeks</h3>${activityChart(c.days || [])}
     <h3>Skills over time</h3>${trendTable(c.skillTrend || [])}
     <h3>Skills to practise, and what helps at home</h3><div>${practise}</div>
+    <h3>Spelling Bee</h3>${spelling}
     <h3>Review queue</h3>${review}
     <h3>Questions missed recently</h3>${misses ? `<table><tr><th>When</th><th>Question</th><th>Answer</th><th>Skill</th></tr>${misses}</table>` : '<div class="muted">None recorded yet. Ask about these at dinner when they appear!</div>'}
     <h3>Badges</h3><div>${badges}</div>

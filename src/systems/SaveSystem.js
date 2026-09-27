@@ -10,7 +10,7 @@ export function newProfile({ name, avatar = 0, grade = 3, look = null, readAloud
   const now = Date.now();
   return {
     id, name: String(name || 'Player').slice(0, 14), avatar, look, grade, readAloud, timers,
-    createdAt: now, updatedAt: now, coins: 0, xp: 0, badges: [], mastery: {}, charms: {}, skills: {}, recentMisses: [], goal: null, timers: 'on',
+    createdAt: now, updatedAt: now, coins: 0, xp: 0, badges: [], mastery: {}, charms: {}, skills: {}, recentMisses: [], goal: null, timers: 'on', spelling: { words: {}, lists: {}, sessions: 0 },
     games: {}, coding: { levels: {} },
     world: { x: null, y: null, unlockedZones: ['math', 'words', 'code', 'bible'], npcsTalked: [], coinsCollected: [], bosses: {} }
   };
@@ -30,6 +30,7 @@ export function migrate(data) {
   // Fill any fields that older profiles might miss.
   for (const p of Object.values(d.profiles || {})) {
     p.games ||= {}; p.coding ||= { levels: {} }; p.badges ||= []; p.mastery ||= {}; p.charms ||= {}; p.skills ||= {}; p.recentMisses ||= []; p.timers ||= 'on';
+    p.spelling ||= { words: {}, lists: {}, sessions: 0 };
     if (!p.readAloudChosen) p.readAloud = 'auto';   // read everything aloud unless the player picked otherwise
     p.world ||= { x: null, y: null, npcsTalked: [], coinsCollected: [] };
     p.world.unlockedZones = ['math', 'words', 'code', 'bible']; p.world.npcsTalked ||= []; p.world.coinsCollected ||= []; p.world.bosses ||= {};

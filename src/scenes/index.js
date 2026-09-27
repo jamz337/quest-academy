@@ -10,6 +10,9 @@ import { PauseScene } from './PauseScene.js';
 import { AccountScene } from './AccountScene.js';
 import { LeaderboardScene } from './LeaderboardScene.js';
 import { SkillsScene } from './SkillsScene.js';
+import { SpellingScene } from './SpellingScene.js';
+import { SpellingGameScene } from './SpellingGameScene.js';
+import { SpellingLearnScene } from './SpellingLearnScene.js';
 import { NumberDash } from './minigames/math/NumberDash.js';
 import { FractionPizza } from './minigames/math/FractionPizza.js';
 import { PatternBridge } from './minigames/math/PatternBridge.js';
@@ -31,5 +34,5 @@ export const scenes = [
   BootScene, ProfileScene, ModeSelectScene, WorldScene, HudScene, ChallengeMenuScene, LevelSelectScene,
   NumberDash, FractionPizza, PatternBridge, BalloonPop, WordBuilder, GrammarGate, WordMatch, FrogHop,
   RoboMaze, BugHunt, PredictRobot, RobotDance, BossBattle, BibleQuiz, ArkAnimals,
-  ResultsScene, PauseScene, AccountScene, LeaderboardScene, SkillsScene
+  ResultsScene, PauseScene, AccountScene, LeaderboardScene, SkillsScene, SpellingScene, SpellingLearnScene, SpellingGameScene
 ];

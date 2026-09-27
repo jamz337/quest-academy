@@ -34,6 +34,14 @@ export function installPhaserMock() {
       // Copy the inert stub onto the instance, but never shadow methods a subclass (Button, Card...) defines itself.
       constructor(scene, x, y) {
         const stub = stubObject({ x, y, scene, list: [] });
+        // State-changing methods act on the instance itself (the stub's closures would only touch the stub), so a
+        // destroyed Button really reads active === false and findButton skips it. Subclass methods still win.
+        const own = {
+          destroy() { this.active = false; }, setAlpha(a) { if (a !== undefined) this.alpha = a; return this; }, setScale(s) { if (s !== undefined) this.scale = s; return this; },
+          setVisible(v) { this.visible = v; return this; }, setPosition(px, py) { if (px !== undefined) this.x = px; if (py !== undefined) this.y = py; return this; },
+          setAngle(a) { this.angle = a; return this; }, setData(k, v) { this.data[k] = v; return this; }, getData(k) { return this.data[k]; }
+        };
+        for (const k of Object.keys(own)) if (!(k in this)) this[k] = own[k];
         for (const k of Object.keys(stub)) if (!(k in this)) this[k] = stub[k];
       }
     }

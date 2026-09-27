@@ -20,7 +20,7 @@ import { Sfx, audioReady, onUnlocked } from '../systems/Audio.js';
 import { resolveLook } from '../data/avatars.js';
 import { badgeTexture } from '../systems/Textures.js';
 
-const EMOJI = { map: '\u{1F5FA}️', trophy: '\u{1F3C6}', medal: '\u{1F3C5}', cloud: '☁️', family: '\u{1F46A}', swap: '\u{1F501}', soundOn: '\u{1F50A}', soundOff: '\u{1F507}' };
+const EMOJI = { map: '\u{1F5FA}️', trophy: '\u{1F3C6}', bee: '\u{1F41D}', medal: '\u{1F3C5}', cloud: '☁️', family: '\u{1F46A}', swap: '\u{1F501}', soundOn: '\u{1F50A}', soundOff: '\u{1F507}' };
 
 /** Home screen: profile summary and the two big mode buttons. */
 export class ModeSelectScene extends BaseScene {
@@ -85,22 +85,38 @@ export class ModeSelectScene extends BaseScene {
     }
     Store.persist();   // dailyGoal / familyGoal may have created today's records
 
-    // Mode buttons
+    // Mode buttons: two big ones, and the Spelling Bee underneath them.
     const rowH = 46 * ui, row2Y = h - 36 * ui - safeArea().bottom, row1Y = row2Y - rowH - 10;
     const areaTop = chipY + chipH + 22 * ui + (narrow ? 52 : 22) * ui, areaBottom = row1Y - rowH / 2 - 16;
-    const areaH = areaBottom - areaTop;
+    const beeH = Math.min(60 * ui, Math.max(40 * ui, (areaBottom - areaTop) * 0.24));
+    const areaH = areaBottom - areaTop - beeH - 12;
     const bw = Math.min(this.portrait ? w - 40 : (w - 64) / 2, this.portrait ? 380 * ui : 300 * ui);
     const bh = Math.min(this.portrait ? areaH / 2 - 12 : areaH, 140 * ui);
     const positions = this.portrait
       ? [{ x: w / 2, y: areaTop + areaH / 2 - bh / 2 - 8 }, { x: w / 2, y: areaTop + areaH / 2 + bh / 2 + 8 }]
       : [{ x: w / 2 - bw / 2 - 12, y: areaTop + areaH / 2 }, { x: w / 2 + bw / 2 + 12, y: areaTop + areaH / 2 }];
+    // Label sizes follow the button they sit in: the text scale can hit its ceiling on a mid-sized window
+    // while the buttons stay short and narrow, and the words must never outgrow the box.
+    const fit = (size, label, sub, bwid, bhei) => {
+      const byH = bhei / (2.3 * ui), byLabel = (bwid - 70 * ui) / (label.length * 0.6 * ui), bySub = (bwid - 30) / (sub.length * 0.44 * ui);
+      const fs = Math.max(11, Math.min(size, byH, byLabel, bySub));
+      return { fontSize: fs, sub: fs >= 13 ? sub : null };
+    };
+    const exploreFit = fit(22, 'Explore the World', 'Walk around, meet friends, play games', bw, bh);
     const explore = button(this, positions[0].x, positions[0].y, bw, bh, 'Explore the World', {
-      color: THEME.success, fontSize: 22, radius: THEME.radius.lg, emoji: EMOJI.map, sub: 'Walk around, meet friends, play games',
+      color: THEME.success, ...exploreFit, radius: THEME.radius.lg, emoji: EMOJI.map,
       onClick: () => { Store.setSetting('lastMode', 'roam'); this.go(SCENES.World); }
     });
+    const challengeFit = fit(22, 'Challenge Mode', 'Pick any game and earn stars', bw, bh);
     const challenge = button(this, positions[1].x, positions[1].y, bw, bh, 'Challenge Mode', {
-      color: THEME.subjects.code.accent, fontSize: 22, radius: THEME.radius.lg, emoji: EMOJI.trophy, sub: 'Pick any game and earn stars',
+      color: THEME.subjects.code.accent, ...challengeFit, radius: THEME.radius.lg, emoji: EMOJI.trophy,
       onClick: () => { Store.setSetting('lastMode', 'challenge'); this.go(SCENES.ChallengeMenu); }
+    });
+    const beeW = Math.min(this.portrait ? w - 40 : bw * 2 + 24, 640 * ui);
+    const beeFit = fit(18, 'Spelling Bee', 'Learn to spell your class words', beeW, beeH);
+    const bee = button(this, w / 2, areaBottom - beeH / 2, beeW, beeH, 'Spelling Bee', {
+      color: THEME.gold, textColor: THEME.ink, ...beeFit, radius: THEME.radius.lg, emoji: EMOJI.bee,
+      onClick: () => this.go(SCENES.Spelling)
     });
 
     // Bottom rows: online features, then device settings
@@ -118,7 +134,7 @@ export class ModeSelectScene extends BaseScene {
         b.setLabel(on ? 'Sound: on' : 'Sound: off'); if (b.emoji) b.emoji.setText(on ? EMOJI.soundOn : EMOJI.soundOff);
       }
     });
-    enter(this, [pc, explore, challenge], { from: 'up', delay: 60, stagger: 70 });
+    enter(this, [pc, explore, challenge, bee], { from: 'up', delay: 60, stagger: 70 });
     enter(this, [lb, acc, sw2, snd], { from: 'fade', delay: 260, stagger: 30 });
 
     // Phones keep sound off until a tap: say so, and take the hint down as soon as the first tap unlocks it.
