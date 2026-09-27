@@ -7,7 +7,6 @@ import { tuningFor } from '../../data/grades.js';
 import { DUEL } from '../../data/world/duels.js';
 import { badgeTexture, lookSpriteTexture } from '../../systems/Textures.js';
 import { IDLE_FRAMES, LPC_FRAME } from '../../ui/LpcCharacter.js';
-import { MONKEY_FRAMES } from '../../ui/FlatCharacter.js';
 import { resolveLook } from '../../data/avatars.js';
 import { outfitOf, outfitId, snacksOf, useSnack } from '../../systems/Market.js';
 import { grid } from '../../systems/Layout.js';
@@ -88,9 +87,9 @@ export class DuelScene extends MinigameScene {
     const pKey = lookSpriteTexture(this, resolveLook(profile), outfitOf(profile), outfitId(profile));
     const player = this.add.sprite(px, gy, pKey, IDLE_FRAMES.side).setFlipX(true).setScale(sc).setOrigin(0.5, 1);
     const pProp = this.add.text(px + 15 * sc, gy - 24 * sc, DUEL.playerProp, { fontSize: Math.round(9 * sc) + 'px' }).setOrigin(0.5);
-    const mango = this.add.sprite(px - 30 * sc, gy, 'monkey', s.defeated ? MONKEY_FRAMES.cheer : MONKEY_FRAMES.side).setScale(sc).setFlipX(!s.defeated).setOrigin(0.5, 1);   // side view faces left; flipped to face the foe
+    const mango = this.add.sprite(px - 26 * sc, gy + 2, 'monkey', 0).setScale(sc * 0.6).setOrigin(0.5, 1);
     if (s.party[1].max > 0 && s.party[1].hp <= 0) mango.setTint(0x9a9a9a);
-    if (s.defeated) this.tweens.add({ targets: mango, y: gy - 6 * sc, duration: 260, yoyo: true, repeat: -1, ease: 'Sine.Out' });   // cheering hops
+    if (s.defeated && this.anims.exists && this.anims.exists('monkey-walk')) mango.play('monkey-walk', true);
 
     // The opponent faces left with its prop; a name chip and health bar float above.
     const oKey = opp.kind === 'boss' ? lookSpriteTexture(this, opp.look) : opp.sprite;
@@ -195,7 +194,7 @@ export class DuelScene extends MinigameScene {
     const profile = this.profile;
     s.party.forEach((m, i) => {
       const ry = -h / 2 + 8 + rowH * i + rowH / 2;
-      const key = m.id === 'player' ? badgeTexture(this, resolveLook(profile), outfitOf(profile), outfitId(profile)) : 'monkey-face';
+      const key = m.id === 'player' ? badgeTexture(this, resolveLook(profile), outfitOf(profile), outfitId(profile)) : 'monkey';
       const img = this.add.image(-w / 2 + 10 + size / 2, ry, key, 0).setDisplaySize(size, size);
       if (m.max > 0 && m.hp <= 0) img.setTint(0x9a9a9a);
       const tx = -w / 2 + 18 + size;

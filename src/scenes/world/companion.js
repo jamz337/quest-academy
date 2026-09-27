@@ -6,7 +6,7 @@ import { THEME } from '../../ui/theme.js';
 import * as Store from '../../systems/Store.js';
 import { Sfx } from '../../systems/Audio.js';
 import { COMPANION, newlyDone, markAnnounced, storyState, clueFor } from '../../data/world/story.js';
-import { WORLD_SCALE, MONKEY_FRAMES } from '../../ui/FlatCharacter.js';
+import { WORLD_SCALE } from '../../ui/FlatCharacter.js';
 
 const STAY_MS = 3400;             // how long Mango stays after speaking
 const CLUE_EVERY_MS = [110000, 170000];   // a clue every two to three minutes of exploring
@@ -41,7 +41,7 @@ function nextVisit(w) {
   if (!v || !w.player || !w.textures.exists(COMPANION.key)) return;
   const side = w.player.x > w.map.width * TILE / 2 ? -1 : 1;   // arrive from the roomier side
   const from = { x: w.player.x + side * 110, y: w.player.y + 6 }, to = { x: w.player.x + side * HOP, y: w.player.y + 6 };
-  const c = w.add.sprite(from.x, from.y, COMPANION.key, MONKEY_FRAMES.stand).setScale(WORLD_SCALE).setDepth(9).setAlpha(0);   // he faces the screen, waving
+  const c = w.add.sprite(from.x, from.y, COMPANION.key, 0).setScale(WORLD_SCALE).setDepth(9).setAlpha(0).setFlipX(side > 0);
   w.mango = c;
   c.anims.play(`${COMPANION.key}-walk`, true);
   w.tweens.add({ targets: c, alpha: 1, duration: 200 });
@@ -49,13 +49,13 @@ function nextVisit(w) {
   w.tweens.add({ targets: c, y: to.y - 14, duration: 160, yoyo: true, repeat: 3, ease: 'Sine.Out' });   // four little hops
   w.time.delayedCall(680, () => {
     if (!c.active) return;
-    c.anims.stop(); c.setFrame(v.opts.sound === 'unlock' ? MONKEY_FRAMES.cheer : MONKEY_FRAMES.stand);   // stop and wave (or cheer for a big moment)
+    c.setFlipX(side < 0);   // turn to face the player
     if (v.opts.sound === 'unlock') Sfx.unlock(); else Sfx.pop();
     companionSay(w, v.line, v.opts);
   });
   w.time.delayedCall(680 + STAY_MS, () => {
     if (!c.active) { w.mango = null; nextVisit(w); return; }
-    c.anims.play(`${COMPANION.key}-walk`, true);   // hop away
+    c.setFlipX(side > 0);
     w.tweens.add({ targets: c, x: from.x, alpha: 0, duration: 600, ease: 'Sine.In', onComplete: () => { if (c.active) c.destroy(); w.mango = null; nextVisit(w); } });
     w.tweens.add({ targets: c, y: to.y - 12, duration: 150, yoyo: true, repeat: 3, ease: 'Sine.Out' });
   });

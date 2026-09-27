@@ -6,7 +6,7 @@ import { THEME } from '../ui/theme.js';
 import { mulberry32 } from './Rng.js';
 import { OUTLINE, MOUTH, BOOTS, CHARACTER_STYLES, NPC_STYLES, lookId } from '../data/avatars.js';
 export { CHARACTER_STYLES, NPC_STYLES };
-import { MONKEY_PALETTE, monkeyFrames, monkeyFace } from '../ui/FlatCharacter.js';
+import { FRAME, PIXEL_FRAME, drawMonkey, pixelate } from '../ui/FlatCharacter.js';
 import { LPC_FRAME, LPC_COLS, allLayerPaths, composeSheet, drawOutfitBack, drawOutfitFront, drawBustFromSheet, walkRange } from '../ui/LpcCharacter.js';
 export { WORLD_SCALE as CHAR_WORLD_SCALE, IDLE_FRAMES } from '../ui/LpcCharacter.js';
 
@@ -374,17 +374,6 @@ function paintBadge(scene, ctx, x0, look, outfit = null, outfitKey = '') {
   ctx.restore();
 }
 
-/** Mango's round badge ('monkey-face'): a green disc with his face at 2x, like the people's badges. */
-function monkeyBadge(scene) {
-  if (scene.textures.exists('monkey-face')) return;
-  const S = BADGE, bg = '#bfe38f', tex = scene.textures.createCanvas('monkey-face', S, S), ctx = tex.getContext();
-  ctx.fillStyle = shade(bg, 0.82); ctx.beginPath(); ctx.arc(S / 2, S / 2, S / 2, 0, Math.PI * 2); ctx.fill();
-  ctx.save(); ctx.beginPath(); ctx.arc(S / 2, S / 2, S / 2 - 3, 0, Math.PI * 2); ctx.clip();
-  ctx.fillStyle = bg; ctx.fillRect(0, 0, S, S);
-  blit(ctx, monkeyFace(), 0, 4, 2, MONKEY_PALETTE);
-  ctx.restore(); tex.refresh();
-}
-
 /** Round avatar badges for the preset picker: 'avatar' sheet with AVATAR_COUNT frames of 80x80. */
 export function avatarTexture(scene) {
   if (scene.textures.exists('avatar')) return;
@@ -487,14 +476,23 @@ export function generateAllTextures(scene) {
   pixelTexture(scene, 'robot', [ROBOT, ROBOT2]);
   pixelTexture(scene, 'sheep', [SHEEP, SHEEP2]);
   pixelTexture(scene, 'bunny', [BUNNY, BUNNY2]);
-  pixelTexture(scene, 'monkey', monkeyFrames(), MONKEY_PALETTE);   // Mango, pixel art on the LPC 64 px grid
-  monkeyBadge(scene);
-  for (const [key, rate] of [['sheep', 5], ['bunny', 8], ['monkey', 5]]) {
+  if (!scene.textures.exists('monkey')) {   // Mango: drawn with shapes, then pixelated to match the LPC people
+    const src = document.createElement('canvas'); src.width = FRAME * 2; src.height = FRAME;
+    const sctx = src.getContext('2d');
+    drawMonkey(sctx, 0, 0, { step: 0, shadow: false }); drawMonkey(sctx, FRAME, 0, { step: 1, shadow: false });
+    const P = PIXEL_FRAME, tex = scene.textures.createCanvas('monkey', P * 2, P), ctx = tex.getContext();
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(src, 0, 0, FRAME * 2, FRAME, 0, 0, P * 2, P);
+    pixelate(ctx, P * 2, P);
+    tex.add(0, 0, 0, 0, P, P); tex.add(1, 0, P, 0, P, P); tex.refresh();
+    tex.setFilter(Phaser.Textures.FilterMode.NEAREST);
+  }
+  for (const [key, rate] of [['sheep', 5], ['bunny', 8], ['monkey', 4]]) {
     if (!scene.anims.exists(`${key}-walk`)) scene.anims.create({ key: `${key}-walk`, frames: scene.anims.generateFrameNumbers(key, { start: 0, end: 1 }), frameRate: rate, repeat: -1 });
   }
   const sheets = [...CHARACTER_STYLES.map((_, i) => `char${i}`), ...NPC_STYLES.map((_, i) => `npc${i}`)];
   sheets.forEach((key) => walkAnims(scene, key));
   // The game renders anti-aliased (pixelArt: false); pixel-art sheets opt back in to crisp scaling.
-  ['tiles', 'robot', 'sheep', 'bunny', 'monkey'].forEach((key) => scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST));
+  ['tiles', 'robot', 'sheep', 'bunny'].forEach((key) => scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST));
   if (!scene.anims.exists('robot-walk')) scene.anims.create({ key: 'robot-walk', frames: scene.anims.generateFrameNumbers('robot', { start: 0, end: 1 }), frameRate: 8, repeat: -1 });
 }
