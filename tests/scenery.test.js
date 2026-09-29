@@ -96,6 +96,22 @@ describe('older games with scenery (headless)', () => {
     }
   });
 
+  it('Word Match hangs the words as paper lanterns: gold when picked, red for a wrong pair, done once matched', () => {
+    const s = makeScene(WordMatch, { gameId: 'eng-match', subject: 'words' });
+    const lanterns = () => s.objs.filter((o) => o.word && o.active);
+    const stateOf = (text) => lanterns().find((o) => o.word.text === text).state;
+    const r = s.round;
+    expect(lanterns()).toHaveLength(10);
+    s.tap('L', 1);
+    expect(stateOf(r.pairs[1].l)).toBe('picked');
+    s.tap('R', 2);
+    expect(stateOf(r.pairs[1].l)).toBe('wrong'); expect(stateOf(r.pairs[2].r)).toBe('wrong');
+    flushTimers(s);
+    s.tap('L', 0); s.tap('R', 0);
+    expect(stateOf(r.pairs[0].l)).toBe('done'); expect(stateOf(r.pairs[0].r)).toBe('done');
+    expect(s.state.lastMatch).toBe(0);
+  });
+
   it('Bible Quiz walks a sheep into the fold; Verse Builder lights a lamp', () => {
     for (const payload of [{ gameId: 'bible-quiz', subject: 'bible' }, { gameId: 'bible-verse', subject: 'bible' }]) {
       const s = makeScene(BibleQuiz, payload);
