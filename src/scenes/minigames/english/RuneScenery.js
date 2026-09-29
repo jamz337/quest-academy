@@ -6,7 +6,7 @@ import { FONT, WEIGHT } from '../../../ui/TextStyles.js';
 
 export const RUNE = {
   skyTop: 0x0e2430, skyBottom: 0x1d4a3c, glow: 0x7ff5e6, glowDark: 0x0f4a47,
-  stone: 0x7d8a8c, stoneDark: 0x566365, stoneEdge: 0x3c4749, moss: 0x6fa04a, mossDark: 0x4d7a33,
+  stone: 0x7d8a8c, stoneDark: 0x566365, stoneEdge: 0x3c4749, face: 0x162224, moss: 0x6fa04a, mossDark: 0x4d7a33,
   parchment: 0xf3e2b8, parchmentDark: 0xc9a86a, ink: 0x3b2412, bronze: 0xc98b3c,
   right: 0x6cf29a, wrong: 0xff6b6b, reveal: 0xffc857
 };
@@ -134,10 +134,17 @@ export function runeStone(scene, x, y, size, letter, { glow = RUNE.glow, halo = 
     g.fillStyle(RUNE.moss, 1); g.fillEllipse(-w * 0.2, -h / 2 + 1, w * 0.4, h * 0.11); g.fillEllipse(w * 0.22, -h / 2, w * 0.3, h * 0.09);
     if (seed % 2) { g.fillStyle(RUNE.moss, 1); g.fillEllipse(w / 2 - 4, -h * 0.1, w * 0.1, h * 0.28); }
   }
-  const t = scene.add.text(0, 2, letter, {
-    fontFamily: FONT, fontSize: Math.round(size * 0.52) + 'px', color: hex(glow), fontStyle: WEIGHT.heavy,
-    stroke: hex(darken(glow, 0.25)), strokeThickness: Math.max(2, Math.round(size / 22)),
-    shadow: { offsetX: 0, offsetY: 0, color: hex(glow), blur: Math.round(size / 5), fill: true, stroke: true }
+  // The letter is carved into a dark recessed face so it reads clearly: a bright letter on near-black, with a solid
+  // dark outline and only a tight glow around the outside (a wide blur over the letter made it fuzzy on grey stone).
+  const fw = w * 0.7, fh = h * 0.7, fy = 3, fr = Math.max(4, r * 0.8);
+  g.fillStyle(RUNE.stoneEdge, 1); g.fillRoundedRect(-fw / 2 - 2, -fh / 2 + fy - 2, fw + 4, fh + 4, fr + 2);   // carved rim
+  g.fillStyle(RUNE.face, 1); g.fillRoundedRect(-fw / 2, -fh / 2 + fy, fw, fh, fr);
+  g.fillStyle(0x000000, 0.35); g.fillRoundedRect(-fw / 2, -fh / 2 + fy, fw, Math.max(2, fh * 0.1), { tl: fr, tr: fr, bl: 0, br: 0 });   // inner top shadow
+  g.fillStyle(glow, 0.12); g.fillRoundedRect(-fw / 2 + 2, -fh / 2 + fy + 2, fw - 4, fh - 4, fr - 1);   // faint light from the letter
+  const t = scene.add.text(0, fy + 1, letter, {
+    fontFamily: FONT, fontSize: Math.round(size * 0.56) + 'px', color: hex(mix(glow, 0xffffff, 0.35)), fontStyle: WEIGHT.heavy,
+    stroke: hex(RUNE.face), strokeThickness: Math.max(3, Math.round(size / 16)),
+    shadow: { offsetX: 0, offsetY: 0, color: hex(glow), blur: Math.max(4, Math.round(size / 9)), fill: false, stroke: true }
   }).setOrigin(0.5);
   c.add([g, t]);
   c.setSize(w + 8, h + 8);
