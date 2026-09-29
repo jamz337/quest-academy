@@ -14,6 +14,7 @@ import { grid } from '../../systems/Layout.js';
 import { readable } from '../../ui/ReadableText.js';
 import { answerSpeaker, readQuestionThenAnswers } from '../../ui/AnswerSpeech.js';
 import { introState, skillIntro } from '../../ui/SkillIntro.js';
+import { explainState, explainPanel } from '../../ui/Explain.js';
 import { button, iconButton, speakButton } from '../../ui/Button.js';
 import { card } from '../../ui/Card.js';
 import { enter } from '../../ui/motion.js';
@@ -65,7 +66,8 @@ export class MinigameScene extends BaseScene {
     const promptH = Math.min(area.h * 0.42, (lines > 2 ? 250 : 210) * ui);
     const k = card(this, cx, area.y + promptH / 2, area.w, promptH, { stroke: THEME.brandSoft });
     text(this, cx, area.y + 26 * ui, `Quick review  ·  ${this.reviewIdx + 1} of ${this.review.length}`, T.small(this, THEME.brandDark));
-    text(this, cx, area.y + 48 * ui, this.reviewPicked === null ? 'You missed this one last time. Try again!' : this.reviewPicked === -2 ? 'Yes! That one is sticking.' : `The answer is ${q.answer}.`, T.small(this, THEME.ink2));
+    const reveal = this.reviewPicked === null || this.reviewPicked === -2 || this.answerRevealed(q);
+    text(this, cx, area.y + 48 * ui, this.reviewPicked === null ? 'You missed this one last time. Try again!' : this.reviewPicked === -2 ? 'Yes! That one is sticking.' : reveal ? `The answer is ${q.answer}.` : "Not this time. Let's see why.", T.small(this, THEME.ink2));
     const body = readable(this, cx, area.y + promptH / 2 + 18 * ui, q.prompt, T.at(this, q.prompt.length > 60 || lines > 2 ? 17 : 24, THEME.ink, { fontStyle: '700' }), { width: area.w - 56 * ui });
     speakButton(this, area.x + area.w - 30 * ui, area.y + 30 * ui, 40 * ui, body, { rate: this.speechRate });
     this.autoRead(body, this.reviewPicked === null ? q.choices : null);
@@ -77,7 +79,7 @@ export class MinigameScene extends BaseScene {
     const made = q.choices.map((choice, i) => {
       const c = cells[i];
       let variant = 'secondary', faded = false;
-      if (this.reviewPicked !== null) { if (choice === q.answer) variant = 'success'; else if (i === this.reviewPicked) variant = 'danger'; else faded = true; }
+      if (this.reviewPicked !== null) { if (choice === q.answer && reveal) variant = 'success'; else if (i === this.reviewPicked) variant = 'danger'; else faded = reveal; }
       const bh = Math.max(52 * ui, Math.min(c.h, 84 * ui));
       const b = button(this, c.x, c.y, c.w, bh, String(choice), { variant, fontSize: long ? 16 : 22, wrap: true, onClick: () => this.pickReview(i) });
       this.answerSpeaker(b, c.w, bh, choice);
@@ -174,16 +176,33 @@ export class MinigameScene extends BaseScene {
   }
   markIntroduced(skill) { Store.updateProfile((p) => markIntroduced(p, skill)); }
 
-  /** After a wrong answer: the explanation along the bottom of the play area with a Next button. */
+  /** The game's look for its New Skill page and "Let's see why" panel (see ui/SkillIntro.js); null = the plain look. */
+  get lessonTheme() { return null; }
+
+  /**
+   * After a wrong answer: "Let's see why" along the bottom of the play area, the working a step per tap and then the
+   * child's own pick of the right answer (ui/Explain.js). Its progress survives a rebuild of the same question.
+   */
   explanationPanel(area, q, onNext) {
-    const { ui } = this;
-    const h = Math.min(150 * ui, area.h * 0.38), cy = area.y + area.h - h / 2, cx = area.x + area.w / 2;
-    const bw = Math.min(150 * ui, area.w * 0.3);
-    card(this, cx, cy, area.w, h, { stroke: THEME.warning, shadow: 'lg' });
-    const body = readable(this, area.x + 16, cy, this.explain(q), T.at(this, 15, THEME.ink, { fontStyle: '600' }), { width: area.w - bw - 48 - 44 * ui, align: 'left' }).setOrigin(0, 0.5);
-    speakButton(this, area.x + area.w - bw - 36 * ui, cy, 40 * ui, body, { rate: this.speechRate });
-    button(this, area.x + area.w - 12 - bw / 2, cy, bw, 48 * ui, 'Next ▶', { variant: 'primary', fontSize: 17, onClick: () => { Sfx.click(); onNext(); } });
-    this.autoRead(body);
+    const key = this.explainKey(q);
+    if (!this.explainIt || this.explainIt.key !== key) this.explainIt = explainState(key, this.steps(q), q);
+    explainPanel(this, area, this.explainIt, this.lessonTheme, {
+      next: () => { this.explainIt = null; onNext(); },
+      solved: () => this.rebuild()   // the board can show the right answer now
+    });
+  }
+
+  explainKey(q) { return `${this.inReview ? 'r' + this.reviewIdx : 'q' + (this.state && this.state.idx)}|${q.prompt}|${q.answer}`; }
+
+  /**
+   * After a wrong answer, may the board show the right one? Not while the child is still working it out in
+   * "Let's see why" (they pick it themselves at the end); yes once they have, or when the panel has nothing to pick.
+   * `q` is the question as given to explanationPanel.
+   */
+  answerRevealed(q) {
+    const it = this.explainIt;
+    if (it && it.key === this.explainKey(q)) return it.phase === 'done' || !it.choices;
+    return !explainState('', [], q).choices;
   }
 
   create(data) {

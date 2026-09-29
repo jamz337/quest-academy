@@ -91,17 +91,18 @@ export class BibleQuiz extends MinigameScene {
   buildChoices(area, top, q) {
     const s = this.state, ui = this.ui, gap = 12;
     const cells = grid({ x: area.x, y: top, w: area.w, h: Math.min(area.h - (top - area.y), 280 * ui) }, 2, 2, gap);
+    const reveal = s.picked !== null && (s.right || this.answerRevealed(q));   // hidden while the child works it out
     this.choiceButtons = q.choices.map((choice, i) => {
       const c = cells[i];
       const opts = { variant: 'secondary', fontSize: choice.length > 14 ? 16 : 20, radius: THEME.radius.lg, onClick: () => this.pick(i) };
       if (s.picked !== null) {
-        if (choice === q.answer) opts.variant = 'success';
+        if (choice === q.answer && reveal) opts.variant = 'success';
         else if (i === s.picked) opts.variant = 'danger';
       }
       const bh = Math.min(c.h, 100 * ui);
       const b = button(this, c.x, c.y, c.w, bh, choice, opts);
       this.answerSpeaker(b, c.w, bh, choice);
-      if (s.picked !== null && choice !== q.answer && i !== s.picked) b.setAlpha(0.45);
+      if (reveal && choice !== q.answer && i !== s.picked) b.setAlpha(0.45);
       return b;
     });
     enter(this, this.choiceButtons, { from: 'up', delay: 60, stagger: 40 });

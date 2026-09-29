@@ -65,14 +65,15 @@ export class ArkAnimals extends MinigameScene {
     const top = sceneRect.y + sceneH + 10;
     const rows = Math.ceil(q.choices.length / 2);
     const cells = grid({ x: area.x, y: top, w: area.w, h: Math.min(area.y + area.h - top, rows * 72 * ui + 10) }, 2, rows, 10);
+    const reveal = s.picked !== null && (s.right || this.answerRevealed(q));   // hidden while the child works it out
     const made = q.choices.map((choice, i) => {
       const c = cells[i];
       const opts = { variant: 'secondary', fontSize: choice.length > 14 ? 15 : 19, radius: THEME.radius.lg, wrap: true, onClick: () => this.pick(i) };
-      if (s.picked !== null) { if (choice === q.answer) opts.variant = 'success'; else if (i === s.picked) opts.variant = 'danger'; }
+      if (s.picked !== null) { if (choice === q.answer && reveal) opts.variant = 'success'; else if (i === s.picked) opts.variant = 'danger'; }
       const bh = Math.max(52 * ui, Math.min(c.h, 84 * ui));
       const b = button(this, c.x, c.y, c.w, bh, choice, opts);
       this.answerSpeaker(b, c.w, bh, choice);
-      if (s.picked !== null && choice !== q.answer && i !== s.picked) b.setAlpha(0.45);
+      if (reveal && choice !== q.answer && i !== s.picked) b.setAlpha(0.45);
       return b;
     });
     enter(this, made, { from: 'up', delay: 60, stagger: 40 });

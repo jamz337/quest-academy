@@ -89,6 +89,8 @@ export class PatternBridge extends MinigameScene {
     };
   }
 
+  get lessonTheme() { return bridgeIntroTheme; }
+
   get round() { return this.state.rounds[this.state.idx]; }
   progressLabel() { return `${Math.min(this.state.idx + 1, this.state.rounds.length)} / ${this.state.rounds.length}`; }
   progressRatio() { return this.state.idx / this.state.rounds.length; }
@@ -107,6 +109,9 @@ export class PatternBridge extends MinigameScene {
     const gap = 10;
     const sceneH = Math.min(area.h * 0.42, 240 * ui);
     const sceneRect = { x: area.x, y: area.y + promptH + gap, w: area.w, h: sceneH };
+    const asked = { ...r, prompt: r.terms.map((t, j) => (j === r.missingIndex ? '?' : t)).join(', ') };
+    // After a miss the right plank stays hidden until the child has picked it in "Let's see why".
+    this.reveal = s.picked !== null && (r.choices[s.picked] === r.answer || this.answerRevealed(asked));
     const planks = this.drawBridge(sceneRect, r, s);
     enter(this, planks, { from: 'pop', delay: 80, stagger: 40 });
 
@@ -116,13 +121,13 @@ export class PatternBridge extends MinigameScene {
     const made = r.choices.map((choice, i) => {
       const c = cells[i];
       let variant = 'secondary', faded = false;
-      if (s.picked !== null) { if (choice === r.answer) variant = 'success'; else if (i === s.picked) variant = 'danger'; else faded = true; }
+      if (s.picked !== null) { if (choice === r.answer && this.reveal) variant = 'success'; else if (i === s.picked) variant = 'danger'; else faded = this.reveal; }
       const b = button(this, c.x, c.y, c.w, Math.max(56 * ui, Math.min(c.h, 110 * ui)), choice, { variant, fontSize: 28, onClick: () => this.pick(i) });
       if (faded) b.setAlpha(0.45);
       return b;
     });
     enter(this, made, { from: 'up', delay: 200, stagger: 40 });
-    if (s.picked !== null && r.choices[s.picked] !== r.answer) this.explanationPanel(area, { ...r, prompt: r.terms.map((t, j) => (j === r.missingIndex ? '?' : t)).join(', ') }, () => this.next());
+    if (s.picked !== null && r.choices[s.picked] !== r.answer) this.explanationPanel(area, asked, () => this.next());
   }
 
   /** Water, two posts, a rail and the plank row. The missing plank is a sunken slot with a "?" until answered. Returns the planks. */
@@ -154,8 +159,10 @@ export class PatternBridge extends MinigameScene {
       }
       const isMissing = i === r.missingIndex;
       const right = isMissing && r.choices[s.picked] === r.answer;
-      const color = isMissing ? (right ? THEME.success : THEME.danger) : WOOD;
-      return plank(this, x, y, plankW, plankH, String(t), { color, fontSize, radius: 10, textColor: isMissing ? THEME.onAccent : THEME.ink });
+      // A wrong plank shows the child's number in red until the right one has been found, then the right one in green.
+      const shownRight = right || (isMissing && this.reveal);
+      const color = isMissing ? (shownRight ? THEME.success : THEME.danger) : WOOD;
+      return plank(this, x, y, plankW, plankH, isMissing && !shownRight ? String(r.choices[s.picked]) : String(t), { color, fontSize, radius: 10, textColor: isMissing ? THEME.onAccent : THEME.ink });
     });
   }
 

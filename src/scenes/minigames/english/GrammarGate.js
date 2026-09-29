@@ -40,6 +40,8 @@ export class GrammarGate extends MinigameScene {
     };
   }
 
+  get lessonTheme() { return castleIntroTheme; }
+
   get round() { return this.state.rounds[this.state.idx]; }
   progressLabel() { return `${Math.min(this.state.idx + 1, this.state.rounds.length)} / ${this.state.rounds.length}`; }
   progressRatio() { return this.state.idx / this.state.rounds.length; }
@@ -51,6 +53,9 @@ export class GrammarGate extends MinigameScene {
     if (this.skillIntroFor(area, r.skill, (k) => this.exampleFor(k), castleIntroTheme)) return;
     const cx = area.x + area.w / 2, total = s.rounds.length;
     const answered = s.picked !== null, rightNow = answered && s.picked === r.answer;
+    const asked = { ...r, prompt: fillBlank(r.sentence), answer: r.options[r.answer] };
+    // After a miss the right word stays hidden until the child has picked it in "Let's see why".
+    const reveal = answered && (rightNow || this.answerRevealed(asked));
     // Shrink everything a little on short screens so the planks keep a comfortable size.
     const f = ui * Math.min(1, Math.max(0.72, area.h / (620 * ui)));
 
@@ -81,12 +86,12 @@ export class GrammarGate extends MinigameScene {
     const board = noticeBoard(this, cx, y + boardH / 2, boardW, boardH, f);
     const inner = board.inner;
     const label = this.add.text(inner.x + 4 * f, inner.y + 2 * f, `Which word fits?  (${skillLabel(r.skill)})`, { fontFamily: FONT, fontSize: Math.round(13 * f) + 'px', color: hex(darken(CASTLE.ink, 1.6)), fontStyle: WEIGHT.bold });
-    const shown = answered ? fillBlank(r.sentence, r.options[r.answer]) : fillBlank(r.sentence);
+    const shown = reveal ? fillBlank(r.sentence, r.options[r.answer]) : fillBlank(r.sentence);
     const textTop = inner.y + (label.height || 16 * f) + 2 * f, textH = inner.y + inner.h - textTop;
     let sentence = null;
     for (const px of [30, 26, 22, 19, 17]) {
       if (sentence) sentence.destroy();
-      const style = { fontFamily: FONT, fontSize: Math.round(px * f) + 'px', color: hex(answered ? THEME.successDark : CASTLE.ink), fontStyle: WEIGHT.heavy, align: 'center' };
+      const style = { fontFamily: FONT, fontSize: Math.round(px * f) + 'px', color: hex(reveal ? THEME.successDark : CASTLE.ink), fontStyle: WEIGHT.heavy, align: 'center' };
       sentence = readable(this, cx - 20 * f, textTop + textH / 2, shown, style, { width: inner.w - 70 * f, highlight: CASTLE.gold });
       if ((sentence.height || 0) <= textH - 4 * f) break;
     }
@@ -103,13 +108,13 @@ export class GrammarGate extends MinigameScene {
     const cells = grid({ x: cx - blockW / 2, y, w: blockW, h: plankH * rows + gap * (rows - 1) }, cols, rows, gap);
     const made = r.options.map((opt, i) => {
       const c = cells[i];
-      const state = !answered ? 'idle' : i === r.answer ? 'right' : i === s.picked ? 'wrong' : 'dim';
+      const state = !answered ? 'idle' : i === s.picked && !rightNow ? 'wrong' : !reveal ? 'idle' : i === r.answer ? 'right' : 'dim';
       const p = plank(this, c.x, c.y, c.w, plankH, opt, { state, seed: i + s.idx, ui: f, fontSize: opt.length <= 2 ? 44 : opt.length > 10 ? 22 : 28, onTap: s.locked ? null : () => this.pick(i) });
       this.answerSpeaker(p, c.w, plankH, opt);
       return p;
     });
     enter(this, made, { from: 'pop', delay: 60, stagger: 40 });
-    if (answered && !rightNow) this.explanationPanel(area, { ...r, prompt: fillBlank(r.sentence), answer: r.options[r.answer] }, () => this.next());
+    if (answered && !rightNow) this.explanationPanel(area, asked, () => this.next());
   }
 
   pick(i) {

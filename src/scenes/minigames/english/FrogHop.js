@@ -50,7 +50,7 @@ export class FrogHop extends MinigameScene {
     const promptH = Math.min(area.h * 0.34, (lines > 1 ? 200 : 170) * ui);
     const prompt = card(this, cx, area.y + promptH / 2, area.w, promptH);
     stripe(this, cx - 24 * ui, area.y + 10 * ui, 48 * ui, this.subject.accent, 5 * ui);
-    text(this, cx, area.y + 28 * ui, s.picked === null ? 'Hop to the lily pad with the right answer' : s.right ? 'Safe and dry!' : `Splash! The answer was ${q.answer}.`, T.small(this, s.picked === null ? THEME.ink2 : s.right ? THEME.successDark : THEME.danger));
+    text(this, cx, area.y + 28 * ui, s.picked === null ? 'Hop to the lily pad with the right answer' : s.right ? 'Safe and dry!' : this.answerRevealed(q) ? `Splash! The answer was ${q.answer}.` : 'Splash! Let\'s see why.', T.small(this, s.picked === null ? THEME.ink2 : s.right ? THEME.successDark : THEME.danger));
     const body = readable(this, cx, area.y + promptH / 2 + 14 * ui, q.prompt, T.at(this, q.prompt.length > 60 || lines > 1 ? 17 : 22, THEME.ink, { fontStyle: '700' }), { width: area.w - 64 * ui });
     speakButton(this, area.x + area.w - 30 * ui, area.y + 28 * ui, 40 * ui, body, { rate: this.speechRate });
     this.autoRead(body, s.picked === null ? q.choices : null);
@@ -111,7 +111,7 @@ export class FrogHop extends MinigameScene {
     g.fillStyle(held ? 0x6fdc8f : PAD, 1); g.fillEllipse(0, -2, p.w - 8, p.h - 8);
     g.fillStyle(PAD_LIGHT, 0.5); g.fillEllipse(-p.w * 0.18, -p.h * 0.22, p.w * 0.3, p.h * 0.25);
     g.fillStyle(WATER, 1); g.fillTriangle(0, 0, p.w / 2 + 2, -p.h * 0.22, p.w / 2 + 2, p.h * 0.1);   // the notch every lily pad has
-    if (s.picked !== null && isAnswer && !held) { g.lineStyle(4 * ui, THEME.success, 1); g.strokeEllipse(0, 0, p.w + 6, p.h + 6); }
+    if (s.picked !== null && isAnswer && !held && (s.right || this.answerRevealed(q))) { g.lineStyle(4 * ui, THEME.success, 1); g.strokeEllipse(0, 0, p.w + 6, p.h + 6); }
     const str = String(choice);
     const size = Math.round((str.length > 12 ? 12 : str.length > 8 ? 14 : str.length > 5 ? 17 : 20) * ui);
     const label = this.add.text(-4, 0, str, { fontFamily: FONT, fontSize: size + 'px', color: hex(THEME.ink), fontStyle: WEIGHT.heavy, align: 'center', wordWrap: { width: p.w - 14 } }).setOrigin(0.5);

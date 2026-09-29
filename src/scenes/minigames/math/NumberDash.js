@@ -68,6 +68,8 @@ export class NumberDash extends MinigameScene {
     };
   }
 
+  get lessonTheme() { return dashIntroTheme; }
+
   progressLabel() { return `${Math.min(this.state.idx + 1, this.state.questions.length)} / ${this.state.questions.length}`; }
   progressRatio() { return this.state.idx / this.state.questions.length; }
   enterKey() { return this.state.idx; }
@@ -106,7 +108,7 @@ export class NumberDash extends MinigameScene {
     const typing = this.typing();
     const shown = typing && s.picked === null ? `${q.prompt} = ${s.typed || '?'}` : q.prompt;
     text(this, cx, area.y + promptH / 2 - 10 * ui, shown, T.at(this, shown.length > 12 ? 30 : 42, s.picked !== null ? (s.right ? THEME.successDark : THEME.danger) : THEME.ink, { fontStyle: '700' }));
-    if (s.picked !== null && typing) text(this, cx, area.y + promptH - 34 * ui, s.right ? 'Correct!' : `You typed ${s.typed || 'nothing'}. It is ${q.answer}.`, T.small(this, s.right ? THEME.successDark : THEME.danger));
+    if (s.picked !== null && typing) text(this, cx, area.y + promptH - 34 * ui, s.right ? 'Correct!' : this.answerRevealed(q) ? `You typed ${s.typed || 'nothing'}. It is ${q.answer}.` : `You typed ${s.typed || 'nothing'}. Let's see why.`, T.small(this, s.right ? THEME.successDark : THEME.danger));
     this.timerBar = new ProgressBar(this, cx, area.y + promptH - 18 * ui, area.w - 48, 10 * ui, { color: THEME.success, value: 1 });
     if (!Number.isFinite(s.timeLimit)) this.timerBar.setVisible(false);
 
@@ -133,15 +135,16 @@ export class NumberDash extends MinigameScene {
   buildChoices(area, gridTop, q) {
     const s = this.state, ui = this.ui, gap = 12;
     const cells = grid({ x: area.x, y: gridTop, w: area.w, h: Math.min(area.h - (gridTop - area.y), 320 * ui) }, 2, 2, gap);
+    const reveal = s.picked !== null && (s.right || this.answerRevealed(q));   // hidden while the child works it out
     this.choiceButtons = q.choices.map((choice, i) => {
       const c = cells[i];
       const opts = { variant: 'secondary', fontSize: 30, radius: THEME.radius.lg, onClick: () => this.pick(i) };
       if (s.picked !== null) {
-        if (choice === q.answer) opts.variant = 'success';
+        if (choice === q.answer && reveal) opts.variant = 'success';
         else if (i === s.picked) opts.variant = 'danger';
       }
       const b = button(this, c.x, c.y, c.w, Math.min(c.h, 120 * ui), choice, opts);
-      if (s.picked !== null && choice !== q.answer && i !== s.picked) b.setAlpha(0.45);
+      if (reveal && choice !== q.answer && i !== s.picked) b.setAlpha(0.45);
       return b;
     });
     enter(this, this.choiceButtons, { from: 'up', delay: 60, stagger: 40 });

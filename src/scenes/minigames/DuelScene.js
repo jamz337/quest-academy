@@ -259,14 +259,15 @@ export class DuelScene extends MinigameScene {
         return k;
       });
     } else if (s.phase === 'solve') {
+      const reveal = s.picked !== null && (q.choices[s.picked] === q.answer || this.answerRevealed(q));   // hidden while the child works it out
       buttons = q.choices.map((choice, i) => {
         const c = cells[i]; if (!c) return null;
         if (s.hidden.includes(i)) return button(this, c.x, c.y, c.w, c.h, '—', { variant: 'ghost', disabled: true });
         const opts = { variant: 'secondary', fontSize: choice.length > 8 ? 15 : 22, radius: THEME.radius.md, onClick: () => this.pick(i) };
-        if (s.picked !== null) { if (choice === q.answer) opts.variant = 'success'; else if (i === s.picked) opts.variant = 'danger'; }
+        if (s.picked !== null) { if (choice === q.answer && reveal) opts.variant = 'success'; else if (i === s.picked) opts.variant = 'danger'; }
         const b = button(this, c.x, c.y, c.w, c.h, choice, opts);
         if (!q.code) this.answerSpeaker(b, c.w, c.h, choice);
-        if (s.picked !== null && choice !== q.answer && i !== s.picked) b.setAlpha(0.45);
+        if (reveal && choice !== q.answer && i !== s.picked) b.setAlpha(0.45);
         return b;
       }).filter(Boolean);
     } else {
