@@ -7,13 +7,13 @@ import { Sfx } from '../../systems/Audio.js';
 import { stop as stopSpeech, rateFor } from '../../systems/Speech.js';
 import * as Store from '../../systems/Store.js';
 import { explainQuestion, explainSteps } from '../../data/explanations.js';
-import { skillLabel } from '../../data/skills.js';
 import { isNewSkill, markIntroduced, prioritiseWeak, weakSkills } from '../../systems/Practice.js';
 import { rampTargets, rampFor, rampOrder } from '../../systems/Ramp.js';
 import { dueReviews, recordReview } from '../../systems/Review.js';
 import { grid } from '../../systems/Layout.js';
 import { readable } from '../../ui/ReadableText.js';
 import { answerSpeaker, readQuestionThenAnswers } from '../../ui/AnswerSpeech.js';
+import { introState, skillIntro } from '../../ui/SkillIntro.js';
 import { button, iconButton, speakButton } from '../../ui/Button.js';
 import { card } from '../../ui/Card.js';
 import { enter } from '../../ui/motion.js';
@@ -145,45 +145,34 @@ export class MinigameScene extends BaseScene {
 
   /** Skills the player has never been introduced to get a worked example first. */
   needsIntro(skill) { return !!skill && isNewSkill(this.profile, skill); }
-  markIntroduced(skill) { Store.updateProfile((p) => markIntroduced(p, skill)); }
 
   /**
-   * Worked-example card for a brand-new skill, filling the play area. `example` is { problem, steps } (a solved
-   * question and its working, one short step per line) or a plain string.
+   * The interactive New Skill page in this game's look. The first time a round of a new skill comes up, `makeExample`
+   * (skill -> { problem, steps, practice }) builds the page; it stays (in state.intro) until the child finishes or
+   * skips it. Returns true while it is on screen, so buildGame can return straight after.
    */
-  introPanel(area, skill, example, onDone) {
-    const { ui } = this;
-    const ex = typeof example === 'string' ? { problem: '', steps: [example] } : example;
-    const steps = (ex.steps || []).filter(Boolean);
-    const w = Math.min(area.w, 560 * ui), cx = area.x + area.w / 2;
-    const headH = 76 * ui, problemH = ex.problem ? 50 * ui : 0, footH = 76 * ui;
-    // Lay the steps out first so the card can be sized to fit them (smaller type when they would not fit).
-    const numbered = steps.map((st, i) => `${i + 1}.  ${st}`).join('\n');
-    const room = area.h - headH - problemH - footH - 8 * ui;
-    let body = null;
-    for (const size of [16, 15, 14, 13]) {
-      if (body) body.destroy();
-      body = readable(this, 0, 0, numbered, T.at(this, size, THEME.ink, { fontStyle: '600' }), { width: w - 56, align: 'left', lineGap: 9 }).setOrigin(0, 0);
-      if (body.height <= room) break;
+  skillIntroFor(area, skill, makeExample, theme) {
+    const s = this.state;
+    s.introduced ||= {};
+    if (!s.intro && !s.introduced[skill] && this.needsIntro(skill)) {
+      s.introduced[skill] = true;
+      const ex = makeExample(skill);
+      s.intro = ex ? introState(skill, ex) : null;
     }
-    const h = Math.min(area.h, headH + problemH + body.height + footH);
-    const cy = area.y + h / 2, top = cy - h / 2;
-    const k = card(this, cx, cy, w, h, { stroke: this.subject.soft });
-    if (this.children && typeof this.children.bringToTop === 'function') this.children.bringToTop(body);   // above the card (the test mock has no display list)
-    const title = text(this, cx, top + 30 * ui, `New skill: ${skillLabel(skill)}`, T.heading(this, this.subject.dark));
-    if (title.width > w - 110 * ui) title.setFontSize(Math.round(17 * ui));
-    text(this, cx, top + 56 * ui, 'Watch how this one is done:', T.small(this, THEME.ink2));
-    if (ex.problem) {
-      const c = chip(this, cx, top + headH + problemH / 2, { text: ex.problem, originX: 0.5, color: this.subject.soft, textColor: this.subject.dark, fontSize: 20, height: 36 * ui, shadow: 'none' });
-      const cw = c.width || (c.text ? c.text.width + 32 : 0);
-      if (cw > w - 32) c.setScale((w - 32) / cw);
-    }
-    body.setPosition(cx - w / 2 + 28, top + headH + problemH);
-    speakButton(this, cx + w / 2 - 30 * ui, top + 30 * ui, 40 * ui, body, { rate: this.speechRate });
-    this.autoRead(body);
-    button(this, cx, top + h - 40 * ui, Math.min(220 * ui, area.w - 48), 48 * ui, 'Got it!', { variant: 'primary', onClick: () => { Sfx.click(); this.markIntroduced(skill); this.qStartAt = Date.now(); onDone(); } });
-    enter(this, k, { from: 'up', distance: 12 });
+    if (!s.intro) return false;
+    skillIntro(this, area, s.intro, theme, {
+      change: () => this.rebuild(),
+      done: () => {
+        this.markIntroduced(s.intro.skill);
+        s.intro = null;
+        this.qStartAt = Date.now();
+        if ('qStart' in s) s.qStart = Date.now();
+        this.rebuild();
+      }
+    });
+    return true;
   }
+  markIntroduced(skill) { Store.updateProfile((p) => markIntroduced(p, skill)); }
 
   /** After a wrong answer: the explanation along the bottom of the play area with a Next button. */
   explanationPanel(area, q, onNext) {

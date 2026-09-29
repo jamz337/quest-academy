@@ -21,6 +21,33 @@ import { resolveLook } from '../../../data/avatars.js';
 
 const KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '−', '0', '.'];
 
+/** Number Dash's New Skill page: the race track with the runner on the start line, and a card with a finish-flag edge. */
+const dashIntroTheme = {
+  title: THEME.subjects.math.dark, ink: THEME.ink, ink2: THEME.ink2,
+  button: { color: THEME.subjects.math.accent, textColor: 0xffffff },
+  problemH: 80,
+  backdrop(scene, area, f) {
+    const h = Math.min(84 * f, area.h * 0.15);
+    const key = lookSpriteTexture(scene, resolveLook(scene.profile), outfitOf(scene.profile), outfitId(scene.profile));
+    raceTrack(scene, { x: area.x, y: area.y, w: area.w, h }, { progress: 0, total: 10, spriteKey: key, ui: f });
+    return { x: area.x, y: area.y + h + 8, w: area.w, h: area.h - h - 8 };
+  },
+  card(scene, r, f) {
+    const w = Math.min(r.w, 620 * f);
+    card(scene, r.x + r.w / 2, r.y + r.h / 2, w, r.h, { stroke: THEME.subjects.math.soft });
+    // A chequered finish-flag edge along the top.
+    const g = scene.add.graphics(), sq = 8 * f, x0 = r.x + r.w / 2 - w / 2 + 14 * f, n = Math.floor((w - 28 * f) / sq);
+    for (let i = 0; i < n; i++) for (let j = 0; j < 2; j++) { g.fillStyle((i + j) % 2 ? 0xffffff : THEME.ink, 1); g.fillRect(x0 + i * sq, r.y + 8 * f + j * sq, sq, sq); }
+    return { x: r.x + r.w / 2 - w / 2 + 14 * f, y: r.y + 30 * f, w: w - 28 * f, h: r.h - 38 * f };
+  },
+  choice(scene, x, y, w, h, label, { state, onTap }) {
+    const variant = state === 'right' ? 'success' : state === 'wrong' ? 'danger' : 'secondary';
+    const b = button(scene, x, y, w, h, label, { variant, fontSize: 30, radius: THEME.radius.lg, onClick: onTap || (() => {}) });
+    if (state === 'dim') b.setAlpha(0.4);
+    return b;
+  }
+};
+
 /**
  * Quick-fire arithmetic: 10 questions with a timer each. Half are answered by tapping one of four tiles,
  * half by typing the number on a pad (recall, not just recognition). Weak skills come first; a brand-new
@@ -47,24 +74,27 @@ export class NumberDash extends MinigameScene {
   /** Every other question is typed rather than picked. */
   typing() { return this.state.idx % 2 === 1; }
 
-  /** A solved example of a skill the player has never met, from a fresh question of that skill. */
+  /** A solved example of a skill the player has never met, and a second question of it for the child to try. */
   exampleFor(skill) {
-    for (let i = 0; i < 40; i++) {
+    const found = [];
+    for (let i = 0; i < 80 && found.length < 2; i++) {
       const q = generateQuestion(this.payload.grade, this.rng, 0);   // the first example is the gentlest kind
-      if (q.skill === skill) return { problem: `${q.prompt.replace('\n', ' ')} = ${q.answer}`, steps: this.steps(q) };
+      if (q.skill === skill && !found.some((x) => x.prompt === q.prompt)) found.push(q);
     }
-    return null;
+    const [q, t] = found;
+    if (!q) return null;
+    const line = (x) => x.prompt.replace('\n', ' ');
+    return {
+      problem: `${line(q)} = ${q.answer}`, steps: this.steps(q),
+      practice: t && t.choices ? { prompt: `${line(t)} = ?`, choices: t.choices, answer: t.answer, solved: `${line(t)} = ${t.answer}` } : null
+    };
   }
 
   buildGame(area) {
     const s = this.state, ui = this.ui;
     const q = s.questions[s.idx];
     if (!q) return;
-    if (!s.introduced[q.skill] && this.needsIntro(q.skill)) {
-      const example = this.exampleFor(q.skill);
-      s.introduced[q.skill] = true;
-      if (example) return this.introPanel(area, q.skill, example, () => { s.qStart = Date.now(); this.rebuild(); });
-    }
+    if (this.skillIntroFor(area, q.skill, (k) => this.exampleFor(k), dashIntroTheme)) return;
     // The race track along the top: the player's runner dashes one step nearer the finish per right answer.
     const stripH = Math.min(84 * ui, area.h * 0.17);
     this.drawTrack({ x: area.x, y: area.y, w: area.w, h: stripH });

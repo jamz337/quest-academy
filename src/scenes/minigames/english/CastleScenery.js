@@ -292,3 +292,39 @@ export function shieldRow(scene, r, marks, total, current, ui) {
   }
   return { g, shields: centres };
 }
+
+/**
+ * Grammar Gate's New Skill page: the courtyard with the gate open behind, the example on the notice board and the
+ * practice answers on wooden planks (see ui/SkillIntro.js for the page itself).
+ */
+export const castleIntroTheme = {
+  title: CASTLE.ink, ink: CASTLE.ink, ink2: 0x6b4a2a,
+  button: { color: CASTLE.wood, textColor: CASTLE.cream },
+  problemH: 84,
+  backdrop(scene, area, f) {
+    const horizon = area.y + Math.min(area.h * 0.24, 160 * f);
+    drawCourtyard(scene, area, horizon, (horizon - area.y) * 0.4, f);
+    const gh = horizon - area.y - 26 * f;
+    if (gh > 40 * f) gatehouse(scene, area.x + area.w / 2, horizon, Math.min(area.w * 0.5, gh * 1.35), gh, 0, f);
+    return { x: area.x, y: horizon - 12 * f, w: area.w, h: area.y + area.h - (horizon - 12 * f) };
+  },
+  card(scene, r, f) {
+    const w = Math.min(r.w - 12 * f, 680 * f), h = r.h - 8 * f;
+    return noticeBoard(scene, r.x + r.w / 2, r.y + h / 2, w, h, f).inner;
+  },
+  drawProblem(scene, r, str, { solved, f }) {
+    let t = null;
+    for (const px of [28, 24, 20, 17]) {
+      if (t) t.destroy();
+      t = scene.add.text(r.x + r.w / 2, r.y + r.h / 2, str, { fontFamily: FONT, fontSize: Math.round(px * f) + 'px', color: hex(solved ? 0x1f7a3f : CASTLE.ink), fontStyle: WEIGHT.heavy, align: 'center', wordWrap: { width: r.w - 24 * f } }).setOrigin(0.5);
+      if ((t.height || 0) <= r.h - 6) break;
+    }
+    // Underline the sentence like a line of writing on the notice.
+    const g = scene.add.graphics();
+    g.lineStyle(2 * f, CASTLE.parchmentDark, 0.8); g.lineBetween(r.x + r.w * 0.12, r.y + r.h - 4 * f, r.x + r.w * 0.88, r.y + r.h - 4 * f);
+    return t;
+  },
+  choice(scene, x, y, w, h, label, { state, onTap, seed, f }) {
+    return plank(scene, x, y, w, h, label, { state, onTap, seed, ui: f, fontSize: String(label).length <= 2 ? 40 : 26 });
+  }
+};

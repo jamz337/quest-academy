@@ -7,7 +7,7 @@ import { FONT, WEIGHT } from '../../../ui/TextStyles.js';
 import { speakButton } from '../../../ui/Button.js';
 import { readable } from '../../../ui/ReadableText.js';
 import { enter, shake } from '../../../ui/motion.js';
-import { CASTLE, drawCourtyard, gatehouse, noticeBoard, plank, shieldRow } from './CastleScenery.js';
+import { CASTLE, drawCourtyard, gatehouse, noticeBoard, plank, shieldRow, castleIntroTheme } from './CastleScenery.js';
 
 const PAR_MS = 90000;
 
@@ -25,13 +25,19 @@ export class GrammarGate extends MinigameScene {
     return { rounds, idx: 0, correct: 0, locked: false, picked: null, missed: {}, introduced: {}, marks: [] };
   }
 
-  /** A solved sentence of a skill the player has never met. */
+  /** A solved sentence of a skill the player has never met, and a second one for the child to try. */
   exampleFor(skill) {
-    for (let i = 0; i < 40; i++) {
+    const found = [];
+    for (let i = 0; i < 80 && found.length < 2; i++) {
       const r = generateRounds(this.payload.grade, this.rng, 1)[0];
-      if (r.skill === skill) return { problem: fillBlank(r.sentence, r.options[r.answer]), steps: this.steps({ ...r, answer: r.options[r.answer] }) };
+      if (r.skill === skill && !found.some((x) => x.sentence === r.sentence)) found.push(r);
     }
-    return null;
+    const [r, t] = found;
+    if (!r) return null;
+    return {
+      problem: fillBlank(r.sentence, r.options[r.answer]), steps: this.steps({ ...r, answer: r.options[r.answer] }),
+      practice: t ? { prompt: fillBlank(t.sentence), choices: t.options, answer: t.options[t.answer], solved: fillBlank(t.sentence, t.options[t.answer]) } : null
+    };
   }
 
   get round() { return this.state.rounds[this.state.idx]; }
@@ -42,11 +48,7 @@ export class GrammarGate extends MinigameScene {
   buildGame(area) {
     const s = this.state, ui = this.ui, r = this.round;
     if (!r) return;
-    if (!s.introduced[r.skill] && this.needsIntro(r.skill)) {
-      const example = this.exampleFor(r.skill);
-      s.introduced[r.skill] = true;
-      if (example) return this.introPanel(area, r.skill, example, () => this.rebuild());
-    }
+    if (this.skillIntroFor(area, r.skill, (k) => this.exampleFor(k), castleIntroTheme)) return;
     const cx = area.x + area.w / 2, total = s.rounds.length;
     const answered = s.picked !== null, rightNow = answered && s.picked === r.answer;
     // Shrink everything a little on short screens so the planks keep a comfortable size.

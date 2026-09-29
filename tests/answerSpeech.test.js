@@ -26,7 +26,7 @@ function grammar() {
   s.finish = vi.fn();
   s.init({ gameId: 'eng-grammar', grade: 3, band: 'A', title: 'Grammar Gate', subject: 'words', context: {}, timers: true, seed: 3 });
   s.create({});
-  if (findButton(s, 'Got it!')) click(findButton(s, 'Got it!'));
+  for (const l of ['Skip', 'Got it!']) if (findButton(s, l)) click(findButton(s, l));
   return s;
 }
 const speakers = (s) => s.objs.filter((o) => o.label && o.label.text === '🔊' && o.active);

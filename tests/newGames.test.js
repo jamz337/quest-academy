@@ -80,7 +80,7 @@ describe('Balloon Pop (headless)', () => {
   it('pops the right balloon, deflates a wrong one, times out when the answer floats away, and finishes', () => {
     const s = makeScene(BalloonPop, { gameId: 'math-balloons', seed: 7 });
     expect(s.state.questions).toHaveLength(10);
-    const skipIntro = () => { if (findButton(s, 'Got it!')) click(findButton(s, 'Got it!')); };   // a brand-new skill gets its worked example first
+    const skipIntro = () => { for (const l of ['Skip', 'Got it!']) if (findButton(s, l)) click(findButton(s, l)); };   // a brand-new skill gets its worked example first
     skipIntro();
     // After a miss the working appears a step at a time; Got it! comes once it is all out.
     const walkExplanation = () => {

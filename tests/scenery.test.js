@@ -18,7 +18,7 @@ function makeScene(Cls, payload, size) {
   s.finish = vi.fn();
   s.init({ gameId: 'x', grade: 3, band: 'A', title: 'T', subject: 'math', context: {}, timers: true, ...payload });
   s.create({});
-  if (findButton(s, 'Got it!')) click(findButton(s, 'Got it!'));
+  for (const l of ['Skip', 'Got it!']) if (findButton(s, l)) click(findButton(s, l));
   return s;
 }
 
@@ -38,11 +38,14 @@ describe('scenery helpers', () => {
   });
 });
 
+/** Close a New Skill page if one is showing (it stays until the child finishes or skips it). */
+const skip = (s) => { for (const l of ['Skip', 'Got it!']) if (findButton(s, l)) click(findButton(s, l)); };
+
 describe('older games with scenery (headless)', () => {
   it('Number Dash moves the runner and survives a wrong answer', () => {
     const s = makeScene(NumberDash, { gameId: 'math-dash' });
     const q = () => s.state.questions[s.state.idx];
-    s.pick(q().choices.indexOf(q().answer)); flushTimers(s);
+    s.pick(q().choices.indexOf(q().answer)); flushTimers(s); skip(s);
     expect(s.state.correct).toBe(1); expect(s.state.idx).toBe(1);
     s.state.typed = '999'; s.submit();
     expect(s.state.right).toBe(false);
@@ -52,7 +55,7 @@ describe('older games with scenery (headless)', () => {
 
   it('Grammar Gate lowers the portcullis a notch for each right word, and not for a wrong one', () => {
     const s = makeScene(GrammarGate, { gameId: 'eng-grammar', subject: 'words' });
-    const gotIt = () => { if (findButton(s, 'Got it!')) click(findButton(s, 'Got it!')); };   // a new skill's intro comes before the gate
+    const gotIt = () => { for (const l of ['Skip', 'Got it!']) if (findButton(s, l)) click(findButton(s, l)); };   // a new skill's intro comes before the gate
     const y0 = s.gate.bars.y;
     s.pick(s.round.answer); flushTimers(s); gotIt();
     const y1 = s.gate.bars.y;
@@ -68,7 +71,7 @@ describe('older games with scenery (headless)', () => {
   it('Grammar Gate raises the gate on right answers', () => {
     const s = makeScene(GrammarGate, { gameId: 'eng-grammar', subject: 'words' });
     const r = () => s.round;
-    s.pick(r().answer); flushTimers(s);
+    s.pick(r().answer); flushTimers(s); skip(s);
     expect(s.state.correct).toBe(1);
     s.pick((r().answer + 1) % 3);
     click(findButton(s, 'Next ▶'));
