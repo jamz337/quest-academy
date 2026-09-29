@@ -4,6 +4,8 @@ import { ModeSelectScene } from './ModeSelectScene.js';
 import { WorldScene } from './WorldScene.js';
 import { HouseScene } from './HouseScene.js';
 import { HouseRoomScene } from './HouseRoomScene.js';
+import { ChurchScene } from './ChurchScene.js';
+import { ChurchLessonScene } from './ChurchLessonScene.js';
 import { MarketScene } from './MarketScene.js';
 import { CreditsScene } from './CreditsScene.js';
 import { HudScene } from './HudScene.js';
@@ -35,8 +37,8 @@ import { ArkAnimals } from './minigames/bible/ArkAnimals.js';
 
 // Order matters for render depth: later scenes draw on top when several are active.
 export const scenes = [
-  BootScene, ProfileScene, ModeSelectScene, WorldScene, HouseScene, HudScene, ChallengeMenuScene, LevelSelectScene,
+  BootScene, ProfileScene, ModeSelectScene, WorldScene, HouseScene, ChurchScene, HudScene, ChallengeMenuScene, LevelSelectScene,
   NumberDash, FractionPizza, PatternBridge, BalloonPop, WordBuilder, GrammarGate, WordMatch, FrogHop,
   RoboMaze, BugHunt, PredictRobot, RobotDance, DuelScene, BibleQuiz, ArkAnimals,
-  ResultsScene, PauseScene, AccountScene, LeaderboardScene, SkillsScene, SpellingScene, SpellingLearnScene, SpellingGameScene, HouseRoomScene, MarketScene, CreditsScene
+  ResultsScene, PauseScene, AccountScene, LeaderboardScene, SkillsScene, SpellingScene, SpellingLearnScene, SpellingGameScene, HouseRoomScene, ChurchLessonScene, MarketScene, CreditsScene
 ];

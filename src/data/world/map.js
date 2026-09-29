@@ -174,6 +174,13 @@ export function buildMap() {
   hline(data, homeDoor.tx, 21, homeDoor.ty + 1, TID.path);
   const home = { door: homeDoor, front: { tx: homeDoor.tx, ty: homeDoor.ty + 1 }, x: 18, y: 15, w: 3, h: 3 };
 
+  // The Village Church in Bible Village's north-east corner, where the Bible lessons are taught; the high street
+  // runs on to its door. Its steeple and rose window are drawn over the building (scenes/world/decor.js).
+  const churchDoor = building(data, 51, 14, 3, 3, BUILDING_STYLES.bible);
+  buildings.push({ zone: 'bible', style: 'church', x: 51, y: 14, w: 3, h: 3, door: churchDoor });
+  hline(data, 50, churchDoor.tx, churchDoor.ty + 1, TID.path);
+  const church = { door: churchDoor, front: { tx: churchDoor.tx, ty: churchDoor.ty + 1 }, x: 51, y: 14, w: 3, h: 3 };
+
   // Clear scenery trees that ended up touching a road, doorway, building or villager, so nothing is boxed in.
   const BUILT = new Set([TID.path, TID.gateOpen, ...ROOF_TILES, ...WALL_TILES, ...DOOR_TILES]);
   const groundAt = (tx, ty) => { const z = zones.find((zn) => tx >= zn.rect.x && tx < zn.rect.x + zn.rect.w && ty >= zn.rect.y && ty < zn.rect.y + zn.rect.h); return z ? { math: TID.meadow, words: TID.woods, code: TID.cove, bible: TID.village }[z.id] ?? TID.grass : TID.grass; };
@@ -199,7 +206,7 @@ export function buildMap() {
     { tx: 42, ty: 17 }, { tx: 45, ty: 22 }, { tx: 50, ty: 25 }
   ];
 
-  return { width: W, height: H, data, spawn, zones, gates, npcSpots, bossSpots, buildings, coins, signSpot, bellSpot, marketSpot, home };
+  return { width: W, height: H, data, spawn, zones, gates, npcSpots, bossSpots, buildings, coins, signSpot, bellSpot, marketSpot, home, church };
 }
 
 /** Ground tile shown beneath a tree (trees are drawn on an overlay layer so the local ground shows through). */

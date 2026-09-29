@@ -74,9 +74,11 @@ export class WorldScene extends Phaser.Scene {
     Decor.createLandmarks(this, profile);
     Decor.createBellTower(this);
     Decor.createMarketStall(this);
+    Decor.createChurch(this);
     Companion.createCompanion(this);
     // Loading while standing in the doorway should not open the house until the player steps out and back in.
     this.atHomeDoor = !!this.map.home && Math.floor(this.player.x / TILE) === this.map.home.door.tx && Math.floor(this.player.y / TILE) === this.map.home.door.ty;
+    this.atChurchDoor = !!this.map.church && Math.floor(this.player.x / TILE) === this.map.church.door.tx && Math.floor(this.player.y / TILE) === this.map.church.door.ty;
     this.bubble = this.add.image(0, 0, 'bubble').setScale(0.75).setDepth(20).setVisible(false);
 
     const cam = this.cameras.main;
@@ -206,13 +208,14 @@ export class WorldScene extends Phaser.Scene {
     if (hud && hud.scene.isActive()) hud.notify(msg, opts); else toast(this, msg, opts);
   }
 
-  /** Points of interest for the minimap: the errand in progress, every boss castle and home. */
+  /** Points of interest for the minimap: the errand in progress, every boss castle, home and the church. */
   mapMarkers(profile) {
     const out = [];
     const target = Errands.errandTarget(this.map, profile);
     if (target) out.push({ ...target, kind: 'errand' });
     for (const boss of BOSSES) { const s = this.map.bossSpots[boss.zone]; if (s) out.push({ tx: s.tx, ty: s.ty - 2, kind: bossDefeated(profile, boss.zone) ? 'bossDone' : 'boss' }); }
     if (this.map.home) out.push({ tx: this.map.home.x + 1, ty: this.map.home.y + 1, kind: 'home' });
+    if (this.map.church) out.push({ tx: this.map.church.x + 1, ty: this.map.church.y + 1, kind: 'church' });
     return out;
   }
 
@@ -296,6 +299,18 @@ export class WorldScene extends Phaser.Scene {
     const atDoor = this.map.home && tx === this.map.home.door.tx && ty === this.map.home.door.ty;
     if (atDoor && !this.atHomeDoor && hud && !hud.blocking) this.enterHouse();
     this.atHomeDoor = atDoor;
+    const atChurch = this.map.church && tx === this.map.church.door.tx && ty === this.map.church.door.ty;
+    if (atChurch && !this.atChurchDoor && hud && !hud.blocking) this.enterChurch();
+    this.atChurchDoor = atChurch;
+  }
+
+  /** Into the Village Church, the same way as the house: the world stops at the door and the church takes over. */
+  enterChurch() {
+    this.stopPlayer();
+    Sfx.click();
+    this.savePosition();
+    if (this.scene.isActive(SCENES.Hud) || this.scene.isSleeping(SCENES.Hud)) this.scene.stop(SCENES.Hud);
+    this.scene.start(SCENES.Church);
   }
 
   /** Through the front door: the world is stopped (saving the position at the door) and the house scene takes over. */

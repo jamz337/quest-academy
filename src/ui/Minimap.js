@@ -39,7 +39,7 @@ export function paintMinimap(scene, map, explored) {
 /**
  * The corner map: a framed image of the minimap texture with a player dot and markers on top.
  * opts: { scale (CSS px per tile), onTap }. Call update({ tx, ty, markers }) as the player moves;
- * markers: [{ tx, ty, kind: 'errand'|'boss'|'home'|'bossDone' }].
+ * markers: [{ tx, ty, kind: 'errand'|'boss'|'home'|'bossDone'|'church' }].
  */
 export class Minimap extends Phaser.GameObjects.Container {
   constructor(scene, x, y, map, opts = {}) {
@@ -86,6 +86,8 @@ export class Minimap extends Phaser.GameObjects.Container {
         this.markers.add(s.add.rectangle(p.x, p.y, this.px * 2.2, this.px * 2.2, m.kind === 'boss' ? THEME.danger : THEME.ink3, 1).setStrokeStyle(1, 0xffffff, 0.9));
       } else if (m.kind === 'home') {
         this.markers.add(s.add.circle(p.x, p.y, this.px, THEME.pink, 1).setStrokeStyle(1, 0xffffff, 0.9));
+      } else if (m.kind === 'church') {
+        this.markers.add(s.add.circle(p.x, p.y, this.px, THEME.brand, 1).setStrokeStyle(1, 0xffc531, 0.9));
       }
     }
   }

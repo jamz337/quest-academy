@@ -122,6 +122,152 @@ export function createMarketStall(w) {
   if (w.player) w.physics.add.collider(w.player, post);
 }
 
+/**
+ * The Village Church: a stone chapel drawn over its building's tiles. A slate roof with moss, a limestone gable with
+ * a small cross, and behind it a white belfry with its bell under a stained-glass dome and an ornate gold cross.
+ * The cream limestone front has carved vines, a rose window with "VILLAGE CHURCH" and "LESSONS" carved above and
+ * below it, four arched stained-glass windows, an arched oak door with iron hinges, a lantern, flowers and
+ * flagstones. The doorway glows. Nothing here blocks the path; the building's own tiles do that.
+ */
+export function createChurch(w) {
+  const c = w.map.church;
+  if (!c) return;
+  const x0 = c.x * TILE, y0 = c.y * TILE, W = c.w * TILE, H = c.h * TILE, cx = x0 + W / 2, bottom = y0 + H;
+  const g = w.add.graphics().setDepth(4);
+  const shade = (base, k) => { const r = (base >> 16) & 255, gg = (base >> 8) & 255, b = base & 255; const f = (v) => Math.max(0, Math.min(255, Math.round(v * k))); return (f(r) << 16) | (f(gg) << 8) | f(b); };
+  const vary = (i, j) => [0.94, 1.03, 0.98, 1.06, 0.97][(i * 37 + j * 17) % 5];
+
+  // Limestone walls, block by block, with mortar lines and a little moss low down.
+  const wl = x0 - 4, wr = x0 + W + 4, wallTop = y0 + 20;
+  g.fillStyle(0x2d2a4a, 0.2); g.fillRect(wl + 4, wallTop + 4, wr - wl, bottom - wallTop);
+  g.fillStyle(0xc2b393, 1); g.fillRect(wl, wallTop, wr - wl, bottom - wallTop);
+  for (let row = 0, y = wallTop; y < bottom; row += 1, y += 8) {
+    for (let col = 0, x = wl - (row % 2 ? 7 : 0); x < wr; col += 1, x += 14) {
+      const bx = Math.max(wl, x), bw = Math.min(wr, x + 13) - bx;
+      if (bw <= 0) continue;
+      g.fillStyle(shade(0xe4d9bf, vary(row, col)), 1); g.fillRect(bx, y, bw, Math.min(7, bottom - y));
+      g.fillStyle(0xffffff, 0.18); g.fillRect(bx, y, bw, 1);
+    }
+  }
+  g.fillStyle(0x7fa35a, 0.8);
+  [[4, -6], [10, -3], [96, -5], [88, -9], [22, -2]].forEach(([dx, dy]) => g.fillCircle(wl + dx, bottom + dy, 1.6));
+  // Carved vines curling around the upper windows and the rose.
+  g.lineStyle(1, 0xb09a70, 0.9);
+  for (const side of [-1, 1]) {
+    g.beginPath(); g.arc(cx + side * 22, y0 + 36, 6, side < 0 ? 0.3 : 2.2, side < 0 ? 2.8 : 5.1, side > 0); g.strokePath();
+    g.beginPath(); g.arc(cx + side * 22, y0 + 52, 5, side < 0 ? 3.6 : 5.8, side < 0 ? 5.8 : 3.6, side < 0); g.strokePath();
+    g.fillStyle(0xb09a70, 1); g.fillCircle(cx + side * 26, y0 + 31, 1.3); g.fillCircle(cx + side * 17, y0 + 56, 1.3);
+  }
+
+  // Belfry behind the gable: white stone, an arched opening with the gold bell, a stained-glass dome and the cross.
+  const bw = 20, bTop = y0 - 42, bBase = y0 - 8;
+  g.fillStyle(0x2d2a4a, 0.18); g.fillRect(cx - bw / 2 + 3, bTop + 3, bw, bBase - bTop);
+  g.fillStyle(0xf2eee4, 1); g.fillRect(cx - bw / 2, bTop, bw, bBase - bTop);
+  g.fillStyle(0xd9d2c2, 1); g.fillRect(cx + bw / 2 - 4, bTop, 4, bBase - bTop);
+  g.fillStyle(0xe6dfcf, 1); g.fillRect(cx - bw / 2 - 2, bTop - 3, bw + 4, 3); g.fillRect(cx - bw / 2 - 2, bBase - 12, bw + 4, 2);
+  g.fillStyle(0x3a3a48, 1); g.fillRoundedRect(cx - 5, bTop + 4, 10, 14, { tl: 5, tr: 5, bl: 0, br: 0 });
+  g.fillStyle(0xd4a24a, 1); g.fillTriangle(cx - 4, bTop + 16, cx + 4, bTop + 16, cx, bTop + 8); g.fillCircle(cx, bTop + 10, 2.6);
+  g.fillStyle(0xf2cf7a, 1); g.fillRect(cx - 4, bTop + 15, 8, 1.5);
+  // The dome: a half-ellipse of coloured panes with lead lines.
+  const domeH = 17, domeW = bw + 4;
+  const panes = [0x2f6fd6, 0x3fb0c0, 0xd94a3a, 0xe0a030, 0x7a4ab8, 0x2e9e6a];
+  for (let i = 0; i < 6; i++) {
+    g.fillStyle(panes[i], 1);
+    g.slice(cx, bTop - 3, domeW / 2, Math.PI + (i / 6) * Math.PI, Math.PI + ((i + 1) / 6) * Math.PI, false); g.fillPath();
+  }
+  g.fillStyle(0xffffff, 0.25); g.slice(cx, bTop - 3, domeW / 2 - 3, Math.PI * 1.15, Math.PI * 1.45, false); g.fillPath();
+  g.lineStyle(1, 0x2d2a3a, 1);
+  g.beginPath(); g.arc(cx, bTop - 3, domeW / 2, Math.PI, Math.PI * 2, false); g.strokePath();
+  for (let i = 1; i < 6; i++) { const a = Math.PI + (i / 6) * Math.PI; g.lineBetween(cx, bTop - 3, cx + Math.cos(a) * domeW / 2, bTop - 3 + Math.sin(a) * domeW / 2); }
+  g.lineBetween(cx - domeW / 2, bTop - 3, cx + domeW / 2, bTop - 3);
+  // Ornate gold cross on top.
+  const crossBase = bTop - 3 - domeW / 2;
+  g.fillStyle(0xc9982e, 1); g.fillRect(cx - 1.5, crossBase - 15, 3, 15); g.fillRect(cx - 6, crossBase - 11, 12, 3);
+  g.fillStyle(0xf2cf7a, 1); g.fillCircle(cx, crossBase - 16, 1.8); g.fillCircle(cx - 6, crossBase - 9.5, 1.5); g.fillCircle(cx + 6, crossBase - 9.5, 1.5); g.fillCircle(cx, crossBase - 1, 1.8);
+  g.fillStyle(0xf2cf7a, 1); g.fillRect(cx - 0.5, crossBase - 14, 1, 12);
+
+  // Slate roof: rows of grey tiles with lighter edges, moss here and there, and a dark eave over the wall.
+  const rl = wl - 5, rr = wr + 5, roofTop = y0 - 10, roofBottom = wallTop + 3;
+  for (let row = 0, y = roofTop; y < roofBottom; row += 1, y += 5) {
+    for (let col = 0, x = rl - (row % 2 ? 4 : 0); x < rr; col += 1, x += 8) {
+      const bx = Math.max(rl, x), bwd = Math.min(rr, x + 7) - bx;
+      if (bwd <= 0) continue;
+      g.fillStyle(shade(0x6c6f78, vary(row, col)), 1); g.fillRect(bx, y, bwd, 5);
+      g.fillStyle(0xffffff, 0.12); g.fillRect(bx, y, bwd, 1);
+    }
+  }
+  g.fillStyle(0x7fa35a, 0.85);
+  [[8, 4], [30, 12], [70, 2], [96, 14], [52, 18]].forEach(([dx, dy]) => g.fillEllipse(rl + dx, roofTop + dy, 7, 2.5));
+  g.fillStyle(0x3e4047, 1); g.fillRect(rl, roofBottom - 2, rr - rl, 3);
+  g.fillStyle(0x000000, 0.18); g.fillRect(wl, roofBottom + 1, wr - wl, 3);
+
+  // Limestone gable over the middle of the front, trimmed, with a small stone cross at its peak.
+  const gw = 50, gTop = roofTop - 2;
+  g.fillStyle(0x8a8c93, 1); g.fillTriangle(cx - gw / 2 - 3, roofBottom + 1, cx + gw / 2 + 3, roofBottom + 1, cx, gTop - 3);
+  g.fillStyle(0xe9e0c8, 1); g.fillTriangle(cx - gw / 2, roofBottom + 1, cx + gw / 2, roofBottom + 1, cx, gTop);
+  g.lineStyle(1, 0xc9bc9c, 1); g.beginPath(); g.arc(cx, roofBottom - 5, 6, Math.PI, Math.PI * 2, false); g.strokePath();   // carved fan
+  g.fillStyle(0xd8d0bc, 1); g.fillRect(cx - 1.5, gTop - 12, 3, 11); g.fillRect(cx - 4.5, gTop - 9, 9, 3);
+  g.fillStyle(0xb8ad94, 1); g.fillRect(cx + 0.5, gTop - 12, 1, 11);
+
+  // Rose window: a stone ring, lead, eight coloured panes and a bright heart.
+  const ry = y0 + 43, rr0 = 10;
+  g.fillStyle(0xcfc2a2, 1); g.fillCircle(cx, ry, rr0 + 3);
+  g.fillStyle(0x2d2a3a, 1); g.fillCircle(cx, ry, rr0 + 1);
+  const rose = [0x2f6fd6, 0xe0a030, 0x2e9e6a, 0xd94a3a, 0x3fb0c0, 0x7a4ab8, 0xe0a030, 0x2f6fd6];
+  rose.forEach((col, i) => { g.fillStyle(col, 1); g.slice(cx, ry, rr0, (i / 8) * Math.PI * 2 + 0.05, ((i + 1) / 8) * Math.PI * 2 - 0.05, false); g.fillPath(); });
+  g.fillStyle(0x2d2a3a, 1); g.fillCircle(cx, ry, 4.5);
+  g.fillStyle(0x3fb0c0, 1); g.fillCircle(cx, ry, 3.5);
+  g.fillStyle(0xf2cf7a, 1); g.fillCircle(cx, ry, 1.5);
+
+  // Arched stained-glass windows: two either side, upper and lower.
+  const pane = (x, y, ww, hh, seed) => {
+    g.fillStyle(0xcfc2a2, 1); g.fillRoundedRect(x - 2, y - 2, ww + 4, hh + 4, { tl: ww / 2 + 2, tr: ww / 2 + 2, bl: 1, br: 1 });
+    g.fillStyle(0x2d2a3a, 1); g.fillRoundedRect(x - 1, y - 1, ww + 2, hh + 2, { tl: ww / 2 + 1, tr: ww / 2 + 1, bl: 0, br: 0 });
+    const cols = [0x2f6fd6, 0xd94a3a, 0xe0a030, 0x2e9e6a, 0x7a4ab8, 0x3fb0c0];
+    for (let r = 0; r < 3; r++) for (let k = 0; k < 2; k++) { g.fillStyle(cols[(seed + r * 2 + k) % cols.length], 1); g.fillRect(x + k * (ww / 2) + 0.5, y + r * (hh / 3) + 0.5, ww / 2 - 1, hh / 3 - 1); }
+    g.fillStyle(cols[(seed + 4) % cols.length], 1); g.fillCircle(x + ww / 2, y + ww / 2 - 0.5, ww / 2 - 1);
+    g.fillStyle(0xffffff, 0.3); g.fillRect(x + 1, y + 3, 1.5, hh - 5);
+  };
+  for (const side of [-1, 1]) {
+    pane(cx + side * 40 - 5.5, y0 + 27, 11, 17, side < 0 ? 0 : 3);   // clear of the carved lettering
+    pane(cx + side * 40 - 5.5, y0 + 66, 11, 19, side < 0 ? 1 : 4);
+  }
+
+  // Arched oak door in a stone frame, with iron hinges and a keyhole plate.
+  const dw = 18, dTop = y0 + 62;
+  g.fillStyle(0xcfc2a2, 1); g.fillRoundedRect(cx - dw / 2 - 3, dTop - 3, dw + 6, bottom - dTop + 3, { tl: dw / 2 + 3, tr: dw / 2 + 3, bl: 0, br: 0 });
+  g.fillStyle(0x6a4126, 1); g.fillRoundedRect(cx - dw / 2, dTop, dw, bottom - dTop, { tl: dw / 2, tr: dw / 2, bl: 0, br: 0 });
+  g.fillStyle(0x7f5232, 1); for (let i = 0; i < 4; i++) g.fillRect(cx - dw / 2 + 1 + i * 4.3, dTop + 4, 3.3, bottom - dTop - 4);
+  g.fillStyle(0x2d2a2a, 1);
+  for (const hy of [dTop + 8, bottom - 8]) { g.fillRect(cx - dw / 2, hy, dw * 0.7, 2); g.fillCircle(cx - dw / 2 + dw * 0.7, hy + 1, 1.6); }
+  g.fillRect(cx + dw / 2 - 5, dTop + 17, 3, 6); g.fillStyle(0xd4a24a, 1); g.fillCircle(cx + dw / 2 - 3.5, dTop + 19, 0.9);
+  // A lantern on the wall beside the door.
+  const lx = cx + 17, ly = y0 + 70;
+  g.fillStyle(0x2d2a2a, 1); g.fillRect(lx - 1, ly - 4, 5, 1.5); g.fillRect(lx - 3, ly - 2, 6, 1.5); g.fillRect(lx - 3, ly + 7, 6, 1.5);
+  g.fillStyle(0xffc86b, 1); g.fillRect(lx - 2, ly - 0.5, 4, 7.5);
+  g.fillStyle(0xffc86b, 0.25); g.fillCircle(lx, ly + 3, 7);
+
+  // Flagstones by the door and flowers along the foot of the wall.
+  g.fillStyle(0xbfb8aa, 1);
+  [[20, 5, 9, 5], [30, 11, 8, 5], [40, 4, 10, 6], [52, 12, 8, 5]].forEach(([dx, dy, ww, hh]) => g.fillEllipse(cx + dx, bottom + dy, ww, hh));
+  g.fillStyle(0x9a9385, 0.6);
+  [[20, 6, 7, 2], [40, 6, 8, 2]].forEach(([dx, dy, ww, hh]) => g.fillEllipse(cx + dx, bottom + dy, ww, hh));
+  const flower = (x, y, col) => { g.fillStyle(0x4f7a3a, 1); g.fillRect(x - 0.5, y, 1, 5); g.fillEllipse(x - 2, y + 4, 4, 2); g.fillStyle(col, 1); g.fillCircle(x, y, 1.8); };
+  [[wl + 3, 0x9b59c7], [wl + 8, 0xc77adb], [wr - 4, 0x9b59c7], [wr - 9, 0xe0a0e8], [wr - 14, 0x9b59c7]].forEach(([fx, col], i) => flower(fx, bottom - 6 - (i % 2) * 2, col));
+
+  // The carved lettering around the rose window.
+  const carve = (str, y) => {
+    w.add.text(cx + 0.5, y + 0.5, str, { fontFamily: 'Fredoka, sans-serif', fontSize: '6px', color: '#f6efdd', fontStyle: '700' }).setOrigin(0.5).setDepth(4).setResolution(4);
+    w.add.text(cx, y, str, { fontFamily: 'Fredoka, sans-serif', fontSize: '6px', color: '#7a6644', fontStyle: '700' }).setOrigin(0.5).setDepth(4).setResolution(4);
+  };
+  carve('VILLAGE CHURCH', y0 + 28);
+  carve('LESSONS', y0 + 58);
+
+  // Warm light spilling out of the doorway, gently pulsing.
+  const glow = w.add.ellipse(cx, bottom + 2, 26, 9, 0xffc86b, 0.35).setDepth(3);
+  w.tweens.add({ targets: glow, alpha: 0.12, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+}
+
 /** Three small stars above every villager's house, lit as the game's levels are passed. */
 export function createHouseStars(w) {
   w.houseStarSprites = {};
