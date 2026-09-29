@@ -1,24 +1,25 @@
 import { MinigameScene } from '../MinigameScene.js';
-import { THEME } from '../../../ui/theme.js';
-import { generateRounds } from '../../../generators/english/words.js';
+import { hex } from '../../../ui/theme.js';
+import { generateRounds, roundDifficulty } from '../../../generators/english/words.js';
 import { grid } from '../../../systems/Layout.js';
 import { Sfx } from '../../../systems/Audio.js';
-import { T, text } from '../../../ui/TextStyles.js';
 import { button, speakButton } from '../../../ui/Button.js';
 import { readable } from '../../../ui/ReadableText.js';
-import { card, tile } from '../../../ui/Card.js';
 import { enter, shake } from '../../../ui/motion.js';
-import { bookshelf } from '../../../ui/Scenery.js';
+import { RUNE, SERIF, drawGlade, scroll, plaque, altar, runeStone, triesPlaque, tabletTrail, owl } from './RuneScenery.js';
 
 const PAR_MS = 120000;
 const MAX_TRIES = 3;
 
-/** Word Builder: unscramble letter tiles into slots. 8 words, 3 tries each, one first-letter hint per word. */
+/**
+ * Word Builder, "ancient runes" style: tap the rune stones into the altar's sockets to spell the word on the scroll.
+ * 8 words, 3 tries each, one first-letter help per word. Each word spelled lights a tablet along the top.
+ */
 export class WordBuilder extends MinigameScene {
   constructor() { super('MG_WordBuilder'); }
 
   initState() {
-    const rounds = generateRounds(this.payload.grade, this.rng, 8);
+    const rounds = this.rampedRounds((k) => generateRounds(this.payload.grade, this.rng, k), 8, roundDifficulty);
     return { rounds, idx: 0, correct: 0, slots: new Array(rounds[0].word.length).fill(null),
       attempts: 0, hinted: false, result: null, locked: false, missed: 0, solved: [] };
   }
@@ -31,57 +32,86 @@ export class WordBuilder extends MinigameScene {
   buildGame(area) {
     const s = this.state, ui = this.ui, r = this.round;
     if (!r) return;
-    // The librarian's shelf: every word built becomes a book on it.
-    const stripH = Math.min(86 * ui, area.h * 0.16);
-    const { books } = bookshelf(this, { x: area.x, y: area.y, w: area.w, h: stripH }, { words: s.solved, slots: s.rounds.length, ui });
-    if (s.result === 'right' && books.length) { const b = books[books.length - 1]; b.setScale(0); this.tweens.add({ targets: b, scale: 1, duration: 380, ease: 'Back.Out' }); }
-    area = { x: area.x, y: area.y + stripH + 8, w: area.w, h: area.h - stripH - 8 };
-    const hintH = 76 * ui;
-    const hint = card(this, area.x + area.w / 2, area.y + hintH / 2, area.w, hintH);
-    const hintText = readable(this, area.x + area.w / 2 - 16 * ui, area.y + hintH / 2, `Hint: ${r.hint}`, T.body(this), { width: area.w - 80 * ui });
-    speakButton(this, area.x + area.w - 30 * ui, area.y + hintH / 2, 40 * ui, hintText, { rate: this.speechRate });
+    drawGlade(this, area, ui);
+    const wide = area.w / ui >= 600;
+    const cx = area.x + area.w / 2;
+    const n = r.word.length, gap = 8 * ui;
+
+    // Fit everything: the quest plaque goes first when space is short, then everything shrinks a little.
+    let L = null;
+    for (const [k, withPlaque] of [[1, true], [1, false], [0.88, false], [0.76, false], [0.66, false]]) {
+      const f = ui * k;
+      let cols = n, size = Math.min(72 * ui, (area.w - 40 * ui - gap * (n - 1)) / n);
+      if (size < 46 * ui && n > 6) { cols = Math.ceil(n / 2); size = Math.min(72 * ui, (area.w - 40 * ui - gap * (cols - 1)) / cols); }
+      const rows = Math.ceil(n / cols);
+      const fixed = f * (10 + 34 + 12 + (withPlaque ? 50 : 0) + 84 + 30 + 34 + 36 + 16 + 20 + 56 + 12) + (rows - 1) * gap * 2;
+      L = { k, f, cols, rows, size: Math.min(size, (area.h - fixed) / (2 * rows)), withPlaque };
+      if (L.size >= 46 * ui) break;
+    }
+    const { k, f, cols, rows, withPlaque } = L;
+    const size = Math.max(38 * ui, L.size);
+    const blockW = cols * size + (cols - 1) * gap, blockH = rows * size + (rows - 1) * gap;
+    const rowRect = (y) => ({ x: cx - blockW / 2, y, w: blockW, h: blockH });
+
+    // Found words: a tablet per word across the top, lit as each word is spelled.
+    let y = area.y + 10 * f;
+    const { tablets } = tabletTrail(this, { x: area.x + 16 * ui, y, w: area.w - 32 * ui, h: 34 * f }, s.solved.length, s.rounds.length, s.idx, f);
+    const lit = tablets[s.solved.length - 1];
+    if (s.result === 'right' && lit && this.tweens) {
+      const spark = this.add.circle(lit.x, lit.y, 8 * f, RUNE.glow, 0.8);
+      this.tweens.add({ targets: spark, scale: 3, alpha: 0, duration: 600, onComplete: () => spark.destroy() });
+    }
+    y += 34 * f + 12 * f;
+    if (withPlaque) { plaque(this, cx, y + 20 * f, 'Spell the word with the rune stones!', f, 16); y += 50 * f; }
+
+    // The hint on a parchment scroll, with the owl librarian keeping watch on wide screens.
+    const scrollW = wide ? Math.min(area.w * 0.72, 660 * ui) : area.w - 24 * ui, scrollH = 84 * f;
+    const scrollCy = y + scrollH / 2;
+    const paper = scroll(this, cx, scrollCy, scrollW, scrollH, f);
+    let hintText = null;
+    for (const px of [21, 18, 16]) {
+      if (hintText) hintText.destroy();
+      const style = { fontFamily: SERIF, fontSize: Math.round(px * f) + 'px', color: hex(RUNE.ink), fontStyle: 'bold', align: 'center' };
+      hintText = readable(this, cx - 18 * f, scrollCy, `Hint: ${r.hint}`, style, { width: scrollW - 130 * f, highlight: RUNE.reveal });
+      if (hintText.height <= scrollH - 22 * f) break;
+    }
+    speakButton(this, cx + scrollW / 2 - 52 * f, scrollCy, 40 * f, hintText, { rate: this.speechRate });
     this.autoRead(hintText);
-    enter(this, hint, { from: 'up', distance: 12 });
+    if (wide) owl(this, cx + scrollW / 2 - 30 * f, scrollCy - scrollH / 2 - 2 * f, 0.8 * f);
+    enter(this, paper, { from: 'up', distance: 12 });
+    y += scrollH + 30 * f;
 
-    const n = r.word.length, gap = 6 * ui;
-    let cols = n, size = Math.min(64 * ui, (area.w - gap * (n - 1)) / n);
-    if (size < 44 * ui && n > 6) { cols = Math.ceil(n / 2); size = Math.min(64 * ui, (area.w - gap * (cols - 1)) / cols); }
-    const rows = Math.ceil(n / cols);
-    size = Math.max(40 * ui, Math.min(size, (area.h - hintH - 130 * ui) / (2 * rows + 0.5))); // fit slots + tiles + buttons
-    const blockH = rows * size + (rows - 1) * gap;
-    const rowRect = (y) => ({ x: area.x + (area.w - (cols * size + (cols - 1) * gap)) / 2, y, w: cols * size + (cols - 1) * gap, h: blockH });
-
-    // Slots (inside a container so a wrong answer can shake the whole row)
-    const slotsY = area.y + hintH + 18 * ui;
+    // Carved sockets on the altar; placed stones sit in them (in a container so a wrong word shakes the row).
+    const slotCells = grid(rowRect(y), cols, rows, gap).slice(0, n);   // grid() gives cell centres
+    altar(this, slotCells.map((c) => ({ x: c.x - c.w / 2, y: c.y - c.h / 2, w: c.w, h: c.h })), f);
     this.slotBox = this.add.container(0, 0);
-    const slotCells = grid(rowRect(slotsY), cols, rows, gap);
-    const slotColor = s.result === 'right' ? THEME.success : s.result === 'wrong' ? THEME.danger : this.subject.accent;
+    const glow = { right: RUNE.right, wrong: RUNE.wrong, reveal: RUNE.reveal }[s.result] ?? RUNE.glow;
     s.slots.forEach((ti, i) => {
-      if (i >= n) return;
-      const letter = ti === null ? '' : r.scrambled[ti].toUpperCase();
-      const t = tile(this, slotCells[i].x, slotCells[i].y, size, letter, {
-        empty: ti === null, color: slotColor, textColor: THEME.onAccent, onTap: ti !== null && !s.locked ? () => this.tapSlot(i) : null
-      });
-      this.slotBox.add(t);
+      if (ti === null || !slotCells[i]) return;
+      const c = slotCells[i];
+      this.slotBox.add(runeStone(this, c.x, c.y, size * 0.94, r.scrambled[ti].toUpperCase(), {
+        glow, halo: !!s.result, moss: false, seed: ti, onTap: s.locked ? null : () => this.tapSlot(i)
+      }));
     });
-    text(this, area.x + area.w / 2, slotsY + blockH + 14 * ui, `Tries left: ${MAX_TRIES - s.attempts}`, T.small(this, s.attempts ? THEME.warningDark : THEME.ink2));
+    y += blockH + 34 * f;
+    triesPlaque(this, cx, y + 18 * f, MAX_TRIES - s.attempts, MAX_TRIES, f);
+    y += 36 * f + 16 * f;
 
-    // Letter tiles
-    const tilesY = slotsY + blockH + 30 * ui;
-    const tileCells = grid(rowRect(tilesY), cols, rows, gap);
+    // The rune stones to choose from.
+    const tileCells = grid(rowRect(y), cols, rows, gap);
     const letters = r.scrambled.map((letter, ti) => {
-      const used = s.slots.includes(ti);
-      const t = tile(this, tileCells[ti].x, tileCells[ti].y, size, letter.toUpperCase(), { onTap: used || s.locked ? null : () => this.tapTile(ti) });
-      if (used) t.setAlpha(0.25);
-      return t;
+      const used = s.slots.includes(ti), c = tileCells[ti];
+      const stone = runeStone(this, c.x, c.y, size, letter.toUpperCase(), { seed: ti, onTap: used || s.locked ? null : () => this.tapTile(ti) });
+      if (used) stone.setAlpha(0.22);
+      return stone;
     });
     enter(this, letters, { from: 'pop', delay: 80, stagger: 30 });
 
-    // Controls
-    const by = Math.max(tilesY + blockH + 40 * ui, area.y + area.h - 36 * ui);
-    const bw = Math.min(170 * ui, area.w / 2 - 8);
-    button(this, area.x + area.w / 2 - bw / 2 - 6, by, bw, 52 * ui, s.hinted ? 'Hint used' : 'Hint', { variant: 'secondary', fontSize: 18, onClick: () => this.hint(), disabled: s.hinted || s.locked });
-    button(this, area.x + area.w / 2 + bw / 2 + 6, by, bw, 52 * ui, 'Clear', { variant: 'ghost', fontSize: 18, onClick: () => this.clear(), disabled: s.locked });
+    // Get help (places the first letter) and Start over.
+    const by = Math.max(y + blockH + 48 * f, area.y + area.h - 40 * f);
+    const bw = Math.min(200 * f, (area.w - 48 * ui) / 2);
+    button(this, cx - bw / 2 - 8, by, bw, 56 * f, s.hinted ? 'Help used' : 'Get help!', { color: 0x2f5d62, textColor: 0xe8fff9, emoji: '🔍', fontSize: 19 * k, onClick: () => this.hint(), disabled: s.hinted || s.locked });
+    button(this, cx + bw / 2 + 8, by, bw, 56 * f, 'Start over!', { color: 0x5b3f7a, textColor: 0xf6ecff, emoji: '🔄', fontSize: 19 * k, onClick: () => this.clear(), disabled: s.locked });
   }
 
   tapTile(ti) {

@@ -34,6 +34,14 @@ export function mathSteps(prompt, answer) {
     if (x < 0) return [`Start at ${neg(x)} on the number line.`, `Move ${fmt(y)} to the right.`, `You land on ${a}.`];
     if (!Number.isInteger(x) || !Number.isInteger(y)) return ['Line up the decimal points.', `Add like whole numbers: ${fmt(x)} + ${fmt(y)} = ${a}.`, 'Keep the point in the same place.'];
     if (x + y <= 20) return [`Start at ${x}.`, `Count on ${y} more: ${countList(x, y, 1)}.`, `So ${x} + ${y} = ${a}.`];
+    if (y < 10) {
+      // Adding ones: just the ones change, or fill up to the next ten and add what is left.
+      const xo = x % 10, up = 10 - xo;
+      if (xo + y < 10) return [`Add the ones: ${xo} + ${y} = ${xo + y}.`, `The tens stay the same, so ${x - xo} + ${xo + y} = ${a}.`, `So ${x} + ${y} = ${a}.`];
+      const fill = `Make the next ten: ${x} + ${up} = ${x + up}.`;
+      return y === up ? [fill, `So ${x} + ${y} = ${a}.`] : [fill, `Add the other ${y - up}: ${x + up} + ${y - up} = ${a}.`, `So ${x} + ${y} = ${a}.`];
+    }
+    if (y % 10 === 0 && y < 100) return [`Count on in tens: ${countList(x, y / 10, 10)}.`, `So ${x} + ${y} = ${a}.`];
     const [big, rest] = chunk(y);
     if (rest === 0) return [`Add ${big} in one go: ${x} + ${big} = ${a}.`, `So ${x} + ${y} = ${a}.`];
     return [`Add ${big} first: ${x} + ${big} = ${x + big}.`, `Now add ${rest}: ${x + big} + ${rest} = ${a}.`, `So ${x} + ${y} = ${a}.`];
@@ -44,6 +52,15 @@ export function mathSteps(prompt, answer) {
     if (x < 0) return [`Start at ${neg(x)} on the number line.`, `Move ${fmt(y)} to the left.`, `You land on ${a}.`];
     if (!Number.isInteger(x) || !Number.isInteger(y)) return ['Line up the decimal points.', `Take away like whole numbers: ${fmt(x)} − ${fmt(y)} = ${a}.`, 'Keep the point in the same place.'];
     if (x <= 20) return [`Start at ${x}.`, `Count back ${y}: ${countList(x, y, -1)}.`, `So ${x} − ${y} = ${a}.`, `Check it: ${a} + ${y} = ${x}.`];
+    const check = [`So ${x} − ${y} = ${a}.`, `Check it: ${a} + ${y} = ${x}.`];
+    if (y < 10) {
+      // Taking away ones: just the ones change, or go back to the ten first and take away what is left.
+      const xo = x % 10;
+      if (xo >= y) return [`Take away the ones: ${xo} − ${y} = ${xo - y}.`, xo === y ? `No ones are left, just the tens: ${a}.` : `The tens stay the same, so ${x - xo} + ${xo - y} = ${a}.`, ...check];
+      if (xo === 0) return [`Start at ${x}.`, `Count back ${y}: ${countList(x, y, -1)}.`, ...check];
+      return [`Go back to the ten: ${x} − ${xo} = ${x - xo}.`, `Take away the other ${y - xo}: ${x - xo} − ${y - xo} = ${a}.`, ...check];
+    }
+    if (y % 10 === 0 && y < 100) return [`Count back in tens: ${countList(x, y / 10, -10)}.`, ...check];
     const [big, rest] = chunk(y);
     const steps = rest === 0
       ? [`Take away ${big}: ${x} − ${big} = ${a}.`]
@@ -58,7 +75,7 @@ export function mathSteps(prompt, answer) {
     }
     const groups = Math.min(Math.abs(y), 10);
     const shown = Array.from({ length: groups }, (_, i) => x * (i + 1));
-    return [`${x} × ${y} means ${y} groups of ${x}.`, `Count in ${x}s: ${list(shown)}${Math.abs(y) > 10 ? '…' : ''}.`, `So ${x} × ${y} = ${a}.`];
+    return [`${x} × ${y} means ${y} group${y === 1 ? '' : 's'} of ${x}.`, `Count in ${x}s: ${list(shown)}${Math.abs(y) > 10 ? '…' : ''}.`, `So ${x} × ${y} = ${a}.`];
   }
   if ((m = p.match(/^(\d+) ÷ (\d+)$/))) {
     const [x, y] = [n(m[1]), n(m[2])];

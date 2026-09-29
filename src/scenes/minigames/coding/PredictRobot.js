@@ -14,7 +14,8 @@ export class PredictRobot extends MazeGameScene {
   constructor() { super('MG_PredictRobot'); }
 
   initState() {
-    const rounds = generateRounds(this.rng, this.payload.band, ROUNDS);
+    // Longer programs take more tracing, so they come later.
+    const rounds = this.rampedRounds((k) => generateRounds(this.rng, this.payload.band, k), ROUNDS, (r) => JSON.stringify(r.program).length);
     return { rounds, idx: 0, phase: 'guess', guess: null, correct: 0, wasRight: null, editor: newEditorState(), ...this.robotState(rounds[0].level) };
   }
 

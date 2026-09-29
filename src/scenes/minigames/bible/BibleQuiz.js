@@ -11,7 +11,7 @@ import { stripe } from '../../../ui/Panel.js';
 import { ProgressBar } from '../../../ui/ProgressBar.js';
 import { enter } from '../../../ui/motion.js';
 import { Sfx } from '../../../systems/Audio.js';
-import { prioritiseWeak, weakSkills } from '../../../systems/Practice.js';
+import { readingDifficulty } from '../../../generators/boss.js';
 import { sheepFold, lampRow } from '../../../ui/Scenery.js';
 
 const KIND = { 'bible-quiz': 'quiz', 'bible-verse': 'verse' };
@@ -27,7 +27,7 @@ export class BibleQuiz extends MinigameScene {
     const tune = tuningFor(this.payload);
     const kind = KIND[this.payload.gameId] || 'quiz';
     const grade = this.payload.grade;
-    let questions = prioritiseWeak(generateRounds(grade, this.rng, tune.questions, kind), () => generateRounds(grade, this.rng, 12, kind), weakSkills(this.profile));
+    let questions = this.rampedRounds((k) => generateRounds(grade, this.rng, k, kind), tune.questions, readingDifficulty, () => generateRounds(grade, this.rng, 12, kind));
     if (kind === 'quiz') {
       // Two ordering rounds replace two questions, at positions 3 and 7 so they break up the multiple choice.
       const orders = orderRounds(grade, this.rng, 2);

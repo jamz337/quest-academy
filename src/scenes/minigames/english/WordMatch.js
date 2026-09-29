@@ -20,7 +20,10 @@ export class WordMatch extends MinigameScene {
 
   initState() {
     const bank = this.payload.gameId === 'bible-match' ? BIBLE_PAIRS[bandFor(this.payload.grade)] : undefined;
-    return { rounds: generateRounds(this.payload.grade, this.rng, bank, weakSkills(this.profile)), rIdx: 0, done: [], mistakes: {}, left: null, right: null,
+    // Rounds with shorter words (less to read) come first.
+    const load = (r) => r.pairs.reduce((sum, p) => sum + String(p.l).length + String(p.r).length, 0);
+    const rounds = generateRounds(this.payload.grade, this.rng, bank, weakSkills(this.profile)).sort((a, b) => load(a) - load(b));
+    return { rounds, rIdx: 0, done: [], mistakes: {}, left: null, right: null,
       first: null, flash: null, busy: false };
   }
 

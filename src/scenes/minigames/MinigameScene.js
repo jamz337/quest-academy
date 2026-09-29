@@ -8,7 +8,8 @@ import { stop as stopSpeech, rateFor } from '../../systems/Speech.js';
 import * as Store from '../../systems/Store.js';
 import { explainQuestion, explainSteps } from '../../data/explanations.js';
 import { skillLabel } from '../../data/skills.js';
-import { isNewSkill, markIntroduced } from '../../systems/Practice.js';
+import { isNewSkill, markIntroduced, prioritiseWeak, weakSkills } from '../../systems/Practice.js';
+import { rampTargets, rampFor, rampOrder } from '../../systems/Ramp.js';
 import { dueReviews, recordReview } from '../../systems/Review.js';
 import { grid } from '../../systems/Layout.js';
 import { readable } from '../../ui/ReadableText.js';
@@ -121,6 +122,22 @@ export class MinigameScene extends BaseScene {
     if (!right && choices) { try { explain = String(this.explain(q) || '').slice(0, 200) || undefined; } catch { explain = undefined; } }
     this.qlog.push({ skill: q.skill, right, ms: Date.now() - this.qStartAt, explained: !right, prompt: String(q.prompt || q.sentence || '').slice(0, 120), answer: String(q.answer ?? '').slice(0, 40), choices, explain });
     this.qStartAt = Date.now();
+  }
+
+  // ---- Difficulty ramp: easy first, a little harder each question (systems/Ramp.js) ---------------
+
+  /** How hard each of n questions should be, 0..1, easiest first, for this launch and this child. */
+  rampTargets(n) { return rampTargets(n, rampFor(this.payload, this.profile)); }
+
+  /**
+   * n questions climbing from easy to hard. `make(k)` returns k candidate questions, `score(q)` any number where
+   * bigger is harder. Weak skills still get their extra questions (from `makeMore`, when given), slotted in by score.
+   */
+  rampedRounds(make, n, score, makeMore = null) {
+    let list = rampOrder(make(Math.max(n * 3, n + 6)), this.rampTargets(n), score);
+    if (list.length < n) list = make(n);
+    if (makeMore) list = prioritiseWeak(list, makeMore, weakSkills(this.profile));
+    return list.map((q, i) => ({ q, i, s: Number(score(q)) || 0 })).sort((a, b) => a.s - b.s || a.i - b.i).map((x) => x.q);
   }
 
   /** Skills the player has never been introduced to get a worked example first. */

@@ -1,13 +1,12 @@
 import { MinigameScene } from '../MinigameScene.js';
 import { THEME } from '../../../ui/theme.js';
-import { generateRounds } from '../../../generators/math/fractions.js';
+import { generateRounds, roundDifficulty } from '../../../generators/math/fractions.js';
 import { grid, pointerPos } from '../../../systems/Layout.js';
 import { Sfx } from '../../../systems/Audio.js';
 import { T, text } from '../../../ui/TextStyles.js';
 import { button } from '../../../ui/Button.js';
 import { card } from '../../../ui/Card.js';
 import { enter } from '../../../ui/motion.js';
-import { prioritiseWeak, weakSkills } from '../../../systems/Practice.js';
 
 const TAU = Math.PI * 2;
 const PAR_MS = 120000;
@@ -19,7 +18,7 @@ export class FractionPizza extends MinigameScene {
 
   initState() {
     const grade = this.payload.grade;
-    const rounds = prioritiseWeak(generateRounds(grade, this.rng, 8), () => generateRounds(grade, this.rng, 10), weakSkills(this.profile));
+    const rounds = this.rampedRounds((k) => generateRounds(grade, this.rng, k), 8, roundDifficulty, () => generateRounds(grade, this.rng, 10));
     return { rounds, idx: 0, correct: 0, locked: false, picked: null, result: null, shaded: this.freshShade(rounds[0]), missed: {} };
   }
 

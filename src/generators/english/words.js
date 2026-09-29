@@ -14,3 +14,6 @@ export function generateRounds(grade, rng, n = 8) {
   const bank = WORDS[bandFor(grade)];
   return rng.sample(bank, Math.min(n, bank.length)).map(({ w, h }) => ({ word: w, hint: h, scrambled: scramble(w, rng) }));
 }
+
+/** How hard a round is, for ordering a game easy to hard: longer words have more letters to unscramble. */
+export const roundDifficulty = (r) => r.word.length;

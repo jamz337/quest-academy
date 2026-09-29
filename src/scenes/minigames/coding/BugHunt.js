@@ -13,7 +13,8 @@ export class BugHunt extends MazeGameScene {
 
   initState() {
     const pool = bugLevelsForBand(this.payload.band);
-    const puzzles = this.rng.sample(pool, Math.min(PUZZLES, pool.length));
+    // The bug levels are listed easiest first, so their place in the list is their difficulty.
+    const puzzles = this.rampedRounds((k) => this.rng.sample(pool, Math.min(k, pool.length)), Math.min(PUZZLES, pool.length), (p) => pool.indexOf(p));
     return {
       puzzles, idx: 0, program: cloneProgram(puzzles[0].program), editor: newEditorState(),
       attempts: 0, puzzleRuns: 0, solvedCount: 0, ...this.robotState(puzzles[0].level)

@@ -10,6 +10,8 @@ const { programText } = await import('../src/generators/coding/text.js');
 const { wordsQuestion } = await import('../src/generators/boss.js');
 const { Rng } = await import('../src/systems/Rng.js');
 const { BalloonPop } = await import('../src/scenes/minigames/math/BalloonPop.js');
+const { introFor, introDone } = await import('../src/scenes/minigames/math/BalloonIntro.js');
+const { explainParts, explainReveals } = await import('../src/scenes/minigames/math/BalloonExplain.js');
 const { FrogHop } = await import('../src/scenes/minigames/english/FrogHop.js');
 const { RobotDance } = await import('../src/scenes/minigames/coding/RobotDance.js');
 const { ArkAnimals } = await import('../src/scenes/minigames/bible/ArkAnimals.js');
@@ -78,7 +80,15 @@ describe('Balloon Pop (headless)', () => {
   it('pops the right balloon, deflates a wrong one, times out when the answer floats away, and finishes', () => {
     const s = makeScene(BalloonPop, { gameId: 'math-balloons', seed: 7 });
     expect(s.state.questions).toHaveLength(10);
-    if (findButton(s, 'Got it!')) click(findButton(s, 'Got it!'));   // a brand-new skill gets its worked example first
+    const skipIntro = () => { if (findButton(s, 'Got it!')) click(findButton(s, 'Got it!')); };   // a brand-new skill gets its worked example first
+    skipIntro();
+    // After a miss the working appears a step at a time; Got it! comes once it is all out.
+    const walkExplanation = () => {
+      flushTimers(s);
+      expect(s.state.explain).toBe(1);
+      for (let g = 0; g < 10 && findButton(s, 'Next step ▶'); g++) click(findButton(s, 'Next step ▶'));
+      click(findButton(s, 'Got it!'));
+    };
     expect(s.balloonSprites.filter(Boolean)).toHaveLength(4);
     const q = () => s.state.questions[s.state.idx];
     // right answer
@@ -89,27 +99,71 @@ describe('Balloon Pop (headless)', () => {
     flushTimers(s);
     expect(s.state.idx).toBe(1);
     // wrong answer: explanation with Next
+    skipIntro();
     i = s.state.balloons.findIndex((b) => String(b.choice) !== String(q().answer));
     s.balloonSprites[i].emit('pointerdown');
     expect(s.state.balloons[i].state).toBe('sad');
     expect(s.state.balloons.find((b) => String(b.choice) === String(q().answer)).state).toBe('glow');
-    expect(findButton(s, 'Next ▶')).toBeTruthy();
-    click(findButton(s, 'Next ▶'));
+    walkExplanation();
     expect(s.state.idx).toBe(2);
     // a second tap while locked does nothing; the answer floating past the top counts as a miss
+    skipIntro();
     s.update(0, 16);
     s.state.balloons.forEach((b) => { b.y = 1.2; });
     s.update(100, 16);
     expect(s.state.locked).toBe(true); expect(s.state.right).toBe(false);
-    click(findButton(s, 'Next ▶'));
+    walkExplanation();
     while (!s.finish.mock.calls.length) {
-      if (findButton(s, 'Got it!')) click(findButton(s, 'Got it!'));
+      skipIntro();
       const j = s.state.balloons.findIndex((b) => String(b.choice) === String(q().answer));
       s.balloonSprites[j].emit('pointerdown'); flushTimers(s);
     }
     expect(s.finish).toHaveBeenCalledWith(expect.objectContaining({ correct: 8, total: 10 }));
     expect(s.qlog).toHaveLength(10);
     expect(s.qlog[1].choices).toHaveLength(4);
+  });
+});
+
+describe('Balloon Pop new-skill intro', () => {
+  it('walks small take-aways on the number line and hides other working behind step balloons', () => {
+    const line = introFor({ prompt: '13 − 4', answer: 9, skill: 'sub' }, ['a', 'b']);
+    expect(line).toMatchObject({ mode: 'line', a: 13, b: 4, dir: -1, popped: 0 });
+    expect(introFor({ prompt: '5 + 6', answer: 11, skill: 'add' }, [])).toMatchObject({ mode: 'line', a: 5, b: 6, dir: 1 });
+    expect(introFor({ prompt: '5 + 16', answer: 21, skill: 'add' }, ['x'])).toMatchObject({ mode: 'steps' });
+    expect(introDone(line)).toBe(false);
+    line.popped = 4;
+    expect(introDone(line)).toBe(true);
+    const big = introFor({ prompt: '356 − 128', answer: 228, skill: 'sub' }, ['one', 'two', 'three']);
+    expect(big).toMatchObject({ mode: 'steps' });
+    big.popped = 2; expect(introDone(big)).toBe(false);
+    big.popped = 3; expect(introDone(big)).toBe(true);
+  });
+
+  it('pops in order, keeps its progress across a rebuild, and Got it! starts the game', () => {
+    const s = makeScene(BalloonPop, { gameId: 'math-balloons', grade: 2, seed: 7 });
+    s.state.intro = introFor({ prompt: '13 − 4', answer: 9, skill: 'sub' }, []);
+    s.rebuild();
+    const balloonNamed = (n) => s.objs.find((o) => o.active && o.numText && o.numText.text === String(n) && o.handlers.pointerdown);
+    balloonNamed(10).emit('pointerdown');          // out of order: nothing happens
+    expect(s.state.intro.popped).toBe(0);
+    balloonNamed(12).emit('pointerdown');
+    expect(s.state.intro.popped).toBe(1);
+    s.rebuild();
+    expect(s.state.intro.popped).toBe(1);
+    for (const n of [11, 10, 9]) balloonNamed(n).emit('pointerdown');
+    expect(introDone(s.state.intro)).toBe(true);
+    click(findButton(s, 'Got it!'));
+    expect(s.state.intro).toBeNull();
+    expect(s.balloonSprites.filter(Boolean)).toHaveLength(4);
+  });
+});
+
+describe('Balloon Pop explanation', () => {
+  it('splits the working from the answer and the check, revealing them in turn', () => {
+    const parts = explainParts(['Take away 10 first: 89 − 10 = 79.', 'Now take away 7: 79 − 7 = 72.', 'So 89 − 17 = 72.', 'Check it: 72 + 17 = 89.']);
+    expect(parts).toEqual({ work: ['Take away 10 first: 89 − 10 = 79.', 'Now take away 7: 79 − 7 = 72.'], so: '89 − 17 = 72', check: '72 + 17 = 89.' });
+    expect(explainReveals(parts)).toBe(3);
+    expect(explainReveals(explainParts(['Multiply the tops.', 'Multiply the bottoms.']))).toBe(2);
   });
 });
 

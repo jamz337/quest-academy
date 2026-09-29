@@ -1,6 +1,6 @@
 import { MinigameScene } from '../MinigameScene.js';
 import { THEME, hex } from '../../../ui/theme.js';
-import { wordsQuestion } from '../../../generators/boss.js';
+import { wordsQuestion, readingDifficulty } from '../../../generators/boss.js';
 import { T, text, FONT, WEIGHT } from '../../../ui/TextStyles.js';
 import { speakButton } from '../../../ui/Button.js';
 import { readable } from '../../../ui/ReadableText.js';
@@ -8,7 +8,6 @@ import { card } from '../../../ui/Card.js';
 import { stripe } from '../../../ui/Panel.js';
 import { enter } from '../../../ui/motion.js';
 import { Sfx } from '../../../systems/Audio.js';
-import { prioritiseWeak, weakSkills } from '../../../systems/Practice.js';
 
 const ROUNDS = 10;
 const PAR_MS = 110000;
@@ -34,7 +33,7 @@ export class FrogHop extends MinigameScene {
   }
 
   initState() {
-    const rounds = prioritiseWeak(this.makeRounds(ROUNDS), () => this.makeRounds(12), weakSkills(this.profile));
+    const rounds = this.rampedRounds((k) => this.makeRounds(k), ROUNDS, readingDifficulty, () => this.makeRounds(12));
     return { rounds, idx: 0, correct: 0, locked: false, picked: null, right: null, missed: {} };
   }
 

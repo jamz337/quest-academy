@@ -19,7 +19,8 @@ export class RobotDance extends MazeGameScene {
   constructor() { super('MG_RobotDance'); }
 
   initState() {
-    const rounds = danceRounds(this.rng, this.payload.band, ROUNDS);
+    // Longer dances take more remembering, so they come later.
+    const rounds = this.rampedRounds((k) => danceRounds(this.rng, this.payload.band, k), ROUNDS, (r) => JSON.stringify(r.program).length);
     return { rounds, idx: 0, phase: 'watch', picked: null, correct: 0, missed: {}, started: false, ...this.robotState(rounds[0].level) };
   }
 

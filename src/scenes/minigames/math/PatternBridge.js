@@ -1,12 +1,11 @@
 import { MinigameScene } from '../MinigameScene.js';
 import { THEME } from '../../../ui/theme.js';
-import { generateRounds } from '../../../generators/math/patterns.js';
+import { generateRounds, roundDifficulty } from '../../../generators/math/patterns.js';
 import { grid } from '../../../systems/Layout.js';
 import { T, text } from '../../../ui/TextStyles.js';
 import { button } from '../../../ui/Button.js';
 import { card, plank } from '../../../ui/Card.js';
 import { enter } from '../../../ui/motion.js';
-import { prioritiseWeak, weakSkills } from '../../../systems/Practice.js';
 
 const PAR_MS = 90000;
 const WOOD = 0xf0b36b, POST = 0xc99a6b;
@@ -17,7 +16,7 @@ export class PatternBridge extends MinigameScene {
 
   initState() {
     const grade = this.payload.grade;
-    const rounds = prioritiseWeak(generateRounds(grade, this.rng, 8), () => generateRounds(grade, this.rng, 10), weakSkills(this.profile));
+    const rounds = this.rampedRounds((k) => generateRounds(grade, this.rng, k), 8, roundDifficulty, () => generateRounds(grade, this.rng, 10));
     return { rounds, idx: 0, correct: 0, locked: false, picked: null, missed: {}, introduced: {} };
   }
 

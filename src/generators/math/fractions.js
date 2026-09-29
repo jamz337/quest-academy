@@ -93,3 +93,6 @@ export function generateRounds(grade, rng, n = 8) {
   }
   return out;
 }
+
+/** How hard a round is, for ordering a game easy to hard: bigger pizzas (denominators) are harder to picture. */
+export const roundDifficulty = (r) => r.den ?? Math.max(...(r.pizzas || []).map((p) => p.den), 0);

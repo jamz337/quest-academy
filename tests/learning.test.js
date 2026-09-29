@@ -14,6 +14,12 @@ describe('explanations', () => {
     expect(mathSteps('7 + 5', '12')).toEqual(['Start at 7.', 'Count on 5 more: 8, 9, 10, 11, 12.', 'So 7 + 5 = 12.']);
     expect(mathSteps('20 − 8', '12')).toEqual(['Start at 20.', 'Count back 8: 19, 18, 17, 16, 15, 14, 13, 12.', 'So 20 − 8 = 12.', 'Check it: 12 + 8 = 20.']);
     expect(mathSteps('812 − 250', '562')).toEqual(['Take away 200 first: 812 − 200 = 612.', 'Now take away 50: 612 − 50 = 562.', 'So 812 − 250 = 562.', 'Check it: 562 + 250 = 812.']);
+    // Ones only: place value, or bridging through the ten; whole tens are counted in tens.
+    expect(mathSteps('88 − 6', '82')).toEqual(['Take away the ones: 8 − 6 = 2.', 'The tens stay the same, so 80 + 2 = 82.', 'So 88 − 6 = 82.', 'Check it: 82 + 6 = 88.']);
+    expect(mathSteps('72 − 8', '64').slice(0, 2)).toEqual(['Go back to the ten: 72 − 2 = 70.', 'Take away the other 6: 70 − 6 = 64.']);
+    expect(mathSteps('89 − 20', '69')[0]).toBe('Count back in tens: 79, 69.');
+    expect(mathSteps('38 + 7', '45')).toEqual(['Make the next ten: 38 + 2 = 40.', 'Add the other 5: 40 + 5 = 45.', 'So 38 + 7 = 45.']);
+    expect(mathSteps('34 + 5', '39')[0]).toBe('Add the ones: 4 + 5 = 9.');
     expect(mathSteps('47 + 38', '85')).toEqual(['Add 30 first: 47 + 30 = 77.', 'Now add 8: 77 + 8 = 85.', 'So 47 + 38 = 85.']);
     expect(mathExplanation('36 ÷ 4', '9')).toContain('4 × 9 = 36');
     expect(mathSteps('25% of 80', '20')).toEqual(['25% means a quarter.', 'A quarter of 80 is 80 ÷ 4 = 20.']);

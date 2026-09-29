@@ -11,6 +11,7 @@ import { ProgressBar } from '../../../ui/ProgressBar.js';
 import { enter } from '../../../ui/motion.js';
 import { Sfx } from '../../../systems/Audio.js';
 import { prioritiseWeak, weakSkills } from '../../../systems/Practice.js';
+import { byDifficulty } from '../../../systems/Ramp.js';
 import { raceTrack } from '../../../ui/Scenery.js';
 import { shake } from '../../../ui/motion.js';
 import { lookSpriteTexture } from '../../../systems/Textures.js';
@@ -31,8 +32,9 @@ export class NumberDash extends MinigameScene {
   initState() {
     const tune = tuningFor(this.payload);
     const grade = this.payload.grade;
-    let questions = generateSet(grade, this.rng, tune.questions);
-    questions = prioritiseWeak(questions, () => generateSet(grade, this.rng, 12), weakSkills(this.profile));
+    // Easy first, a little harder each question; a skill the child has never met starts at the bottom rung.
+    let questions = generateSet(grade, this.rng, tune.questions, { targets: this.rampTargets(tune.questions), isNew: (k) => this.needsIntro(k) });
+    questions = byDifficulty(prioritiseWeak(questions, () => generateSet(grade, this.rng, 12), weakSkills(this.profile)));
     return {
       questions, idx: 0, correct: 0, locked: false, picked: null, right: null, typed: '', introduced: {},
       qStart: Date.now(), timeLimit: tune.questionTimeMs, parTimeMs: tune.parTimeMs, missed: {}
@@ -48,7 +50,7 @@ export class NumberDash extends MinigameScene {
   /** A solved example of a skill the player has never met, from a fresh question of that skill. */
   exampleFor(skill) {
     for (let i = 0; i < 40; i++) {
-      const q = generateQuestion(this.payload.grade, this.rng);
+      const q = generateQuestion(this.payload.grade, this.rng, 0);   // the first example is the gentlest kind
       if (q.skill === skill) return { problem: `${q.prompt.replace('\n', ' ')} = ${q.answer}`, steps: this.steps(q) };
     }
     return null;

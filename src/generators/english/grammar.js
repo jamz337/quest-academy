@@ -12,3 +12,6 @@ export function generateRounds(grade, rng, n = 10) {
 
 /** Sentence with the blank replaced by `fill` (or a visible gap). */
 export const fillBlank = (sentence, fill = '____') => sentence.replace(/_+/, fill);
+
+/** How hard a round is, for ordering a game easy to hard: longer sentences take more reading. */
+export const roundDifficulty = (r) => r.sentence.split(/\s+/).length;

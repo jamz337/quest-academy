@@ -82,3 +82,9 @@ export function bossQuestions(subject, grade, rng, n = 20) {
   }
   return out;
 }
+
+/**
+ * Reading load of a multiple-choice question, for ordering a game easy to hard where the generator has no finer
+ * notion of difficulty (word and Bible questions): shorter prompts and answers come first.
+ */
+export const readingDifficulty = (q) => String(q.prompt ?? q.sentence ?? '').length + (q.choices || []).join(' ').length / 3;

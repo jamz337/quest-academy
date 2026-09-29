@@ -1,6 +1,6 @@
 import { MinigameScene } from '../MinigameScene.js';
 import { THEME } from '../../../ui/theme.js';
-import { generateRounds, fillBlank } from '../../../generators/english/grammar.js';
+import { generateRounds, fillBlank, roundDifficulty } from '../../../generators/english/grammar.js';
 import { skillLabel } from '../../../data/skills.js';
 import { grid } from '../../../systems/Layout.js';
 import { T, text } from '../../../ui/TextStyles.js';
@@ -9,7 +9,6 @@ import { readable } from '../../../ui/ReadableText.js';
 import { card } from '../../../ui/Card.js';
 import { stripe } from '../../../ui/Panel.js';
 import { enter, shake } from '../../../ui/motion.js';
-import { prioritiseWeak, weakSkills } from '../../../systems/Practice.js';
 import { castleGate } from '../../../ui/Scenery.js';
 
 const PAR_MS = 90000;
@@ -20,7 +19,7 @@ export class GrammarGate extends MinigameScene {
 
   initState() {
     const grade = this.payload.grade;
-    const rounds = prioritiseWeak(generateRounds(grade, this.rng, 10), () => generateRounds(grade, this.rng, 12), weakSkills(this.profile));
+    const rounds = this.rampedRounds((k) => generateRounds(grade, this.rng, k), 10, roundDifficulty, () => generateRounds(grade, this.rng, 12));
     return { rounds, idx: 0, correct: 0, locked: false, picked: null, missed: {}, introduced: {} };
   }
 

@@ -8,6 +8,9 @@ import { stripe } from '../../../ui/Panel.js';
 import { enter } from '../../../ui/motion.js';
 import { Sfx } from '../../../systems/Audio.js';
 import { prioritiseWeak, weakSkills } from '../../../systems/Practice.js';
+import { byDifficulty } from '../../../systems/Ramp.js';
+import { balloonIntro, introFor, introDone } from './BalloonIntro.js';
+import { balloonExplain, explainParts } from './BalloonExplain.js';
 
 const COLOURS = [0xff5c6c, 0x3d8bff, 0x2ec46a, 0xffc531, 0xff6fae, 0x8b5cf6];
 const LANES = [0.16, 0.39, 0.61, 0.84];
@@ -23,7 +26,9 @@ export class BalloonPop extends MinigameScene {
   initState() {
     const tune = tuningFor(this.payload);
     const grade = this.payload.grade;
-    const questions = prioritiseWeak(generateSet(grade, this.rng, tune.questions), () => generateSet(grade, this.rng, 12), weakSkills(this.profile));
+    // Easy first, a little harder each question; a skill the child has never met starts at the bottom rung.
+    const ramp = generateSet(grade, this.rng, tune.questions, { targets: this.rampTargets(tune.questions), isNew: (k) => this.needsIntro(k) });
+    const questions = byDifficulty(prioritiseWeak(ramp, () => generateSet(grade, this.rng, 12), weakSkills(this.profile)));
     return {
       questions, idx: 0, correct: 0, locked: false, picked: null, right: null, missed: {}, introduced: {},
       timeLimit: tune.questionTimeMs, parTimeMs: tune.parTimeMs, balloons: this.launch(questions[0], 0, tune.questionTimeMs)
@@ -43,14 +48,19 @@ export class BalloonPop extends MinigameScene {
 
   progressLabel() { return `${Math.min(this.state.idx + 1, this.state.questions.length)} / ${this.state.questions.length}`; }
   progressRatio() { return this.state.idx / this.state.questions.length; }
-  enterKey() { return this.state.idx; }
+  enterKey() { return `${this.state.idx}${this.state.explain ? 'x' : ''}`; }
 
+  /** A solved question of this skill for the intro, preferring one small enough to walk on the number line. */
   exampleFor(skill) {
-    for (let i = 0; i < 40; i++) {
-      const q = generateQuestion(this.payload.grade, this.rng);
-      if (q.skill === skill) return { problem: `${q.prompt.replace('\n', ' ')} = ${q.answer}`, steps: this.steps(q) };
+    let fallback = null;
+    for (let i = 0; i < 60; i++) {
+      const q = generateQuestion(this.payload.grade, this.rng, 0);   // the first example is the gentlest kind
+      if (q.skill !== skill) continue;
+      const it = introFor(q, this.steps(q));
+      if (it.mode === 'line') return it;
+      fallback ||= it;
     }
-    return null;
+    return fallback;
   }
 
   buildGame(area) {
@@ -59,9 +69,24 @@ export class BalloonPop extends MinigameScene {
     this.balloonSprites = [];
     if (!q) return;
     if (!s.introduced[q.skill] && this.needsIntro(q.skill)) {
-      const example = this.exampleFor(q.skill);
       s.introduced[q.skill] = true;
-      if (example) return this.introPanel(area, q.skill, example, () => this.rebuild());
+      s.intro = this.exampleFor(q.skill);
+    }
+    // The intro keeps its pops in state, so a rotation mid-example comes back to the same moment.
+    if (s.intro) {
+      return balloonIntro(this, area, s.intro, {
+        onPop: () => { if (s.intro) { s.intro.popped += 1; if (introDone(s.intro)) Sfx.correct(); this.rebuild(); } },
+        onReplay: () => { if (s.intro) { s.intro.popped = 0; this.rebuild(); } },
+        onDone: () => { if (s.intro) this.markIntroduced(s.intro.skill); s.intro = null; this.qStartAt = Date.now(); this.rebuild(); }
+      });
+    }
+    // After a miss (and a moment to see the right balloon glow): the working, one step at a time.
+    if (s.explain) {
+      const problem = q.prompt.replace('\n', ' ');
+      return balloonExplain(this, area, { problem, parts: explainParts(this.steps(q)) }, s.explain, {
+        onReveal: () => { s.explain += 1; this.rebuild(); },
+        onDone: () => this.next()
+      });
     }
     const cx = area.x + area.w / 2;
     const promptH = Math.min(area.h * 0.22, 120 * ui);
@@ -76,7 +101,17 @@ export class BalloonPop extends MinigameScene {
     text(this, cx, area.y + promptH / 2 + 4 * ui, shown, T.at(this, shown.length > 14 ? 26 : 36, s.picked !== null ? (s.right ? THEME.successDark : THEME.danger) : THEME.ink, { fontStyle: '700' })).setDepth(6);
     text(this, cx, area.y + promptH - 14 * ui, s.picked === null ? 'Pop the balloon with the answer!' : s.right ? 'Pop! Well done.' : `The answer was ${q.answer}.`, T.small(this, THEME.ink2)).setDepth(6);
     enter(this, prompt, { from: 'up', distance: 12 });
-    if (s.picked !== null && !s.right) this.explanationPanel(area, q, () => this.next());
+  }
+
+  /** Let the child see the right balloon light up, then open the step-by-step explanation. */
+  explainSoon() {
+    const idx = this.state.idx;
+    this.time.delayedCall(1100, () => {
+      const s = this.state;
+      if (s.idx !== idx || !s.locked || s.right || s.explain) return;
+      s.explain = 1;
+      this.rebuild();
+    });
   }
 
   drawSky(r) {
@@ -137,6 +172,7 @@ export class BalloonPop extends MinigameScene {
     this.settle(i);
     this.wrongFeedback();
     this.rebuild();
+    this.explainSoon();
   }
 
   /** After a miss: the tapped balloon deflates, the right one lights up, and both hang high so the explanation has room. */
@@ -175,6 +211,7 @@ export class BalloonPop extends MinigameScene {
     this.settle(-1);
     this.wrongFeedback();
     this.rebuild();
+    this.explainSoon();
   }
 
   next() {
@@ -185,14 +222,14 @@ export class BalloonPop extends MinigameScene {
       const missedSkills = Object.entries(s.missed).sort((a, b) => b[1] - a[1]).map(([k]) => k);
       return this.finish({ correct: s.correct, total: s.questions.length, parTimeMs: s.parTimeMs, missedSkills });
     }
-    s.locked = false; s.picked = null; s.right = null;
+    s.locked = false; s.picked = null; s.right = null; s.explain = 0;
     s.balloons = this.launch(s.questions[s.idx], s.idx, s.timeLimit);
     this.rebuild();
   }
 
   update(time, delta) {
     const s = this.state;
-    if (this.finished || this.inReview || !this.sky || !this.balloonSprites) return;
+    if (this.finished || this.inReview || s.intro || !this.sky || !this.balloonSprites) return;
     const speed = Number.isFinite(s.timeLimit) ? 1.15 / s.timeLimit : 0;
     this.balloonSprites.forEach((c, i) => {
       const b = s.balloons[i];

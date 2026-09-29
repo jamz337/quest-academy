@@ -70,3 +70,6 @@ export function generateRounds(grade, rng, n = 8) {
   }
   return out;
 }
+
+/** How hard a round is, for ordering a game easy to hard: bigger numbers and rules beyond "add the same" are harder. */
+export const roundDifficulty = (r) => Math.log10(1 + Math.max(...r.terms.map((t) => Math.abs(Number(t)) || 0))) + (r.rule ? 1 : 0);

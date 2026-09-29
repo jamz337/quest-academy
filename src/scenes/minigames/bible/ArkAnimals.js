@@ -1,6 +1,6 @@
 import { MinigameScene } from '../MinigameScene.js';
 import { THEME } from '../../../ui/theme.js';
-import { bossQuestions } from '../../../generators/boss.js';
+import { bossQuestions, readingDifficulty } from '../../../generators/boss.js';
 import { tuningFor } from '../../../data/grades.js';
 import { grid } from '../../../systems/Layout.js';
 import { T, text } from '../../../ui/TextStyles.js';
@@ -12,7 +12,6 @@ import { ProgressBar } from '../../../ui/ProgressBar.js';
 import { enter } from '../../../ui/motion.js';
 import { Sfx } from '../../../systems/Audio.js';
 import { fireworks } from '../../../ui/Fireworks.js';
-import { prioritiseWeak, weakSkills } from '../../../systems/Practice.js';
 
 const ROUNDS = 8;
 const ANIMALS = ['🦁', '🐘', '🦒', '🐒', '🐑', '🐄', '🦓', '🐰', '🦉', '🐢', '🐧', '🦘', '🐷', '🦊'];
@@ -30,7 +29,7 @@ export class ArkAnimals extends MinigameScene {
   initState() {
     const tune = tuningFor(this.payload);
     const grade = this.payload.grade;
-    const questions = prioritiseWeak(bossQuestions('bible', grade, this.rng, ROUNDS), () => bossQuestions('bible', grade, this.rng, 10), weakSkills(this.profile));
+    const questions = this.rampedRounds((k) => bossQuestions('bible', grade, this.rng, k), ROUNDS, readingDifficulty, () => bossQuestions('bible', grade, this.rng, 10));
     return {
       questions, animals: this.rng.shuffle(ANIMALS).slice(0, ROUNDS), idx: 0, correct: 0, boarded: 0, locked: false, picked: null, right: null, missed: {}, finale: false,
       qStart: Date.now(), timeLimit: tune.questionTimeMs + 6000, parTimeMs: tune.parTimeMs + 30000
