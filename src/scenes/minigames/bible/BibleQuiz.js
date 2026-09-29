@@ -59,7 +59,7 @@ export class BibleQuiz extends MinigameScene {
     const size = order ? 20 : q.prompt.length > 90 ? 17 : q.prompt.length > 50 ? 20 : 24;
     const question = readable(this, cx, area.y + promptH / 2 - 12 * ui, q.prompt, T.at(this, size, THEME.ink, { fontStyle: '700' }), { width: area.w - 48 });
     speakButton(this, area.x + area.w - 30 * ui, area.y + 30 * ui, 40 * ui, question, { rate: this.speechRate });
-    this.autoRead(question);
+    this.autoRead(question, s.picked === null && !order ? q.choices : null);
     if (s.picked !== null && q.ref) text(this, cx, area.y + promptH - 34 * ui, q.ref, T.small(this, this.subject.dark));
     this.timerBar = new ProgressBar(this, cx, area.y + promptH - 16 * ui, area.w - 48, 8 * ui, { color: THEME.success, value: 1 });
     if (!Number.isFinite(s.timeLimit)) this.timerBar.setVisible(false);
@@ -98,7 +98,9 @@ export class BibleQuiz extends MinigameScene {
         if (choice === q.answer) opts.variant = 'success';
         else if (i === s.picked) opts.variant = 'danger';
       }
-      const b = button(this, c.x, c.y, c.w, Math.min(c.h, 100 * ui), choice, opts);
+      const bh = Math.min(c.h, 100 * ui);
+      const b = button(this, c.x, c.y, c.w, bh, choice, opts);
+      this.answerSpeaker(b, c.w, bh, choice);
       if (s.picked !== null && choice !== q.answer && i !== s.picked) b.setAlpha(0.45);
       return b;
     });
@@ -116,7 +118,10 @@ export class BibleQuiz extends MinigameScene {
       let variant = 'secondary', label = step;
       if (s.picked !== null) { variant = pos === correctPos ? 'success' : 'danger'; label = `${correctPos + 1}. ${step}`; }
       else if (pos >= 0) { variant = 'primary'; label = `${pos + 1}. ${step}`; }
-      return button(this, c.x, c.y, c.w, Math.max(44 * ui, Math.min(c.h, 60 * ui)), label, { variant, fontSize: step.length > 34 ? 14 : 16, wrap: true, radius: THEME.radius.md, onClick: () => this.pickStep(i) });
+      const bh = Math.max(44 * ui, Math.min(c.h, 60 * ui));
+      const b = button(this, c.x, c.y, c.w, bh, label, { variant, fontSize: step.length > 34 ? 14 : 16, wrap: true, radius: THEME.radius.md, onClick: () => this.pickStep(i) });
+      this.answerSpeaker(b, c.w, bh, step);
+      return b;
     });
     enter(this, made, { from: 'up', delay: 60, stagger: 30 });
   }

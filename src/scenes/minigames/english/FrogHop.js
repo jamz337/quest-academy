@@ -53,7 +53,7 @@ export class FrogHop extends MinigameScene {
     text(this, cx, area.y + 28 * ui, s.picked === null ? 'Hop to the lily pad with the right answer' : s.right ? 'Safe and dry!' : `Splash! The answer was ${q.answer}.`, T.small(this, s.picked === null ? THEME.ink2 : s.right ? THEME.successDark : THEME.danger));
     const body = readable(this, cx, area.y + promptH / 2 + 14 * ui, q.prompt, T.at(this, q.prompt.length > 60 || lines > 1 ? 17 : 22, THEME.ink, { fontStyle: '700' }), { width: area.w - 64 * ui });
     speakButton(this, area.x + area.w - 30 * ui, area.y + 28 * ui, 40 * ui, body, { rate: this.speechRate });
-    this.autoRead(body);
+    this.autoRead(body, s.picked === null ? q.choices : null);
     enter(this, prompt, { from: 'up', distance: 12 });
 
     const pond = { x: area.x, y: area.y + promptH + 10, w: area.w, h: area.h - promptH - 10 };
@@ -119,6 +119,7 @@ export class FrogHop extends MinigameScene {
     c.setSize(p.w, p.h);
     if (sunk) { c.setAlpha(0.35); c.y += 8 * ui; }
     if (!s.locked) { c.setInteractive({ useHandCursor: true }); c.on('pointerdown', () => this.pick(i)); }
+    this.answerSpeaker(c, p.w + 12 * ui, p.h + 40 * ui, str);   // floats just above the pad's top-right edge
     return c;
   }
 

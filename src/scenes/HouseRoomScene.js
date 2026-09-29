@@ -9,6 +9,7 @@ import { card } from '../ui/Card.js';
 import { chip } from '../ui/Chip.js';
 import { button, iconButton, speakButton } from '../ui/Button.js';
 import { readable } from '../ui/ReadableText.js';
+import { answerSpeaker, readQuestionThenAnswers } from '../ui/AnswerSpeech.js';
 import { modal } from '../ui/Modal.js';
 import { StarRow } from '../ui/StarRow.js';
 import { ProgressBar } from '../ui/ProgressBar.js';
@@ -145,7 +146,7 @@ export class HouseRoomScene extends BaseScene {
     const prompt = readable(this, cx, area.y + promptH / 2 + 6 * ui, q.q, T.at(this, q.q.length > 60 ? 18 : 21, THEME.ink, { fontStyle: '700' }), { width: area.w - 56 });
     const sb = speakButton(this, area.x + area.w - 30 * ui, area.y + 26 * ui, 40 * ui, prompt, { rate: this.speechRate });
     if (sb) sb.setDepth(5);
-    if (Store.getProfile()?.readAloud === 'auto' && this.animateEnter) this.time.delayedCall(350, () => { if (prompt.active) prompt.read({ rate: this.speechRate }); });
+    if (Store.getProfile()?.readAloud === 'auto' && this.animateEnter) readQuestionThenAnswers(this, prompt, answered ? null : q.choices, { rate: this.speechRate });
     enter(this, k, { from: 'up', distance: 12 });
     // Four answers in a column (two columns when the screen is wide enough for two readable buttons), leaving
     // room underneath for the explanation and the Next button. Picture questions show a 2 x 2 grid of cards.
@@ -161,6 +162,7 @@ export class HouseRoomScene extends BaseScene {
       const isAnswer = c === q.answer, picked = s.picked === i;
       const variant = !answered ? 'secondary' : isAnswer ? 'success' : picked ? 'danger' : 'ghost';
       const b = button(this, x, y, bw, bh, c, { variant, fontSize: c.length > 30 ? 14 : 16, disabled: answered && !isAnswer && !picked, onClick: () => this.pick(i) });
+      answerSpeaker(this, b, bw, bh, c, { rate: this.speechRate });
       if (answered && picked && !isAnswer) shake(this, b, 5);
       return b;
     });
@@ -198,6 +200,7 @@ export class HouseRoomScene extends BaseScene {
       } else k.add(this.add.text(0, -14 * ui, pic, { fontSize: Math.round(Math.min(picH * 0.75, 52 * ui)) + 'px' }).setOrigin(0.5));
       k.add(this.add.text(0, bh / 2 - 14 * ui, c, { ...T.small(this, THEME.ink, { fontStyle: '700' }), wordWrap: { width: bw - 16 }, align: 'center' }).setOrigin(0.5));
       if (answered && (isAnswer || picked)) k.add(this.add.text(bw / 2 - 12 * ui, -bh / 2 + 12 * ui, isAnswer ? '✓' : '✗', T.bodyBold(this, isAnswer ? THEME.successDark : THEME.danger)).setOrigin(0.5));
+      else answerSpeaker(this, k, bw, bh, c, { rate: this.speechRate });
       if (answered && picked && !isAnswer) shake(this, k, 5);
       return k;
     });

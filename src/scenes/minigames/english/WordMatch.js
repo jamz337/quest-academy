@@ -82,6 +82,7 @@ export class WordMatch extends MinigameScene {
     const c = card(this, cell.x, cell.y, cell.w, cell.h, { color: style.color, stroke: style.stroke, strokeWidth: 2, shadow: 'sm', onTap: style.active ? onTap : null });
     const fontSize = Math.round((label.length > 14 ? 15 : label.length > 9 ? 18 : 22) * ui) + 'px';
     c.add(this.add.text(0, 0, label, { ...T.bodyBold(this), fontSize, color: hex(style.textColor), wordWrap: { width: cell.w - 16 } }).setOrigin(0.5));
+    this.answerSpeaker(c, cell.w, cell.h, label);
     return c;
   }
 

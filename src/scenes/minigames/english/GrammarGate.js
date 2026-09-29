@@ -59,7 +59,7 @@ export class GrammarGate extends MinigameScene {
     const long = shown.length > 40;
     const sentence = readable(this, cx, area.y + promptH / 2 + 12 * ui, shown, T.at(this, long ? 22 : 28, s.picked === null ? THEME.ink : THEME.successDark), { width: area.w - 32 });
     speakButton(this, area.x + area.w - 30 * ui, area.y + 30 * ui, 40 * ui, sentence, { rate: this.speechRate });
-    this.autoRead(sentence);
+    this.autoRead(sentence, s.picked === null ? r.options : null);
     enter(this, prompt, { from: 'up', distance: 12 });
 
     const top = area.y + promptH + gap;
@@ -69,7 +69,9 @@ export class GrammarGate extends MinigameScene {
       const c = cells[i];
       let variant = 'secondary', faded = false;
       if (s.picked !== null) { if (i === r.answer) variant = 'success'; else if (i === s.picked) variant = 'danger'; else faded = true; }
-      const b = button(this, c.x, c.y, c.w, Math.max(56 * ui, Math.min(c.h, 96 * ui)), opt, { variant, fontSize: opt.length > 10 ? 20 : 26, wrap: true, onClick: () => this.pick(i) });
+      const bh = Math.max(56 * ui, Math.min(c.h, 96 * ui));
+      const b = button(this, c.x, c.y, c.w, bh, opt, { variant, fontSize: opt.length > 10 ? 20 : 26, wrap: true, onClick: () => this.pick(i) });
+      this.answerSpeaker(b, c.w, bh, opt);
       if (faded) b.setAlpha(0.45);
       return b;
     });

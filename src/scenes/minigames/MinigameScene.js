@@ -13,6 +13,7 @@ import { rampTargets, rampFor, rampOrder } from '../../systems/Ramp.js';
 import { dueReviews, recordReview } from '../../systems/Review.js';
 import { grid } from '../../systems/Layout.js';
 import { readable } from '../../ui/ReadableText.js';
+import { answerSpeaker, readQuestionThenAnswers } from '../../ui/AnswerSpeech.js';
 import { button, iconButton, speakButton } from '../../ui/Button.js';
 import { card } from '../../ui/Card.js';
 import { enter } from '../../ui/motion.js';
@@ -67,7 +68,7 @@ export class MinigameScene extends BaseScene {
     text(this, cx, area.y + 48 * ui, this.reviewPicked === null ? 'You missed this one last time. Try again!' : this.reviewPicked === -2 ? 'Yes! That one is sticking.' : `The answer is ${q.answer}.`, T.small(this, THEME.ink2));
     const body = readable(this, cx, area.y + promptH / 2 + 18 * ui, q.prompt, T.at(this, q.prompt.length > 60 || lines > 2 ? 17 : 24, THEME.ink, { fontStyle: '700' }), { width: area.w - 56 * ui });
     speakButton(this, area.x + area.w - 30 * ui, area.y + 30 * ui, 40 * ui, body, { rate: this.speechRate });
-    this.autoRead(body);
+    this.autoRead(body, this.reviewPicked === null ? q.choices : null);
     enter(this, k, { from: 'up', distance: 12 });
     const top = area.y + promptH + 12;
     const long = q.choices.some((c) => String(c).length > 14);
@@ -77,7 +78,9 @@ export class MinigameScene extends BaseScene {
       const c = cells[i];
       let variant = 'secondary', faded = false;
       if (this.reviewPicked !== null) { if (choice === q.answer) variant = 'success'; else if (i === this.reviewPicked) variant = 'danger'; else faded = true; }
-      const b = button(this, c.x, c.y, c.w, Math.max(52 * ui, Math.min(c.h, 84 * ui)), String(choice), { variant, fontSize: long ? 16 : 22, wrap: true, onClick: () => this.pickReview(i) });
+      const bh = Math.max(52 * ui, Math.min(c.h, 84 * ui));
+      const b = button(this, c.x, c.y, c.w, bh, String(choice), { variant, fontSize: long ? 16 : 22, wrap: true, onClick: () => this.pickReview(i) });
+      this.answerSpeaker(b, c.w, bh, choice);
       if (faded) b.setAlpha(0.45);
       return b;
     });
@@ -275,11 +278,17 @@ export class MinigameScene extends BaseScene {
   get speechRate() { return rateFor(this.payload.grade); }
   get autoReads() { return Store.getProfile()?.readAloud === 'auto'; }
 
-  /** Games call this with their prompt (a ReadableText): in automatic mode it is read when the round changes. */
-  autoRead(readableText) {
+  /**
+   * Games call this with their prompt (a ReadableText): in automatic mode it is read when the round changes, and
+   * then the answers (`choices`) are read too, unless the player turned READ ANSWERS off.
+   */
+  autoRead(readableText, choices = null) {
     if (!readableText || !this.animateEnter || !this.autoReads) return;
-    this.time.delayedCall(350, () => { if (readableText.active) readableText.read({ rate: this.speechRate }); });
+    readQuestionThenAnswers(this, readableText, choices, { rate: this.speechRate });
   }
+
+  /** A small 🔊 in the corner of an answer (w x h, centred on `host`) that reads just that answer. */
+  answerSpeaker(host, w, h, words) { return answerSpeaker(this, host, w, h, words, { rate: this.speechRate }); }
 
   /** Quick screen flash for right/wrong feedback. */
   flash(color, alpha = 0.14) {

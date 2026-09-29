@@ -5,11 +5,11 @@ export function defaultSave() {
   return { version: SAVE_VERSION, activeProfileId: null, settings: { sound: true, lastMode: 'roam' }, profiles: {}, deleted: {} };
 }
 
-export function newProfile({ name, avatar = 0, grade = 3, look = null, readAloud = 'auto', timers = 'on' }) {
+export function newProfile({ name, avatar = 0, grade = 3, look = null, readAloud = 'auto', readAnswers = 'on', timers = 'on' }) {
   const id = 'p_' + Math.random().toString(36).slice(2, 8);
   const now = Date.now();
   return {
-    id, name: String(name || 'Player').slice(0, 14), avatar, look, grade, readAloud, timers,
+    id, name: String(name || 'Player').slice(0, 14), avatar, look, grade, readAloud, readAnswers, timers,
     createdAt: now, updatedAt: now, coins: 0, xp: 0, badges: [], mastery: {}, charms: {}, skills: {}, recentMisses: [], goal: null, timers: 'on', spelling: { words: {}, lists: {}, sessions: 0 }, social: { rooms: {} }, story: { started: false, announced: [], finale: false }, inventory: { owned: [], equipped: {}, decor: {}, spent: 0, visited: false, snacks: {} },
     games: {}, coding: { levels: {} },
     world: { x: null, y: null, unlockedZones: ['math', 'words', 'code', 'bible'], npcsTalked: [], coinsCollected: [], bosses: {}, duels: {} }
@@ -36,6 +36,7 @@ export function migrate(data) {
     p.inventory ||= { owned: [], equipped: {}, decor: {}, spent: 0, visited: false };
     p.inventory.snacks ||= {};
     if (!p.readAloudChosen) p.readAloud = 'auto';   // read everything aloud unless the player picked otherwise
+    p.readAnswers ||= 'on';   // a 🔊 on every answer unless the player turned it off
     p.world ||= { x: null, y: null, npcsTalked: [], coinsCollected: [] };
     p.world.unlockedZones = ['math', 'words', 'code', 'bible']; p.world.npcsTalked ||= []; p.world.coinsCollected ||= []; p.world.bosses ||= {}; p.world.duels ||= {};
   }

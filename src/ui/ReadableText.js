@@ -76,7 +76,8 @@ export class ReadableText extends Phaser.GameObjects.Container {
   /** Read this text aloud with the words lighting up. Returns the speech handle or null. */
   read(opts = {}) {
     if (!canSpeak()) return null;
-    return speakWords(this.wordTexts, { ...opts, onWord: (i) => this.highlight(i), onEnd: () => this.clear() });
+    const { onEnd, ...rest } = opts;
+    return speakWords(this.wordTexts, { ...rest, onWord: (i) => this.highlight(i), onEnd: (cancelled) => { this.clear(); if (onEnd) onEnd(cancelled); } });
   }
 }
 

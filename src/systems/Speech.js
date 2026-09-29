@@ -152,7 +152,8 @@ function announce(s) {
 let current = null;   // { cancel } for whatever is being read, so a new reading clears the old highlight
 
 /**
- * Speak `words` (on-screen words) and call onWord(i) as each is reached and onEnd() when finished or cancelled.
+ * Speak `words` (on-screen words) and call onWord(i) as each is reached and onEnd(cancelled) when finished or
+ * cancelled (cancelled is true when stop() or cancel() cut it short, so a follow-on can wait for a natural end).
  * opts: { rate, pitch, voice: 'female'|'male'|null (the narrator is female), speaker (id for a stable tweak), onWord, onEnd }
  * Returns a handle with cancel(), or null when speech is unavailable.
  */
@@ -165,8 +166,8 @@ export function speakWords(words, { rate = 0.9, pitch = 1, voice = 'female', spe
   const timers = [];
   let done = false, sawBoundary = false, last = -1;
   const say = (i) => { if (done || i === last || i < 0) return; last = i; if (onWord) onWord(i); };
-  const finish = () => { if (done) return; done = true; timers.forEach(clearTimeout); if (onEnd) onEnd(); if (current === handle) current = null; };
-  const handle = { cancel: () => { finish(); try { s.cancel(); } catch { /* ignore */ } } };
+  const finish = (cancelled = false) => { if (done) return; done = true; timers.forEach(clearTimeout); if (onEnd) onEnd(cancelled === true); if (current === handle) current = null; };
+  const handle = { cancel: () => { finish(true); try { s.cancel(); } catch { /* ignore */ } } };
   try {
     const u = new SpeechSynthesisUtterance(spoken);
     const v = pickVoice(s, voice);
@@ -192,7 +193,7 @@ export function speakWords(words, { rate = 0.9, pitch = 1, voice = 'female', spe
         });
       }, 450));
     };
-    u.onend = finish; u.onerror = finish;
+    u.onend = () => finish(false); u.onerror = (e) => finish(!!e && (e.error === 'interrupted' || e.error === 'canceled'));
     current = handle;
     s.speak(u);
     return handle;

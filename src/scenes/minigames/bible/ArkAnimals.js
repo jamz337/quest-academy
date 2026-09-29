@@ -52,7 +52,7 @@ export class ArkAnimals extends MinigameScene {
     const size = q.prompt.length > 90 ? 15 : q.prompt.length > 50 ? 17 : 21;
     const question = readable(this, cx, area.y + promptH / 2 - 8 * ui, q.prompt, T.at(this, size, THEME.ink, { fontStyle: '700' }), { width: area.w - 64 * ui });
     speakButton(this, area.x + area.w - 30 * ui, area.y + 28 * ui, 40 * ui, question, { rate: this.speechRate });
-    this.autoRead(question);
+    this.autoRead(question, s.picked === null ? q.choices : null);
     if (s.picked !== null && q.ref) text(this, cx, area.y + promptH - 30 * ui, q.ref, T.small(this, this.subject.dark));
     this.timerBar = new ProgressBar(this, cx, area.y + promptH - 13 * ui, area.w - 48, 7 * ui, { color: THEME.success, value: 1 });
     if (!Number.isFinite(s.timeLimit)) this.timerBar.setVisible(false);
@@ -69,7 +69,9 @@ export class ArkAnimals extends MinigameScene {
       const c = cells[i];
       const opts = { variant: 'secondary', fontSize: choice.length > 14 ? 15 : 19, radius: THEME.radius.lg, wrap: true, onClick: () => this.pick(i) };
       if (s.picked !== null) { if (choice === q.answer) opts.variant = 'success'; else if (i === s.picked) opts.variant = 'danger'; }
-      const b = button(this, c.x, c.y, c.w, Math.max(52 * ui, Math.min(c.h, 84 * ui)), choice, opts);
+      const bh = Math.max(52 * ui, Math.min(c.h, 84 * ui));
+      const b = button(this, c.x, c.y, c.w, bh, choice, opts);
+      this.answerSpeaker(b, c.w, bh, choice);
       if (s.picked !== null && choice !== q.answer && i !== s.picked) b.setAlpha(0.45);
       return b;
     });

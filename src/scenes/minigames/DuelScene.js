@@ -158,7 +158,7 @@ export class DuelScene extends MinigameScene {
       question = readable(this, box.x + box.w / 2, box.y + box.h / 2 + 4 * ui, q.prompt, T.at(this, size, THEME.ink, { fontStyle: lines > 3 ? '500' : '700' }), { width: box.w - 32, align: lines > 3 ? 'left' : 'center' });
     }
     speakButton(this, box.x + box.w - 22 * ui, box.y + 18 * ui, 34 * ui, question, { rate: this.speechRate * (opp.rate || 1), pitch: opp.pitch || 1, voice: opp.voice, speaker: opp.id });
-    this.autoRead(question);
+    this.autoRead(question, s.phase === 'solve' && s.picked === null && !code ? q.choices.filter((_, i) => !s.hidden.includes(i)) : null);
     this.timerBar = new ProgressBar(this, box.x + box.w / 2, box.y + box.h - 10 * ui, box.w - 40, 6 * ui, { color: THEME.success, value: 1 });
     if (!Number.isFinite(s.timeLimit)) this.timerBar.setVisible(false);
 
@@ -265,6 +265,7 @@ export class DuelScene extends MinigameScene {
         const opts = { variant: 'secondary', fontSize: choice.length > 8 ? 15 : 22, radius: THEME.radius.md, onClick: () => this.pick(i) };
         if (s.picked !== null) { if (choice === q.answer) opts.variant = 'success'; else if (i === s.picked) opts.variant = 'danger'; }
         const b = button(this, c.x, c.y, c.w, c.h, choice, opts);
+        if (!q.code) this.answerSpeaker(b, c.w, c.h, choice);
         if (s.picked !== null && choice !== q.answer && i !== s.picked) b.setAlpha(0.45);
         return b;
       }).filter(Boolean);
