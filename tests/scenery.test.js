@@ -50,6 +50,21 @@ describe('older games with scenery (headless)', () => {
     expect(s.state.idx).toBe(2);
   });
 
+  it('Grammar Gate lowers the portcullis a notch for each right word, and not for a wrong one', () => {
+    const s = makeScene(GrammarGate, { gameId: 'eng-grammar', subject: 'words' });
+    const gotIt = () => { if (findButton(s, 'Got it!')) click(findButton(s, 'Got it!')); };   // a new skill's intro comes before the gate
+    const y0 = s.gate.bars.y;
+    s.pick(s.round.answer); flushTimers(s); gotIt();
+    const y1 = s.gate.bars.y;
+    expect(y1).toBeGreaterThan(y0);
+    expect(s.state.marks).toEqual([true]);
+    s.pick((s.round.answer + 1) % s.round.options.length);
+    click(findButton(s, 'Next ▶')); gotIt();
+    expect(s.gate.bars.y).toBeCloseTo(y1);
+    expect(s.state.marks).toEqual([true, false]);
+    expect(s.gate.yFor(1)).toBeGreaterThan(s.gate.yFor(0.5));
+  });
+
   it('Grammar Gate raises the gate on right answers', () => {
     const s = makeScene(GrammarGate, { gameId: 'eng-grammar', subject: 'words' });
     const r = () => s.round;

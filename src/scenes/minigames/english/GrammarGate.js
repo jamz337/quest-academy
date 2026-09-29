@@ -1,5 +1,5 @@
 import { MinigameScene } from '../MinigameScene.js';
-import { THEME, hex } from '../../../ui/theme.js';
+import { THEME, hex, darken } from '../../../ui/theme.js';
 import { generateRounds, fillBlank, roundDifficulty } from '../../../generators/english/grammar.js';
 import { skillLabel } from '../../../data/skills.js';
 import { grid } from '../../../systems/Layout.js';
@@ -7,14 +7,14 @@ import { FONT, WEIGHT } from '../../../ui/TextStyles.js';
 import { speakButton } from '../../../ui/Button.js';
 import { readable } from '../../../ui/ReadableText.js';
 import { enter, shake } from '../../../ui/motion.js';
-import { RUNE, drawGlade, scroll, plaque, runeSlab, tabletTrail, owl } from './RuneScenery.js';
+import { CASTLE, drawCourtyard, gatehouse, noticeBoard, plank, shieldRow } from './CastleScenery.js';
 
 const PAR_MS = 90000;
 
 /**
- * Grammar Gate, in Word Builder's "ancient runes" look: the sentence is on a parchment scroll in the moonlit glade,
- * the three words to choose from are glowing rune slabs, and each sentence answered lights (or cracks) one of the
- * gate's rune tablets across the top. 10 sentences.
+ * Grammar Gate: a castle at dusk, a cousin of Word Builder's rune glade. Every right word drops the iron portcullis
+ * one notch until the gate is shut for the night. The sentence is on a notice board, the words to choose from are
+ * wooden planks bound with iron, and a row of shields shows each sentence (gold right, cracked missed). 10 sentences.
  */
 export class GrammarGate extends MinigameScene {
   constructor() { super('MG_GrammarGate'); }
@@ -47,57 +47,64 @@ export class GrammarGate extends MinigameScene {
       s.introduced[r.skill] = true;
       if (example) return this.introPanel(area, r.skill, example, () => this.rebuild());
     }
-    drawGlade(this, area, ui);
-    const cx = area.x + area.w / 2, wide = area.w / ui >= 600;
+    const cx = area.x + area.w / 2, total = s.rounds.length;
     const answered = s.picked !== null, rightNow = answered && s.picked === r.answer;
-    // Shrink everything a little on short screens so the slabs keep a comfortable size.
+    // Shrink everything a little on short screens so the planks keep a comfortable size.
     const f = ui * Math.min(1, Math.max(0.72, area.h / (620 * ui)));
 
-    // The gate's rune tablets: one per sentence, lit when answered right, cracked when missed.
-    let y = area.y + 10 * f;
-    const { tablets } = tabletTrail(this, { x: area.x + 16 * ui, y, w: area.w - 32 * ui, h: 34 * f }, s.correct, s.rounds.length, s.idx, f, s.marks);
-    const lit = tablets[s.idx];
-    if (rightNow && lit && this.tweens) {
-      const spark = this.add.circle(lit.x, lit.y, 8 * f, RUNE.glow, 0.8);
-      this.tweens.add({ targets: spark, scale: 3, alpha: 0, duration: 600, onComplete: () => spark.destroy() });
-    }
-    y += 34 * f + 12 * f;
-    plaque(this, cx, y + 20 * f, `Which word fits?  (${skillLabel(r.skill)})`, f, 16);
-    y += 50 * f;
+    // The castle: sky, wall and cobbles, with the gatehouse in the middle of the wall.
+    const rowH = 30 * f;
+    const gh = this.portrait ? Math.min(area.h * 0.3, 230 * f) : Math.min(area.h * 0.34, 250 * f);
+    const gateTop = area.y + 12 * f + rowH + 8 * f + Math.max(8, gh * 0.08);   // clear of the shields, battlements included
+    const gw = Math.min(area.w * (this.portrait ? 0.78 : 0.46), gh * 1.35);
+    const baseY = gateTop + gh;
+    drawCourtyard(this, area, baseY, gh * 0.42, f);
+    const gate = this.gate = gatehouse(this, cx, baseY, gw, gh, (s.correct - (rightNow ? 1 : 0)) / total, f);
+    gate.flames.forEach((fl, i) => this.tweens && this.tweens.add({ targets: fl, scaleY: 1.18, scaleX: 0.9, alpha: 0.85, duration: 260 + i * 70, yoyo: true, repeat: -1, ease: 'Sine.InOut' }));
+    if (rightNow) {
+      // Clank: the portcullis drops a notch and the dust flies.
+      this.tweens.add({ targets: gate.bars, y: gate.yFor(s.correct / total), duration: 520, ease: 'Bounce.Out', onComplete: () => { if (this.cameras && this.cameras.main) this.cameras.main.shake(90, 0.003); } });
+      for (let i = 0; i < 6; i++) {
+        const d = this.add.circle(gate.arch.x + gate.arch.w * (0.1 + 0.16 * i), baseY - 2, 3 * f, 0xd8cbb2, 0.8);
+        this.tweens.add({ targets: d, y: baseY - (10 + (i % 3) * 6) * f, x: d.x + (i - 2.5) * 5 * f, alpha: 0, duration: 700, delay: 420 });
+      }
+    } else if (answered) shake(this, gate.bars, 4);
+    // Progress: a shield per sentence over the gate, and how far the gate has closed.
+    shieldRow(this, { x: area.x + 16 * ui, y: area.y + 10 * f, w: area.w - 32 * ui, h: rowH }, s.marks, total, s.idx, f);
 
-    // The sentence on a parchment scroll; once answered the right word is written into the blank.
-    const scrollW = wide ? Math.min(area.w * 0.8, 720 * ui) : area.w - 24 * ui;
-    const scrollH = Math.min(150 * f, Math.max(96 * f, area.h * 0.22));
-    const scrollCy = y + scrollH / 2;
-    const paper = scroll(this, cx, scrollCy, scrollW, scrollH, f);
+    // The sentence on the notice board; once answered the right word is written into the blank.
+    let y = baseY + 14 * f;
+    const boardW = this.portrait ? area.w - 20 * ui : Math.min(area.w * 0.8, 720 * ui);
+    const boardH = Math.min(150 * f, Math.max(104 * f, area.h * 0.2));
+    const board = noticeBoard(this, cx, y + boardH / 2, boardW, boardH, f);
+    const inner = board.inner;
+    const label = this.add.text(inner.x + 4 * f, inner.y + 2 * f, `Which word fits?  (${skillLabel(r.skill)})`, { fontFamily: FONT, fontSize: Math.round(13 * f) + 'px', color: hex(darken(CASTLE.ink, 1.6)), fontStyle: WEIGHT.bold });
     const shown = answered ? fillBlank(r.sentence, r.options[r.answer]) : fillBlank(r.sentence);
+    const textTop = inner.y + (label.height || 16 * f) + 2 * f, textH = inner.y + inner.h - textTop;
     let sentence = null;
     for (const px of [30, 26, 22, 19, 17]) {
       if (sentence) sentence.destroy();
-      const style = { fontFamily: FONT, fontSize: Math.round(px * f) + 'px', color: hex(answered ? THEME.successDark : RUNE.ink), fontStyle: WEIGHT.heavy, align: 'center' };
-      sentence = readable(this, cx - 18 * f, scrollCy, shown, style, { width: scrollW - 130 * f, highlight: RUNE.reveal });
-      if ((sentence.height || 0) <= scrollH - 26 * f) break;
+      const style = { fontFamily: FONT, fontSize: Math.round(px * f) + 'px', color: hex(answered ? THEME.successDark : CASTLE.ink), fontStyle: WEIGHT.heavy, align: 'center' };
+      sentence = readable(this, cx - 20 * f, textTop + textH / 2, shown, style, { width: inner.w - 70 * f, highlight: CASTLE.gold });
+      if ((sentence.height || 0) <= textH - 4 * f) break;
     }
-    speakButton(this, cx + scrollW / 2 - 52 * f, scrollCy, 40 * f, sentence, { rate: this.speechRate });
+    speakButton(this, inner.x + inner.w - 22 * f, textTop + textH / 2, 40 * f, sentence, { rate: this.speechRate });
     this.autoRead(sentence, answered ? null : r.options);
-    if (wide) owl(this, cx + scrollW / 2 - 30 * f, scrollCy - scrollH / 2 - 2 * f, 0.8 * f);
-    enter(this, paper, { from: 'up', distance: 12 });
-    if (answered && !rightNow) shake(this, paper, 5);
-    y += scrollH + 24 * f;
+    enter(this, [board.g, label, sentence], { from: 'up', distance: 10 });
+    y += boardH + 20 * f;
 
-    // The words to choose from, as glowing rune slabs: a row on wide screens, a column on a phone.
+    // The words to choose from, as wooden planks: a row on wide screens, a column on a phone.
     const n = r.options.length, gap = 12 * f;
     const cols = this.portrait ? 1 : n, rows = Math.ceil(n / cols);
     const blockW = this.portrait ? Math.min(area.w - 24 * ui, 460 * ui) : Math.min(area.w - 24 * ui, 900 * ui);
-    const slabH = Math.max(58 * f, Math.min(96 * f, (area.y + area.h - y - 12 * f - gap * (rows - 1)) / rows));
-    const cells = grid({ x: cx - blockW / 2, y, w: blockW, h: slabH * rows + gap * (rows - 1) }, cols, rows, gap);
+    const plankH = Math.max(54 * f, Math.min(88 * f, (area.y + area.h - y - 10 * f - gap * (rows - 1)) / rows));
+    const cells = grid({ x: cx - blockW / 2, y, w: blockW, h: plankH * rows + gap * (rows - 1) }, cols, rows, gap);
     const made = r.options.map((opt, i) => {
       const c = cells[i];
-      let glow = RUNE.glow, halo = false, dim = false;
-      if (answered) { if (i === r.answer) { glow = RUNE.right; halo = true; } else if (i === s.picked) { glow = RUNE.wrong; halo = true; } else dim = true; }
-      const slab = runeSlab(this, c.x, c.y, c.w, slabH, opt, { glow, halo, dim, seed: i + s.idx, ui: f, fontSize: opt.length <= 2 ? 44 : opt.length > 10 ? 22 : 28, onTap: s.locked ? null : () => this.pick(i) });
-      this.answerSpeaker(slab, c.w, slabH, opt);
-      return slab;
+      const state = !answered ? 'idle' : i === r.answer ? 'right' : i === s.picked ? 'wrong' : 'dim';
+      const p = plank(this, c.x, c.y, c.w, plankH, opt, { state, seed: i + s.idx, ui: f, fontSize: opt.length <= 2 ? 44 : opt.length > 10 ? 22 : 28, onTap: s.locked ? null : () => this.pick(i) });
+      this.answerSpeaker(p, c.w, plankH, opt);
+      return p;
     });
     enter(this, made, { from: 'pop', delay: 60, stagger: 40 });
     if (answered && !rightNow) this.explanationPanel(area, { ...r, prompt: fillBlank(r.sentence), answer: r.options[r.answer] }, () => this.next());
