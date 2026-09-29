@@ -10,11 +10,16 @@ import { card } from '../../../ui/Card.js';
 import { enter } from '../../../ui/motion.js';
 import { weakSkills } from '../../../systems/Practice.js';
 import { trail } from '../../../ui/Scenery.js';
+import { RUNE, drawGlade, plaque, runeSlab, tabletTrail } from './RuneScenery.js';
 
 const PAR_MS = 120000;
 const TITLES = { synonym: 'Match the words that mean the same', antonym: 'Match the opposites', definition: 'Match each word to its meaning', people: 'Match each person to what they did' };
 
-/** Word Match: two columns of 5 cards; pair them up. 3 rounds. A pair counts if it took at most one mistake. Also runs "Who Am I?" from the Bible bank. */
+/**
+ * Word Match: two columns of 5 cards; pair them up. 3 rounds. A pair counts if it took at most one mistake. Also runs
+ * "Who Am I?" from the Bible bank. The English game wears Word Builder's "ancient runes" look (glowing word slabs in
+ * a moonlit glade, a rune tablet lit per pair); the Bible game keeps its parade of creatures.
+ */
 export class WordMatch extends MinigameScene {
   constructor() { super('MG_WordMatch'); }
 
@@ -33,9 +38,12 @@ export class WordMatch extends MinigameScene {
   enterKey() { return this.state.rIdx; }
   key(pairIdx) { return `${this.state.rIdx}-${pairIdx}`; }
 
+  get runes() { return this.payload.gameId !== 'bible-match'; }
+
   buildGame(area) {
     const s = this.state, ui = this.ui, r = this.round;
     if (!r) return;
+    if (this.runes) return this.buildRunes(area);
     // The trail above: every matched pair adds a creature to the parade.
     const stripH = Math.min(72 * ui, area.h * 0.14);
     const { stamps } = trail(this, { x: area.x, y: area.y, w: area.w, h: stripH }, { count: s.done.length, theme: this.payload.subject === 'bible' ? 'bible' : 'safari', ui });
@@ -67,14 +75,64 @@ export class WordMatch extends MinigameScene {
     enter(this, made, { from: 'up', stagger: 30 });
   }
 
+  /** The rune look: tablets for matched pairs, the task on a stone plaque, two columns of glowing word slabs. */
+  buildRunes(area) {
+    const s = this.state, ui = this.ui, r = this.round;
+    drawGlade(this, area, ui);
+    const cx = area.x + area.w / 2;
+    const f = ui * Math.min(1, Math.max(0.72, area.h / (620 * ui)));
+    let y = area.y + 10 * f;
+    const total = ROUNDS * PAIRS_PER_ROUND;
+    const { tablets } = tabletTrail(this, { x: area.x + 16 * ui, y, w: area.w - 32 * ui, h: 30 * f }, s.done.length, total, s.done.length, f);
+    if (s.pop && tablets[s.done.length - 1] && this.tweens) {
+      const t = tablets[s.done.length - 1], spark = this.add.circle(t.x, t.y, 8 * f, RUNE.glow, 0.8);
+      this.tweens.add({ targets: spark, scale: 3, alpha: 0, duration: 600, onComplete: () => spark.destroy() });
+      s.pop = false;
+    }
+    y += 30 * f + 12 * f;
+    const title = plaque(this, cx, y + 20 * f, TITLES[r.pairs[0].k] || 'Match the pairs', f, area.w < 420 * ui ? 14 : 16);
+    y += Math.max(50 * f, title.h + 14 * f);
+
+    const gap = 12 * f, colGap = Math.max(22 * f, 28 * ui);   // room between the columns for the glowing links
+    const colW = Math.min((area.w - 20 * ui - colGap) / 2, 360 * ui);
+    const x0 = cx - (colW * 2 + colGap) / 2;
+    const slabH = Math.max(52 * f, Math.min(84 * f, (area.y + area.h - y - 8 * f - gap * (PAIRS_PER_ROUND - 1)) / PAIRS_PER_ROUND));
+    const rowY = (row) => y + row * (slabH + gap) + slabH / 2;
+    const leftX = x0 + colW / 2, rightX = x0 + colW + colGap + colW / 2;
+    // Glowing links join the pairs already matched, from the left slab to wherever its partner sits on the right.
+    const links = this.add.graphics();
+    const made = [];
+    for (let row = 0; row < PAIRS_PER_ROUND; row++) {
+      const lp = row, rp = r.right[row];
+      made.push(this.makeSlab(leftX, rowY(row), colW, slabH, r.pairs[lp].l, this.cardStyle('L', lp), () => this.tap('L', lp), row, f));
+      made.push(this.makeSlab(rightX, rowY(row), colW, slabH, r.pairs[rp].r, this.cardStyle('R', rp), () => this.tap('R', rp), row + 5, f));
+      if (s.done.includes(this.key(lp))) {
+        const a = { x: leftX + colW / 2 - 4, y: rowY(row) }, b = { x: rightX - colW / 2 + 4, y: rowY(r.right.indexOf(lp)) };
+        links.lineStyle(9 * f, RUNE.right, 0.25); links.lineBetween(a.x, a.y, b.x, b.y);
+        links.lineStyle(3.5 * f, RUNE.right, 1); links.lineBetween(a.x, a.y, b.x, b.y);
+        links.fillStyle(RUNE.right, 1); links.fillCircle(a.x, a.y, 5 * f); links.fillCircle(b.x, b.y, 5 * f);
+      }
+    }
+    if (this.children && typeof this.children.bringToTop === 'function') this.children.bringToTop(links);
+    enter(this, made, { from: 'pop', stagger: 30 });
+  }
+
+  /** One glowing word slab for the rune look, coloured by its state (see cardStyle). */
+  makeSlab(x, y, w, h, label, style, onTap, seed, f) {
+    const glow = style.state === 'done' ? RUNE.right : style.state === 'wrong' ? RUNE.wrong : style.state === 'picked' ? RUNE.reveal : RUNE.glow;
+    const slab = runeSlab(this, x, y, w, h, label, { glow, halo: style.state === 'picked' || style.state === 'wrong', dim: style.state === 'done', seed, ui: f, fontSize: label.length > 14 ? 18 : label.length > 9 ? 21 : 24, onTap: style.active ? onTap : null });
+    this.answerSpeaker(slab, w, h, label);
+    return slab;
+  }
+
   /** Colour + interactivity for a card, derived purely from state. */
   cardStyle(side, pairIdx) {
     const s = this.state;
-    if (s.done.includes(this.key(pairIdx))) return { color: THEME.successSoft, stroke: THEME.success, textColor: THEME.successDark, active: false };
-    if (s.flash && s.flash[side] === pairIdx) return { color: THEME.dangerSoft, stroke: THEME.danger, textColor: THEME.dangerDark, active: false };
+    if (s.done.includes(this.key(pairIdx))) return { state: 'done', color: THEME.successSoft, stroke: THEME.success, textColor: THEME.successDark, active: false };
+    if (s.flash && s.flash[side] === pairIdx) return { state: 'wrong', color: THEME.dangerSoft, stroke: THEME.danger, textColor: THEME.dangerDark, active: false };
     const sel = side === 'L' ? s.left : s.right;
-    if (sel === pairIdx) return { color: THEME.warningSoft, stroke: THEME.gold, textColor: THEME.ink, active: !s.busy };
-    return { color: THEME.surface, stroke: THEME.line, textColor: THEME.ink, active: !s.busy };
+    if (sel === pairIdx) return { state: 'picked', color: THEME.warningSoft, stroke: THEME.gold, textColor: THEME.ink, active: !s.busy };
+    return { state: 'idle', color: THEME.surface, stroke: THEME.line, textColor: THEME.ink, active: !s.busy };
   }
 
   makeCard(cell, label, style, onTap) {

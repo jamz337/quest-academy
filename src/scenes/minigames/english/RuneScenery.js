@@ -144,7 +144,8 @@ export function runeStone(scene, x, y, size, letter, { glow = RUNE.glow, halo = 
   const t = scene.add.text(0, fy + 1, letter, {
     fontFamily: FONT, fontSize: Math.round(size * 0.56) + 'px', color: hex(mix(glow, 0xffffff, 0.35)), fontStyle: WEIGHT.heavy,
     stroke: hex(RUNE.face), strokeThickness: Math.max(3, Math.round(size / 16)),
-    shadow: { offsetX: 0, offsetY: 0, color: hex(glow), blur: Math.max(4, Math.round(size / 9)), fill: false, stroke: true }
+    shadow: { offsetX: 0, offsetY: 0, color: hex(glow), blur: Math.max(4, Math.round(size / 9)), fill: false, stroke: true },
+    padding: { x: Math.max(6, Math.round(size / 8)), y: Math.max(6, Math.round(size / 8)) }
   }).setOrigin(0.5);
   c.add([g, t]);
   c.setSize(w + 8, h + 8);
@@ -152,6 +153,58 @@ export function runeStone(scene, x, y, size, letter, { glow = RUNE.glow, halo = 
   if (onTap) {
     c.setInteractive({ useHandCursor: true });
     c.on('pointerdown', () => { if (scene.tweens) scene.tweens.add({ targets: c, scale: 0.92, duration: 70, yoyo: true }); onTap(); });
+  }
+  return c;
+}
+
+/**
+ * A wide rune slab: a mossy stone block with a dark carved face and a glowing word, for answers and word cards.
+ * `glow` tints the word (RUNE.right / wrong / reveal for states); `halo` adds a soft ring of that colour; `dim`
+ * fades it (used or ruled out). The word shrinks until it fits. Returns a Container centred on the slab.
+ */
+export function runeSlab(scene, x, y, w, h, label, { glow = RUNE.glow, halo = false, dim = false, moss = true, onTap = null, seed = 0, fontSize = 26, ui = 1 } = {}) {
+  const c = scene.add.container(x, y);
+  const g = scene.add.graphics();
+  const r = Math.min(14 * ui, h * 0.22);
+  if (halo) { g.fillStyle(glow, 0.3); g.fillRoundedRect(-w / 2 - 6, -h / 2 - 6, w + 12, h + 12, r + 6); }
+  g.fillStyle(0x000000, 0.3); g.fillRoundedRect(-w / 2 + 2, -h / 2 + 5, w, h, r);
+  g.fillStyle(RUNE.stoneEdge, 1); g.fillRoundedRect(-w / 2, -h / 2, w, h, r);
+  g.fillStyle(RUNE.stoneDark, 1); g.fillRoundedRect(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4, r - 1);
+  g.fillStyle(RUNE.stone, 1); g.fillRoundedRect(-w / 2 + 3, -h / 2 + 3, w - 6, h * 0.62, r - 2);
+  // A crack at one end, different per slab.
+  g.lineStyle(Math.max(1, h / 40), RUNE.stoneEdge, 0.7);
+  const side = seed % 2 ? 1 : -1;
+  g.lineBetween(side * (w / 2 - 3), -h * 0.1, side * (w / 2 - 3 - Math.min(14 * ui, w * 0.06)), h * 0.08);
+  if (moss) {
+    g.fillStyle(RUNE.mossDark, 1); g.fillEllipse(-w * 0.28 + (seed % 3) * w * 0.12, -h / 2 + 3, Math.min(w * 0.3, 70 * ui), h * 0.16);
+    g.fillStyle(RUNE.moss, 1); g.fillEllipse(-w * 0.3 + (seed % 3) * w * 0.12, -h / 2 + 1, Math.min(w * 0.22, 52 * ui), h * 0.11);
+  }
+  // The carved face and the glowing word on it.
+  const fw = w - Math.max(14, 16 * ui), fh = h - Math.max(14, 18 * ui), fy = 2, fr = Math.max(4, r * 0.7);
+  g.fillStyle(RUNE.stoneEdge, 1); g.fillRoundedRect(-fw / 2 - 2, -fh / 2 + fy - 2, fw + 4, fh + 4, fr + 2);
+  g.fillStyle(RUNE.face, 1); g.fillRoundedRect(-fw / 2, -fh / 2 + fy, fw, fh, fr);
+  g.fillStyle(0x000000, 0.35); g.fillRoundedRect(-fw / 2, -fh / 2 + fy, fw, Math.max(2, fh * 0.1), { tl: fr, tr: fr, bl: 0, br: 0 });
+  g.fillStyle(glow, 0.12); g.fillRoundedRect(-fw / 2 + 2, -fh / 2 + fy + 2, fw - 4, fh - 4, fr - 1);
+  const maxW = fw - 24 * ui - Math.min(34 * ui, h * 0.45);   // leave the top-right corner for an answer's 🔊
+  let t = null;
+  for (let px = Math.round(Math.min(fontSize * ui, fh * 0.62)); px >= 11; px -= 2) {
+    if (t) t.destroy();
+    t = scene.add.text(0, fy + 1, String(label), {
+      fontFamily: FONT, fontSize: px + 'px', color: hex(mix(glow, 0xffffff, 0.35)), fontStyle: WEIGHT.heavy, align: 'center',
+      stroke: hex(RUNE.face), strokeThickness: Math.max(3, Math.round(px / 7)), wordWrap: { width: maxW },
+      shadow: { offsetX: 0, offsetY: 0, color: hex(glow), blur: Math.max(4, Math.round(px / 3)), fill: false, stroke: true },
+      padding: { x: Math.max(6, Math.round(px / 2)), y: Math.max(6, Math.round(px / 2)) }   // room for the glow, or it is clipped into a box
+    }).setOrigin(0.5);
+    const pad = Math.max(6, Math.round(px / 2)) * 2;
+    if ((t.width || 0) - pad <= maxW + 4 && (t.height || 0) - pad <= fh - 4) break;
+  }
+  c.add([g, t]);
+  c.setSize(w, h);
+  c.word = t;
+  if (dim) c.setAlpha(0.4);
+  if (onTap) {
+    c.setInteractive({ useHandCursor: true });
+    c.on('pointerdown', () => { if (scene.tweens) scene.tweens.add({ targets: c, scale: 0.96, duration: 70, yoyo: true }); onTap(); });
   }
   return c;
 }
@@ -177,20 +230,24 @@ export function triesPlaque(scene, cx, cy, left, total, ui) {
   return { g, t };
 }
 
-/** Row of small stone tablets across the top: one per word, lit (with a glowing rune) once it is spelled. */
-export function tabletTrail(scene, r, solved, total, current, ui) {
+/**
+ * Row of small stone tablets across the top: one per word, lit (with a glowing rune) once it is spelled.
+ * `marks` (optional, one per finished round: true right, false missed) lights the right ones and cracks the missed ones.
+ */
+export function tabletTrail(scene, r, solved, total, current, ui, marks = null) {
   const g = scene.add.graphics();
   const gap = 6 * ui, w = Math.min(46 * ui, (r.w - gap * (total - 1)) / total), h = Math.min(r.h, 34 * ui);
   const x0 = r.x + (r.w - (w * total + gap * (total - 1))) / 2, y = r.y + (r.h - h) / 2;
   const tablets = [];
   for (let i = 0; i < total; i++) {
-    const x = x0 + i * (w + gap), lit = i < solved;
+    const x = x0 + i * (w + gap), lit = marks ? marks[i] === true : i < solved, missed = !!marks && marks[i] === false;
     if (lit) { g.fillStyle(RUNE.glow, 0.25); g.fillRoundedRect(x - 3, y - 3, w + 6, h + 6, 9); }
     g.fillStyle(RUNE.stoneEdge, 1); g.fillRoundedRect(x, y, w, h, 7);
     g.fillStyle(lit ? 0x7d8a8c : 0x4f5b5d, 1); g.fillRoundedRect(x + 2, y + 2, w - 4, h - 4, 6);
     if (i === current) { g.lineStyle(2, RUNE.reveal, 0.9); g.strokeRoundedRect(x - 1, y - 1, w + 2, h + 2, 8); }
     g.lineStyle(Math.max(1.5, 2 * ui), lit ? RUNE.glow : 0x6d797b, lit ? 1 : 0.6);
     runeGlyph(g, x + w / 2 - 2 * ui, y + h / 2, h * 0.28, i);
+    if (missed) { g.lineStyle(Math.max(1.5, 2 * ui), RUNE.wrong, 0.8); g.lineBetween(x + w * 0.25, y + h * 0.2, x + w * 0.75, y + h * 0.8); }
     tablets.push({ x: x + w / 2, y: y + h / 2 });
   }
   return { g, tablets };
