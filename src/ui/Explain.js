@@ -142,5 +142,5 @@ function render(scene, area, it, theme, on) {
   }
   const done = it.phase === 'done' || (it.phase === 'steps' && it.shown >= it.steps.length && !it.choices);
   if (done) button(scene, R.x + R.w - bw / 2, fy, bw, 42 * f, EXPLAIN_LABELS.next, { ...style, fontSize: 17 * (f / ui), onClick: () => { Sfx.click(); on.next(); } });
-  else button(scene, R.x + 40 * f, fy, 84 * f, 36 * f, EXPLAIN_LABELS.next, { variant: 'ghost', fontSize: 14 * (f / ui), onClick: () => { Sfx.click(); on.next(); } });
+  else button(scene, R.x + 40 * f, fy, 84 * f, 36 * f, EXPLAIN_LABELS.next, { variant: 'ghost', ...(theme.ink2 !== undefined ? { textColor: theme.ink2 } : {}), fontSize: 14 * (f / ui), onClick: () => { Sfx.click(); on.next(); } });   // readable on dark themes too
 }

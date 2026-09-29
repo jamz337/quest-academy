@@ -87,7 +87,7 @@ describe('older games with scenery (headless)', () => {
     expect(s.state.idx).toBe(1);
   });
 
-  it('Word Match ropes matched pairs and parades a creature per match', () => {
+  it('Word Match and Who Am I? join matched pairs and count mistakes', () => {
     for (const payload of [{ gameId: 'eng-match', subject: 'words' }, { gameId: 'bible-match', subject: 'bible' }]) {
       const s = makeScene(WordMatch, payload);
       s.tap('L', 0); s.tap('R', 0);
@@ -97,6 +97,23 @@ describe('older games with scenery (headless)', () => {
       flushTimers(s);
       expect(s.state.busy).toBe(false);
     }
+  });
+
+  it('Who Am I? shows village cards: picked, red for a wrong pair, done once matched, with a streak', () => {
+    const s = makeScene(WordMatch, { gameId: 'bible-match', subject: 'bible' });
+    const cards = () => s.objs.filter((o) => o.word && o.active);
+    const stateOf = (text) => cards().find((o) => o.word.text === text).state;
+    const r = s.round;
+    expect(cards()).toHaveLength(10);
+    s.tap('L', 1);
+    expect(stateOf(r.pairs[1].l)).toBe('picked');
+    s.tap('R', 2);
+    expect(stateOf(r.pairs[1].l)).toBe('wrong');
+    expect(s.state.streak).toBe(0);
+    flushTimers(s);
+    s.tap('L', 0); s.tap('R', 0);
+    expect(stateOf(r.pairs[0].l)).toBe('done'); expect(stateOf(r.pairs[0].r)).toBe('done');
+    expect(s.state.streak).toBe(1);
   });
 
   it('Word Match hangs the words as paper lanterns: gold when picked, red for a wrong pair, done once matched', () => {
@@ -115,7 +132,7 @@ describe('older games with scenery (headless)', () => {
     expect(s.state.lastMatch).toBe(0);
   });
 
-  it('Bible Quiz walks a sheep into the fold; Verse Builder lights a lamp', () => {
+  it('Bible Quiz and Verse Builder light a village window per right answer', () => {
     for (const payload of [{ gameId: 'bible-quiz', subject: 'bible' }, { gameId: 'bible-verse', subject: 'bible' }]) {
       const s = makeScene(BibleQuiz, payload);
       const q = () => s.state.questions[s.state.idx];
