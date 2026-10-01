@@ -67,10 +67,10 @@ export function card(scene, x, y, w, h, opts) { return new Card(scene, x, y, w, 
  * opts: color, textColor, fontSize (px), empty, onTap, radius, stroke, shadow, weight.
  */
 export function plank(scene, x, y, w, h, label, opts = {}) {
-  const { color = THEME.surface, textColor, fontSize = Math.min(w, h) * 0.5, empty = false, onTap = null, radius = THEME.radius.sm, stroke, shadow, weight = WEIGHT.heavy } = opts;
+  const { color = THEME.surface, textColor, fontSize = Math.min(w, h) * 0.5, empty = false, onTap = null, radius = THEME.radius.sm, stroke, strokeWidth, shadow, weight = WEIGHT.heavy } = opts;
   const c = new Card(scene, x, y, w, h, empty
-    ? { color: THEME.sunken, stroke: stroke ?? THEME.lineStrong, shadow: 'none', radius }
-    : { color, stroke: stroke ?? (color === THEME.surface ? THEME.line : null), shadow: shadow ?? 'sm', radius });
+    ? { color: THEME.sunken, stroke: stroke ?? THEME.lineStrong, shadow: 'none', radius, ...(strokeWidth ? { strokeWidth } : {}) }
+    : { color, stroke: stroke ?? (color === THEME.surface ? THEME.line : null), shadow: shadow ?? 'sm', radius, ...(strokeWidth ? { strokeWidth } : {}) });
   if (onTap) c.setTap(onTap);
   const fill = empty ? THEME.sunken : color;
   c.text = scene.add.text(0, 0, label ?? '', { fontFamily: FONT, fontSize: Math.round(fontSize) + 'px', color: hex(textColor ?? (empty ? THEME.ink3 : textOn(fill))), fontStyle: weight, align: 'center' }).setOrigin(0.5);

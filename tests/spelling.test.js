@@ -197,6 +197,17 @@ describe('Spelling Bee teaching (headless)', () => {
     expect(s.state.result).toBe('right');
     expect(Store.getProfile().spelling.words[e.word].taught).toBe(1);
     flushTimers(s);
+    // Then Look, Say, Cover, Write, Check: the word is covered and written from memory.
+    expect(s.state.step).toBe('cover'); expect(s.state.cover).toBe('look');
+    expect(findButton(s, 'Cover it ▶')).toBeTruthy();
+    click(findButton(s, 'Cover it ▶'));
+    expect(s.state.cover).toBe('write');
+    expect(s.wordTiles.every((t) => !t.text || t.text.text === '')).toBe(true);   // nothing given away
+    for (const ch of e.word) s.type(ch);
+    s.keyDown({ key: 'Enter' });
+    expect(s.state.cover).toBe('check'); expect(s.state.result).toBe('right');
+    expect(Store.getProfile().spelling.words[e.word].right).toBe(1);   // the first try counts as practice
+    flushTimers(s);
     expect(s.state.idx).toBe(1);
     expect(s.state.step).toBe('card');
     // Run the rest through quickly.
@@ -205,6 +216,7 @@ describe('Spelling Bee teaching (headless)', () => {
       if (s.state.step === 'trace') s.advance();
       if (s.state.step === 'build') { s.entry.chunks.forEach((_, i) => s.tapChunk(i)); s.advance(); }
       if (s.state.step === 'copy') { s.state.typed = s.entry.word; s.checkCopy(); s.advance(); }
+      if (s.state.step === 'cover') { s.coverIt(); s.state.typed = s.entry.word; s.checkCover(); s.advance(); }
     }
     expect(findButton(s, 'Start the test ▶')).toBeTruthy();
     const started = [];

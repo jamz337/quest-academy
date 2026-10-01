@@ -22,13 +22,16 @@ import { Rng } from '../systems/Rng.js';
 import { checkBadges } from '../systems/Progression.js';
 import { getBadge } from '../data/badges.js';
 import { getList, listWords, spellingGradeFor } from '../data/spelling/lists.js';
-import { planSession, markSpelling, recordSpelling, finishSession, recordTest, comboBonus } from '../systems/Spelling.js';
+import { planSession, markSpelling, recordSpelling, recordTaught, finishSession, recordTest, comboBonus, blankSentence, trickySpots } from '../systems/Spelling.js';
+import { trickFor } from '../data/spelling/tricks.js';
 
 const LOOK_MS = 3500;   // how long a "look" word stays before it hides
 
 /**
  * One spelling session: 10 words from a list. New words are shown and read, then hidden and typed back;
- * seen words come with a few letters missing; nearly-learned words are spelled from hearing alone.
+ * seen words come with a few letters missing, then are written into their sentence; nearly-learned words are
+ * spelled from hearing alone. After a miss the right spelling is shown with its tricky part ringed and a memory
+ * trick, and the child writes it right once ("Write it right") before moving on.
  * Letters are typed on an on-screen keyboard (or a real one), capitals included, and marked letter by letter.
  * Every right answer sends a bee with honey to the pot; runs of right answers pay bonus coins.
  */
@@ -38,7 +41,7 @@ export class SpellingGameScene extends BaseScene {
   init(data) {
     this.listId = data.listId;
     this.grade = data.grade || null;
-    const list = data.words ? { id: 'tricky', title: 'Tricky words', words: data.words } : getList(data.listId);
+    const list = data.words ? { id: data.listKind || 'tricky', title: data.title || 'Tricky words', words: data.words } : getList(data.listId);
     this.list = list || { id: 'none', title: 'Spelling', words: [] };
     const rng = new Rng();
     // The weekly test: every word of the list, from hearing alone, no hints and nothing revealed until the end.
@@ -47,7 +50,7 @@ export class SpellingGameScene extends BaseScene {
       ? rng.shuffle(listWords(this.list)).map((e) => ({ word: e.w, syllables: e.syl, sentence: e.s, pic: e.pic, mode: 'listen', blanks: [] }))
       : planSession(Store.getProfile() || {}, this.list, () => rng.float());
     this.state = {
-      rounds, idx: 0, typed: '', shift: false, phase: rounds.length && rounds[0].mode === 'look' ? 'show' : 'type', right: null, caseOnly: false,
+      rounds, idx: 0, typed: '', shift: false, phase: rounds.length && rounds[0].mode === 'look' ? 'show' : 'type', right: null, caseOnly: false, fixed: null,
       correct: 0, combo: 0, bestCombo: 0, bonus: 0, results: [], done: false, reward: null, newBadges: []
     };
     this.startedAt = Date.now();
@@ -133,12 +136,14 @@ export class SpellingGameScene extends BaseScene {
     // The word card: shown, hidden, with blanks, or marked. Its height follows the tile row it has to hold
     // (hint line, tiles, then the syllables or the correct spelling), so short landscape windows still fit.
     const tileSize = this.tileSize(area);
-    const cardH = Math.min(area.h * 0.5, Math.max(44 * ui + tileSize + 56 * ui, Math.min(area.h * 0.36, 200 * ui)));
+    const extra = s.phase === 'fix' ? tileSize + 40 * ui : r.mode === 'sentence' && s.phase !== 'result' ? 30 * ui : s.phase === 'result' && !s.right && !this.testMode && this.trickText() ? 26 * ui : 0;
+    const cardH = Math.min(area.h * (s.phase === 'fix' ? 0.56 : 0.5), Math.max(44 * ui + tileSize + 56 * ui + extra, Math.min(area.h * 0.36, 200 * ui)));
     const k = card(this, area.x + area.w / 2, area.y + cardH / 2, area.w, cardH);
     stripe(this, area.x + area.w / 2 - 24 * ui, area.y + 10 * ui, 48 * ui, THEME.subjects.words.accent, 5 * ui);
-    const hint = this.testMode ? 'Weekly test: listen, then spell the word' : { look: 'Look carefully, then spell it when it hides', fill: 'Fill in the missing letters', listen: 'Listen, then spell the word' }[r.mode];
-    const msg = s.phase !== 'result' ? hint : this.testMode ? 'Saved. Next word…' : s.right ? 'Spot on!' : s.caseOnly ? 'Nearly! Check the capital letters.' : 'Not quite. Look at the red letters.';
-    const colour = s.phase === 'result' && !this.testMode ? (s.right ? THEME.successDark : THEME.danger) : THEME.ink2;
+    const hint = this.testMode ? 'Weekly test: listen, then spell the word' : { look: 'Look carefully, then spell it when it hides', fill: 'Fill in the missing letters', sentence: 'Write the missing word', listen: 'Listen, then spell the word' }[r.mode];
+    const msg = s.phase === 'fix' ? (s.fixed === 'right' ? 'Now you have got it!' : s.fixed === 'wrong' ? 'Look again and copy it exactly.' : 'Copy it. Watch the ringed letters!')
+      : s.phase !== 'result' ? hint : this.testMode ? 'Saved. Next word…' : s.right ? 'Spot on!' : s.caseOnly ? 'Nearly! Check the capital letters.' : 'Not quite. Look at the red letters.';
+    const colour = s.phase === 'fix' ? (s.fixed === 'right' ? THEME.successDark : s.fixed === 'wrong' ? THEME.danger : THEME.ink2) : s.phase === 'result' && !this.testMode ? (s.right ? THEME.successDark : THEME.danger) : THEME.ink2;
     // The word's picture sits at the top left of the card; the hint wraps beside it.
     this.pic = r.pic ? wordPicture(this, area.x + 12 + 22 * ui, area.y + 28 * ui, 40 * ui, r.pic) : null;
     const side = (this.pic ? 56 * ui : 0) + (canSpeak() ? 52 * ui : 0);
@@ -153,9 +158,18 @@ export class SpellingGameScene extends BaseScene {
     }
     if (s.phase === 'result') {
       const last = s.idx + 1 >= s.rounds.length;
-      button(this, area.x + area.w / 2, area.y + cardH + 34 * ui, Math.min(area.w - 40, 240 * ui), 48 * ui, last ? 'Finish' : 'Next ▶', { variant: 'primary', onClick: () => this.next() });
+      const cx = area.x + area.w / 2, by = area.y + cardH + 34 * ui;
+      if (!s.right && !this.testMode) {
+        // Write it right once before moving on (the recommended way), or move on.
+        const bw = Math.min((area.w - 20) / 2, 220 * ui);
+        button(this, cx - bw / 2 - 6, by, bw, 48 * ui, '✍ Write it right', { variant: 'primary', onClick: () => this.startFix() });
+        button(this, cx + bw / 2 + 6, by, bw, 48 * ui, last ? 'Finish' : 'Next ▶', { variant: 'ghost', onClick: () => this.next() });
+        return;
+      }
+      button(this, cx, by, Math.min(area.w - 40, 240 * ui), 48 * ui, last ? 'Finish' : 'Next ▶', { variant: 'primary', onClick: () => this.next() });
       return;
     }
+    if (s.phase === 'fix' && s.fixed === 'right') return;
     this.drawKeyboard({ x: area.x, y: area.y + cardH + 12, w: area.w, h: area.h - cardH - 12 });
   }
 
@@ -164,7 +178,7 @@ export class SpellingGameScene extends BaseScene {
     const r = this.round, ui = this.ui;
     const n = Math.max(r.word.length, this.state.typed.length, 1), gap = 6 * ui;
     const byWidth = (area.w - 40 - gap * (n - 1)) / n;
-    const byHeight = Math.min(area.h * 0.5, 200 * ui) - 44 * ui - 56 * ui;
+    const byHeight = (Math.min(area.h * 0.5, 200 * ui) - 44 * ui - 56 * ui) * (this.state.phase === 'fix' ? 0.75 : 1);
     return Math.max(18 * ui, Math.min(44 * ui, byWidth, byHeight));
   }
 
@@ -173,7 +187,8 @@ export class SpellingGameScene extends BaseScene {
     const s = this.state, r = this.round, ui = this.ui;
     const cx = area.x + area.w / 2;
     let letters;
-    if (s.phase === 'show') letters = [...r.word].map((ch) => ({ ch, look: 'shown' }));
+    if (s.phase === 'fix') return this.drawFix(area);
+    if (s.phase === 'show') letters = this.ringed([...r.word].map((ch) => ({ ch, look: 'shown' })));
     else if (s.phase === 'result' && this.testMode) letters = [...s.typed].map((ch) => ({ ch, look: 'typed' }));
     else if (s.phase === 'result') {
       const { marks } = markSpelling(r.mode === 'fill' ? this.filled() : s.typed, r.word);
@@ -191,6 +206,13 @@ export class SpellingGameScene extends BaseScene {
     const below = cy + size / 2 + 16 * ui;
     if (s.phase === 'result' && !s.right && !this.testMode) {
       text(this, cx, below, `It is spelt  ${r.word}`, T.at(this, 15, THEME.ink, { fontStyle: '700' }));
+      const trick = this.trickText();
+      if (trick) text(this, cx, below + 44 * ui, trick, { ...T.small(this, THEME.warningDark), wordWrap: { width: area.w - 32 }, align: 'center' });
+    }
+    // A sentence round: the sentence with the word missing, under the tiles.
+    if (r.mode === 'sentence' && s.phase === 'type') {
+      const line = blankSentence(r.sentence, r.word);
+      if (line) text(this, cx, below + 4 * ui, `“${line}”`, { ...T.at(this, 16, THEME.ink, { fontStyle: '600' }), wordWrap: { width: area.w - 32 }, align: 'center' });
     }
     // Syllables help the word stick: shown under it while it is on screen, and again after a miss.
     const syl = r.syllables && r.syllables.includes('-') ? r.syllables.split('-').join(' · ') : null;
@@ -202,8 +224,8 @@ export class SpellingGameScene extends BaseScene {
   /** On-screen keyboard (shared with the teaching screen) and the Check button. */
   drawKeyboard(rect) {
     const s = this.state, r = this.round;
-    const ready = s.typed.length >= (r.mode === 'fill' ? this.target().length : 1);
-    this.checkButton = letterKeyboard(this, rect, { onKey: (ch) => this.type(ch), onCheck: () => this.check(), onShift: () => this.type('⇧'), shift: s.shift, ready, ui: this.ui }).check;
+    const ready = s.typed.length >= (r.mode === 'fill' && s.phase === 'type' ? this.target().length : 1);
+    this.checkButton = letterKeyboard(this, rect, { onKey: (ch) => this.type(ch), onCheck: () => (s.phase === 'fix' ? this.checkFix() : this.check()), onShift: () => this.type('⇧'), shift: s.shift, ready, ui: this.ui }).check;
   }
 
   /** The whole word with the typed letters dropped into the blanks (fill rounds). */
@@ -216,11 +238,12 @@ export class SpellingGameScene extends BaseScene {
   /** A key press: a letter (in the case shown on the key), shift for the next letter, or backspace. */
   type(ch) {
     const s = this.state, r = this.round;
-    if (s.phase !== 'type') return;
+    if (s.phase !== 'type' && !(s.phase === 'fix' && s.fixed !== 'right')) return;
+    if (s.phase === 'fix' && s.fixed === 'wrong' && ch !== '⇧') { s.fixed = null; s.typed = ''; }
     if (ch === '⇧') { s.shift = !s.shift; Sfx.click(); this.rebuild(); return; }
     if (ch === '⌫') { if (!s.typed) return; s.typed = s.typed.slice(0, -1); }
     else {
-      const max = r.mode === 'fill' ? r.blanks.length : Math.max(r.word.length + 3, 12);
+      const max = r.mode === 'fill' && s.phase === 'type' ? r.blanks.length : Math.max(r.word.length + 3, 12);
       if (s.typed.length >= max) return;
       s.typed += ch; s.shift = false;
       this.sayLetter(ch);
@@ -235,6 +258,7 @@ export class SpellingGameScene extends BaseScene {
     const k = keyFromEvent(e);
     if (s.phase === 'show' && (k === 'Enter' || e.key === ' ')) return this.hideWord();
     if (s.phase === 'result' && k === 'Enter') return this.next();
+    if (s.phase === 'fix' && s.fixed !== 'right' && k) { if (k === 'Enter') return this.checkFix(); return this.type(k); }
     if (s.phase !== 'type' || !k) return;
     if (k === 'Enter') return this.check();
     this.type(k);
@@ -250,7 +274,7 @@ export class SpellingGameScene extends BaseScene {
     if (right) { s.correct += 1; s.combo += 1; s.bestCombo = Math.max(s.bestCombo, s.combo); bonus = comboBonus(s.combo); s.bonus += bonus; }
     else s.combo = 0;
     s.results.push({ word: r.word, right, typed: answer });
-    Store.updateProfile((p) => recordSpelling(p, r.word, right, r.mode));
+    Store.updateProfile((p) => recordSpelling(p, r.word, right, r.mode, answer));
     if (this.testMode) {
       // In the test nothing is marked on screen: a click, and on to the next word. The summary shows the results.
       Sfx.click();
@@ -267,6 +291,56 @@ export class SpellingGameScene extends BaseScene {
     if (right) { const idx = s.idx; this.time.delayedCall(bonus ? 1600 : 1100, () => { if (s.idx === idx && s.phase === 'result') this.next(); }); }
   }
 
+  /** Ring the tricky part of the round's word (built-in, or letters this child has missed before). */
+  ringed(letters) {
+    const r = this.round;
+    if (this.testMode) return letters;
+    const spots = new Set(trickySpots(Store.getProfile(), r.word, r));
+    return letters.map((l, i) => ({ ...l, tricky: spots.has(i) }));
+  }
+
+  /** The memory trick for the round's word ("🧠 …"), or null. */
+  trickText() {
+    const t = trickFor(this.round.word, this.round);
+    return t && t.trick ? `🧠 ${t.trick}` : null;
+  }
+
+  /** After a miss: copy the right spelling once, with the tricky letters ringed. */
+  startFix() {
+    const s = this.state;
+    if (s.phase !== 'result' || s.right || this.testMode) return;
+    Sfx.click(); s.phase = 'fix'; s.fixed = null; s.typed = ''; s.shift = false;
+    this.rebuild();
+    if (canSpeak()) speak(this.round.word, { rate: this.speechRate });
+  }
+
+  /** The fix rows: the word (tricky part ringed) and what is being typed under it, marked once checked. */
+  drawFix(area) {
+    const s = this.state, r = this.round, ui = this.ui;
+    const cx = area.x + area.w / 2, gap = 6 * ui, size = this.tileSize(area);
+    const y1 = area.y + 44 * ui + size / 2;
+    letterRow(this, { cx, cy: y1, letters: this.ringed([...r.word].map((ch) => ({ ch, look: 'shown' }))), size, gap });
+    let row;
+    if (s.fixed) row = markSpelling(s.typed, r.word).marks.map((m) => ({ ch: m.ch, look: m.ok ? 'ok' : m.missing ? 'missing' : m.wrongCase ? 'case' : 'bad' }));
+    else row = Array.from({ length: Math.max(r.word.length, s.typed.length) }, (_, i) => ({ ch: s.typed[i] || '', look: s.typed[i] ? 'typed' : 'blank' }));
+    this.wordTiles = letterRow(this, { cx, cy: y1 + size + 12 * ui, letters: row, size, gap });
+    const trick = this.trickText();
+    if (trick) text(this, cx, y1 + size * 1.5 + 30 * ui, trick, { ...T.small(this, THEME.warningDark), wordWrap: { width: area.w - 32 }, align: 'center' });
+  }
+
+  /** Check the copied word. Right: on to the next word (it counts as practice, not as a right answer). */
+  checkFix() {
+    const s = this.state, r = this.round;
+    if (s.phase !== 'fix' || !s.typed || s.fixed === 'right') return;
+    if (s.typed === r.word) {
+      s.fixed = 'right'; Sfx.correct();
+      Store.updateProfile((p) => recordTaught(p, r.word));
+      this.rebuild();
+      const idx = s.idx;
+      this.time.delayedCall(900, () => { if (s.idx === idx && s.phase === 'fix') this.next(); });
+    } else { s.fixed = 'wrong'; Sfx.wrong(); this.rebuild(); if (this.wordTiles && this.wordTiles[0]) shake(this, this.wordTiles[0], 4); }
+  }
+
   /** A right answer: the picture pops, a bee carries honey to the pot, and a run of three pays out. */
   celebrate(bonus) {
     const s = this.state, ui = this.ui;
@@ -281,8 +355,8 @@ export class SpellingGameScene extends BaseScene {
 
   next() {
     const s = this.state;
-    if (s.phase !== 'result') return;
-    s.idx += 1; s.typed = ''; s.shift = false; s.right = null; s.caseOnly = false;
+    if (s.phase !== 'result' && s.phase !== 'fix') return;
+    s.idx += 1; s.typed = ''; s.shift = false; s.right = null; s.caseOnly = false; s.fixed = null;
     if (s.idx >= s.rounds.length) return this.finishAll();
     s.phase = this.round.mode === 'look' ? 'show' : 'type';
     this.rebuild();
@@ -331,7 +405,7 @@ export class SpellingGameScene extends BaseScene {
       y += 24 * ui;
     });
     const bw = Math.min((m.w - 72) / 2, 190 * ui), bh = 48 * ui, by = m.y + m.h - 40 * ui;
-    button(this, w / 2 - bw / 2 - 8, by, bw, bh, this.testMode ? 'Learn again' : 'Practise again', { variant: 'secondary', onClick: () => this.scene.start(this.testMode ? SCENES.SpellingLearn : SCENES.SpellingGame, { listId: this.listId, words: this.list.id === 'tricky' ? this.list.words : null, grade: this.grade }) });
+    button(this, w / 2 - bw / 2 - 8, by, bw, bh, this.testMode ? 'Learn again' : 'Practise again', { variant: 'secondary', onClick: () => this.scene.start(this.testMode ? SCENES.SpellingLearn : SCENES.SpellingGame, { listId: this.listId, words: this.list.id === 'tricky' || this.list.id === 'review' ? this.list.words : null, listKind: this.list.id, title: this.list.title, grade: this.grade }) });
     button(this, w / 2 + bw / 2 + 8, by, bw, bh, 'Done', { variant: 'primary', onClick: () => this.scene.start(SCENES.Spelling, { grade: this.grade }) });
   }
 

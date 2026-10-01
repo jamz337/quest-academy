@@ -130,7 +130,7 @@ describe('dashboard and leaderboard', () => {
     const s = defaultSave(); s.profiles[p.id] = p;
     const now = Date.now();
     const rows = [
-      { profile_id: p.id, game_id: 'math-dash', stars: 3, correct: 9, total: 10, xp: 100, time_ms: 60000, missed_skills: [], question_log: [{ skill: 'mult', right: true }, { skill: 'mult', right: false }, { skill: 'add', right: true }], created_at: new Date(now - 3600000).toISOString() },
+      { profile_id: p.id, game_id: 'math-dash', stars: 3, correct: 9, total: 10, xp: 100, time_ms: 60000, missed_skills: [], question_log: [{ skill: 'mult', right: true }, { skill: 'mult', right: false }, { skill: 'add', right: true }], created_at: new Date(now).toISOString() },   // just now: an hour ago is yesterday's column just after midnight UTC
       { profile_id: p.id, game_id: 'math-dash', stars: 1, correct: 5, total: 10, xp: 50, time_ms: 60000, missed_skills: ['mult'], question_log: [{ skill: 'mult', right: false }, { skill: 'mult', right: false }], created_at: new Date(now - 10 * 86400000).toISOString() }
     ];
     userRow();

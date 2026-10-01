@@ -62,3 +62,55 @@ export function findPatterns(words, max = 4) {
   }
   return out;
 }
+
+/**
+ * More words for each pattern, for the "find the family" round: the child spots which new words share the
+ * letters. Short, everyday words a child can read.
+ */
+export const FAMILIES = {
+  tion: ['station', 'nation', 'lotion', 'action', 'motion'],
+  tious: ['delicious', 'cautious', 'ambitious', 'precious'],
+  ies: ['babies', 'puppies', 'stories', 'cities', 'berries'],
+  ing: ['jumping', 'singing', 'reading', 'playing', 'eating'],
+  ful: ['helpful', 'careful', 'joyful', 'colourful', 'playful'],
+  ous: ['famous', 'nervous', 'enormous', 'dangerous'],
+  ants: ['giants', 'plants', 'pants', 'servants'],
+  ents: ['parents', 'students', 'presents', 'tents'],
+  ists: ['artists', 'dentists', 'scientists', 'cyclists'],
+  ors: ['doctors', 'visitors', 'sailors', 'actors'],
+  ed: ['jumped', 'played', 'walked', 'helped', 'laughed'],
+  er: ['farmer', 'baker', 'sister', 'winter', 'paper'],
+  ly: ['slowly', 'kindly', 'quickly', 'softly', 'loudly'],
+  ea: ['beach', 'leaf', 'read', 'teach', 'dream'],
+  ee: ['tree', 'feet', 'green', 'sleep', 'bee'],
+  ai: ['rain', 'train', 'paint', 'snail', 'tail'],
+  oa: ['boat', 'goat', 'coat', 'road', 'soap'],
+  oo: ['moon', 'book', 'food', 'pool', 'spoon'],
+  ou: ['house', 'mouse', 'cloud', 'round', 'loud'],
+  ie: ['pie', 'tie', 'field', 'chief', 'thief'],
+  ch: ['chair', 'lunch', 'cheese', 'beach', 'chick'],
+  sh: ['ship', 'fish', 'shell', 'brush', 'shop'],
+  th: ['thumb', 'bath', 'three', 'mouth', 'think'],
+  ph: ['phone', 'photo', 'dolphin', 'elephant', 'alphabet'],
+  ck: ['duck', 'clock', 'sock', 'truck', 'back'],
+  tt: ['kitten', 'butter', 'letter', 'bottle', 'little'],
+  ll: ['ball', 'bell', 'hill', 'doll', 'shell'],
+  ss: ['grass', 'dress', 'kiss', 'glass', 'class'],
+  bb: ['rabbit', 'ribbon', 'bubble', 'hobby', 'cabbage']
+};
+
+/**
+ * A "find the family" round for a pattern: `want` new words that share its letters (never one of the list's own
+ * words) mixed with as many that do not. Returns { letters, words: [{ word, member }] } shuffled by `shuffle`, or
+ * null when there are not enough family words.
+ */
+export function familyRound(letters, listWords, shuffle, want = 3) {
+  const p = PATTERNS.find((x) => x.letters === letters) || { letters, where: 'any' };
+  const own = new Set(listWords.map((w) => String(w).toLowerCase()));
+  const members = shuffle((FAMILIES[letters] || []).filter((w) => !own.has(w) && patternIndex(w, p) >= 0)).slice(0, want);
+  if (members.length < 2) return null;
+  const others = shuffle(Object.entries(FAMILIES).filter(([k]) => k !== letters).flatMap(([, ws]) => ws)
+    .filter((w) => !own.has(w) && !String(w).toLowerCase().includes(letters)));
+  const outsiders = [...new Set(others)].slice(0, members.length);
+  return { letters, words: shuffle([...members.map((word) => ({ word, member: true })), ...outsiders.map((word) => ({ word, member: false }))]) };
+}

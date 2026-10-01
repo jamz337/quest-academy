@@ -1,7 +1,8 @@
 // Spelling lists by grade: the class words the children are learning. The game shows a word (with its
 // syllables), reads it aloud with its sentence, hides it and asks for it back, and keeps score per word.
 //
-// Each entry is { w: 'co-co-nut', pic: '🥥', s: 'A sentence read aloud after the word.' }. Hyphens in `w` mark the
+// Each entry is { w: 'co-co-nut', pic: '🥥', s: 'A sentence read aloud after the word.' }, optionally with its own
+// memory trick { trick: '…', tricky: 'letters to watch' } (built-in ones live in tricks.js). Hyphens in `w` mark the
 // syllable chunks and are stripped to get the word. A word that really contains a hyphen can give its
 // chunks separately: { w: 'ice-cream', syl: 'ice-cream', s: '…' }. Plain strings ('co-co-nut') work too.
 // Capital letters are kept ('Car-ib-be-an' is spelt with a capital C) and the child has to type them.
@@ -61,6 +62,9 @@ export function listWords(list) {
     const marked = raw.trim();
     const syl = typeof x === 'object' && x.syl ? String(x.syl).trim() : marked;
     const w = typeof x === 'object' && x.syl ? marked : marked.replace(/-/g, '');
-    return { w, syl, s: (typeof x === 'object' && x.s) || null, pic: (typeof x === 'object' && x.pic) || null };
+    const out = { w, syl, s: (typeof x === 'object' && x.s) || null, pic: (typeof x === 'object' && x.pic) || null };
+    if (typeof x === 'object' && x.trick) out.trick = x.trick;   // a list's own memory trick (see tricks.js)
+    if (typeof x === 'object' && x.tricky) out.tricky = x.tricky;
+    return out;
   });
 }

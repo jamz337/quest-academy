@@ -20,7 +20,8 @@ const LOOKS = {
 
 /**
  * A centred row of letter tiles, each letter in its own case (a capital stays a capital). letters:
- * [{ ch, look, colour? }] where look is a key of LOOKS; `colour` (a chunk colour) tints a shown letter's ink.
+ * [{ ch, look, colour?, tricky? }] where look is a key of LOOKS; `colour` (a chunk colour) tints a shown letter's ink;
+ * `tricky` rings the tile in amber (the part of the word to watch).
  * Returns the tiles.
  */
 export function letterRow(scene, { cx, cy, letters, size, gap }) {
@@ -28,7 +29,7 @@ export function letterRow(scene, { cx, cy, letters, size, gap }) {
   return letters.map((l, i) => {
     const [fill, ink] = LOOKS[l.look] || LOOKS.shown;
     return tile(scene, x0 + i * (size + gap), cy, size, String(l.ch || ''), {
-      color: fill, textColor: l.colour ?? ink, empty: l.look === 'blank', fontSize: size * 0.58, stroke: l.look === 'shown' ? THEME.line : null, shadow: 'sm'
+      color: fill, textColor: l.colour ?? ink, empty: l.look === 'blank', fontSize: size * 0.58, stroke: l.tricky ? THEME.warning : l.look === 'shown' ? THEME.line : null, strokeWidth: l.tricky ? Math.max(3, size * 0.09) : undefined, shadow: 'sm'
     });
   });
 }

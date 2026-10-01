@@ -14,20 +14,26 @@ import { speak, stop as stopSpeech, rateFor, canSpeak } from '../systems/Speech.
 import { safeArea, pointerPos } from '../systems/Layout.js';
 import { Rng } from '../systems/Rng.js';
 import { getList, listWords, spellingGradeFor } from '../data/spelling/lists.js';
-import { findPatterns } from '../data/spelling/patterns.js';
-import { markSpelling, recordTaught } from '../systems/Spelling.js';
+import { findPatterns, familyRound } from '../data/spelling/patterns.js';
+import { trickFor } from '../data/spelling/tricks.js';
+import { markSpelling, recordTaught, recordSpelling, trickySpots } from '../systems/Spelling.js';
 import { letterRow, fitTile, chunkChips, letterKeyboard, keyFromEvent, wordPicture, beeFly, CHUNK_COLOURS } from '../ui/SpellingWidgets.js';
 
-const STEPS = ['card', 'trace', 'build', 'copy'];
-const STEP_TITLE = { card: 'Look and listen', trace: 'Trace the word with your finger', build: 'Build it from the chunks', copy: 'Now copy it' };
+const STEPS = ['card', 'trace', 'build', 'copy', 'cover'];
+const STEP_TITLE = { card: 'Look and listen', trace: 'Trace the word with your finger', build: 'Build it from the chunks', copy: 'Now copy it', cover: 'Look, say, cover, write, check' };
+/** The five parts of the Look-Say-Cover-Write-Check step, lit as the child moves through them. */
+const LSCWC = ['Look', 'Say', 'Cover', 'Write', 'Check'];
+const COVER_TRIES = 2;   // after this many misses "Next word" is offered as well as "Look again"
 const TRACE_HITS = 6;   // ink samples a letter needs before it counts as traced
 
 /**
  * Teaching before the test. First the spelling patterns the list shares (ea, tion, doubled letters…), one card
- * each with the letters lit up inside the words. Then every word: a flash card with its picture that shows it in
- * colour-coded syllable chunks and sounds it out with its sentence; tracing it with a finger; building it from
- * shuffled chunks; and copying it, capitals included, while it stays on screen. Each word copied sends a bee with
- * honey to the pot. Then the test (SpellingGameScene).
+ * each with the letters lit up inside the words, then a "find the family" round where the child spots new words
+ * with the same letters. Then every word: a flash card with its picture that shows it in colour-coded syllable
+ * chunks, rings its tricky part (and any letter the child has missed before) and gives a memory trick; tracing it
+ * with a finger; building it from shuffled chunks; copying it, capitals included, while it stays on screen; and
+ * Look-Say-Cover-Write-Check, where it is covered and written from memory, then checked letter by letter. Each word
+ * copied sends a bee with honey to the pot. Then the test (SpellingGameScene).
  */
 export class SpellingLearnScene extends BaseScene {
   constructor() { super(SCENES.SpellingLearn); this.fade = true; }
@@ -36,12 +42,13 @@ export class SpellingLearnScene extends BaseScene {
     this.listId = data.listId;
     this.grade = data.grade || null;
     this.customWords = data.words || null;
-    const list = data.words ? { id: 'tricky', title: 'Tricky words', words: data.words } : getList(data.listId);
+    const list = data.words ? { id: data.listKind || 'tricky', title: data.title || 'Tricky words', words: data.words } : getList(data.listId);
+    this.listKind = data.listKind || null; this.listTitle = data.title || null;
     this.list = list || { id: 'none', title: 'Spelling', words: [] };
     this.rng = new Rng();
-    const words = listWords(this.list).map((e) => ({ word: e.w, chunks: e.syl.split('-').filter(Boolean), sentence: e.s, pic: e.pic }));
+    const words = listWords(this.list).map((e) => ({ word: e.w, chunks: e.syl.split('-').filter(Boolean), sentence: e.s, pic: e.pic, entry: e, trick: trickFor(e.w, e) }));
     const patterns = findPatterns(words.map((w) => w.word));
-    this.state = { stage: patterns.length ? 'patterns' : 'words', patterns, pIdx: 0, words, idx: 0, step: 'card', typed: '', shift: false, result: null, placed: [], order: [], strokes: [], traced: {}, done: false, tries: 0, honey: 0, firstTries: 0 };
+    this.state = { stage: patterns.length ? 'patterns' : 'words', patterns, pIdx: 0, pStep: 'card', family: null, words, idx: 0, step: 'card', typed: '', shift: false, result: null, placed: [], order: [], strokes: [], traced: {}, done: false, tries: 0, honey: 0, firstTries: 0, cover: 'look', coverTries: 0, remembered: 0 };
     this.prepare();
   }
 
@@ -67,7 +74,7 @@ export class SpellingLearnScene extends BaseScene {
 
   get entry() { return this.state.words[this.state.idx]; }
   get pattern() { return this.state.patterns[this.state.pIdx]; }
-  enterKey() { const s = this.state; return s.done ? 'done' : s.stage === 'patterns' ? `p${s.pIdx}` : `${s.idx}-${s.step}`; }
+  enterKey() { const s = this.state; return s.done ? 'done' : s.stage === 'patterns' ? `p${s.pIdx}-${s.pStep}` : `${s.idx}-${s.step}${s.step === 'cover' ? '-' + s.cover : ''}`; }
   get speechRate() { return rateFor(Store.getProfile()?.grade); }
 
   /** Grade 2 hears every letter as it is typed (the player's grade, or the list's, whichever is lower). */
@@ -84,7 +91,7 @@ export class SpellingLearnScene extends BaseScene {
     let order = this.rng.shuffle(ids);
     if (ids.length > 1) for (let g = 0; g < 10 && order.every((v, i) => v === i); g++) order = this.rng.shuffle(ids);
     if (ids.length > 1 && order.every((v, i) => v === i)) order = [...ids.slice(1), ids[0]];
-    s.order = order; s.placed = []; s.typed = ''; s.shift = false; s.result = null; s.tries = 0; s.strokes = []; s.traced = {};
+    s.order = order; s.placed = []; s.typed = ''; s.shift = false; s.result = null; s.tries = 0; s.strokes = []; s.traced = {}; s.cover = 'look'; s.coverTries = 0;
   }
 
   /** Read out whatever is on screen: the pattern with its words, or the word, its chunks and its sentence. */
@@ -99,6 +106,7 @@ export class SpellingLearnScene extends BaseScene {
     const e = this.entry;
     if (!e) return;
     const chunks = e.chunks.length > 1 ? e.chunks.join(', ') + '. ' : '';
+    if (s.step === 'cover') { speak(`${e.word}. ${chunks}${e.word}. Now you say it.`, { rate: Math.max(0.7, this.speechRate - 0.15) }); return; }
     speak(`${e.word}. ${chunks}${e.word}.${e.sentence ? ' ' + e.sentence : ''}`, { rate: Math.max(0.7, this.speechRate - 0.15) });
   }
 
@@ -126,13 +134,14 @@ export class SpellingLearnScene extends BaseScene {
     const barW = Math.max(40, w - 32 - this.honey.w - 8 - sa.left - sa.right);
     new ProgressBar(this, 16 + sa.left + barW / 2, y2, barW, 6 * ui, { value: at / Math.max(1, total), color: THEME.subjects.words.accent });
     const area = { x: 14 + sa.left, y: sa.top + 76 * ui, w: w - 28 - sa.left - sa.right, h: h - sa.top - 76 * ui - 14 - sa.bottom };
-    if (s.stage === 'patterns') return this.buildPattern(area, this.pattern);
+    if (s.stage === 'patterns') return s.pStep === 'family' && s.family ? this.buildFamily(area, s.family) : this.buildPattern(area, this.pattern);
     const e = this.entry;
     if (!e) return this.buildReady();
     if (s.step === 'card') this.buildCard(area, e);
     else if (s.step === 'trace') this.buildTrace(area, e);
     else if (s.step === 'build') this.buildChunks(area, e);
-    else this.buildCopy(area, e);
+    else if (s.step === 'copy') this.buildCopy(area, e);
+    else this.buildCover(area, e);
   }
 
   /** The step's title line with the word's small picture at its left (the hint wraps beside it). */
@@ -173,18 +182,17 @@ export class SpellingLearnScene extends BaseScene {
     const gap = 6 * ui, size = fitTile(e.word.length, area.w - 40, gap, 52 * ui, 18 * ui);
     const picSize = e.pic ? Math.min(84 * ui, Math.max(44 * ui, area.h * 0.15)) : 0;
     const top = area.y + 44 * ui + (e.pic ? picSize + 10 * ui : 0);   // the tiles' top edge
-    const cardH = Math.min(area.h - 70 * ui, top - area.y + size + 96 * ui);
+    const cardH = Math.min(area.h - 70 * ui, top - area.y + size + (this.hasTrickLine(e) ? 130 : 96) * ui);
     const k = card(this, cx, area.y + cardH / 2, area.w, cardH);
     stripe(this, cx - 24 * ui, area.y + 10 * ui, 48 * ui, THEME.subjects.words.accent, 5 * ui);
     text(this, cx, area.y + 28 * ui, STEP_TITLE.card, T.small(this, THEME.ink2));
     if (e.pic) { this.pic = wordPicture(this, cx, area.y + 40 * ui + picSize / 2, picSize, e.pic); enter(this, this.pic, { from: 'pop' }); }
-    // Letters take the colour of their chunk so the chunks can be seen inside the word.
-    const letters = [];
-    e.chunks.forEach((c, ci) => { for (const ch of c) letters.push({ ch, look: 'shown', colour: hex(CHUNK_COLOURS[ci % CHUNK_COLOURS.length]) }); });
-    const tiles = letterRow(this, { cx, cy: top + size / 2, letters, size, gap });
+    // Letters take the colour of their chunk so the chunks can be seen inside the word; the tricky part is ringed.
+    const tiles = letterRow(this, { cx, cy: top + size / 2, letters: this.wordLetters(e), size, gap });
     enter(this, tiles, { from: 'pop', stagger: 40 });
     if (e.chunks.length > 1) chunkChips(this, { cx, cy: top + size + 34 * ui, chunks: e.chunks, ui, maxW: area.w - 32 });
     else text(this, cx, top + size + 34 * ui, 'One chunk: say it slowly and listen to each sound.', T.small(this, THEME.ink3));
+    this.trickLine(cx, top + size + 66 * ui, area.w - 32, e);
     enter(this, k, { from: 'up', distance: 12 });
     if (e.sentence) text(this, cx, area.y + cardH + 12 * ui, `“${e.sentence}”`, { ...T.small(this, THEME.ink2), wordWrap: { width: area.w - 24 } }).setOrigin(0.5, 0);
     const by = area.y + cardH + (e.sentence ? 58 : 30) * ui, bw = Math.min((area.w - 20) / 2, 220 * ui);
@@ -330,14 +338,14 @@ export class SpellingLearnScene extends BaseScene {
     this.wordTiles = letterRow(this, { cx, cy: area.y + 44 * ui + size * 1.5 + 14 * ui, letters: typedLetters, size, gap });
     if (canSpeak()) iconButton(this, area.x + area.w - 30 * ui, area.y + 28 * ui, 40 * ui, '🔊', { variant: 'ghost', onClick: () => this.sayCurrent() });
     enter(this, k, { from: 'up', distance: 12 });
-    if (s.result === 'right') { button(this, cx, area.y + cardH + 30 * ui, Math.min(area.w - 40, 240 * ui), 48 * ui, s.idx + 1 >= s.words.length ? 'Ready for the test ▶' : 'Next word ▶', { variant: 'primary', onClick: () => this.advance() }); return; }
+    if (s.result === 'right') { button(this, cx, area.y + cardH + 30 * ui, Math.min(area.w - 40, 240 * ui), 48 * ui, 'Now cover it ▶', { variant: 'primary', onClick: () => this.advance() }); return; }
     letterKeyboard(this, { x: area.x, y: area.y + cardH + 12, w: area.w, h: area.h - cardH - 12 }, { onKey: (ch) => this.type(ch), onCheck: () => this.checkCopy(), onShift: () => this.type('⇧'), shift: s.shift, ready: s.typed.length > 0, ui });
   }
 
   /** A key press: a letter (in the case shown on the key), shift for the next letter, or backspace. */
   type(ch) {
     const s = this.state, e = this.entry;
-    if (s.step !== 'copy' || s.result === 'right') return;
+    if (!this.typing()) return;
     if (ch === '⇧') { s.shift = !s.shift; Sfx.click(); this.rebuild(); return; }
     if (s.result === 'wrong') { s.result = null; s.typed = ''; }
     if (ch === '⌫') { if (!s.typed) return; s.typed = s.typed.slice(0, -1); }
@@ -361,7 +369,7 @@ export class SpellingLearnScene extends BaseScene {
       const from = this.pic || (this.wordTiles && this.wordTiles[0]), pot = this.honey;
       if (this.pic) pulse(this, this.pic, 1.15);
       if (from && pot) beeFly(this, from.x, from.y, pot.x - pot.w / 2, pot.y, () => { Sfx.coin(); if (pot.active !== false) pulse(this, pot, 1.2); }, this.ui);
-      this.time.delayedCall(1100, () => { if (s.step === 'copy' && s.result === 'right') this.advance(); });
+      this.time.delayedCall(1100, () => { if (s.step === 'copy' && s.result === 'right') this.advance(); });   // on to Look-Say-Cover-Write-Check
     }
   }
 
@@ -369,9 +377,13 @@ export class SpellingLearnScene extends BaseScene {
     const s = this.state;
     if (s.done) return;
     const k = keyFromEvent(e);
-    if (s.stage === 'patterns' || s.step === 'card' || s.step === 'trace') { if (k === 'Enter') this.advance(); return; }
+    if (s.stage === 'patterns' || s.step === 'card' || s.step === 'trace') { if (k === 'Enter' && !(s.stage === 'patterns' && s.pStep === 'family' && !this.familyDone())) this.advance(); return; }
     if (s.step === 'build') return;
-    if (k === 'Enter') return this.checkCopy();
+    if (s.step === 'cover' && s.cover !== 'write') {
+      if (k === 'Enter') { if (s.cover === 'look') this.coverIt(); else if (s.result === 'right' || s.coverTries >= COVER_TRIES) this.advance(); else this.lookAgain(); }
+      return;
+    }
+    if (k === 'Enter') return s.step === 'cover' ? this.checkCover() : this.checkCopy();
     if (k) this.type(k);
   }
 
@@ -380,6 +392,13 @@ export class SpellingLearnScene extends BaseScene {
     const s = this.state;
     stopSpeech();
     if (s.stage === 'patterns') {
+      // Each pattern card is followed by its "find the family" round (when there are enough family words).
+      if (s.pStep === 'card') {
+        const p = this.pattern;
+        s.family = p ? familyRound(p.letters, s.words.map((x) => x.word), (a) => this.rng.shuffle(a)) : null;
+        if (s.family) { s.family.found = []; s.family.wrong = []; s.pStep = 'family'; this.rebuild(); this.sayFamily(); return; }
+      }
+      s.pStep = 'card'; s.family = null;
       s.pIdx += 1;
       if (s.pIdx >= s.patterns.length) { s.stage = 'words'; s.pIdx = 0; }
       this.rebuild(); this.sayCurrent();
@@ -389,6 +408,7 @@ export class SpellingLearnScene extends BaseScene {
     if (s.step === 'card') { s.step = 'trace'; s.strokes = []; s.traced = {}; this.rebuild(); return; }
     if (s.step === 'trace') { s.step = e.chunks.length > 1 ? 'build' : 'copy'; s.result = null; this.rebuild(); return; }
     if (s.step === 'build') { s.step = 'copy'; s.typed = ''; s.shift = false; s.result = null; this.rebuild(); return; }
+    if (s.step === 'copy') { s.step = 'cover'; s.cover = 'look'; s.typed = ''; s.shift = false; s.result = null; s.coverTries = 0; this.rebuild(); this.sayCurrent(); return; }
     s.idx += 1;
     if (s.idx >= s.words.length) { s.done = true; Sfx.fanfare(); this.rebuild(); return; }
     s.step = 'card';
@@ -397,19 +417,158 @@ export class SpellingLearnScene extends BaseScene {
     this.sayCurrent();
   }
 
+  // ---- Tricky part and memory trick ---------------------------------------------------------------
+
+  /** The word's letters in chunk colours, with its tricky part (and letters missed before) ringed. */
+  wordLetters(e, look = 'shown') {
+    const spots = new Set(trickySpots(Store.getProfile(), e.word, e.entry));
+    const out = [];
+    let i = 0;
+    e.chunks.forEach((c, ci) => { for (const ch of c) { out.push({ ch, look, colour: hex(CHUNK_COLOURS[ci % CHUNK_COLOURS.length]), tricky: spots.has(i) }); i += 1; } });
+    return out;
+  }
+
+  hasTrickLine(e) { return !!(e.trick && e.trick.trick) || trickySpots(Store.getProfile(), e.word, e.entry).length > 0; }
+
+  /** "Watch the ringed letters" and the memory trick, under the word. */
+  trickLine(cx, y, width, e) {
+    if (!this.hasTrickLine(e)) return null;
+    const trick = e.trick && e.trick.trick;
+    const str = trick ? `🧠 ${trick}` : '⚠ Watch the ringed letters: that is the tricky part.';
+    return text(this, cx, y, str, { ...T.small(this, THEME.warningDark), wordWrap: { width }, align: 'center' });
+  }
+
+  // ---- Find the family ------------------------------------------------------------------------------
+
+  familyDone() { const f = this.state.family; return !!f && f.words.filter((x) => x.member).every((x) => f.found.includes(x.word)); }
+
+  sayFamily() {
+    const f = this.state.family;
+    if (f && canSpeak()) speak(`Find the words with ${[...f.letters.toUpperCase()].join(', ')}.`, { rate: this.speechRate });
+  }
+
+  /** Tap the new words that share the pattern's letters; the others shake. */
+  buildFamily(area, f) {
+    const { ui } = this, cx = area.x + area.w / 2;
+    const done = this.familyDone();
+    const members = f.words.filter((x) => x.member).length;
+    const rows = Math.ceil(f.words.length / 2), chipH = 52 * ui, gap = 10 * ui;
+    const cardH = Math.min(area.h - 70 * ui, 112 * ui + rows * (chipH + gap));
+    const k = card(this, cx, area.y + cardH / 2, area.w, cardH);
+    stripe(this, cx - 24 * ui, area.y + 10 * ui, 48 * ui, THEME.pink, 5 * ui);
+    text(this, cx, area.y + 28 * ui, done ? 'You found the whole family!' : `Find the family: tap the ${members} words with these letters`, { ...T.small(this, done ? THEME.successDark : THEME.ink2), wordWrap: { width: area.w - 32 } });
+    text(this, cx, area.y + 62 * ui, f.letters, T.at(this, 34, THEME.pink, { fontStyle: '700' }));
+    const cw = Math.min((area.w - 40 - gap) / 2, 220 * ui);
+    const made = f.words.map((x, i) => {
+      const col = i % 2, row = Math.floor(i / 2);
+      const bx = cx + (col === 0 ? -1 : 1) * (cw / 2 + gap / 2), by = area.y + 96 * ui + row * (chipH + gap) + chipH / 2;
+      const found = f.found.includes(x.word), wrong = f.wrong.includes(x.word);
+      const variant = found ? 'success' : wrong ? 'danger' : 'secondary';
+      const b = button(this, bx, by, cw, chipH, x.word, { variant, fontSize: 20, onClick: () => this.tapFamily(x) });
+      if (wrong) b.setAlpha(0.5);
+      return b;
+    });
+    enter(this, k, { from: 'up', distance: 12 });
+    enter(this, made, { from: 'pop', stagger: 40 });
+    const by = area.y + cardH + 30 * ui, bw = Math.min((area.w - 20) / 2, 220 * ui);
+    if (canSpeak()) button(this, cx - bw / 2 - 6, by, bw, 48 * ui, '🔊 Say it', { variant: 'secondary', onClick: () => this.sayFamily() });
+    button(this, canSpeak() ? cx + bw / 2 + 6 : cx, by, bw, 48 * ui, done ? 'Next ▶' : 'Skip ▶', { variant: done ? 'primary' : 'ghost', onClick: () => this.advance() });
+  }
+
+  tapFamily(x) {
+    const f = this.state.family;
+    if (!f || f.found.includes(x.word) || f.wrong.includes(x.word)) return;
+    if (canSpeak()) speak(x.word, { rate: this.speechRate });
+    if (x.member) { f.found.push(x.word); if (this.familyDone()) Sfx.correct(); else Sfx.pop(); }
+    else { f.wrong.push(x.word); Sfx.wrong(); }
+    this.rebuild();
+  }
+
+  // ---- Look, Say, Cover, Write, Check ------------------------------------------------------------------
+
+  typing() { const s = this.state; return (s.step === 'copy' && s.result !== 'right') || (s.step === 'cover' && s.cover === 'write'); }
+
+  /** Look at it and say it; cover it and write it from memory; check it against the word, letter by letter. */
+  buildCover(area, e) {
+    const { ui } = this, s = this.state;
+    const cx = area.x + area.w / 2;
+    const gap = 6 * ui, size = fitTile(Math.max(e.word.length, s.typed.length), area.w - 40, gap, 44 * ui, 16 * ui);
+    const rowsH = s.cover === 'check' ? size * 2 + 14 * ui : size;
+    const cardH = Math.min(area.h * 0.58, 92 * ui + rowsH + (s.cover === 'look' && this.hasTrickLine(e) ? 40 : 20) * ui);
+    const k = card(this, cx, area.y + cardH / 2, area.w, cardH);
+    stripe(this, cx - 24 * ui, area.y + 10 * ui, 48 * ui, THEME.subjects.words.accent, 5 * ui);
+    // The five parts, lit as the child goes: Look + Say, then Cover + Write, then Check.
+    const lit = s.cover === 'look' ? [0, 1] : s.cover === 'write' ? [2, 3] : [4];
+    const pw = Math.min(78 * ui, (area.w - 40 - 44 * ui) / 5 - 4 * ui), ph = 24 * ui, chipsX = cx - 22 * ui;   // clear of the speaker on the right
+    LSCWC.forEach((label, i) => {
+      const on = lit.includes(i), past = i < lit[0];
+      chip(this, chipsX + (i - 2) * (pw + 4 * ui), area.y + 26 * ui, { text: (past ? '✓ ' : '') + label, originX: 0.5, color: on ? THEME.subjects.words.accent : past ? THEME.successSoft : THEME.sunken, textColor: on ? THEME.onAccent : past ? THEME.successDark : THEME.ink3, fontSize: 12, height: ph, shadow: 'none' });
+    });
+    const marks = s.cover === 'check' ? markSpelling(s.typed, e.word) : null;
+    const msg = s.cover === 'look' ? 'Look at the word and say it out loud.'
+      : s.cover === 'write' ? 'It is covered. Write it from memory.'
+        : marks.right ? '🧠 You remembered it!' : marks.caseOnly ? 'Nearly! Check the capital letters.' : 'Check the red letters, then look again.';
+    text(this, cx, area.y + 54 * ui, msg, { ...T.small(this, s.cover === 'check' ? (marks.right ? THEME.successDark : THEME.danger) : THEME.ink2), wordWrap: { width: area.w - 32 }, align: 'center' });
+    const rowY = area.y + 78 * ui + size / 2;
+    if (s.cover === 'look') {
+      this.wordTiles = letterRow(this, { cx, cy: rowY, letters: this.wordLetters(e), size, gap });
+      this.trickLine(cx, rowY + size / 2 + 18 * ui, area.w - 32, e);
+    } else if (s.cover === 'write') {
+      // The covered word: one tile per letter typed so far (no letters given away).
+      const n = Math.max(e.word.length, s.typed.length);
+      this.wordTiles = letterRow(this, { cx, cy: rowY, letters: Array.from({ length: n }, (_, i) => ({ ch: s.typed[i] || '', look: s.typed[i] ? 'typed' : 'blank' })), size, gap });
+    } else {
+      letterRow(this, { cx, cy: rowY, letters: this.wordLetters(e), size, gap });
+      this.wordTiles = letterRow(this, { cx, cy: rowY + size + 14 * ui, letters: marks.marks.map((m) => ({ ch: m.ch, look: m.ok ? 'ok' : m.missing ? 'missing' : m.wrongCase ? 'case' : 'bad' })), size, gap });
+    }
+    if (canSpeak()) iconButton(this, area.x + area.w - 30 * ui, area.y + 26 * ui, 36 * ui, '🔊', { variant: 'ghost', onClick: () => this.sayCurrent() });
+    enter(this, k, { from: 'up', distance: 12 });
+    const by = area.y + cardH + 30 * ui, bw = Math.min((area.w - 20) / 2, 220 * ui);
+    if (s.cover === 'look') {
+      if (canSpeak()) button(this, cx - bw / 2 - 6, by, bw, 48 * ui, '🔊 Say it with me', { variant: 'secondary', onClick: () => this.sayCurrent() });
+      button(this, canSpeak() ? cx + bw / 2 + 6 : cx, by, bw, 48 * ui, 'Cover it ▶', { variant: 'primary', onClick: () => this.coverIt() });
+      return;
+    }
+    if (s.cover === 'write') {
+      letterKeyboard(this, { x: area.x, y: area.y + cardH + 12, w: area.w, h: area.h - cardH - 12 }, { onKey: (ch) => this.type(ch), onCheck: () => this.checkCover(), onShift: () => this.type('⇧'), shift: s.shift, ready: s.typed.length > 0, ui });
+      return;
+    }
+    const last = s.idx + 1 >= s.words.length;
+    if (marks.right) { button(this, cx, by, Math.min(area.w - 40, 240 * ui), 48 * ui, last ? 'Ready for the test ▶' : 'Next word ▶', { variant: 'primary', onClick: () => this.advance() }); return; }
+    button(this, s.coverTries >= COVER_TRIES ? cx - bw / 2 - 6 : cx, by, bw, 48 * ui, '👀 Look again', { variant: 'primary', onClick: () => this.lookAgain() });
+    if (s.coverTries >= COVER_TRIES) button(this, cx + bw / 2 + 6, by, bw, 48 * ui, last ? 'Ready for the test ▶' : 'Next word ▶', { variant: 'ghost', onClick: () => this.advance() });
+  }
+
+  coverIt() { const s = this.state; if (s.step !== 'cover' || s.cover !== 'look') return; stopSpeech(); Sfx.click(); s.cover = 'write'; s.typed = ''; s.shift = false; this.rebuild(); }
+  lookAgain() { const s = this.state; if (s.step !== 'cover') return; Sfx.click(); s.cover = 'look'; s.typed = ''; this.rebuild(); this.sayCurrent(); }
+
+  /** Check the word written from memory. The first try counts as real practice (a miss remembers its letters). */
+  checkCover() {
+    const s = this.state, e = this.entry;
+    if (s.step !== 'cover' || s.cover !== 'write' || !s.typed) return;
+    const right = s.typed === e.word;
+    s.coverTries += 1; s.cover = 'check'; s.result = right ? 'right' : 'wrong';
+    if (s.coverTries === 1) { const typed = s.typed; Store.updateProfile((p) => recordSpelling(p, e.word, right, 'cover', typed)); }
+    if (right) {
+      Sfx.correct(); s.remembered += 1; if (canSpeak()) speak(e.word, { rate: this.speechRate });
+      this.rebuild();
+      this.time.delayedCall(1300, () => { if (s.step === 'cover' && s.cover === 'check' && s.result === 'right') this.advance(); });
+    } else { Sfx.wrong(); this.cameras.main.shake(120, 0.004); this.rebuild(); }
+  }
+
   buildReady() {
     const { w, ui } = this, s = this.state;
     const cx = w / 2;
     const k = card(this, cx, this.h / 2 + 10 * ui, Math.min(w - 28, 420 * ui), 300 * ui);
     text(this, cx, this.h / 2 - 80 * ui, '🐝', { fontSize: Math.round(44 * ui) + 'px' });
     text(this, cx, this.h / 2 - 32 * ui, `You have learned ${s.words.length} ${s.words.length === 1 ? 'word' : 'words'}!`, T.heading(this));
-    text(this, cx, this.h / 2 - 6 * ui, `🍯 ${s.honey} honey collected${s.firstTries ? `   ⚡ ${s.firstTries} copied first time` : ''}`, T.small(this, THEME.warningDark));
+    text(this, cx, this.h / 2 - 6 * ui, `🍯 ${s.honey} honey collected${s.remembered ? `   🧠 ${s.remembered} remembered from memory` : ''}`, T.small(this, THEME.warningDark));
     text(this, cx, this.h / 2 + 18 * ui, 'Ready to be tested? The words will hide this time.', { ...T.small(this, THEME.ink2), wordWrap: { width: Math.min(w - 60, 380 * ui) } });
     button(this, cx, this.h / 2 + 70 * ui, Math.min(w - 60, 260 * ui), 50 * ui, 'Start the test ▶', { variant: 'primary', onClick: () => this.startTest() });
     button(this, cx, this.h / 2 + 126 * ui, Math.min(w - 60, 200 * ui), 38 * ui, 'Back to the lists', { variant: 'ghost', fontSize: 14, onClick: () => this.quit() });
     enter(this, k, { from: 'pop' });
   }
 
-  startTest() { stopSpeech(); this.scene.start(SCENES.SpellingGame, { listId: this.listId, words: this.customWords, grade: this.grade }); }
+  startTest() { stopSpeech(); this.scene.start(SCENES.SpellingGame, { listId: this.listId, words: this.customWords, listKind: this.listKind, title: this.listTitle, grade: this.grade }); }
   quit() { stopSpeech(); this.scene.start(SCENES.Spelling, { grade: this.grade }); }
 }

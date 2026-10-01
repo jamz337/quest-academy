@@ -12,9 +12,12 @@ import { StarRow } from '../ui/StarRow.js';
 import { enter } from '../ui/motion.js';
 import { Sfx } from '../systems/Audio.js';
 import { SPELLING_LISTS, SPELLING_GRADES, spellingGradeFor, listWords } from '../data/spelling/lists.js';
-import { listProgress, isLearned, ensureSpelling } from '../systems/Spelling.js';
+import { listProgress, isLearned, ensureSpelling, dueWords, nextReviewAt, DAY } from '../systems/Spelling.js';
 
-/** Spelling Bee hub: the grade's word lists with how many words are learned, and a card of tricky words to practise. */
+/**
+ * Spelling Bee hub: today's spaced review (the words due back today, from every list), the grade's word lists with
+ * how many words are learned, and a card of tricky words to practise.
+ */
 export class SpellingScene extends BaseScene {
   constructor() { super(SCENES.Spelling); this.fade = true; }
 
@@ -33,7 +36,7 @@ export class SpellingScene extends BaseScene {
     const grade = this.grade || spellingGradeFor(p.grade);
     const lists = SPELLING_LISTS[grade] || [];
     background(this, { accent: THEME.subjects.words.accent, accent2: THEME.gold });
-    const bar = topBar(this, { title: '🐝 Spelling Bee', onBack: () => this.go(SCENES.ModeSelect), subtitle: 'Learn each list with flash cards, then take the test' });
+    const bar = topBar(this, { title: '🐝 Spelling Bee', onBack: () => this.go(SCENES.ModeSelect), subtitle: 'Learn it, cover it, write it, check it. A little every day!' });
 
     // Grade tabs (the lists are written per grade).
     let y = bar.bottom + 14 * ui;
@@ -51,11 +54,26 @@ export class SpellingScene extends BaseScene {
     const cw = Math.min((w - 24 - gap * (cols - 1)) / cols, 420 * ui), ch = 104 * ui;
     const left = (w - (cw * cols + gap * (cols - 1))) / 2;
     const cards = [];
-    const items = [...lists.map((l) => ({ list: l })), ...(tricky.length ? [{ tricky }] : [])];
+    // Spaced review comes first: a few minutes a day on the words that are due back.
+    const due = dueWords(p);
+    const next = nextReviewAt(p);
+    const review = due.length ? { due } : next ? { waitDays: Math.max(1, Math.ceil((next - Date.now()) / DAY)) } : null;
+    const items = [...(review ? [{ review }] : []), ...lists.map((l) => ({ list: l })), ...(tricky.length ? [{ tricky }] : [])];
     items.forEach((it, i) => {
       const cx = left + (i % cols) * (cw + gap) + cw / 2, cy = y + Math.floor(i / cols) * (ch + gap) + ch / 2;
       if (cy + ch / 2 > h - 8) return;
-      if (it.list) {
+      if (it.review) {
+        const due = it.review.due;
+        const k = card(this, cx, cy, cw, ch, { stroke: THEME.success, color: THEME.successSoft, onTap: due ? () => this.review(due) : null });
+        k.add(this.add.text(-cw / 2 + 18, -ch / 2 + 22 * ui, "📅 Today's practice", T.bodyBold(this, THEME.successDark)).setOrigin(0, 0.5));
+        if (due) {
+          k.add(this.add.text(-cw / 2 + 18, -ch / 2 + 44 * ui, `${due.length} ${due.length === 1 ? 'word is' : 'words are'} due back today: ${due.slice(0, 8).map((e) => e.w).join(' · ')}${due.length > 8 ? ' …' : ''}`, { ...T.small(this, THEME.ink2), wordWrap: { width: cw - 36 } }).setOrigin(0, 0));
+          k.add(button(this, -cw / 2 + 18 + 60 * ui, ch / 2 - 18 * ui, 120 * ui, 28 * ui, 'Review now', { variant: 'success', fontSize: 12, onClick: () => this.review(due) }));
+        } else {
+          k.add(this.add.text(-cw / 2 + 18, -ch / 2 + 50 * ui, `All caught up! Your next review is in ${it.review.waitDays} ${it.review.waitDays === 1 ? 'day' : 'days'}.`, { ...T.small(this, THEME.ink2), wordWrap: { width: cw - 36 } }).setOrigin(0, 0.5));
+        }
+        cards.push(k);
+      } else if (it.list) {
         const pr = listProgress(p, it.list);
         const k = card(this, cx, cy, cw, ch, { stroke: THEME.subjects.words.soft, onTap: () => this.learn(it.list.id) });
         k.add(button(this, -cw / 2 + 18 + 38 * ui, ch / 2 - 18 * ui, 76 * ui, 28 * ui, 'Learn', { variant: 'success', fontSize: 12, onClick: () => this.learn(it.list.id) }));
@@ -82,7 +100,12 @@ export class SpellingScene extends BaseScene {
     enter(this, cards, { from: 'up', stagger: 40 });
   }
 
-  /** Teach first (flash cards, build it, copy it), then the test. */
+  /** Practise the words due back today (spaced review). */
+  review(entries) {
+    this.scene.start(SCENES.SpellingGame, { listId: 'review', listKind: 'review', title: "Today's practice", words: entries, grade: this.grade });
+  }
+
+  /** Teach first (flash cards, build it, copy it, cover it), then the test. */
   learn(listId, words = null) {
     this.scene.start(SCENES.SpellingLearn, { listId, words, grade: this.grade });
   }
