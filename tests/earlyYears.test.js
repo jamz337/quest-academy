@@ -225,4 +225,19 @@ describe('the two new games', () => {
     while (s.state.idx < 6 && !s.finish.mock.calls.length) s.next();
     expect(s.finish).toHaveBeenCalledWith(expect.objectContaining({ correct: 1, total: 6 }));
   });
+
+  it("Letter Trace: with the letter's shape, a quick swipe is not enough; the whole letter has to be traced", () => {
+    const s = makeGame(LetterTrace, { gameId: 'eng-trace', grade: -1 });
+    const r = s.traceRects[0], f = s.fontPx, cx = (r.x0 + r.x1) / 2;
+    // A straight stem of checkpoints, as a browser reads from an "I".
+    r.points = Array.from({ length: 20 }, (_, k) => ({ key: `0,${k}`, x: cx, y: r.y0 + f * 0.2 + k * f * 0.03 }));
+    s.traceDown({ x: cx, y: r.y0 + f * 0.2 });
+    for (let k = 0; k < 4; k++) s.traceMove({ isDown: true, x: cx, y: r.y0 + f * 0.2 + k * f * 0.03 });
+    expect(s.traceDone()).toBe(false);
+    expect(s.coverage(0)).toBeLessThan(0.75);
+    expect(s.label.text).toMatch(/Keep going/);
+    for (let k = 4; k < 20; k++) s.traceMove({ isDown: true, x: cx, y: r.y0 + f * 0.2 + k * f * 0.03 });
+    expect(s.traceDone()).toBe(true);
+    expect(s.state.finished).toEqual([0]);
+  });
 });
