@@ -5,7 +5,7 @@ import * as Store from '../systems/Store.js';
 import * as Launcher from '../systems/MinigameLauncher.js';
 import { bandFor, BANDS, BAND_LABEL } from '../data/grades.js';
 import { gameGrade } from '../systems/Progression.js';
-import { levelsForBand } from '../data/coding/levels.js';
+import { levelsForBand, LEVELS } from '../data/coding/levels.js';
 import { grid } from '../systems/Layout.js';
 import { T, text } from '../ui/TextStyles.js';
 import { button } from '../ui/Button.js';
@@ -44,9 +44,11 @@ export class LevelSelectScene extends BaseScene {
     const bar = topBar(this, { title: 'Robo Maze', onBack: () => this.go(SCENES.ChallengeMenu) });
 
     // band tabs
-    const tabW = Math.min(150 * ui, (w - 40) / 3), tabH = 40 * ui, tabY = bar.bottom + 8 + tabH / 2;
-    BANDS.forEach((b, i) => {
-      button(this, w / 2 + (i - 1) * (tabW + 8), tabY, tabW, tabH, `${b} · ${BAND_LABEL[b]}`, {
+    // One tab per band that has levels (early-years mazes sit under E).
+    const tabs = BANDS.filter((b) => LEVELS.some((l) => l.band === b));
+    const tabW = Math.min(150 * ui, (w - 40 - 8 * (tabs.length - 1)) / tabs.length), tabH = 40 * ui, tabY = bar.bottom + 8 + tabH / 2;
+    tabs.forEach((b, i) => {
+      button(this, w / 2 + (i - (tabs.length - 1) / 2) * (tabW + 8), tabY, tabW, tabH, `${b} · ${BAND_LABEL[b]}`, {
         variant: 'secondary', selected: b === this.band, selectedAccent: CODE.accent, fontSize: 13, radius: THEME.radius.sm,
         onClick: () => { this.band = b; this.rebuild(); }
       });

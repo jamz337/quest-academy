@@ -42,6 +42,11 @@ function randomProgram(rng, band) {
     main.push(iff('ahead', [fwd()], [turn(rng)]));
     const after = rng.int(1, 2);
     for (let i = 0; i < after; i++) main.push(i === 0 && rng.chance(0.5) ? fwd() : prim(rng));
+  } else if (band === 'E') {
+    // Pre-K and K: two or three steps, starting with a move.
+    const k = rng.int(2, 3);
+    main = [];
+    for (let i = 0; i < k; i++) main.push(i === 0 ? fwd() : prim(rng));
   } else {
     const k = rng.int(3, 5);
     main = [];

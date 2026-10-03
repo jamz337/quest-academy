@@ -209,7 +209,7 @@ describe('LevelSelectScene (headless)', () => {
     s.create({ gameId: 'code-maze' });
     expect(s.band).toBe('B');
     expect(s.objs.filter((o) => o.text === 'B-01')).toHaveLength(1);
-    click(findButton(s, 'A · Grades 2-3'));
+    click(findButton(s, 'A · Grades 1-3'));
     expect(s.band).toBe('A');
     expect(s.objs.filter((o) => o.text === 'A-12')).toHaveLength(1);
     const card = s.objs.find((o) => o.kind === 'zone' && o.active);

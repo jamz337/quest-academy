@@ -20,7 +20,35 @@ const snakeBody = () => iff('ahead', [fwd()], [iff('right', [right()], [left()])
 const rightHand = () => iff('right', [right(), fwd()], [iff('ahead', [fwd()], [left()])]);
 const leftHand = () => iff('left', [left(), fwd()], [iff('ahead', [fwd()], [right()])]);
 
+const MOVE = ['fwd'];
+
 const RAW = [
+  // ───────────── Band E (Pre-K and K): a few moves forward, then one turn, then a zig zag ─────────────
+  { id: 'E-01', band: 'E', title: 'Two Steps', startDir: 'E', blocks: MOVE, maxBlocks: 4,
+    hint: 'Tap Move ▲ two times, then tap Run!',
+    grid: ['#####', '#S.G#', '#####'], solution: { main: [fwd(), fwd()] } },
+  { id: 'E-02', band: 'E', title: 'Three Steps', startDir: 'E', blocks: MOVE, maxBlocks: 5,
+    hint: 'Count the squares to the flag: one, two, three.',
+    grid: ['######', '#S..G#', '######'], solution: { main: [fwd(), fwd(), fwd()] } },
+  { id: 'E-03', band: 'E', title: 'Up We Go', startDir: 'N', blocks: MOVE, maxBlocks: 4,
+    hint: 'The robot faces up. Move it up to the flag.',
+    grid: ['###', '#G#', '#.#', '#S#', '###'], solution: { main: [fwd(), fwd()] } },
+  { id: 'E-04', band: 'E', title: 'Four Steps', startDir: 'E', blocks: MOVE, maxBlocks: 6,
+    hint: 'A long road! Count the squares, then add that many moves.',
+    grid: ['#######', '#S...G#', '#######'], solution: { main: [fwd(), fwd(), fwd(), fwd()] } },
+  { id: 'E-05', band: 'E', title: 'Turn Right', startDir: 'E', blocks: SEQ, maxBlocks: 6,
+    hint: 'Move, then Turn ▶ to face down, then move down to the flag.',
+    grid: ['#####', '#S.##', '##.##', '##G##', '#####'], solution: { main: [fwd(), right(), fwd(), fwd()] } },
+  { id: 'E-06', band: 'E', title: 'Turn Left', startDir: 'N', blocks: SEQ, maxBlocks: 6,
+    hint: 'Go up two squares, then Turn ◀ and move to the flag.',
+    grid: ['#####', '#G.##', '##.##', '##S##', '#####'], solution: { main: [fwd(), fwd(), left(), fwd()] } },
+  { id: 'E-07', band: 'E', title: 'Round the Corner', startDir: 'E', blocks: SEQ, maxBlocks: 7,
+    hint: 'Two moves, Turn ▶, then two moves.',
+    grid: ['######', '#S..##', '###.##', '###G##', '######'], solution: { main: [fwd(), fwd(), right(), fwd(), fwd()] } },
+  { id: 'E-08', band: 'E', title: 'Zig Zag', startDir: 'E', blocks: SEQ, maxBlocks: 9,
+    hint: 'Move, turn right, move, turn left… like steps!',
+    grid: ['######', '#S.###', '##..##', '###G##', '######'], solution: { main: [fwd(), right(), fwd(), left(), fwd(), right(), fwd()] } },
+
   // ───────────── Band A: sequences, then repeat, then nested repeat ─────────────
   { id: 'A-01', band: 'A', title: 'First Steps', startDir: 'E', blocks: SEQ, maxBlocks: 6,
     hint: 'Tap Move ▲ four times to walk to the flag.',
@@ -177,7 +205,7 @@ export const LEVELS = RAW.map((lv) => {
   return { ...lv, solution, par: countBlocks(solution) };
 });
 
-export const levelsForBand = (band) => LEVELS.filter((l) => l.band === band);
+export const levelsForBand = (band) => { const own = LEVELS.filter((l) => l.band === band); return own.length ? own : LEVELS.filter((l) => l.band === 'A'); };
 export const getLevel = (id) => LEVELS.find((l) => l.id === id) || null;
 
 /** First level in the band without stars in profile.coding.levels, else the last one. */

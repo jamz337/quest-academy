@@ -1,6 +1,29 @@
-// Bible Village question banks by grade band (A = grades 2-3, B = 4-5, C = 6-8).
+// Bible Village question banks by grade band (E = Pre-K and K, A = grades 1-3, B = 4-5, C = 6-8).
 // QUIZ: q question, a answer, o wrong options, k skill, ref where to read it.
 export const QUIZ = {
+  // Pre-K and K: the best-known stories, a picture in each question, three answers (pictures first).
+  E: [
+    { q: 'Who built a big boat for the animals? 🛶', a: 'Noah', o: ['David', 'Jonah'], k: 'stories', ref: 'Genesis 6' },
+    { q: 'What did God put in the sky after the rain? 🌧️', a: '🌈 a rainbow', o: ['⭐ a star', '🌙 the moon'], k: 'stories', ref: 'Genesis 9:13' },
+    { q: 'How did the animals go into the ark?', a: '🦒🦒 two by two', o: ['🦒 one at a time', '🦒🦒🦒🦒🦒 five at a time'], k: 'stories', ref: 'Genesis 7:9' },
+    { q: 'What did the dove bring back to Noah? 🕊️', a: '🌿 a leaf', o: ['🐟 a fish', '🍎 an apple'], k: 'stories', ref: 'Genesis 8:11' },
+    { q: 'Who was swallowed by a big fish? 🐋', a: 'Jonah', o: ['Noah', 'Moses'], k: 'stories', ref: 'Jonah 1:17' },
+    { q: 'Who beat the giant Goliath? 🪨', a: 'David', o: ['Noah', 'Jonah'], k: 'stories', ref: '1 Samuel 17' },
+    { q: 'What did David use to beat Goliath?', a: '🪨 a sling and a stone', o: ['⚔️ a sword', '🏹 a bow'], k: 'stories', ref: '1 Samuel 17:49' },
+    { q: 'Where was baby Jesus laid when he was born? 👶', a: '🌾 a manger', o: ['🛏️ a big bed', '⛵ a boat'], k: 'stories', ref: 'Luke 2:7' },
+    { q: 'Who came to see baby Jesus with presents? 🎁', a: '👑 wise men', o: ['🦁 lions', '🐟 fish'], k: 'stories', ref: 'Matthew 2:11' },
+    { q: 'What did the shepherds look after? 🌙', a: '🐑 sheep', o: ['🐟 fish', '🐱 cats'], k: 'stories', ref: 'Luke 2:8' },
+    { q: 'Who was kept safe in the lions’ den? 🦁', a: 'Daniel', o: ['Jonah', 'Noah'], k: 'stories', ref: 'Daniel 6' },
+    { q: 'Who made the whole world? 🌍', a: 'God', o: ['Noah', 'David'], k: 'stories', ref: 'Genesis 1:1' },
+    { q: 'What did God make to shine in the day?', a: '☀️ the sun', o: ['🌙 the moon', '⭐ the stars'], k: 'stories', ref: 'Genesis 1:16' },
+    { q: 'What did Jesus share to feed lots of people? 🧺', a: '🍞🐟 bread and fish', o: ['🍎 apples', '🍰 cake'], k: 'stories', ref: 'John 6:9' },
+    { q: 'What did Jesus walk on?', a: '🌊 the water', o: ['☁️ the clouds', '🌳 the trees'], k: 'stories', ref: 'Matthew 14:25' },
+    { q: 'What did God open so his people could walk across? 🚶', a: '🌊 the sea', o: ['🏔️ a mountain', '🌳 a forest'], k: 'stories', ref: 'Exodus 14:21' },
+    { q: 'Who were the first people? 🌳', a: 'Adam and Eve', o: ['Noah and Moses', 'David and Jonah'], k: 'people', ref: 'Genesis 2' },
+    { q: 'Who climbed a tree to see Jesus? 🌴', a: 'Zacchaeus', o: ['Peter', 'David'], k: 'people', ref: 'Luke 19:4' },
+    { q: 'What was Peter’s job before he followed Jesus? 🎣', a: '🐟 a fisherman', o: ['👑 a king', '🌾 a farmer'], k: 'people', ref: 'Matthew 4:18' },
+    { q: 'Who had a coat of many colours? 🧥', a: 'Joseph', o: ['Jonah', 'Daniel'], k: 'people', ref: 'Genesis 37:3' }
+  ],
   A: [
     { q: 'Who built a big boat to survive the flood?', a: 'Noah', o: ['Moses', 'David', 'Jonah'], k: 'stories', ref: 'Genesis 6' },
     { q: 'How many days and nights did it rain in the flood?', a: '40', o: ['7', '12', '100'], k: 'stories', ref: 'Genesis 7:12' },
@@ -212,6 +235,17 @@ export const VERSES = {
 
 // PAIRS for "Who Am I?": l person, r what they did (reads after "Who ..."), k skill. At least 15 per band (3 rounds of 5).
 export const PAIRS = {
+  // Pre-K and K: each person with their story and a picture (Who Am I? and "Who ...?" questions).
+  E: [
+    { l: 'Noah', r: 'built a big boat 🛶', k: 'people' }, { l: 'David', r: 'beat the giant Goliath 🪨', k: 'people' },
+    { l: 'Jonah', r: 'was inside a big fish 🐋', k: 'people' }, { l: 'Daniel', r: 'was safe with the lions 🦁', k: 'people' },
+    { l: 'Moses', r: 'led God’s people through the sea 🌊', k: 'people' }, { l: 'Mary', r: 'is the mother of Jesus 👶', k: 'people' },
+    { l: 'Adam', r: 'was the first man 🌳', k: 'people' }, { l: 'Eve', r: 'was the first woman 🍎', k: 'people' },
+    { l: 'Joseph', r: 'had a coat of many colours 🧥', k: 'people' }, { l: 'Peter', r: 'was a fisherman 🎣', k: 'people' },
+    { l: 'Zacchaeus', r: 'climbed a tree to see Jesus 🌴', k: 'people' }, { l: 'Jesus', r: 'fed lots of people with bread and fish 🍞', k: 'people' },
+    { l: 'Samuel', r: 'heard God call him at night 🌙', k: 'people' }, { l: 'Ruth', r: 'gathered grain in the field 🌾', k: 'people' },
+    { l: 'Elijah', r: 'was fed by birds 🐦', k: 'people' }, { l: 'Abraham', r: 'counted the stars ⭐', k: 'people' }
+  ],
   A: [
     { l: 'Noah', r: 'built the ark', k: 'people' }, { l: 'Moses', r: 'parted the Red Sea', k: 'people' },
     { l: 'David', r: 'beat Goliath', k: 'people' }, { l: 'Jonah', r: 'was swallowed by a fish', k: 'people' },

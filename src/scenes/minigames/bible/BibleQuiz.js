@@ -28,7 +28,7 @@ export class BibleQuiz extends MinigameScene {
     const kind = KIND[this.payload.gameId] || 'quiz';
     const grade = this.payload.grade;
     let questions = this.rampedRounds((k) => generateRounds(grade, this.rng, k, kind), tune.questions, readingDifficulty, () => generateRounds(grade, this.rng, 12, kind));
-    if (kind === 'quiz') {
+    if (kind === 'quiz' && !this.payload.early) {
       // Two ordering rounds replace two questions, at positions 3 and 7 so they break up the multiple choice.
       const orders = orderRounds(grade, this.rng, 2);
       if (questions.length > 7 && orders.length === 2) { questions[3] = orders[0]; questions[7] = orders[1]; }

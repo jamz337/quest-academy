@@ -34,11 +34,13 @@ import { BalloonPop } from './minigames/math/BalloonPop.js';
 import { FrogHop } from './minigames/english/FrogHop.js';
 import { RobotDance } from './minigames/coding/RobotDance.js';
 import { ArkAnimals } from './minigames/bible/ArkAnimals.js';
+import { CountIt } from './minigames/math/CountIt.js';
+import { LetterTrace } from './minigames/english/LetterTrace.js';
 
 // Order matters for render depth: later scenes draw on top when several are active.
 export const scenes = [
   BootScene, ProfileScene, ModeSelectScene, WorldScene, HouseScene, ChurchScene, HudScene, ChallengeMenuScene, LevelSelectScene,
-  NumberDash, FractionPizza, PatternBridge, BalloonPop, WordBuilder, GrammarGate, WordMatch, FrogHop,
+  NumberDash, FractionPizza, PatternBridge, BalloonPop, CountIt, WordBuilder, GrammarGate, WordMatch, FrogHop, LetterTrace,
   RoboMaze, BugHunt, PredictRobot, RobotDance, DuelScene, BibleQuiz, ArkAnimals,
   ResultsScene, PauseScene, AccountScene, LeaderboardScene, SkillsScene, SpellingScene, SpellingLearnScene, SpellingGameScene, HouseRoomScene, ChurchLessonScene, MarketScene, CreditsScene
 ];

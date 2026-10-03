@@ -4,7 +4,7 @@ import { THEME } from '../ui/theme.js';
 import * as Store from '../systems/Store.js';
 import * as Launcher from '../systems/MinigameLauncher.js';
 import { getGame } from '../data/minigames.js';
-import { bandFor } from '../data/grades.js';
+import { bandFor, gradeLabel } from '../data/grades.js';
 import * as Music from '../systems/Music.js';
 import { buildMap, zoneAt, isWalkable, groundUnder, TID, SOLID, ZONE_NAMES } from '../data/world/map.js';
 import { NPCS } from '../data/world/npcs.js';
@@ -355,7 +355,7 @@ export class WorldScene extends Phaser.Scene {
       // Levels start over each time the game moves up a grade, so count passes at the current grade.
       const lv = profile.games?.[npc.gameId]?.levels || {};
       const passed = [1, 2, 3].filter((n) => (lv[n] || 0) >= 1).length, level = nextHouseLevel(profile, npc.gameId);
-      const at = gradeUps(profile, npc.gameId) ? ` at Grade ${gameGrade(profile, npc.gameId)}` : '';
+      const at = gradeUps(profile, npc.gameId) ? ` at ${gradeLabel(gameGrade(profile, npc.gameId))}` : '';
       prompt = passed >= HOUSE_LEVELS ? `You have all ${HOUSE_LEVELS} stars here! Play level ${HOUSE_LEVELS} again?` : `${npc.playPrompt} Level ${level} of ${HOUSE_LEVELS}${at}${passed ? ` (${passed} star${passed > 1 ? 's' : ''} so far)` : ''}`;
     }
     // Story lines: the Headmistress tells the tale, chapter guides open their chapter, Sam points at the next step.
@@ -603,7 +603,7 @@ export class WorldScene extends Phaser.Scene {
         });
       }
     } else Decor.refreshHouseStars(this);
-    if (result.gradeUp) this.time.delayedCall(2200, () => this.say(`📈 ${payload.title} moves up to Grade ${result.gradeUp.to}!`, { icon: 'star', accent: THEME.brand }));
+    if (result.gradeUp) this.time.delayedCall(2200, () => this.say(`📈 ${payload.title} moves up to ${gradeLabel(result.gradeUp.to)}!`, { icon: 'star', accent: THEME.brand }));
     if (result.errandUnlocked) {
       const giver = NPCS.find((n) => n.id === result.errandUnlocked.npc);
       this.time.delayedCall(2400, () => this.say(`📜 ${giver ? giver.name : 'A villager'} has an errand for you — talk to them!`, { accent: THEME.brand }));

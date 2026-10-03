@@ -16,6 +16,8 @@ for (const [k, v] of Object.entries(cssVars())) document.documentElement.style.s
 const KEY = 'qa.cloud';
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+/** "Pre-K", "Kindergarten", "Grade 3" (grades run from -1, Pre-K, to 8). */
+const gradeName = (g) => (Number(g) <= -1 ? 'Pre-K' : Number(g) === 0 ? 'Kindergarten' : `Grade ${g}`);
 const ERRORS = {
   'invalid-email': 'That email address does not look right.', 'password-too-short': 'Use a password with at least 8 characters.',
   'email-taken': 'There is already an account with that email. Try signing in.', 'wrong-email-or-password': 'Wrong email or password.',
@@ -117,7 +119,7 @@ function childCard(c) {
     : '<div class="muted">Nothing waiting for review. Missed questions come back here on a spaced schedule.</div>';
   return `<section class="card">
     <div class="row"><canvas class="avatar" data-avatar="${c.avatar | 0}" data-look="${esc(JSON.stringify(c.look || null))}" width="48" height="48"></canvas>
-      <div class="grow"><h2>${esc(c.name)}</h2><div class="muted">Grade ${c.grade} · last played ${when(c.lastPlayed)} · ${weekLine}</div></div></div>
+      <div class="grow"><h2>${esc(c.name)}</h2><div class="muted">${gradeName(c.grade)} · last played ${when(c.lastPlayed)} · ${weekLine}</div></div></div>
     <h3>Progress</h3>
     <div class="stats">
       <div class="stat"><b>${c.level}</b><span>Level</span></div><div class="stat"><b>${c.xp}</b><span>XP</span></div>

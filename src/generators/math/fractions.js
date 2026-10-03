@@ -1,6 +1,7 @@
 // Fraction Pizza round generator. Every round carries everything the scene needs; the scene does no maths.
 // kinds: shade | equivalent | compare | add | convert
 import { round } from '../distractors.js';
+import { gradeOf } from '../../data/grades.js';
 
 export const gcd = (a, b) => (b ? gcd(b, a % b) : a);
 export const lcm = (a, b) => (a * b) / gcd(a, b);
@@ -83,7 +84,7 @@ function convertRound(rng) {
 }
 
 export function generateRounds(grade, rng, n = 8) {
-  const g = Number(grade) || 3;
+  const g = gradeOf(grade);
   const out = [];
   const bOffset = rng.int(0, 1);
   for (let i = 0; i < n; i++) {

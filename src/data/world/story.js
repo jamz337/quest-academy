@@ -8,6 +8,7 @@ import { NPCS } from './npcs.js';
 import { ERRANDS, errandFor, errandState } from './errands.js';
 import { bossForZone } from './bosses.js';
 import { ZONE_NAMES } from './map.js';
+import { gradeOf } from '../grades.js';
 
 export const MENTOR_ID = 'hope';
 export const COMPANION = { id: 'mango', name: 'Mango', key: 'monkey' };
@@ -127,7 +128,7 @@ export function storyState(profile) {
 /** What Headmistress Hope says: the whole tale the first time, then where the story stands. */
 export function mentorLines(profile) {
   const st = storyState(profile);
-  if (!st.started && (Number(profile?.grade) || 4) <= 3) {
+  if (!st.started && gradeOf(profile?.grade, 4) <= 3) {
     return [
       'Hello! I am Headmistress Hope. I run Quest Academy.',
       'Long ago our big bell rang every morning. Then four bosses stole it, one piece each.',

@@ -13,6 +13,7 @@ import { enter } from '../ui/motion.js';
 import { Sfx } from '../systems/Audio.js';
 import { SPELLING_LISTS, SPELLING_GRADES, spellingGradeFor, listWords } from '../data/spelling/lists.js';
 import { listProgress, isLearned, ensureSpelling, dueWords, nextReviewAt, DAY } from '../systems/Spelling.js';
+import { gradeLabel } from '../data/grades.js';
 
 /**
  * Spelling Bee hub: today's spaced review (the words due back today, from every list), the grade's word lists with
@@ -33,7 +34,7 @@ export class SpellingScene extends BaseScene {
     const p = Store.getProfile();
     if (!p) return this.scene.start(SCENES.Profile);
     ensureSpelling(p);
-    const grade = this.grade || spellingGradeFor(p.grade);
+    const grade = this.grade ?? spellingGradeFor(p.grade);
     const lists = SPELLING_LISTS[grade] || [];
     background(this, { accent: THEME.subjects.words.accent, accent2: THEME.gold });
     const bar = topBar(this, { title: '🐝 Spelling Bee', onBack: () => this.go(SCENES.ModeSelect), subtitle: 'Learn it, cover it, write it, check it. A little every day!' });
@@ -42,7 +43,7 @@ export class SpellingScene extends BaseScene {
     let y = bar.bottom + 14 * ui;
     const tabW = 110 * ui, tabH = 36 * ui, tabs = SPELLING_GRADES;
     const x0 = w / 2 - ((tabs.length - 1) * (tabW + 8)) / 2;
-    tabs.forEach((g, i) => button(this, x0 + i * (tabW + 8), y, tabW, tabH, `Grade ${g}`, { variant: g === grade ? 'success' : 'secondary', fontSize: 14, onClick: () => { Sfx.click(); this.grade = g; this.rebuild(); } }));
+    tabs.forEach((g, i) => button(this, x0 + i * (tabW + 8), y, tabW, tabH, gradeLabel(g), { variant: g === grade ? 'success' : 'secondary', fontSize: 13, onClick: () => { Sfx.click(); this.grade = g; this.rebuild(); } }));
     y += tabH / 2 + 14 * ui;
 
     // The lists, two per row when there is room.

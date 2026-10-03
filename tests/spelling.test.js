@@ -14,8 +14,8 @@ const { SpellingScene } = await import('../src/scenes/SpellingScene.js');
 const { Rng } = await import('../src/systems/Rng.js');
 
 describe('spelling lists', () => {
-  it('exist for grades 2 and 4, with unique words that keep their capitals, and map every grade to one of them', () => {
-    expect(SPELLING_GRADES).toEqual([2, 4]);
+  it('exist for Kindergarten and grades 1, 2 and 4, with unique words that keep their capitals, and map every grade to one of them', () => {
+    expect(SPELLING_GRADES).toEqual([0, 1, 2, 4]);   // Kindergarten, Grade 1, Grade 2, Grade 4
     for (const g of SPELLING_GRADES) for (const l of SPELLING_LISTS[g]) {
       const words = listWords(l).map((e) => e.w);
       expect(words.length).toBeGreaterThanOrEqual(5);
@@ -24,7 +24,7 @@ describe('spelling lists', () => {
       for (const e of listWords(l)) expect(e.pic, e.w).toBeTruthy();   // every word has a picture
       expect(getList(l.id)).toBe(l);
     }
-    expect(spellingGradeFor(2)).toBe(2); expect(spellingGradeFor(3)).toBe(2); expect(spellingGradeFor(4)).toBe(4); expect(spellingGradeFor(8)).toBe(4);
+    expect(spellingGradeFor(-1)).toBe(0); expect(spellingGradeFor(0)).toBe(0); expect(spellingGradeFor(1)).toBe(1); expect(spellingGradeFor(2)).toBe(2); expect(spellingGradeFor(3)).toBe(2); expect(spellingGradeFor(4)).toBe(4); expect(spellingGradeFor(8)).toBe(4);
     expect(listsForGrade(6)).toBe(SPELLING_LISTS[4]);
     expect(listWords({ words: ['co-co-nut', { w: 'Because', s: 'A sentence.' }] })).toEqual([{ w: 'coconut', syl: 'co-co-nut', s: null, pic: null }, { w: 'Because', syl: 'Because', s: 'A sentence.', pic: null }]);
     expect(listWords(SPELLING_LISTS[4][0]).map((e) => e.w)).toContain('Caribbean');

@@ -15,6 +15,7 @@ import { getBadge } from '../data/badges.js';
 import { skillLabel } from '../data/skills.js';
 import { MASTERY_LABEL } from '../systems/Progression.js';
 import { fireworks } from '../ui/Fireworks.js';
+import { gradeLabel } from '../data/grades.js';
 
 const HEADLINES = ['Keep practising!', 'Good try!', 'Great job!', 'Amazing!'];
 
@@ -48,7 +49,7 @@ export class ResultsScene extends BaseScene {
     if (result.newDuelWin) { this.time.delayedCall(delay, () => { Sfx.unlock(); toast(this, `⚔️ First win against ${this.sceneData.payload.duel.name}! The journal ticks a box.`, { icon: 'star', accent: THEME.brand }); }); delay += 1400; }
     if (result.familyBonus) { this.time.delayedCall(delay, () => { Sfx.fanfare(); toast(this, `👨‍👩‍👧 Family goal reached!  +${result.familyBonus} coins`, { icon: 'star', accent: THEME.success }); }); delay += 1400; }
     if (result.gradeUp) {
-      this.time.delayedCall(delay, () => { Sfx.unlock(); toast(this, `📈 Grade up! ${this.sceneData.payload.title} now asks Grade ${result.gradeUp.to} questions`, { icon: 'star', accent: THEME.brand }); }); delay += 1400;
+      this.time.delayedCall(delay, () => { Sfx.unlock(); toast(this, `📈 Grade up! ${this.sceneData.payload.title} now asks ${gradeLabel(result.gradeUp.to)} questions`, { icon: 'star', accent: THEME.brand }); }); delay += 1400;
     }
     const subject = SUBJECTS[this.sceneData.payload.subject]?.title || 'Your';
     if (result.masteryChange > 0) {

@@ -1,13 +1,13 @@
 // Word Match rounds: 3 rounds of 5 pairs, no pair reused. Each round: { pairs: [{l,r,k}], right: number[] }
 // `right[j]` is the index (into pairs) of the pair whose right-hand card sits in row j.
 import { PAIRS } from '../../data/english/pairBank.js';
-import { bandFor } from '../../data/grades.js';
+import { bandFor, bankFor } from '../../data/grades.js';
 
 export const ROUNDS = 3;
 export const PAIRS_PER_ROUND = 5;
 
 /** `weak` (skill ids) puts pairs of those skills into the draw first, so a missed skill is revisited. */
-export function generateRounds(grade, rng, bank = PAIRS[bandFor(grade)], weak = []) {
+export function generateRounds(grade, rng, bank = bankFor(PAIRS, bandFor(grade)), weak = []) {
   const weakSet = new Set(weak || []);
   const n = ROUNDS * PAIRS_PER_ROUND;
   let picked = rng.sample(bank, n);

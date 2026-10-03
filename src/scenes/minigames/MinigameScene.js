@@ -284,7 +284,7 @@ export class MinigameScene extends BaseScene {
 
   /** Speaking rate for this player, and whether they asked for everything to be read automatically. */
   get speechRate() { return rateFor(this.payload.grade); }
-  get autoReads() { return Store.getProfile()?.readAloud === 'auto'; }
+  get autoReads() { return Store.getProfile()?.readAloud === 'auto' || !!this.payload.early; }   // Pre-K and K hear everything
 
   /**
    * Games call this with their prompt (a ReadableText): in automatic mode it is read when the round changes, and

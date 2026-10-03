@@ -5,6 +5,8 @@ import { tuningFor } from '../../../data/grades.js';
 import { T, text, FONT, WEIGHT } from '../../../ui/TextStyles.js';
 import { card } from '../../../ui/Card.js';
 import { stripe } from '../../../ui/Panel.js';
+import { readable } from '../../../ui/ReadableText.js';
+import { speakButton } from '../../../ui/Button.js';
 import { enter } from '../../../ui/motion.js';
 import { Sfx } from '../../../systems/Audio.js';
 import { prioritiseWeak, weakSkills } from '../../../systems/Practice.js';
@@ -89,7 +91,7 @@ export class BalloonPop extends MinigameScene {
       });
     }
     const cx = area.x + area.w / 2;
-    const promptH = Math.min(area.h * 0.22, 120 * ui);
+    const promptH = Math.min(area.h * (q.ask ? 0.3 : 0.22), (q.ask ? 170 : 120) * ui);
     // Sky first so the balloons sail behind the question card, not over it.
     this.sky = { x: area.x, y: area.y + promptH + 8, w: area.w, h: area.h - promptH - 8 };
     this.drawSky(this.sky);
@@ -97,8 +99,17 @@ export class BalloonPop extends MinigameScene {
     const prompt = card(this, cx, area.y + promptH / 2, area.w, promptH);
     prompt.setDepth(5);
     stripe(this, cx - 24 * ui, area.y + 10 * ui, 48 * ui, this.subject.accent, 5 * ui).setDepth(6);
-    const shown = `${q.prompt.replace('\n', '   ')} = ?`;
-    text(this, cx, area.y + promptH / 2 + 4 * ui, shown, T.at(this, shown.length > 14 ? 26 : 36, s.picked !== null ? (s.right ? THEME.successDark : THEME.danger) : THEME.ink, { fontStyle: '700' })).setDepth(6);
+    const colour = s.picked !== null ? (s.right ? THEME.successDark : THEME.danger) : THEME.ink;
+    if (q.ask) {
+      // A question for the youngest ("How many mangoes?" with the pictures): read aloud, pictures big and wrapped.
+      const said = readable(this, cx, area.y + promptH / 2 - 4 * ui, q.prompt, T.at(this, 24, colour, { fontStyle: '700' }), { width: area.w - 70 * ui, align: 'center' }).setDepth(6);
+      const sb = speakButton(this, area.x + area.w - 28 * ui, area.y + 24 * ui, 36 * ui, said, { rate: this.speechRate });
+      if (sb) sb.setDepth(7);
+      this.autoRead(said, s.picked === null ? q.choices : null);
+    } else {
+      const shown = `${q.prompt.replace('\n', '   ')} = ?`;
+      text(this, cx, area.y + promptH / 2 + 4 * ui, shown, T.at(this, shown.length > 14 ? 26 : 36, colour, { fontStyle: '700' })).setDepth(6);
+    }
     text(this, cx, area.y + promptH - 14 * ui, s.picked === null ? 'Pop the balloon with the answer!' : s.right ? 'Pop! Well done.' : `The answer was ${q.answer}.`, T.small(this, THEME.ink2)).setDepth(6);
     enter(this, prompt, { from: 'up', distance: 12 });
   }

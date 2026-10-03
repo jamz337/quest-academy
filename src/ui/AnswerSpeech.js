@@ -5,6 +5,7 @@ import * as Store from '../systems/Store.js';
 import { speak } from '../systems/Speech.js';
 import { speakButton } from './Button.js';
 import { uiScale } from '../systems/Layout.js';
+import { picturesSaid } from '../data/early/pictures.js';
 
 /** Whether this player wants answers read (the profile's READ ANSWERS setting; on unless turned off). */
 export const readsAnswers = (profile = Store.getProfile()) => (profile?.readAnswers || 'on') !== 'off';
@@ -14,6 +15,8 @@ const MARKS = { '.': 'full stop', '?': 'question mark', '!': 'exclamation mark',
 /** How an answer should sound: punctuation on its own (Grammar Gate's ".", "?") is read by name, as the game names it. */
 export function spokenAnswer(answer) {
   const s = String(answer ?? '').replace(/\n+/g, ' ').trim();
+  const pics = picturesSaid(s);   // "🥭🥭🥭" is said "three mangoes", "🔺" "a triangle"
+  if (pics) return pics;
   const marks = [...s.replace(/\s+/g, '')];
   if (marks.length && marks.every((ch) => MARKS[ch])) return marks.map((ch) => MARKS[ch]).join(' ');
   return s;

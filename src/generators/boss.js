@@ -9,9 +9,10 @@ import { programText } from './coding/text.js';
 import { numericDistractors, makeChoices } from './distractors.js';
 import { PAIRS } from '../data/english/pairBank.js';
 import { WORDS } from '../data/english/wordBank.js';
-import { bandFor } from '../data/grades.js';
+import { bandFor, bankFor, gradeOf } from '../data/grades.js';
 import { scramble } from './english/words.js';
 import { bibleQuestion } from './bible/quiz.js';
+import { earlyReadingQuestion } from './english/early.js';
 
 const DIR_WORD = { N: 'North ▲', E: 'East ▶', S: 'South ▼', W: 'West ◀' };
 
@@ -34,20 +35,22 @@ export function grammarQuestion(grade, rng) {
 
 /** Which word goes with this one (synonyms, opposites, meanings). */
 export function matchQuestion(grade, rng) {
-  const bank = PAIRS[bandFor(grade)];
+  const bank = bankFor(PAIRS, bandFor(grade));
   const [p, ...others] = rng.sample(bank, 4);
   return { prompt: `Which word goes with "${p.l}"?`, choices: rng.shuffle([p.r, ...others.map((o) => o.r)]), answer: p.r, skill: p.k };
 }
 
 /** Unscramble a word from its letters and a hint. */
 export function buildQuestion(grade, rng) {
-  const bank = WORDS[bandFor(grade)];
+  const bank = bankFor(WORDS, bandFor(grade));
   const [w, ...others] = rng.sample(bank, 4);
   return { prompt: `Unscramble: ${scramble(w.w, rng).join(' ').toUpperCase()}\n${w.h}`, choices: rng.shuffle([w.w, ...others.map((o) => o.w)]), answer: w.w, skill: 'spelling' };
 }
 
 /** One English question of any kind (grammar, word pairs or unscrambling). Also used by Frog Hop. */
 export function wordsQuestion(grade, rng) {
+  // Pre-K and K read letters, sounds and rhymes; Grade 1 mixes those with the Grade 2-3 banks.
+  if (gradeOf(grade) <= 0 || (gradeOf(grade) === 1 && rng.chance(0.6))) return earlyReadingQuestion(gradeOf(grade), rng);
   const kind = rng.pick(['grammar', 'grammar', 'match', 'build']);
   return kind === 'grammar' ? grammarQuestion(grade, rng) : kind === 'match' ? matchQuestion(grade, rng) : buildQuestion(grade, rng);
 }
@@ -76,7 +79,7 @@ export function bossQuestions(subject, grade, rng, n = 20) {
   const out = [], seen = new Set();
   let guard = 0;
   while (out.length < n && guard++ < n * 10) {
-    const q = gen(Number(grade) || 3, rng);
+    const q = gen(gradeOf(grade), rng);
     if (seen.has(q.prompt)) continue;
     seen.add(q.prompt); out.push(q);
   }

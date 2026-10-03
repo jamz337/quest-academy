@@ -14,7 +14,7 @@ import { generateRound as programRound } from './coding/programGen.js';
 import { bugLevelsForBand, levelsForBand } from '../data/coding/levels.js';
 import { quizQuestion, verseQuestion, whoQuestion, bibleQuestion } from './bible/quiz.js';
 import { QUIZ, VERSES, PAIRS } from '../data/bible/bank.js';
-import { bandFor } from '../data/grades.js';
+import { bandFor, gradeOf } from '../data/grades.js';
 
 const LETTERS = ['A', 'B', 'C', 'D'];
 
@@ -30,7 +30,7 @@ function choicesFor(answer, candidates, fallback, rng) {
 
 /** Fractions in words: what fraction was eaten, which is bigger, which is equal, adding slices, converting. */
 export function fractionQuestion(grade, rng) {
-  const g = Number(grade) || 3;
+  const g = gradeOf(grade);
   const kind = g <= 3 ? rng.pick(['eat', 'eat', 'bigger']) : g <= 5 ? rng.pick(['equal', 'bigger', 'eat']) : rng.pick(['add', 'convert', 'equal']);
   if (kind === 'eat') {
     const den = rng.pick(g <= 2 ? [2, 4] : [2, 3, 4, 6, 8]), num = rng.int(1, den - 1);
@@ -210,14 +210,14 @@ export const BY_GAME = {
   'bible-quiz': bibleOf('quiz'), 'bible-verse': bibleOf('verse'), 'bible-match': bibleOf('who'), 'bible-ark': bibleQuestion
 };
 
-export const duelQuestion = (gameId, grade, rng) => (BY_GAME[gameId] || generateQuestion)(Number(grade) || 3, rng);
+export const duelQuestion = (gameId, grade, rng) => (BY_GAME[gameId] || generateQuestion)(gradeOf(grade), rng);
 
 /** n questions from a generator at a grade, without repeats while it has enough (a small bank may repeat). */
 function fill(gen, grade, rng, n) {
   const out = [], seen = new Set();
   let guard = 0;
   while (out.length < n && guard++ < n * 10) {
-    const q = gen(Number(grade) || 3, rng);
+    const q = gen(gradeOf(grade), rng);
     const key = q.key || q.prompt;
     if (seen.has(key)) continue;
     seen.add(key); out.push(q);

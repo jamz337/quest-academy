@@ -18,6 +18,7 @@ import { findPatterns, familyRound } from '../data/spelling/patterns.js';
 import { trickFor } from '../data/spelling/tricks.js';
 import { markSpelling, recordTaught, recordSpelling, trickySpots } from '../systems/Spelling.js';
 import { letterRow, fitTile, chunkChips, letterKeyboard, keyFromEvent, wordPicture, beeFly, CHUNK_COLOURS } from '../ui/SpellingWidgets.js';
+import { gradeOf } from '../data/grades.js';
 
 const STEPS = ['card', 'trace', 'build', 'copy', 'cover'];
 const STEP_TITLE = { card: 'Look and listen', trace: 'Trace the word with your finger', build: 'Build it from the chunks', copy: 'Now copy it', cover: 'Look, say, cover, write, check' };
@@ -40,7 +41,7 @@ export class SpellingLearnScene extends BaseScene {
 
   init(data) {
     this.listId = data.listId;
-    this.grade = data.grade || null;
+    this.grade = data.grade ?? null;
     this.customWords = data.words || null;
     const list = data.words ? { id: data.listKind || 'tricky', title: data.title || 'Tricky words', words: data.words } : getList(data.listId);
     this.listKind = data.listKind || null; this.listTitle = data.title || null;
@@ -80,7 +81,7 @@ export class SpellingLearnScene extends BaseScene {
   /** Grade 2 hears every letter as it is typed (the player's grade, or the list's, whichever is lower). */
   get saysLetters() {
     const p = Store.getProfile();
-    return Math.min(Number(p?.grade) || 9, this.grade || spellingGradeFor(p?.grade)) <= 2;
+    return Math.min(gradeOf(p?.grade, 9), this.grade ?? spellingGradeFor(p?.grade)) <= 2;
   }
 
   /** Shuffled chunk order for the build step (never the right order when there is more than one chunk). */

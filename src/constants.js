@@ -19,7 +19,7 @@ export const SUBJECTS = {
   bible: { id: 'bible', title: 'Bible', ...THEME.subjects.bible, color: THEME.subjects.bible.accent, zone: 'Bible Village' }
 };
 
-export const GRADES = [2, 3, 4, 5, 6, 7, 8];
+export const GRADES = [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8];   // -1 = Pre-K, 0 = Kindergarten (see data/grades.js)
 export const AVATAR_COUNT = 8;
 
 export const SCENES = {

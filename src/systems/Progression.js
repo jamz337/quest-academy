@@ -1,7 +1,7 @@
 // Every star, coin, XP, badge, mastery and unlock rule lives here so the games stay simple.
 import { BADGES } from '../data/badges.js';
-import { gamesForSubject, getGame } from '../data/minigames.js';
-import { bandFor } from '../data/grades.js';
+import { gamesForSubject, gamesForGrade, getGame } from '../data/minigames.js';
+import { bandFor, gradeOf } from '../data/grades.js';
 import { levelsForBand } from '../data/coding/levels.js';
 import { unlockErrand } from '../data/world/errands.js';
 import { ZONE_ORDER } from '../data/world/quests.js';
@@ -12,7 +12,7 @@ import { REVIEW_XP } from './Review.js';
 // ---- Mastery: the better a player does in a subject, the harder its games get ----------------
 export const MASTERY_MAX = 3;
 export const MASTERY_LABEL = ['Rookie', 'Skilled', 'Expert', 'Master'];
-const MIN_GRADE = 2, MAX_GRADE = 8;
+const MIN_GRADE = -1, MAX_GRADE = 8;   // Pre-K to Grade 8
 
 /** { level, streak } for a subject. streak counts consecutive 3-star (+) or 0-1-star (−) results. */
 export function mastery(profile, subject) {
@@ -30,7 +30,7 @@ export const gradeUps = (profile, gameId) => Math.max(0, profile?.games?.[gameId
 
 /** Grade the generators are asked for in one game: the player's grade plus that game's earned grade-ups. */
 export function gameGrade(profile, gameId, extra = 0) {
-  return clampGrade((Number(profile?.grade) || 3) + gradeUps(profile, gameId) + extra);
+  return clampGrade(gradeOf(profile?.grade) + gradeUps(profile, gameId) + extra);
 }
 
 /**
@@ -38,9 +38,9 @@ export function gameGrade(profile, gameId, extra = 0) {
  * grade-ups every game of the subject has earned, so nobody meets questions a game has not yet reached.
  */
 export function effectiveGrade(profile, subject, extra = 0) {
-  const games = gamesForSubject(subject);
+  const games = gamesForGrade(subject, profile?.grade).filter((g) => !g.maxGrade);   // the world's games this player can play
   const ups = games.length ? Math.min(...games.map((g) => gradeUps(profile, g.id))) : 0;
-  return clampGrade((Number(profile?.grade) || 3) + ups + extra);
+  return clampGrade(gradeOf(profile?.grade) + ups + extra);
 }
 
 export const MASTERY_UP = 3, MASTERY_DOWN = 2;

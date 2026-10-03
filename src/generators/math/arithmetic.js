@@ -2,6 +2,7 @@
 // `d` (0..1) is how hard the question should be within the grade: every kind of sum has a ladder of steps, from
 // the gentlest first meeting (5 − 2) up to the hardest the grade expects (72 − 38, with borrowing).
 import { numericDistractors, makeChoices, round } from '../distractors.js';
+import { earlyQuestion } from './early.js';
 
 function q(prompt, answer, skill, rng, opts = {}) {
   const fmt = opts.format || ((v) => String(v));
@@ -63,9 +64,9 @@ function subLadder(step, rng) {
 }
 
 function gradeA(grade, rng, d) {
-  const kind = rng.pick(grade === 2 ? ['add', 'add', 'sub', 'sub'] : ['add', 'add', 'sub', 'sub', 'mult', 'mult']);
-  // Grade 2 stops after "2-digit + 1-digit"; grade 3 climbs all the way to carrying and borrowing.
-  const rungs = grade === 2 ? 3 : 6;
+  const kind = rng.pick(grade <= 2 ? ['add', 'add', 'sub', 'sub'] : ['add', 'add', 'sub', 'sub', 'mult', 'mult']);
+  // Grade 1 stays within 20; grade 2 stops after "2-digit + 1-digit"; grade 3 climbs to carrying and borrowing.
+  const rungs = grade <= 1 ? 2 : grade === 2 ? 3 : 6;
   if (kind === 'add') return addLadder(rung(d, rungs), rng);
   if (kind === 'sub') return subLadder(rung(d, rungs), rng);
   // Times tables: 2 and 10 up to 5 first, then 2, 5 and 10 all the way.
@@ -153,6 +154,8 @@ function gradeC(grade, rng, d) {
 /** One question. `d` is its difficulty 0..1 within the grade; left out, it is picked at random (duels, bosses). */
 export function generateQuestion(grade, rng, d) {
   const diff = d === undefined ? rng.float() : Math.max(0, Math.min(1, d));
+  // Pre-K and K count, find numbers and add with pictures (see early.js).
+  if (grade <= 0) { const e = earlyQuestion(grade, rng, diff); e.difficulty = diff; return e; }
   const out = grade <= 3 ? gradeA(grade, rng, diff) : grade <= 5 ? gradeB(grade, rng, diff) : gradeC(grade, rng, diff);
   out.difficulty = diff;
   return out;

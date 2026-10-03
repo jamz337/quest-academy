@@ -11,6 +11,8 @@ import { speak } from '../../../systems/Speech.js';
 
 const PAR_MS = 90000;
 const WOOD = 0xf0b36b, POST = 0xc99a6b;
+/** True when a pattern is made of pictures (Pre-K and K) rather than numbers. */
+const isPicture = (list) => list.some((t) => /\p{Extended_Pictographic}/u.test(String(t)));
 
 /**
  * Pattern Bridge's New Skill page: a card over the water, the example laid out on bridge planks (the answer plank
@@ -44,7 +46,7 @@ const bridgeIntroTheme = {
     const g = scene.add.graphics();
     g.fillStyle(POST, 1); g.fillRoundedRect(x0 - 14 * f, py - ph / 2 - 14 * f, 10 * f, ph + 26 * f, 3); g.fillRoundedRect(x0 + rowW + 4 * f, py - ph / 2 - 14 * f, 10 * f, ph + 26 * f, 3);
     g.lineStyle(4 * f, POST, 1); g.lineBetween(x0 - 9 * f, py - ph / 2 - 10 * f, x0 + rowW + 9 * f, py - ph / 2 - 10 * f);
-    const fontSize = Math.round((n > 5 && pw < 56 * f ? 16 : 22) * f);
+    const fontSize = isPicture(terms) ? Math.round(Math.min(pw, ph) * 0.6) : Math.round((n > 5 && pw < 56 * f ? 16 : 22) * f);
     terms.forEach((t, i) => {
       const x = x0 + i * (pw + gap) + pw / 2;
       const answer = /^\[.*\]$/.test(t);
@@ -122,7 +124,7 @@ export class PatternBridge extends MinigameScene {
       const c = cells[i];
       let variant = 'secondary', faded = false;
       if (s.picked !== null) { if (choice === r.answer && this.reveal) variant = 'success'; else if (i === s.picked) variant = 'danger'; else faded = this.reveal; }
-      const b = button(this, c.x, c.y, c.w, Math.max(56 * ui, Math.min(c.h, 110 * ui)), choice, { variant, fontSize: 28, onClick: () => this.pick(i) });
+      const b = button(this, c.x, c.y, c.w, Math.max(56 * ui, Math.min(c.h, 110 * ui)), choice, { variant, fontSize: isPicture(r.choices) ? 44 : 28, onClick: () => this.pick(i) });
       if (faded) b.setAlpha(0.45);
       return b;
     });
@@ -151,7 +153,8 @@ export class PatternBridge extends MinigameScene {
     g.fillRoundedRect(x0 + rowW + 4 * ui, py - 30 * ui, 12 * ui, rect.y + rect.h - py + 14 * ui, 4);
     g.lineStyle(4 * ui, POST, 1); g.lineBetween(x0 - 10 * ui, py - 26 * ui, x0 + rowW + 10 * ui, py - 26 * ui);
 
-    const fontSize = Math.round((n > 5 && plankW < 60 * ui ? 16 : 22) * ui);
+    // Picture patterns (Pre-K and K) draw the pictures as big as the plank allows.
+    const fontSize = isPicture(r.terms) ? Math.round(Math.min(plankW, plankH) * 0.6) : Math.round((n > 5 && plankW < 60 * ui ? 16 : 22) * ui);
     return r.terms.map((t, i) => {
       const x = x0 + i * (plankW + gap) + plankW / 2, y = py + plankH / 2;
       if (i === r.missingIndex && s.picked === null) {

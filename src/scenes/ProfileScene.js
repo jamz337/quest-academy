@@ -16,6 +16,7 @@ import { resolveLook, sanitizeLook, BG_COLORS, SEXES, HAIR_STYLES, TOPS, BOTTOMS
 import { lookSpriteTexture, IDLE_FRAMES } from '../systems/Textures.js';
 import { swatch, HAIR_STYLES as LPC_HAIR, TOP_STYLES, BOTTOM_STYLES } from '../ui/LpcCharacter.js';
 import { badgeTexture } from '../systems/Textures.js';
+import { gradeLabel } from '../data/grades.js';
 
 // Colour rows in the editor; `key` matches the fields of a profile's look.
 // Colour rows in the editor; `key` matches the fields of a profile's look. Palette rows list variant names and
@@ -86,7 +87,7 @@ export class ProfileScene extends BaseScene {
     const disc = this.add.circle(0, -c.h * 0.22, 36 * ui, THEME.primarySoft);
     const img = this.add.image(0, -c.h * 0.22, badgeTexture(this, resolveLook(p))).setDisplaySize(56 * ui, 56 * ui);
     const name = this.add.text(0, c.h * 0.14, p.name, T.bodyBold(this)).setOrigin(0.5);
-    const meta = this.add.text(0, c.h * 0.32, `Grade ${p.grade}  ·  Lv ${levelFromXp(p.xp)}`, T.small(this, THEME.ink2)).setOrigin(0.5);
+    const meta = this.add.text(0, c.h * 0.32, `${gradeLabel(p.grade)}  ·  Lv ${levelFromXp(p.xp)}`, T.small(this, THEME.ink2)).setOrigin(0.5);
     k.add([disc, img, name, meta]);
     const edit = iconButton(this, c.x + c.w / 2 - 22 * ui, c.y - c.h / 2 + 22 * ui, 32 * ui, '✎', { variant: 'ghost', onClick: () => this.openForm(p) });
     edit.setDepth(2);
@@ -127,9 +128,10 @@ export class ProfileScene extends BaseScene {
     const height = (s) => {
       const extra = editing ? 22 * s + (this.state.confirmDelete ? 76 * s : 20 * s) : 0;
       const swatches = SWATCHES.length * (34 + (inline ? 0 : 18)) * s;
-      return 68 * s + 90 * s + 18 * s + aRows * (Math.min(44 * s, (pw - 48) / AVATAR_COUNT - 6) + 12) + 10 * s + 60 * s + 92 * s + 92 * s + 92 * s + 92 * s + 48 * s + extra + 26 * s;
+      return 68 * this.ui + 90 * s + 18 * s + aRows * (Math.min(44 * s, (pw - 48) / AVATAR_COUNT - 6) + 12) + 10 * s + 60 * s + 92 * s + 50 * s + 92 * s + 92 * s + 92 * s + 48 * s + extra + 26 * s;
     };
-    const ui = height(this.ui) > h - 24 ? Math.max(0.7, this.ui * (h - 24) / height(this.ui)) : this.ui;
+    let ui = this.ui;
+    for (let k = 0; k < 6 && height(ui) > h - 24; k++) ui = Math.max(0.6, ui * (h - 24) / height(ui));
     const aSize = Math.min(44 * ui, (pw - 48) / AVATAR_COUNT - 6);
     const swatchRow = 34 * ui;
     const need = height(ui);
@@ -167,15 +169,16 @@ export class ProfileScene extends BaseScene {
 
     // Grade picker
     label('GRADE', y); y += 20 * ui;
-    const gcells = grid({ x: m.x + 24, y, w: m.w - 48, h: 44 * ui }, GRADES.length, 1, 6);
+    const gcols = Math.ceil(GRADES.length / 2);
+    const gcells = grid({ x: m.x + 24, y, w: m.w - 48, h: 44 * ui * 2 + 6 }, gcols, 2, 6);
     GRADES.forEach((g, i) => {
       const c = gcells[i];
-      button(this, c.x, c.y, c.w, c.h, String(g), {
-        variant: 'secondary', selected: g === d.grade, fontSize: 17, radius: THEME.radius.sm,
+      button(this, c.x, c.y, c.w, c.h, gradeLabel(g, true), {
+        variant: 'secondary', selected: g === d.grade, fontSize: g < 0 ? 15 : 17, radius: THEME.radius.sm,
         onClick: () => { d.grade = g; this.rebuild(); }
       });
     });
-    y += 44 * ui + 28 * ui;
+    y += 44 * ui * 2 + 6 + 28 * ui;
 
     // Read aloud: tap the 🔊 button when wanted, or have every question and villager line read automatically
     label('READ ALOUD', y); y += 20 * ui;

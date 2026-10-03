@@ -3,8 +3,8 @@ import { SCENES, SUBJECTS } from '../constants.js';
 import { THEME } from '../ui/theme.js';
 import * as Store from '../systems/Store.js';
 import * as Launcher from '../systems/MinigameLauncher.js';
-import { gamesForSubject } from '../data/minigames.js';
-import { bandFor, BAND_LABEL } from '../data/grades.js';
+import { gamesForGrade } from '../data/minigames.js';
+import { gradeLabel } from '../data/grades.js';
 import { mastery, effectiveGrade, MASTERY_LABEL } from '../systems/Progression.js';
 import { grid } from '../systems/Layout.js';
 import { T, text } from '../ui/TextStyles.js';
@@ -30,11 +30,12 @@ export class ChallengeMenuScene extends BaseScene {
     const p = Store.getProfile();
     if (!p) return this.scene.start(SCENES.Profile);
     background(this, { accent: THEME.subjects.math.accent, accent2: THEME.subjects.code.accent });
-    const who = `${p.name} · ${BAND_LABEL[bandFor(p.grade)]}`;
+    const who = `${p.name} · ${gradeLabel(p.grade)}`;
     const wide = w >= 640;
     const bar = topBar(this, {
       title: 'Challenge Mode', onBack: () => this.go(SCENES.ModeSelect),
-      right: (x, y) => button(this, x - 62 * ui, y, 124 * ui, 40 * ui, '📊 My skills', { variant: 'secondary', fontSize: 14, onClick: () => this.go(SCENES.Skills) }),
+      // A phone's top bar is narrow: the short label keeps the button clear of the title.
+      right: (x, y) => button(this, x - (wide ? 62 : 46) * ui, y, (wide ? 124 : 92) * ui, 40 * ui, wide ? '📊 My skills' : '📊 Skills', { variant: 'secondary', fontSize: 14, onClick: () => this.go(SCENES.Skills) }),
       subtitle: who
     });
 
@@ -50,10 +51,10 @@ export class ChallengeMenuScene extends BaseScene {
       // Pace (mastery) and the grade this subject's questions are at for the profile.
       const lvl = mastery(p, s.id).level, eg = effectiveGrade(p, s.id);
       chip(this, title.x + title.width + 10, sy + labelH / 2, {
-        text: `${MASTERY_LABEL[lvl]} · Grade ${eg}`, height: 22 * ui, fontSize: 12,
+        text: `${MASTERY_LABEL[lvl]} · ${gradeLabel(eg)}`, height: 22 * ui, fontSize: 12,
         color: lvl ? s.soft : THEME.sunken, textColor: lvl ? s.dark : THEME.ink2, shadow: 'none'
       });
-      const games = gamesForSubject(s.id);
+      const games = gamesForGrade(s.id, p.grade);
       const cells = grid({ x: 12, y: sy + labelH, w: w - 24, h: sectionH - labelH - 10 }, games.length, 1, 10);
       games.forEach((g, gi) => cards.push(this.card(g, cells[gi], s, p)));
     });

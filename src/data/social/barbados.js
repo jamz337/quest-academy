@@ -1,3 +1,4 @@
+import { gradeOf } from '../grades.js';
 // Social studies inside the player's house: every room tells one story about Barbados (a few short pages,
 // read aloud) and ends with one quiz of five questions whose answers are all in the story.
 // pic: the emoji shown big on a page; item: what hangs in the room; quiz choices: 4, the first is the answer
@@ -99,7 +100,7 @@ export const ROOMS = [
 
 /** Grades 2 and 3 read the short telling of a page; older readers get the full one. */
 export const SHORT_TEXT_GRADE = 3;
-export const pageText = (page, grade) => ((Number(grade) || 4) <= SHORT_TEXT_GRADE && page.short ? page.short : page.text);
+export const pageText = (page, grade) => (gradeOf(grade, 4) <= SHORT_TEXT_GRADE && page.short ? page.short : page.text);
 
 export const getRoom = (id) => ROOMS.find((r) => r.id === id) || null;
 export const ROOM_GAME_PREFIX = 'social-';

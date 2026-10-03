@@ -2,16 +2,21 @@ import { MinigameScene } from '../MinigameScene.js';
 import { THEME, hex } from '../../../ui/theme.js';
 import { generateRounds, ROUNDS, PAIRS_PER_ROUND } from '../../../generators/english/match.js';
 import { PAIRS as BIBLE_PAIRS } from '../../../data/bible/bank.js';
-import { bandFor } from '../../../data/grades.js';
+import { bandFor, bankFor } from '../../../data/grades.js';
 import { Sfx } from '../../../systems/Audio.js';
 import { FONT, WEIGHT } from '../../../ui/TextStyles.js';
 import { enter } from '../../../ui/motion.js';
 import { weakSkills } from '../../../systems/Practice.js';
 import { LANTERN, drawFestival, lightString, paperLantern, ribbon, lanternSky } from './LanternScenery.js';
+import { earlyMatchRounds } from '../../../generators/english/early.js';
+import { gradeOf } from '../../../data/grades.js';
 import { VILLAGE, drawBackdrop, drawVillage, glassPanel, statsBar, matchCard, lightning, villageLessonTheme } from '../bible/VillageScenery.js';
 
 const PAR_MS = 120000;
-const TITLES = { synonym: 'Match the words that mean the same', antonym: 'Match the opposites', definition: 'Match each word to its meaning', people: 'Match each person to what they did' };
+const TITLES = {
+  synonym: 'Match the words that mean the same', antonym: 'Match the opposites', definition: 'Match each word to its meaning', people: 'Match each person to what they did',
+  'letter-case': 'Match each big letter to its small letter', 'first-sounds': 'Match each picture to its first letter', rhyming: 'Match the words that rhyme'
+};
 
 /**
  * Word Match: two columns of 5 cards; pair them up. 3 rounds. A pair counts if it took at most one mistake. Also runs
@@ -23,10 +28,12 @@ export class WordMatch extends MinigameScene {
   constructor() { super('MG_WordMatch'); }
 
   initState() {
-    const bank = this.payload.gameId === 'bible-match' ? BIBLE_PAIRS[bandFor(this.payload.grade)] : undefined;
+    const bank = this.payload.gameId === 'bible-match' ? bankFor(BIBLE_PAIRS, bandFor(this.payload.grade)) : undefined;
     // Rounds with shorter words (less to read) come first.
     const load = (r) => r.pairs.reduce((sum, p) => sum + String(p.l).length + String(p.r).length, 0);
-    const rounds = generateRounds(this.payload.grade, this.rng, bank, weakSkills(this.profile)).sort((a, b) => load(a) - load(b));
+    // Pre-K to Grade 1 match letters, first sounds and rhymes (one kind per round) in the English game.
+    const early = this.payload.gameId !== 'bible-match' && gradeOf(this.payload.grade) <= 1;
+    const rounds = early ? earlyMatchRounds(gradeOf(this.payload.grade), this.rng) : generateRounds(this.payload.grade, this.rng, bank, weakSkills(this.profile)).sort((a, b) => load(a) - load(b));
     return { rounds, rIdx: 0, done: [], mistakes: {}, left: null, right: null,
       first: null, flash: null, busy: false };
   }

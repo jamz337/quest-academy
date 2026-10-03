@@ -13,14 +13,15 @@ const usedOps = (program) => {
 };
 
 describe('Robo Maze levels', () => {
-  it('has 12 levels per band with unique ids', () => {
-    expect(LEVELS).toHaveLength(36);
+  it('has 12 levels per band (8 first mazes for Pre-K and K) with unique ids', () => {
+    expect(LEVELS).toHaveLength(44);
+    expect(levelsForBand('E').map((l) => l.id)).toEqual(['E-01', 'E-02', 'E-03', 'E-04', 'E-05', 'E-06', 'E-07', 'E-08']);
     for (const band of ['A', 'B', 'C']) {
       const ids = levelsForBand(band).map((l) => l.id);
       expect(ids).toHaveLength(12);
       ids.forEach((id, i) => expect(id).toBe(`${band}-${String(i + 1).padStart(2, '0')}`));
     }
-    expect(new Set(LEVELS.map((l) => l.id)).size).toBe(36);
+    expect(new Set(LEVELS.map((l) => l.id)).size).toBe(44);
   });
 
   for (const lv of LEVELS) {

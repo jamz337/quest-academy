@@ -4,7 +4,8 @@ import { generateSet, generateQuestion } from '../../../generators/math/arithmet
 import { tuningFor } from '../../../data/grades.js';
 import { grid } from '../../../systems/Layout.js';
 import { T, text } from '../../../ui/TextStyles.js';
-import { button } from '../../../ui/Button.js';
+import { button, speakButton } from '../../../ui/Button.js';
+import { readable } from '../../../ui/ReadableText.js';
 import { card } from '../../../ui/Card.js';
 import { stripe } from '../../../ui/Panel.js';
 import { ProgressBar } from '../../../ui/ProgressBar.js';
@@ -74,7 +75,7 @@ export class NumberDash extends MinigameScene {
   progressRatio() { return this.state.idx / this.state.questions.length; }
   enterKey() { return this.state.idx; }
   /** Every other question is typed rather than picked. */
-  typing() { return this.state.idx % 2 === 1; }
+  typing() { return !this.payload.early && this.state.idx % 2 === 1; }   // Pre-K and K only tap
 
   /** A solved example of a skill the player has never met, and a second question of it for the child to try. */
   exampleFor(skill) {
@@ -86,9 +87,11 @@ export class NumberDash extends MinigameScene {
     const [q, t] = found;
     if (!q) return null;
     const line = (x) => x.prompt.replace('\n', ' ');
+    // A question ("How many mangoes?") shows its answer after an arrow; a sum after an equals sign.
+    const solved = (x) => (x.ask ? `${line(x)}  →  ${x.answer}` : `${line(x)} = ${x.answer}`);
     return {
-      problem: `${line(q)} = ${q.answer}`, steps: this.steps(q),
-      practice: t && t.choices ? { prompt: `${line(t)} = ?`, choices: t.choices, answer: t.answer, solved: `${line(t)} = ${t.answer}` } : null
+      problem: solved(q), steps: this.steps(q),
+      practice: t && t.choices ? { prompt: t.ask ? line(t) : `${line(t)} = ?`, choices: t.choices, answer: t.answer, solved: solved(t) } : null
     };
   }
 
@@ -107,7 +110,13 @@ export class NumberDash extends MinigameScene {
     stripe(this, cx - 24 * ui, area.y + 10 * ui, 48 * ui, this.subject.accent, 5 * ui);
     const typing = this.typing();
     const shown = typing && s.picked === null ? `${q.prompt} = ${s.typed || '?'}` : q.prompt;
-    text(this, cx, area.y + promptH / 2 - 10 * ui, shown, T.at(this, shown.length > 12 ? 30 : 42, s.picked !== null ? (s.right ? THEME.successDark : THEME.danger) : THEME.ink, { fontStyle: '700' }));
+    const colour = s.picked !== null ? (s.right ? THEME.successDark : THEME.danger) : THEME.ink;
+    if (q.ask) {
+      // A question for the youngest: read aloud, the pictures big and wrapped.
+      const said = readable(this, cx, area.y + promptH / 2 - 10 * ui, q.prompt, T.at(this, 26, colour, { fontStyle: '700' }), { width: area.w - 80 * ui, align: 'center' });
+      speakButton(this, area.x + area.w - 30 * ui, area.y + 26 * ui, 40 * ui, said, { rate: this.speechRate });
+      this.autoRead(said, s.picked === null ? q.choices : null);
+    } else text(this, cx, area.y + promptH / 2 - 10 * ui, shown, T.at(this, shown.length > 12 ? 30 : 42, colour, { fontStyle: '700' }));
     if (s.picked !== null && typing) text(this, cx, area.y + promptH - 34 * ui, s.right ? 'Correct!' : this.answerRevealed(q) ? `You typed ${s.typed || 'nothing'}. It is ${q.answer}.` : `You typed ${s.typed || 'nothing'}. Let's see why.`, T.small(this, s.right ? THEME.successDark : THEME.danger));
     this.timerBar = new ProgressBar(this, cx, area.y + promptH - 18 * ui, area.w - 48, 10 * ui, { color: THEME.success, value: 1 });
     if (!Number.isFinite(s.timeLimit)) this.timerBar.setVisible(false);

@@ -24,6 +24,7 @@ import { getBadge } from '../data/badges.js';
 import { getList, listWords, spellingGradeFor } from '../data/spelling/lists.js';
 import { planSession, markSpelling, recordSpelling, recordTaught, finishSession, recordTest, comboBonus, blankSentence, trickySpots } from '../systems/Spelling.js';
 import { trickFor } from '../data/spelling/tricks.js';
+import { gradeOf } from '../data/grades.js';
 
 const LOOK_MS = 3500;   // how long a "look" word stays before it hides
 
@@ -40,7 +41,7 @@ export class SpellingGameScene extends BaseScene {
 
   init(data) {
     this.listId = data.listId;
-    this.grade = data.grade || null;
+    this.grade = data.grade ?? null;
     const list = data.words ? { id: data.listKind || 'tricky', title: data.title || 'Tricky words', words: data.words } : getList(data.listId);
     this.list = list || { id: 'none', title: 'Spelling', words: [] };
     const rng = new Rng();
@@ -75,7 +76,7 @@ export class SpellingGameScene extends BaseScene {
   /** Grade 2 hears every letter as it is typed (the player's grade, or the list's, whichever is lower). */
   get saysLetters() {
     const p = Store.getProfile();
-    return Math.min(Number(p?.grade) || 9, this.grade || spellingGradeFor(p?.grade)) <= 2;
+    return Math.min(gradeOf(p?.grade, 9), this.grade ?? spellingGradeFor(p?.grade)) <= 2;
   }
 
   /** What the player must type: the whole word, or just the missing letters in a fill round. */

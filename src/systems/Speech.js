@@ -33,6 +33,7 @@ export function speakable(text) {
     .replace(/_{2,}/g, ' blank ')
     .replace(/[“”"]/g, '')
     .replace(/▲/g, ' forward').replace(/◀/g, ' left').replace(/▶/g, ' right').replace(/▼/g, ' down')
+    .replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}\u{20E3}➕➖]/gu, ' ')   // pictures are seen, not said (picture answers have their own words)
     .replace(/×/g, ' times ').replace(/÷/g, ' divided by ').replace(/−/g, ' minus ').replace(/²/g, ' squared')
     .replace(/\s+/g, ' ')
     .replace(/\s+([,.!?;:])/g, '$1')
@@ -67,7 +68,7 @@ export function wordAt(ranges, charIndex) {
 }
 
 /** Speaking rate by grade: a little slower for the youngest readers. */
-export const rateFor = (grade) => ((Number(grade) || 3) <= 3 ? 0.85 : 0.95);
+export const rateFor = (grade) => { const g = grade === null || grade === undefined || grade === '' || !Number.isFinite(Number(grade)) ? 3 : Number(grade); return g <= 0 ? 0.8 : g <= 3 ? 0.85 : 0.95; };
 
 // ---- Voice choice ------------------------------------------------------------------------------------------
 

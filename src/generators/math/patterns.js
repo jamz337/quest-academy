@@ -1,5 +1,7 @@
 // Pattern Bridge round generator. Output: { terms, missingIndex, answer, choices, skill, rule }
 import { numericDistractors, makeChoices } from '../distractors.js';
+import { gradeOf } from '../../data/grades.js';
+import { picturePattern } from './early.js';
 
 function build(terms, skill, rng, opts = {}) {
   const mi = opts.missingIndex ?? rng.int(1, terms.length - 1);
@@ -15,6 +17,8 @@ const linear = (start, step, len = 6) => Array.from({ length: len }, (_, i) => s
 
 function bandA(grade, rng) {
   const kinds = grade <= 2 ? ['skip'] : ['skip', 'skip', 'countdown', 'doubling'];
+  // Grade 1: count on in 1s, 2s, 5s and 10s from small numbers.
+  if (grade <= 1) { const step = rng.pick([1, 2, 5, 10]); return build(linear(step * rng.int(0, 3) + (step === 1 ? rng.int(1, 12) : 0), step), 'skip-count', rng, { step }); }
   switch (rng.pick(kinds)) {
     case 'countdown': { const step = rng.pick([2, 5, 10]); return build(linear(step * rng.int(8, 12), -step), 'skip-count', rng, { step }); }
     case 'doubling': { const s = rng.pick([1, 2, 3, 5]); const t = [s]; while (t.length < 6) t.push(t[t.length - 1] * 2); return build(t, 'doubling', rng, { step: t[1] }); }
@@ -52,7 +56,8 @@ function bandC(rng) {
 }
 
 export function generateRound(grade, rng) {
-  const g = Number(grade) || 3;
+  const g = gradeOf(grade);
+  if (g <= 0) return picturePattern(g, rng);   // Pre-K and K: picture patterns
   if (g <= 3) return bandA(g, rng);
   if (g <= 5) return bandB(rng);
   return bandC(rng);

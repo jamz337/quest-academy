@@ -9,6 +9,7 @@ import { text, T } from '../../../ui/TextStyles.js';
 import { panel } from '../../../ui/Panel.js';
 import { toast } from '../../../ui/Toast.js';
 import { Sfx } from '../../../systems/Audio.js';
+import { speak, canSpeak } from '../../../systems/Speech.js';
 
 const FLOOR = 0xffffff, FLOOR_LINE = THEME.line, WALL = THEME.ink2, WALL_TOP = 0x7f7c9c, FRAME = THEME.lineStrong;
 const coinKey = (c) => c.x + ',' + c.y;
@@ -72,6 +73,7 @@ export class MazeGameScene extends MinigameScene {
   }
 
   drawInfo(r, title, hint) {
+    if (this.payload.early && this.animateEnter && (title || hint)) this.time.delayedCall(350, () => { if (canSpeak()) speak([title, hint].filter(Boolean).join('. '), { rate: this.speechRate }); });
     text(this, r.x + r.w / 2, r.y + 12 * this.ui, title, T.at(this, 17, THEME.ink));
     if (hint) text(this, r.x + r.w / 2, r.y + 32 * this.ui, hint, T.at(this, 12, THEME.ink2, { fontStyle: '500', wordWrap: { width: r.w - 8 } })).setOrigin(0.5, 0.5);
   }

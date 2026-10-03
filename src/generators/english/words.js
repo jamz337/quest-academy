@@ -1,6 +1,7 @@
 // Word Builder rounds: { word, hint, scrambled: string[] } with scrambled guaranteed different from the word.
 import { WORDS } from '../../data/english/wordBank.js';
-import { bandFor } from '../../data/grades.js';
+import { bandFor, bankFor } from '../../data/grades.js';
+import { earlyBuildWords } from './early.js';
 
 export function scramble(word, rng) {
   const letters = word.split('');
@@ -11,7 +12,8 @@ export function scramble(word, rng) {
 }
 
 export function generateRounds(grade, rng, n = 8) {
-  const bank = WORDS[bandFor(grade)];
+  // Kindergarten builds three-letter picture words (the picture is in the hint).
+  const bank = bandFor(grade) === 'E' ? earlyBuildWords() : bankFor(WORDS, bandFor(grade));
   return rng.sample(bank, Math.min(n, bank.length)).map(({ w, h }) => ({ word: w, hint: h, scrambled: scramble(w, rng) }));
 }
 

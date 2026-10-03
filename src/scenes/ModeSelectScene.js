@@ -20,6 +20,7 @@ import { toast } from '../ui/Toast.js';
 import { Sfx, audioReady, onUnlocked } from '../systems/Audio.js';
 import { resolveLook } from '../data/avatars.js';
 import { badgeTexture } from '../systems/Textures.js';
+import { gradeLabel, isEarly, gradeOf } from '../data/grades.js';
 
 const EMOJI = { map: '\u{1F5FA}️', trophy: '\u{1F3C6}', bee: '\u{1F41D}', medal: '\u{1F3C5}', cloud: '☁️', family: '\u{1F46A}', swap: '\u{1F501}', soundOn: '\u{1F50A}', soundOff: '\u{1F507}' };
 
@@ -57,7 +58,7 @@ export class ModeSelectScene extends BaseScene {
     const ax = -chipW / 2 + 42 * ui, tx = -chipW / 2 + 82 * ui;
     pc.add(this.add.circle(ax, 0, 30 * ui, THEME.primarySoft));
     pc.add(this.add.image(ax, 0, badgeTexture(this, resolveLook(p), outfitOf(p), outfitId(p))).setDisplaySize(52 * ui, 52 * ui));
-    pc.add(this.add.text(tx, -20 * ui, `${p.name}  ·  Grade ${p.grade}`, T.bodyBold(this)).setOrigin(0, 0.5));
+    pc.add(this.add.text(tx, -20 * ui, `${p.name}  ·  ${gradeLabel(p.grade)}`, T.bodyBold(this)).setOrigin(0, 0.5));
     const streak = currentStreak(p);
     const coins = chip(this, chipW / 2 - 14 * ui, 0, { text: String(p.coins), icon: 'coin', color: THEME.warningSoft, textColor: THEME.warningDark, originX: 1, shadow: 'none' });
     // Text and the XP bar each get their own line, sized to the room left of the coin chip so a long streak never overlaps.
@@ -103,10 +104,11 @@ export class ModeSelectScene extends BaseScene {
       const fs = Math.max(11, Math.min(size, byH, byLabel, bySub));
       return { fontSize: fs, sub: fs >= 13 ? sub : null };
     };
-    const exploreFit = fit(22, 'Explore the World', 'Walk around, meet friends, play games', bw, bh);
+    const early = isEarly(p.grade);   // the world opens at Grade 1; Pre-K and K play from the Challenge menu
+    const exploreFit = fit(22, 'Explore the World', early ? 'Opens in Grade 1' : 'Walk around, meet friends, play games', bw, bh);
     const explore = button(this, positions[0].x, positions[0].y, bw, bh, 'Explore the World', {
-      color: THEME.success, ...exploreFit, radius: THEME.radius.lg, emoji: EMOJI.map,
-      onClick: () => { Store.setSetting('lastMode', 'roam'); this.go(SCENES.World); }
+      color: THEME.success, ...exploreFit, radius: THEME.radius.lg, emoji: early ? '🔒' : EMOJI.map, disabled: early,
+      onClick: () => { if (early) return; Store.setSetting('lastMode', 'roam'); this.go(SCENES.World); }
     });
     const challengeFit = fit(22, 'Challenge Mode', 'Pick any game and earn stars', bw, bh);
     const challenge = button(this, positions[1].x, positions[1].y, bw, bh, 'Challenge Mode', {
@@ -114,10 +116,11 @@ export class ModeSelectScene extends BaseScene {
       onClick: () => { Store.setSetting('lastMode', 'challenge'); this.go(SCENES.ChallengeMenu); }
     });
     const beeW = Math.min(this.portrait ? w - 40 : bw * 2 + 24, 640 * ui);
-    const beeFit = fit(18, 'Spelling Bee', 'Learn to spell your class words', beeW, beeH);
+    const preK = gradeOf(p.grade) < 0;   // Pre-K learns letters and sounds first; the Spelling Bee opens in Kindergarten
+    const beeFit = fit(18, 'Spelling Bee', preK ? 'Opens in Kindergarten' : 'Learn to spell your class words', beeW, beeH);
     const bee = button(this, w / 2, areaBottom - beeH / 2, beeW, beeH, 'Spelling Bee', {
-      color: THEME.gold, textColor: THEME.ink, ...beeFit, radius: THEME.radius.lg, emoji: EMOJI.bee,
-      onClick: () => this.go(SCENES.Spelling)
+      color: THEME.gold, textColor: THEME.ink, ...beeFit, radius: THEME.radius.lg, emoji: preK ? '🔒' : EMOJI.bee, disabled: preK,
+      onClick: () => { if (!preK) this.go(SCENES.Spelling); }
     });
 
     // Bottom rows: online features, then device settings
