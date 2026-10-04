@@ -18,7 +18,9 @@ import { explainState, explainPanel } from '../../ui/Explain.js';
 import { button, iconButton, speakButton } from '../../ui/Button.js';
 import { card } from '../../ui/Card.js';
 import { enter } from '../../ui/motion.js';
-import { safeArea } from '../../systems/Layout.js';
+import { safeArea, pointerPos } from '../../systems/Layout.js';
+import { buddy, newBuddyMood, setMood } from '../../ui/Buddy.js';
+import { fxLayer } from '../FxScene.js';
 import { T, text } from '../../ui/TextStyles.js';
 
 import { background } from '../../ui/Panel.js';
@@ -33,6 +35,8 @@ import { ProgressBar } from '../../ui/ProgressBar.js';
  */
 export class MinigameScene extends BaseScene {
   init(payload) {
+    this.buddyMood = newBuddyMood();   // Mango's mood, kept across rebuilds (ui/Buddy.js)
+    this.streakRun = 0;                // right answers in a row, for the big celebrations
     this.payload = payload;
     this.rng = new Rng(payload.seed ?? undefined);
     this.finished = false;
@@ -208,6 +212,7 @@ export class MinigameScene extends BaseScene {
   create(data) {
     super.create(data);
     this.scene.bringToTop();
+    fxLayer(this);   // start the celebration layer now, so it is ready by the first answer
     this.events.on('pause', () => { this.pauseStart = Date.now(); });
     this.events.on('resume', () => {
       if (this.pauseStart) this.pausedMs += Date.now() - this.pauseStart;
@@ -237,8 +242,15 @@ export class MinigameScene extends BaseScene {
     const sa = safeArea();
     const barH = 56 * ui + sa.top, cy = sa.top + 28 * ui + 2;
     iconButton(this, 12 + sa.left + 22 * ui, cy, 44 * ui, 'II', { fontSize: 15, onClick: () => this.openPause() });
-    text(this, w / 2, cy, this.payload.title, T.heading(this));
+    // Mango beside the pause button: he reacts to every answer.
+    this.buddy = buddy(this, 12 + sa.left + 44 * ui + 26 * ui, cy + 22 * ui, 46 * ui, this.buddyMood);
+    this.buddy.react();
     this.progressChip = chip(this, w - 12 - sa.right, cy, { text: this.inReview ? 'Review' : this.progressLabel(), originX: 1, color: this.inReview ? THEME.brandSoft : this.subject.soft, textColor: this.inReview ? THEME.brandDark : this.subject.dark, shadow: 'none' });
+    // The title keeps clear of Mango on the left and the progress chip on the right.
+    const title = text(this, w / 2, cy, this.payload.title, T.heading(this));
+    const side = Math.max(12 + sa.left + 44 * ui + 52 * ui, 12 + sa.right + (this.progressChip.width || 70) + 8);
+    const room = w - side * 2;
+    if (title.width && title.width > room && room > 40) title.setScale(Math.max(0.6, room / title.width));
     const ratio = this.inReview ? null : this.progressRatio();
     let top = barH;
     if (ratio !== null) {
@@ -303,6 +315,40 @@ export class MinigameScene extends BaseScene {
     const r = this.add.rectangle(0, 0, this.w, this.h, color, alpha).setOrigin(0).setDepth(900);
     this.tweens.add({ targets: r, alpha: 0, duration: 350, onComplete: () => r.destroy() });
   }
-  correctFeedback() { Sfx.correct(); this.flash(THEME.success, 0.14); }
-  wrongFeedback() { Sfx.wrong(); this.flash(THEME.danger, 0.14); this.cameras.main.shake(120, 0.004); }
+  /**
+   * A right answer: the sound and flash, Mango cheers, stars fly from the answer to the score, and a streak of
+   * 3, 5, 10, 15… brings a big "WOW!" with confetti.
+   */
+  correctFeedback() {
+    Sfx.correct(); this.flash(THEME.success, 0.14);
+    this.streakRun = (this.streakRun || 0) + 1;
+    const run = this.streakRun, wow = run === 3 || (run >= 5 && run % 5 === 0);
+    setMood(this.buddyMood || (this.buddyMood = newBuddyMood()), wow ? 'wow' : 'cheer');
+    if (this.buddy && this.buddy.c && this.buddy.c.active) { const b = this.buddy; this.buddy = buddy(this, b.c.x, b.c.y, 46 * this.ui, this.buddyMood); b.c.destroy(); this.buddy.react(); }
+    this.celebrate(wow, run);
+  }
+
+  /** A miss: the sound, flash and shake, the streak resets and Mango scratches his head. */
+  wrongFeedback() {
+    Sfx.wrong(); this.flash(THEME.danger, 0.14); this.cameras.main.shake(120, 0.004);
+    this.streakRun = 0;
+    setMood(this.buddyMood || (this.buddyMood = newBuddyMood()), 'oops');
+    if (this.buddy && this.buddy.c && this.buddy.c.active) { const b = this.buddy; this.buddy = buddy(this, b.c.x, b.c.y, 46 * this.ui, this.buddyMood); b.c.destroy(); this.buddy.react(); }
+  }
+
+  /** Stars from where the child tapped (or the middle) to the progress chip; a streak adds the banner and confetti. */
+  celebrate(wow, run) {
+    const fx = fxLayer(this);
+    if (!fx) return;
+    const p = this.input && this.input.activePointer ? pointerPos(this, this.input.activePointer) : null;
+    const from = p && (p.x || p.y) ? p : { x: this.w / 2, y: this.h / 2 };
+    const chip = this.progressChip;
+    const to = chip && chip.active ? { x: chip.x - (chip.width || 60) / 2, y: chip.y } : { x: this.w - 40, y: 30 };
+    fx.starBurst(from.x, from.y, to.x, to.y, wow ? 8 : 5);
+    if (wow) {
+      this.time.delayedCall(250, () => Sfx.fanfare());
+      fx.banner(run >= 5 ? `WOW! ${run} in a row! 🔥` : `${run} in a row! 🔥`, run >= 10 ? THEME.brand : THEME.warning);
+      fx.confetti(run >= 10 ? 90 : 60);
+    }
+  }
 }

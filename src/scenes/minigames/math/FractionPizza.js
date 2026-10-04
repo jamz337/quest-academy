@@ -81,7 +81,7 @@ export class FractionPizza extends MinigameScene {
         zone.on('pointerup', (pointer) => { const p = pointerPos(this, pointer); this.tapSlice(p.x - cx, p.y - cy, radius); });
       }
       button(this, ctrl.x + ctrl.w / 2, ctrl.y + ctrl.h / 2, Math.min(ctrl.w, 260 * ui), 56 * ui, 'Check',
-        { variant: 'primary', fontSize: 22, onClick: () => this.check(), disabled: s.locked });
+        { variant: 'go', fontSize: 22, onClick: () => this.check(), disabled: s.locked });
     }
   }
 

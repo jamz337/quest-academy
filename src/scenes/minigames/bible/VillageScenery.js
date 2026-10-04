@@ -145,7 +145,7 @@ export function answerCard(scene, x, y, w, h, label, { state = 'idle', letter = 
   const side = letter ? Math.min(26 * f, h * 0.3) + 16 * f : 14 * f;
   const textW = Math.max(60, w - side * 2);
   let t = null;
-  for (const px of [23, 20, 18, 16, 14].filter((p) => p <= (str.length > 28 ? 16 : str.length > 16 ? 19 : 23))) {
+  for (const px of [24, 21, 19, 17, 16].filter((p) => p <= (str.length > 28 ? 16 : str.length > 16 ? 19 : 23))) {
     if (t) t.destroy();
     t = scene.add.text(0, mark ? -h * 0.1 : 0, str, {
       fontFamily: FONT, fontSize: Math.round(px * f) + 'px', color: hex(VILLAGE.text), fontStyle: WEIGHT.heavy, align: 'center',
@@ -247,7 +247,7 @@ export function matchCard(scene, x, y, w, h, label, { tone = 'purple', state = '
   const textRight = w / 2 - 36 * f;   // stay clear of the read-aloud button on the right
   // Wrap only between words; shrink until the longest word fits and the lines fit the card.
   let t = null;
-  for (const px of [23, 20, 18, 16, 14, 12].filter((p) => p <= (str.length > 24 ? 16 : str.length > 12 ? 19 : 23))) {
+  for (const px of [23, 20, 18, 16, 15].filter((p) => p <= (str.length > 24 ? 16 : str.length > 12 ? 19 : 23))) {
     if (t) t.destroy();
     t = scene.add.text((textLeft + textRight) / 2, 0, str, {
       fontFamily: FONT, fontSize: Math.round(px * f) + 'px', color: hex(done ? 0xc9fff6 : VILLAGE.text), fontStyle: WEIGHT.heavy, align: 'center',
@@ -284,7 +284,6 @@ export function lightning(g, a, b, f, seed = 0) {
 /** New Skill page and "Let's see why" panel in the village look (see ui/SkillIntro.js and ui/Explain.js). */
 export const villageLessonTheme = {
   title: VILLAGE.question, ink: VILLAGE.text, ink2: VILLAGE.dim, soft: VILLAGE.panelTop,
-  button: { color: 0x6d45d9, textColor: 0xffffff },
   backdrop(scene, area, f) {
     drawBackdrop(scene, area);
     const bh = Math.min(area.h * 0.2, 130 * f);

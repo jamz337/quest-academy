@@ -39,7 +39,7 @@ export function answerSpeaker(scene, host, w, h, words, { rate = 0.9, inset = 4 
   if (!host || !readsAnswers() || words === undefined || words === null || String(words).trim() === '') return null;
   const ui = uiScale(scene);
   // Big enough for a small finger, never so big that it covers the answer.
-  const size = Math.max(32 * ui, Math.min(40 * ui, h * 0.45, w * 0.32));
+  const size = Math.max(38 * ui, Math.min(42 * ui, h * 0.45, w * 0.32));   // never smaller than a fingertip
   const sp = speakButton(scene, w / 2 - size / 2 - inset, -h / 2 + size / 2 + inset, size, spokenAnswer(words), { rate });
   if (!sp) return null;
   sp.setAlpha(0.9);

@@ -20,7 +20,6 @@ const isPicture = (list) => list.some((t) => /\p{Extended_Pictographic}/u.test(S
  */
 const bridgeIntroTheme = {
   title: THEME.subjects.math.dark, ink: THEME.ink, ink2: THEME.ink2,
-  button: { color: 0xb07a3f, textColor: 0xffffff },
   problemH: 104,
   backdrop(scene, area, f) {
     const g = scene.add.graphics();

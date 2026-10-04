@@ -299,7 +299,6 @@ export function shieldRow(scene, r, marks, total, current, ui) {
  */
 export const castleIntroTheme = {
   title: CASTLE.ink, ink: CASTLE.ink, ink2: 0x6b4a2a,
-  button: { color: CASTLE.wood, textColor: CASTLE.cream },
   problemH: 84,
   backdrop(scene, area, f) {
     const horizon = area.y + Math.min(area.h * 0.24, 160 * f);

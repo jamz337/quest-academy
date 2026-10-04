@@ -25,7 +25,6 @@ const KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '−', '0', '.'];
 /** Number Dash's New Skill page: the race track with the runner on the start line, and a card with a finish-flag edge. */
 const dashIntroTheme = {
   title: THEME.subjects.math.dark, ink: THEME.ink, ink2: THEME.ink2,
-  button: { color: THEME.subjects.math.accent, textColor: 0xffffff },
   problemH: 80,
   backdrop(scene, area, f) {
     const h = Math.min(84 * f, area.h * 0.15);

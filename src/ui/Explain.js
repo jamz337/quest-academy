@@ -101,7 +101,7 @@ function render(scene, area, it, theme, on) {
   const bottom = R.y + R.h - footH - choicesH;
   const lines = it.steps.slice(0, it.shown);
   let blocks = [];
-  for (let size = 16; size >= 11; size -= 1) {
+  for (let size = 16; size >= 14; size -= 1) {
     blocks.forEach((b) => b.destroy());
     blocks = []; let yy = y;
     for (let i = 0; i < lines.length; i++) {
@@ -135,7 +135,7 @@ function render(scene, area, it, theme, on) {
   // Footer: the walkthrough button on the right, "Next ▶" to move on (big once there is nothing left to do).
   const fy = R.y + R.h - footH / 2;
   const bw = Math.min(210 * f, R.w * 0.5);
-  const style = theme.button ? { color: theme.button.color, textColor: theme.button.textColor } : { variant: 'primary' };
+  const style = { variant: 'go' };   // the same green step-forward button in every game
   if (it.phase === 'steps') {
     const label = it.shown < it.steps.length ? EXPLAIN_LABELS.more : it.choices ? EXPLAIN_LABELS.turn : null;
     if (label) button(scene, R.x + R.w - bw / 2, fy, bw, 42 * f, label, { ...style, fontSize: 16 * (f / ui), onClick: () => { Sfx.click(); moreStep(it); on.redraw(); } });

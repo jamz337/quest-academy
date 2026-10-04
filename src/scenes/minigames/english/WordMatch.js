@@ -207,7 +207,7 @@ export class WordMatch extends MinigameScene {
     if (s.left === s.right) {
       s.done.push(this.key(pairIdx)); s.left = s.right = null; s.first = null; s.pop = true; s.lastMatch = pairIdx;
       s.streak = (s.streak || 0) + 1;
-      Sfx.correct(); this.rebuild();
+      this.correctFeedback(); this.rebuild();   // Mango cheers, stars fly to the score
       const roundDone = this.round.pairs.every((_, i) => s.done.includes(this.key(i)));
       if (roundDone) { s.busy = true; this.time.delayedCall(700, () => this.nextRound()); }
       return;

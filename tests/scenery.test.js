@@ -144,6 +144,26 @@ describe('older games with scenery (headless)', () => {
     }
   });
 
+  it('Bible Quiz story order: drag cards into place or tap two to swap, then check', () => {
+    const s = makeScene(BibleQuiz, { gameId: 'bible-quiz', subject: 'bible' });
+    const idx = s.state.questions.findIndex((q) => q.kind === 'order');
+    expect(idx).toBeGreaterThanOrEqual(0);
+    s.state.idx = idx; s.rebuild();
+    const q = s.state.questions[idx];
+    expect(s.state.arrangement).toEqual(q.shuffled.map((_, i) => i));
+    // Tap two cards to swap them, then put everything in the right order by dragging.
+    s.tapOrder(0); expect(s.state.swapPick).toBe(0);
+    s.tapOrder(1); expect(s.state.swapPick).toBe(null);
+    const placed = () => s.state.arrangement.map((si) => q.shuffled[si]);
+    q.steps.forEach((step, pos) => { const from = placed().indexOf(step); if (from !== pos) s.moveOrder(from, pos); });
+    expect(placed()).toEqual(q.steps);
+    click(findButton(s, 'Check the order ✓'));
+    expect(s.state.right).toBe(true);
+    flushTimers(s);
+    expect(s.state.idx).toBe(idx + 1);
+    expect(s.state.arrangement).toBe(null);
+  });
+
   it('Fraction Pizza converts taps from canvas to CSS pixels before finding the slice', () => {
     const s = makeScene(FractionPizza, { gameId: 'math-pizza', grade: 2, band: 'A' });
     // The mock camera has no getWorldPoint, so pointerPos divides by the pixel ratio (1 under node): a tap at the

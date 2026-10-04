@@ -6,6 +6,7 @@ import { Sfx } from '../../../systems/Audio.js';
 import { button, speakButton } from '../../../ui/Button.js';
 import { readable } from '../../../ui/ReadableText.js';
 import { enter, shake } from '../../../ui/motion.js';
+import { draggable, nearestTarget } from '../../../ui/Drag.js';
 import { RUNE, SERIF, drawGlade, scroll, plaque, altar, runeStone, triesPlaque, tabletTrail, owl } from './RuneScenery.js';
 
 const PAR_MS = 120000;
@@ -13,7 +14,8 @@ const MAX_TRIES = 3;
 
 /**
  * Word Builder, "ancient runes" style: tap the rune stones into the altar's sockets to spell the word on the scroll.
- * 8 words, 3 tries each, one first-letter help per word. Each word spelled lights a tablet along the top.
+ * Stones can be dragged onto a socket, between sockets (they swap) or off the altar, or simply tapped; letters can
+ * also be typed. 8 words, 3 tries each, one first-letter help per word. Each word spelled lights a tablet along the top.
  */
 export class WordBuilder extends MinigameScene {
   constructor() { super('MG_WordBuilder'); }
@@ -22,6 +24,22 @@ export class WordBuilder extends MinigameScene {
     const rounds = this.rampedRounds((k) => generateRounds(this.payload.grade, this.rng, k), 8, roundDifficulty);
     return { rounds, idx: 0, correct: 0, slots: new Array(rounds[0].word.length).fill(null),
       attempts: 0, hinted: false, result: null, locked: false, missed: 0, solved: [] };
+  }
+
+  create(data) {
+    super.create(data);
+    // On a keyboard: type a letter to place it, Backspace to take the last one back.
+    const kb = this.input && this.input.keyboard;
+    if (kb && !this.lettersBound) {
+      this.lettersBound = true;
+      kb.on('keydown', (ev) => {
+        const s = this.state, r = this.round;
+        if (!s || !r || s.locked || this.finished || this.inReview || s.intro) return;
+        const key = String(ev && ev.key).toLowerCase();
+        if (key === 'backspace') { const last = s.slots.map((v, i) => (v === null ? -1 : i)).filter((i) => i >= 0).pop(); if (last !== undefined) this.tapSlot(last); return; }
+        if (/^[a-z]$/.test(key)) { const ti = r.scrambled.findIndex((l, i) => l === key && !s.slots.includes(i)); if (ti >= 0) this.tapTile(ti); }
+      });
+    }
   }
 
   get round() { return this.state.rounds[this.state.idx]; }
@@ -62,7 +80,7 @@ export class WordBuilder extends MinigameScene {
       this.tweens.add({ targets: spark, scale: 3, alpha: 0, duration: 600, onComplete: () => spark.destroy() });
     }
     y += 34 * f + 12 * f;
-    if (withPlaque) { plaque(this, cx, y + 20 * f, 'Spell the word with the rune stones!', f, 16); y += 50 * f; }
+    if (withPlaque) { plaque(this, cx, y + 20 * f, 'Drag the rune stones onto the altar!', f, 16); y += 50 * f; }
 
     // The hint on a parchment scroll, with the owl librarian keeping watch on wide screens.
     const scrollW = wide ? Math.min(area.w * 0.72, 660 * ui) : area.w - 24 * ui, scrollH = 84 * f;
@@ -85,13 +103,28 @@ export class WordBuilder extends MinigameScene {
     const slotCells = grid(rowRect(y), cols, rows, gap).slice(0, n);   // grid() gives cell centres
     altar(this, slotCells.map((c) => ({ x: c.x - c.w / 2, y: c.y - c.h / 2, w: c.w, h: c.h })), f);
     this.slotBox = this.add.container(0, 0);
+    // Dragging: the socket a stone would land in glows.
+    const targets = slotCells.map((c) => ({ x: c.x, y: c.y }));
+    const reach = size * 0.8;
+    const hover = this.add.graphics().setDepth(900);
+    const showHover = (x, y) => {
+      hover.clear();
+      const i = nearestTarget(targets, x, y, reach);
+      if (i < 0) return;
+      hover.lineStyle(4 * f, RUNE.glow, 0.9); hover.strokeRoundedRect(targets[i].x - size / 2 - 3, targets[i].y - size / 2 - 3, size + 6, size + 6, 12 * f);
+      hover.fillStyle(RUNE.glow, 0.15); hover.fillRoundedRect(targets[i].x - size / 2, targets[i].y - size / 2, size, size, 10 * f);
+    };
     const glow = { right: RUNE.right, wrong: RUNE.wrong, reveal: RUNE.reveal }[s.result] ?? RUNE.glow;
     s.slots.forEach((ti, i) => {
       if (ti === null || !slotCells[i]) return;
       const c = slotCells[i];
-      this.slotBox.add(runeStone(this, c.x, c.y, size * 0.94, r.scrambled[ti].toUpperCase(), {
-        glow, halo: !!s.result, moss: false, seed: ti, onTap: s.locked ? null : () => this.tapSlot(i)
-      }));
+      const stone = runeStone(this, c.x, c.y, size * 0.94, r.scrambled[ti].toUpperCase(), { glow, halo: !!s.result, moss: false, seed: ti });
+      this.slotBox.add(stone);
+      // A placed stone: tap to send it back, drag to another socket to swap, or drag it off the altar.
+      if (!s.locked) draggable(this, stone, {
+        onTap: () => this.tapSlot(i), onMove: showHover, onCancel: () => hover.clear(),
+        onDrop: (x, y) => { hover.clear(); const to = nearestTarget(targets, x, y, reach); if (to === i) return false; if (to >= 0) this.moveSlot(i, to); else this.tapSlot(i); return true; }
+      });
     });
     y += blockH + 34 * f;
     triesPlaque(this, cx, y + 18 * f, MAX_TRIES - s.attempts, MAX_TRIES, f);
@@ -101,8 +134,13 @@ export class WordBuilder extends MinigameScene {
     const tileCells = grid(rowRect(y), cols, rows, gap);
     const letters = r.scrambled.map((letter, ti) => {
       const used = s.slots.includes(ti), c = tileCells[ti];
-      const stone = runeStone(this, c.x, c.y, size, letter.toUpperCase(), { seed: ti, onTap: used || s.locked ? null : () => this.tapTile(ti) });
+      const stone = runeStone(this, c.x, c.y, size, letter.toUpperCase(), { seed: ti });
       if (used) stone.setAlpha(0.22);
+      // Drag it onto a socket (or tap it to fill the next empty one).
+      else if (!s.locked) draggable(this, stone, {
+        onTap: () => this.tapTile(ti), onMove: showHover, onCancel: () => hover.clear(),
+        onDrop: (x, y) => { hover.clear(); const to = nearestTarget(targets, x, y, reach); if (to < 0) return false; this.placeTile(ti, to); return true; }
+      });
       return stone;
     });
     enter(this, letters, { from: 'pop', delay: 80, stagger: 30 });
@@ -110,8 +148,8 @@ export class WordBuilder extends MinigameScene {
     // Get help (places the first letter) and Start over.
     const by = Math.max(y + blockH + 48 * f, area.y + area.h - 40 * f);
     const bw = Math.min(200 * f, (area.w - 48 * ui) / 2);
-    button(this, cx - bw / 2 - 8, by, bw, 56 * f, s.hinted ? 'Help used' : 'Get help!', { color: 0x2f5d62, textColor: 0xe8fff9, emoji: '🔍', fontSize: 19 * k, onClick: () => this.hint(), disabled: s.hinted || s.locked });
-    button(this, cx + bw / 2 + 8, by, bw, 56 * f, 'Start over!', { color: 0x5b3f7a, textColor: 0xf6ecff, emoji: '🔄', fontSize: 19 * k, onClick: () => this.clear(), disabled: s.locked });
+    button(this, cx - bw / 2 - 8, by, bw, 56 * f, s.hinted ? 'Help used' : 'Get help!', { variant: 'helper', emoji: '🔍', fontSize: 19 * k, onClick: () => this.hint(), disabled: s.hinted || s.locked });
+    button(this, cx + bw / 2 + 8, by, bw, 56 * f, 'Start over!', { variant: 'helper', emoji: '🔄', fontSize: 19 * k, onClick: () => this.clear(), disabled: s.locked });
   }
 
   tapTile(ti) {
@@ -120,6 +158,26 @@ export class WordBuilder extends MinigameScene {
     const free = s.slots.indexOf(null);
     if (free < 0) return;
     s.slots[free] = ti;
+    Sfx.pop();
+    this.rebuild();
+    if (!s.slots.includes(null)) this.checkWord();
+  }
+
+  /** A stone dropped on a socket: it takes that socket (a stone already there goes back to the tray). */
+  placeTile(ti, slot) {
+    const s = this.state;
+    if (s.locked || s.slots.includes(ti) || slot < 0 || slot >= s.slots.length) return;
+    s.slots[slot] = ti;
+    Sfx.pop();
+    this.rebuild();
+    if (!s.slots.includes(null)) this.checkWord();
+  }
+
+  /** A placed stone dragged to another socket: the two swap (or it simply moves into an empty one). */
+  moveSlot(from, to) {
+    const s = this.state;
+    if (s.locked || from === to || s.slots[from] === null) return;
+    [s.slots[from], s.slots[to]] = [s.slots[to], s.slots[from]];
     Sfx.pop();
     this.rebuild();
     if (!s.slots.includes(null)) this.checkWord();

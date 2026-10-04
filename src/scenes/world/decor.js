@@ -5,7 +5,9 @@ import * as Store from '../../systems/Store.js';
 import { signpost } from '../../ui/Signpost.js';
 import { TID, ROOF_TILES, WALL_TILES, DOOR_TILES } from '../../data/world/map.js';
 import { NPCS } from '../../data/world/npcs.js';
-import { houseStars } from '../../systems/Progression.js';
+import { houseStars, effectiveGrade } from '../../systems/Progression.js';
+import { bandFor } from '../../data/grades.js';
+import { moduleProgress, churchProgress } from '../../systems/Church.js';
 import { bellPieces, CHAPTERS } from '../../data/world/story.js';
 
 /**
@@ -128,10 +130,17 @@ export function createMarketStall(w) {
  * The cream limestone front has carved vines, a rose window with "VILLAGE CHURCH" and "LESSONS" carved above and
  * below it, four arched stained-glass windows, an arched oak door with iron hinges, a lantern, flowers and
  * flagstones. The doorway glows. Nothing here blocks the path; the building's own tiles do that.
+ * The glass shows what has been learned inside: the four arched windows light up pane by pane for People, Stories,
+ * Places and Books, the belfry dome for Memory Verses, and the rose window with everything together.
  */
 export function createChurch(w) {
   const c = w.map.church;
   if (!c) return;
+  const prof = Store.getProfile();
+  const band = prof ? bandFor(effectiveGrade(prof, 'bible')) : 'A';
+  const share = (id) => { const pr = prof ? moduleProgress(prof, id, band) : null; return pr && pr.total ? pr.done / pr.total : 0; };
+  const overall = (() => { const pr = prof ? churchProgress(prof, band) : null; return pr && pr.total ? pr.done / pr.total : 0; })();
+  const PLAIN = 0x9aa6b2;   // glass not yet lit
   const x0 = c.x * TILE, y0 = c.y * TILE, W = c.w * TILE, H = c.h * TILE, cx = x0 + W / 2, bottom = y0 + H;
   const g = w.add.graphics().setDepth(4);
   const shade = (base, k) => { const r = (base >> 16) & 255, gg = (base >> 8) & 255, b = base & 255; const f = (v) => Math.max(0, Math.min(255, Math.round(v * k))); return (f(r) << 16) | (f(gg) << 8) | f(b); };
@@ -171,8 +180,9 @@ export function createChurch(w) {
   // The dome: a half-ellipse of coloured panes with lead lines.
   const domeH = 17, domeW = bw + 4;
   const panes = [0x2f6fd6, 0x3fb0c0, 0xd94a3a, 0xe0a030, 0x7a4ab8, 0x2e9e6a];
+  const domeLit = Math.round(6 * share('verses'));
   for (let i = 0; i < 6; i++) {
-    g.fillStyle(panes[i], 1);
+    g.fillStyle(i < domeLit ? panes[i] : PLAIN, 1);
     g.slice(cx, bTop - 3, domeW / 2, Math.PI + (i / 6) * Math.PI, Math.PI + ((i + 1) / 6) * Math.PI, false); g.fillPath();
   }
   g.fillStyle(0xffffff, 0.25); g.slice(cx, bTop - 3, domeW / 2 - 3, Math.PI * 1.15, Math.PI * 1.45, false); g.fillPath();
@@ -214,23 +224,26 @@ export function createChurch(w) {
   g.fillStyle(0xcfc2a2, 1); g.fillCircle(cx, ry, rr0 + 3);
   g.fillStyle(0x2d2a3a, 1); g.fillCircle(cx, ry, rr0 + 1);
   const rose = [0x2f6fd6, 0xe0a030, 0x2e9e6a, 0xd94a3a, 0x3fb0c0, 0x7a4ab8, 0xe0a030, 0x2f6fd6];
-  rose.forEach((col, i) => { g.fillStyle(col, 1); g.slice(cx, ry, rr0, (i / 8) * Math.PI * 2 + 0.05, ((i + 1) / 8) * Math.PI * 2 - 0.05, false); g.fillPath(); });
+  const roseLit = Math.round(8 * overall);
+  rose.forEach((col, i) => { g.fillStyle(i < roseLit ? col : PLAIN, 1); g.slice(cx, ry, rr0, (i / 8) * Math.PI * 2 + 0.05, ((i + 1) / 8) * Math.PI * 2 - 0.05, false); g.fillPath(); });
   g.fillStyle(0x2d2a3a, 1); g.fillCircle(cx, ry, 4.5);
-  g.fillStyle(0x3fb0c0, 1); g.fillCircle(cx, ry, 3.5);
+  g.fillStyle(overall > 0 ? 0x3fb0c0 : PLAIN, 1); g.fillCircle(cx, ry, 3.5);
   g.fillStyle(0xf2cf7a, 1); g.fillCircle(cx, ry, 1.5);
 
   // Arched stained-glass windows: two either side, upper and lower.
-  const pane = (x, y, ww, hh, seed) => {
+  const pane = (x, y, ww, hh, seed, lit) => {
     g.fillStyle(0xcfc2a2, 1); g.fillRoundedRect(x - 2, y - 2, ww + 4, hh + 4, { tl: ww / 2 + 2, tr: ww / 2 + 2, bl: 1, br: 1 });
     g.fillStyle(0x2d2a3a, 1); g.fillRoundedRect(x - 1, y - 1, ww + 2, hh + 2, { tl: ww / 2 + 1, tr: ww / 2 + 1, bl: 0, br: 0 });
     const cols = [0x2f6fd6, 0xd94a3a, 0xe0a030, 0x2e9e6a, 0x7a4ab8, 0x3fb0c0];
-    for (let r = 0; r < 3; r++) for (let k = 0; k < 2; k++) { g.fillStyle(cols[(seed + r * 2 + k) % cols.length], 1); g.fillRect(x + k * (ww / 2) + 0.5, y + r * (hh / 3) + 0.5, ww / 2 - 1, hh / 3 - 1); }
-    g.fillStyle(cols[(seed + 4) % cols.length], 1); g.fillCircle(x + ww / 2, y + ww / 2 - 0.5, ww / 2 - 1);
+    // Panes light from the bottom up (six squares, then the round top).
+    for (let r = 0; r < 3; r++) for (let k = 0; k < 2; k++) { const order = (2 - r) * 2 + k; g.fillStyle(order < lit ? cols[(seed + r * 2 + k) % cols.length] : PLAIN, 1); g.fillRect(x + k * (ww / 2) + 0.5, y + r * (hh / 3) + 0.5, ww / 2 - 1, hh / 3 - 1); }
+    g.fillStyle(lit >= 7 ? cols[(seed + 4) % cols.length] : PLAIN, 1); g.fillCircle(x + ww / 2, y + ww / 2 - 0.5, ww / 2 - 1);
     g.fillStyle(0xffffff, 0.3); g.fillRect(x + 1, y + 3, 1.5, hh - 5);
   };
   for (const side of [-1, 1]) {
-    pane(cx + side * 40 - 5.5, y0 + 27, 11, 17, side < 0 ? 0 : 3);   // clear of the carved lettering
-    pane(cx + side * 40 - 5.5, y0 + 66, 11, 19, side < 0 ? 1 : 4);
+    const [up, low] = side < 0 ? ['people', 'places'] : ['stories', 'books'];
+    pane(cx + side * 40 - 5.5, y0 + 27, 11, 17, side < 0 ? 0 : 3, Math.round(7 * share(up)));   // clear of the carved lettering
+    pane(cx + side * 40 - 5.5, y0 + 66, 11, 19, side < 0 ? 1 : 4, Math.round(7 * share(low)));
   }
 
   // Arched oak door in a stone frame, with iron hinges and a keyhole plate.

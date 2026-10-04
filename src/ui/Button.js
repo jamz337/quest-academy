@@ -14,7 +14,11 @@ const VARIANTS = {
   warning: () => ({ fill: THEME.warning, text: THEME.ink, stroke: null, shadow: 'sm' }),
   brand: () => ({ fill: THEME.brand, text: THEME.onAccent, stroke: null, shadow: 'sm' }),
   subject: (o) => ({ fill: subjectOf(o.subject).accent, text: textOn(subjectOf(o.subject).accent), stroke: null, shadow: 'sm' }),
-  soft: (o) => ({ fill: subjectOf(o.subject).soft, text: subjectOf(o.subject).dark, stroke: null, shadow: 'none' })
+  soft: (o) => ({ fill: subjectOf(o.subject).soft, text: subjectOf(o.subject).dark, stroke: null, shadow: 'none' }),
+  // The two controls every game shares, the same everywhere so children learn them once:
+  // go = the step forward (Next, Got it!, Check), always green; helper = a side action (help, start over, back, skip).
+  go: () => ({ fill: THEME.success, text: THEME.onAccent, stroke: THEME.successDark, shadow: 'md' }),
+  helper: () => ({ fill: THEME.surface, text: THEME.ink, stroke: THEME.lineStrong, shadow: 'sm' })
 };
 
 const stop = (ev) => { if (ev && typeof ev.stopPropagation === 'function') ev.stopPropagation(); };
@@ -33,6 +37,7 @@ export class Button extends Phaser.GameObjects.Container {
       radius = THEME.radius.md, icon = null, emoji = null, sub = null, disabled = false, wrap = false,
       selected = false, selectedAccent = THEME.primary, shadow
     } = opts;
+    h = Math.max(h, 40 * uiScale(scene));   // never shorter than a child's fingertip needs
     this.w = w; this.h = h; this.radius = Math.min(radius, Math.min(w, h) / 2);
     this.disabledState = disabled; this.onClick = onClick; this.selected = selected; this.selectedAccent = selectedAccent;
     const look = variant === 'custom'
@@ -132,6 +137,7 @@ export function button(scene, x, y, w, h, label, opts) { return new Button(scene
 /** Round secondary button showing a single glyph (back arrow, pause, edit, menu). Returns a real Button so tests can find it by label. */
 export function iconButton(scene, x, y, size, glyph, opts = {}) {
   const s = uiScale(scene);
+  size = Math.max(size, 40 * s);   // round buttons (pause, read aloud) stay big enough to hit
   return new Button(scene, x, y, size, size, glyph, { variant: 'secondary', radius: size / 2, fontSize: (size / s) * 0.42, ...opts });
 }
 

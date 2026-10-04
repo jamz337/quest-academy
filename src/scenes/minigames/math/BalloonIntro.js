@@ -142,16 +142,16 @@ export function balloonIntro(scene, area, it, { onPop, onReplay, onDone }) {
   let got;
   if (wide) {
     const bx = right - 32 * f - btnW / 2, by = footTop + layout.footH / 2 - (done ? 18 * f : 0);
-    got = button(scene, bx, by, btnW, 68 * f, 'Got it!', { variant: 'success', fontSize: 28 * k, onClick: () => { Sfx.click(); onDone(); } });
-    if (done) button(scene, bx, by + 58 * f, btnW * 0.7, 36 * f, '↺  Pop again', { variant: 'ghost', fontSize: 15 * k, onClick: () => { Sfx.click(); onReplay(); } });
+    got = button(scene, bx, by, btnW, 68 * f, 'Got it!', { variant: 'go', fontSize: 28 * k, onClick: () => { Sfx.click(); onDone(); } });
+    if (done) button(scene, bx, by + 58 * f, btnW * 0.7, 36 * f, '↺  Pop again', { variant: 'helper', fontSize: 15 * k, onClick: () => { Sfx.click(); onReplay(); } });
   } else {
     const by = footTop + layout.stepsH + 16 * f + 30 * f;
     const inner = cardW - 64 * f;
     if (done) {
-      button(scene, left + 32 * f + inner * 0.2, by, inner * 0.38, 54 * f, '↺  Again', { variant: 'secondary', fontSize: 17 * k, onClick: () => { Sfx.click(); onReplay(); } });
-      got = button(scene, right - 32 * f - inner * 0.29, by, inner * 0.58, 58 * f, 'Got it!', { variant: 'success', fontSize: 24 * k, onClick: () => { Sfx.click(); onDone(); } });
+      button(scene, left + 32 * f + inner * 0.2, by, inner * 0.38, 54 * f, '↺  Again', { variant: 'helper', fontSize: 17 * k, onClick: () => { Sfx.click(); onReplay(); } });
+      got = button(scene, right - 32 * f - inner * 0.29, by, inner * 0.58, 58 * f, 'Got it!', { variant: 'go', fontSize: 24 * k, onClick: () => { Sfx.click(); onDone(); } });
     } else {
-      got = button(scene, cx, by, Math.min(inner, 300 * f), 58 * f, 'Got it!', { variant: 'success', fontSize: 24 * k, onClick: () => { Sfx.click(); onDone(); } });
+      got = button(scene, cx, by, Math.min(inner, 300 * f), 58 * f, 'Got it!', { variant: 'go', fontSize: 24 * k, onClick: () => { Sfx.click(); onDone(); } });
     }
   }
   // Once everything is popped, the button gently calls for attention.
@@ -171,9 +171,9 @@ function stepRow(scene, str, i, it, f, width) {
   let shown = str, alpha = 1;
   if (it.mode === 'line') {
     const reached = introDone(it) ? 4 : it.popped ? 2 : 1;
-    if (i >= reached) alpha = 0.3;
+    if (i >= reached) alpha = 0.5;
   } else if (i >= it.popped) {
-    shown = `Pop balloon ${i + 1} to see this step.`; alpha = 0.35;
+    shown = `Pop balloon ${i + 1} to see this step.`; alpha = 0.55;
   }
   const star = scene.add.text(0, 0, '★', {
     fontFamily: FONT, fontSize: Math.round(24 * f) + 'px', color: hex(THEME.gold), fontStyle: WEIGHT.heavy, stroke: hex(THEME.warningDark), strokeThickness: Math.max(1, Math.round(2 * f))

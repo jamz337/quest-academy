@@ -119,6 +119,19 @@ describe('a church lesson (headless)', () => {
     return s;
   }
 
+  it('finishing the last block of a module lights the whole window and rings the bell', () => {
+    const s = lesson({ moduleId: 'places', returnTo: 'Church' });
+    for (let b = 0; b < s.blocks.length; b++) {
+      s.startBlock(b);
+      s.blocks[b].forEach((_, i) => s.flip(i));
+      s.startPractice();
+      while (s.state.view === 'practice') { const q = s.question; s.pick(q.choices.indexOf(q.answer)); flushTimers(s); }
+      expect(s.state.finishedModule).toBe(b === s.blocks.length - 1);
+    }
+    expect(s.state.earned.completed).toBe(true);
+    expect(s.objs.some((o) => o.active && typeof o.text === 'string' && o.text.includes('The whole window is lit'))).toBe(true);
+  });
+
   it('shows the blocks, learns one with flip cards, practises it and banks the stars', () => {
     const s = lesson({ moduleId: 'people', returnTo: 'Church' });
     expect(s.state.view).toBe('blocks');

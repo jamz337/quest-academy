@@ -95,7 +95,7 @@ export class ChurchLessonScene extends BaseScene {
     const p = Store.getProfile(), mod = this.module, cx = r.x + r.w / 2;
     const intro = this.add.text(cx, r.y + 4 * f, mod.intro, { fontFamily: FONT, fontSize: Math.round(16 * f) + 'px', color: hex(VILLAGE.text), fontStyle: WEIGHT.bold, align: 'center', wordWrap: { width: Math.min(r.w - 20, 640 * f) } }).setOrigin(0.5, 0);
     let y = r.y + 4 * f + (intro.height || 20) + 8 * f;
-    this.add.text(cx, y, `Helps you in: ${mod.games.map(gameTitle).join(' · ')}`, { fontFamily: FONT, fontSize: Math.round(13 * f) + 'px', color: hex(VILLAGE.glowSoft), fontStyle: WEIGHT.bold, align: 'center', wordWrap: { width: r.w - 20 } }).setOrigin(0.5, 0);
+    this.add.text(cx, y, `Helps you in: ${mod.games.map(gameTitle).join(' · ')}`, { fontFamily: FONT, fontSize: Math.round(15 * f) + 'px', color: hex(VILLAGE.glowSoft), fontStyle: WEIGHT.bold, align: 'center', wordWrap: { width: r.w - 20 } }).setOrigin(0.5, 0);
     y += 28 * f;
     const n = this.blocks.length;
     const footH = prog.complete ? 40 * f : 0;
@@ -127,7 +127,7 @@ export class ChurchLessonScene extends BaseScene {
     g.fillStyle(0xffffff, stars ? 0.25 : 0.06); g.fillRoundedRect(-w / 2 + 4, -h / 2 + 3, w - 8, 5, 2);
     g.lineStyle(1, 0x000000, 0.12); g.lineBetween(-w * 0.2, -h / 2 + 8, -w * 0.18, h / 2 - 6); g.lineBetween(w * 0.25, -h / 2 + 6, w * 0.24, h / 2 - 8);
     const title = this.add.text(-w / 2 + 16 * f, -h * 0.16, `Block ${i + 1}`, { fontFamily: FONT, fontSize: Math.round(17 * f) + 'px', color: hex(ink), fontStyle: WEIGHT.heavy }).setOrigin(0, 0.5);
-    const topic = this.add.text(-w / 2 + 16 * f, h * 0.2, open || stars ? blockTopic(items) : 'Learn the block below first', { fontFamily: FONT, fontSize: Math.round(13 * f) + 'px', color: hex(ink), fontStyle: WEIGHT.bold, wordWrap: { width: w * 0.62 } }).setOrigin(0, 0.5).setAlpha(0.85);
+    const topic = this.add.text(-w / 2 + 16 * f, h * 0.2, open || stars ? blockTopic(items) : 'Learn the block below first', { fontFamily: FONT, fontSize: Math.round(15 * f) + 'px', color: hex(ink), fontStyle: WEIGHT.bold, wordWrap: { width: w * 0.62 } }).setOrigin(0, 0.5).setAlpha(0.85);
     const parts = [g, title, topic];
     const right = w / 2 - 16 * f;
     if (stars) {
@@ -164,7 +164,7 @@ export class ChurchLessonScene extends BaseScene {
     s.lastFlip = null;
     const by = r.y + r.h - footH / 2;
     const bw = Math.min(260 * f, r.w * 0.6);
-    button(this, cx, by, bw, 52 * f, all ? 'Test yourself ▶' : 'Turn every card first', { variant: all ? 'success' : 'secondary', fontSize: 18 * (f / this.ui), disabled: !all, onClick: () => this.startPractice() });
+    button(this, cx, by, bw, 52 * f, all ? 'Test yourself ▶' : 'Turn every card first', { variant: all ? 'go' : 'helper', fontSize: 18 * (f / this.ui), disabled: !all, onClick: () => this.startPractice() });
   }
 
   /** One flip card: the question side is dark glass, the answer side warm parchment; a tap turns it (with a flip). */
@@ -185,13 +185,13 @@ export class ChurchLessonScene extends BaseScene {
     const str = back ? faces.back : faces.front;
     const colour = back ? 0x3b2412 : VILLAGE.text;
     let t = null;
-    for (const px of [22, 19, 17, 15, 13]) {
+    for (const px of [24, 21, 19, 17, 16]) {
       if (t) t.destroy();
       t = this.add.text(0, faces.ref && back ? -8 * f : 0, str, { fontFamily: FONT, fontSize: Math.round(px * f) + 'px', color: hex(colour), fontStyle: WEIGHT.heavy, align: 'center', wordWrap: { width: w - 70 * f } }).setOrigin(0.5);
       if ((t.height || 0) <= h - (faces.ref && back ? 40 : 20) * f) break;
     }
     const parts = [g, t];
-    if (back && faces.ref) parts.push(this.add.text(0, h / 2 - 14 * f, faces.ref, { fontFamily: FONT, fontSize: Math.round(12 * f) + 'px', color: '#7a5a2e', fontStyle: WEIGHT.bold }).setOrigin(0.5));
+    if (back && faces.ref) parts.push(this.add.text(0, h / 2 - 14 * f, faces.ref, { fontFamily: FONT, fontSize: Math.round(14 * f) + 'px', color: '#7a5a2e', fontStyle: WEIGHT.bold }).setOrigin(0.5));
     parts.push(this.add.text(-w / 2 + 14 * f, -h / 2 + 12 * f, back ? '↺' : '?', { fontFamily: FONT, fontSize: Math.round(14 * f) + 'px', color: hex(back ? 0x7a5a2e : VILLAGE.glowSoft), fontStyle: WEIGHT.heavy }).setOrigin(0.5));
     c.add(parts);
     c.setSize(w, h);
@@ -280,10 +280,13 @@ export class ChurchLessonScene extends BaseScene {
   finishBlockRun() {
     const s = this.state;
     let reward = null;
+    const wasComplete = moduleProgress(Store.getProfile(), this.module.id, this.band).complete;
     Store.updateProfile((p) => { reward = finishBlock(p, this.module.id, this.band, s.block, s.firstTry, s.quiz.length); });
     s.reward = reward; s.view = 'done';
+    s.finishedModule = !wasComplete && moduleProgress(Store.getProfile(), this.module.id, this.band).complete;
     if (reward) { s.earned.coins += reward.coins; if (reward.first) s.earned.blocks += 1; }
-    if (reward && reward.stars === 3) Sfx.fanfare(); else Sfx.correct();
+    if (s.finishedModule) { s.earned.completed = true; Sfx.bell(); }
+    else if (reward && reward.stars === 3) Sfx.fanfare(); else Sfx.correct();
     this.rebuild();
     if (reward && reward.stars === 3) this.time.delayedCall(400, () => fireworks(this, this.w / 2, this.h * 0.3, { bursts: 3, spread: this.w * 0.3 }));
   }
@@ -302,11 +305,15 @@ export class ChurchLessonScene extends BaseScene {
     y += 44 * f;
     this.add.text(cx, y, `${s.firstTry} of ${s.quiz.length} right first time${rw.coins ? `   ·   +${rw.coins} coins` : ''}`, { fontFamily: FONT, fontSize: Math.round(16 * f) + 'px', color: hex(VILLAGE.text), fontStyle: WEIGHT.bold }).setOrigin(0.5);
     y += 34 * f;
+    if (s.finishedModule) {
+      this.add.text(cx, y - 2 * f, `🔔 The whole window is lit! You finished ${mod.title}.`, { fontFamily: FONT, fontSize: Math.round(14 * f) + 'px', color: hex(VILLAGE.window), fontStyle: WEIGHT.heavy, align: 'center', wordWrap: { width: pw - 40 * f } }).setOrigin(0.5);
+      y += 24 * f;
+    }
     this.add.text(cx, y, `✓ ${skillLabel(mod.skill)} — ready for ${mod.games.map(gameTitle).join(', ')}`, { fontFamily: FONT, fontSize: Math.round(14 * f) + 'px', color: hex(VILLAGE.ok), fontStyle: WEIGHT.heavy, align: 'center', wordWrap: { width: pw - 40 * f } }).setOrigin(0.5);
     const nextOpen = s.block + 1 < this.blocks.length;
     const bw = Math.min((pw - 60 * f) / 2, 220 * f), by = top + ph - 44 * f;
-    button(this, cx - bw / 2 - 8, by, bw, 50 * f, 'Back to the blocks', { variant: 'secondary', fontSize: 16 * (f / this.ui), onClick: () => this.toBlocks() });
-    button(this, cx + bw / 2 + 8, by, bw, 50 * f, nextOpen ? 'Next block ▶' : 'Back to church', { variant: 'success', fontSize: 16 * (f / this.ui), onClick: () => (nextOpen ? this.startBlock(s.block + 1) : this.close()) });
+    button(this, cx - bw / 2 - 8, by, bw, 50 * f, 'Back to the blocks', { variant: 'helper', fontSize: 16 * (f / this.ui), onClick: () => this.toBlocks() });
+    button(this, cx + bw / 2 + 8, by, bw, 50 * f, nextOpen ? 'Next block ▶' : 'Back to church', { variant: 'go', fontSize: 16 * (f / this.ui), onClick: () => (nextOpen ? this.startBlock(s.block + 1) : this.close()) });
   }
 
   // ---- Flow ---------------------------------------------------------------------------------------

@@ -57,5 +57,9 @@ export const Sfx = {
   crash: () => tone(120, 0.3, 'sawtooth', 0.09, 0, -80),
   fanfare: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, i === 3 ? 0.4 : 0.14, 'square', 0.07, i * 0.12)),
   unlock: () => [392, 523, 659, 784, 1047].forEach((f, i) => tone(f, 0.12, 'triangle', 0.08, i * 0.08)),
-  pop: () => tone(880, 0.05, 'sine', 0.06, 0, 300)
+  pop: () => tone(880, 0.05, 'sine', 0.06, 0, 300),
+  /** A church bell: two strikes, each a low note with a bright ringing overtone. */
+  bell: () => [0, 0.7].forEach((t) => { tone(659, 1.2, 'sine', 0.09, t); tone(1318, 0.8, 'sine', 0.035, t); tone(1975, 0.4, 'sine', 0.015, t); }),
+  /** Picking a stone or card up to drag it. */
+  lift: () => tone(520, 0.05, 'triangle', 0.05, 0, 120)
 };

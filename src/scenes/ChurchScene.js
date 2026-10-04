@@ -91,7 +91,7 @@ export class ChurchScene extends Phaser.Scene {
       g.fillStyle(0xffffff, 0.06); g.fillRect(tx * T, ty * T, T, 2);
     }
     // Stained-glass windows and the coloured light they throw on the floor.
-    for (const st of STATIONS) this.drawWindow(g, st, getModule(st.module).glass);
+    // (The windows are drawn on their own layer by refreshSpots, so they can light up as blocks are learned.)
     // Altar with its cloth, cross and candles; the lectern with the open Bible; the pews.
     const ax = ALTAR.x * T, ay = ALTAR.y * T;
     g.fillStyle(0x6b4a2e, 1); g.fillRect(ax, ay + 6, ALTAR.w * T, T - 6);
@@ -126,28 +126,39 @@ export class ChurchScene extends Phaser.Scene {
     this.add.text((EXIT.tx + 0.5) * TILE, EXIT.ty * TILE - 3, 'outside ▼', { fontFamily: FONT, fontSize: '7px', color: '#6e6357' }).setOrigin(0.5, 1).setDepth(3).setResolution(4);
   }
 
-  /** An arched window of coloured panes in the module's colour, and its patch of coloured light on the floor. */
-  drawWindow(g, st, colour) {
+  /**
+   * An arched window with one pane per lesson block, stacked from the bottom: learned blocks glow in the module's
+   * colour, the rest are plain pale glass. The coloured light on the floor grows as more of the window is lit, and a
+   * finished window gets a gold frame.
+   */
+  drawWindow(g, st, colour, lit, total) {
     const T = TILE;
     const light = Phaser.Display.Color.IntegerToColor(colour);
     const tint = (f) => Phaser.Display.Color.GetColor(Math.min(255, light.red * f), Math.min(255, light.green * f), Math.min(255, light.blue * f));
-    if (st.wall === 'back') {
-      const x = st.tx * T + 5, y = 4, w = T - 10, h = 2 * T - 14;
-      g.fillStyle(0x2d2a4a, 1); g.fillRoundedRect(x - 2, y - 2, w + 4, h + 4, { tl: w / 2 + 2, tr: w / 2 + 2, bl: 2, br: 2 });
-      const panes = [[0, 0, 0.5, 0.5, 1.15], [0.5, 0, 0.5, 0.5, 0.8], [0, 0.5, 0.5, 0.5, 0.75], [0.5, 0.5, 0.5, 0.5, 1.05]];
-      for (const [px, py, pw, ph, f] of panes) { g.fillStyle(tint(f), 1); g.fillRect(x + px * w, y + py * h, pw * w, ph * h); }
-      g.fillStyle(0xfff1e8, 0.55); g.fillCircle(x + w / 2, y + h * 0.22, 3);
-      g.lineStyle(1.5, 0x2d2a4a, 1); g.lineBetween(x + w / 2, y + 6, x + w / 2, y + h); g.lineBetween(x, y + h / 2, x + w, y + h / 2);
-      // Coloured light falling on the floor below.
-      g.fillStyle(colour, 0.14); g.fillPoints([{ x: x, y: 2 * T }, { x: x + w, y: 2 * T }, { x: x + w + 10, y: 4 * T }, { x: x - 10, y: 4 * T }], true);
-    } else {
-      const left = st.wall === 'left';
-      const x = st.tx * T + (left ? 8 : 8), y = st.ty * T - 10, w = T - 16, h = T + 20;
-      g.fillStyle(0x2d2a4a, 1); g.fillRoundedRect(x - 2, y - 2, w + 4, h + 4, { tl: w / 2 + 2, tr: w / 2 + 2, bl: 2, br: 2 });
-      g.fillStyle(tint(1.1), 1); g.fillRect(x, y, w, h / 2); g.fillStyle(tint(0.8), 1); g.fillRect(x, y + h / 2, w, h / 2);
-      g.lineStyle(1.5, 0x2d2a4a, 1); g.lineBetween(x, y + h / 2, x + w, y + h / 2);
-      const fx = left ? T : (CHURCH_W - 1) * T;
-      g.fillStyle(colour, 0.14); g.fillPoints([{ x: fx, y: y + 6 }, { x: fx, y: y + h }, { x: fx + (left ? 2 : -2) * T, y: y + h + 16 }, { x: fx + (left ? 2 : -2) * T, y: y + 18 }], true);
+    const back = st.wall === 'back';
+    const x = back ? st.tx * T + 5 : st.tx * T + 8, y = back ? 4 : st.ty * T - 10;
+    const w = back ? T - 10 : T - 16, h = back ? 2 * T - 14 : T + 20;
+    const complete = total > 0 && lit >= total;
+    g.fillStyle(complete ? 0xffc531 : 0x2d2a4a, 1); g.fillRoundedRect(x - 2, y - 2, w + 4, h + 4, { tl: w / 2 + 2, tr: w / 2 + 2, bl: 2, br: 2 });
+    g.fillStyle(0xd6dde4, 1); g.fillRoundedRect(x, y, w, h, { tl: w / 2, tr: w / 2, bl: 0, br: 0 });   // plain glass
+    const n = Math.max(1, total), ph = h / n;
+    for (let i = 0; i < n; i++) {
+      const py = y + h - (i + 1) * ph;   // block 1 at the bottom, like the wall of blocks
+      if (i < lit) {
+        g.fillStyle(tint(i % 2 ? 0.82 : 1.12), 1);
+        if (i === n - 1) g.fillRoundedRect(x, py, w, ph, { tl: w / 2, tr: w / 2, bl: 0, br: 0 }); else g.fillRect(x, py, w, ph);
+        g.fillStyle(0xffffff, 0.25); g.fillRect(x + 2, py + 2, 2, ph - 4);
+      }
+      if (i > 0) { g.lineStyle(1.5, 0x2d2a4a, 1); g.lineBetween(x, py + ph, x + w, py + ph); }
+    }
+    g.lineStyle(1.5, 0x2d2a4a, 1); g.lineBetween(x + w / 2, y + 4, x + w / 2, y + h);
+    // Coloured light on the floor, brighter the more of the window is lit.
+    const a = total ? 0.03 + 0.15 * (lit / total) : 0.03;
+    g.fillStyle(lit ? colour : 0xffffff, lit ? a : 0.05);
+    if (back) g.fillPoints([{ x, y: 2 * T }, { x: x + w, y: 2 * T }, { x: x + w + 10, y: 4 * T }, { x: x - 10, y: 4 * T }], true);
+    else {
+      const left = st.wall === 'left', fx = left ? T : (CHURCH_W - 1) * T;
+      g.fillPoints([{ x: fx, y: y + 6 }, { x: fx, y: y + h }, { x: fx + (left ? 2 : -2) * T, y: y + h + 16 }, { x: fx + (left ? 2 : -2) * T, y: y + 18 }], true);
     }
   }
 
@@ -195,6 +206,12 @@ export class ChurchScene extends Phaser.Scene {
   refreshSpots() {
     const p = Store.getProfile();
     if (!p) return;
+    if (!this.windowLayer || !this.windowLayer.active) this.windowLayer = this.add.graphics().setDepth(1);
+    this.windowLayer.clear();
+    for (const st of STATIONS) {
+      const prog = moduleProgress(p, st.module, this.band);
+      this.drawWindow(this.windowLayer, st, getModule(st.module).glass, prog.done, prog.total);
+    }
     for (const s of this.spots) {
       if (s.kind !== 'window') continue;
       const prog = moduleProgress(p, s.id, this.band);
@@ -317,6 +334,13 @@ export class ChurchScene extends Phaser.Scene {
     if (!e || !e.earned) return;
     const hud = this.hud(), mod = getModule(e.moduleId);
     if (e.earned.coins && hud) hud.awardCoins(e.earned.coins);
+    // The window that was just studied flashes as its new panes light up; a finished module rings the bell.
+    const spot = this.spots.find((s) => s.id === e.moduleId);
+    if (spot && e.earned.blocks && this.tweens) { const flash = this.add.circle(spot.x, spot.y + 8, 22, 0xffffff, 0.7).setDepth(2); this.tweens.add({ targets: flash, scale: 2.2, alpha: 0, duration: 800, onComplete: () => flash.destroy() }); }
+    if (e.earned.completed) {
+      Sfx.bell();
+      this.time.delayedCall(2600, () => this.say(`🔔 The church bell rings! You finished ${mod ? mod.title : 'a module'}.`, { icon: 'star', accent: THEME.warning }));
+    }
     if (e.earned.blocks) this.time.delayedCall(300, () => this.say(`🧱 ${e.earned.blocks} ${e.earned.blocks === 1 ? 'block' : 'blocks'} learned in ${mod ? mod.title : 'church'}!`, { icon: 'star', accent: THEME.brand }));
   }
 

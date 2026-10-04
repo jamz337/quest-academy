@@ -64,7 +64,7 @@ export class PredictRobot extends MazeGameScene {
     this.editor = new BlockEditor(this, er, { program: this.program(), editor: s.editor, readOnly: true, runningUid: s.runningUid });
     const fx = er.x + er.w / 2, fy = er.y + er.h + footH / 2;
     if (s.phase === 'result') {
-      button(this, fx, fy, Math.min(er.w - 20, 220 * ui), 48 * ui, s.idx + 1 >= ROUNDS ? 'Finish' : 'Next ▶', { variant: 'primary', onClick: () => this.next() });
+      button(this, fx, fy, Math.min(er.w - 20, 220 * ui), 48 * ui, s.idx + 1 >= ROUNDS ? 'Finish' : 'Next ▶', { variant: 'go', onClick: () => this.next() });
     } else if (s.phase === 'reveal') text(this, fx, fy, 'Running the program…', T.small(this, THEME.ink2));
     else text(this, fx, fy, 'Tap a floor cell on the maze', T.small(this, THEME.ink2));
   }

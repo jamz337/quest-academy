@@ -97,7 +97,7 @@ export class LetterTrace extends MinigameScene {
     const by = area.y + cardH + 34 * ui, bw = Math.min((area.w - 32) / 3, 180 * ui);
     if (canSpeak()) button(this, cx - bw - 8, by, bw, 50 * ui, '🔊 Say it', { variant: 'secondary', fontSize: 16, onClick: () => this.say() });
     button(this, cx, by, bw, 50 * ui, 'Clear', { variant: 'secondary', fontSize: 16, onClick: () => { s.strokes = []; s.traced = {}; this.rebuild(); } });
-    button(this, cx + bw + 8, by, bw, 50 * ui, done ? 'Next ▶' : 'Skip ▶', { variant: done ? 'primary' : 'ghost', fontSize: 16, onClick: () => this.next() });
+    button(this, cx + bw + 8, by, bw, 50 * ui, done ? 'Next ▶' : 'Skip ▶', { variant: done ? 'go' : 'ghost', fontSize: 16, onClick: () => this.next() });
     if (this.animateEnter) this.time.delayedCall(350, () => { if (this.item === it) this.say(); });
   }
 
@@ -168,7 +168,7 @@ export class LetterTrace extends MinigameScene {
     this.drawStrokes();
     if (this.label && this.label.active && !this.traceDone()) this.label.setText(this.labelText());
     if (!was && this.traceDone()) {
-      Sfx.correct();
+      this.correctFeedback();   // Mango cheers, stars fly to the score
       if (!s.finished.includes(s.idx)) s.finished.push(s.idx);
       this.rebuild();
       if (canSpeak()) speak(`Well done! ${this.item.say}`, { rate: this.speechRate });

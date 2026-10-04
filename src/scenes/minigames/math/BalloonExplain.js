@@ -155,7 +155,7 @@ export function balloonExplain(scene, area, ex, shown, { onReveal, onDone }) {
 
   const tick = (ty) => scene.add.text(bulletX, ty, '✓', { fontFamily: FONT, fontSize: Math.round(30 * f) + 'px', color: hex(THEME.success), fontStyle: WEIGHT.heavy, stroke: '#ffffff', strokeThickness: Math.round(4 * f) }).setOrigin(0.5);
   const label = done ? 'Got it!' : 'Next step ▶';
-  const opts = { variant: done ? 'success' : 'primary', onClick: () => { Sfx.click(); if (done) onDone(); else onReveal(); } };
+  const opts = { variant: 'go', onClick: () => { Sfx.click(); if (done) onDone(); else onReveal(); } };
   let action;
   if (wide) {
     const rowY = y + Math.max(check ? check.h : 0, 64 * f) / 2;

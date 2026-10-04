@@ -6,6 +6,7 @@ import { HouseScene } from './HouseScene.js';
 import { HouseRoomScene } from './HouseRoomScene.js';
 import { ChurchScene } from './ChurchScene.js';
 import { ChurchLessonScene } from './ChurchLessonScene.js';
+import { FxScene } from './FxScene.js';
 import { MarketScene } from './MarketScene.js';
 import { CreditsScene } from './CreditsScene.js';
 import { HudScene } from './HudScene.js';
@@ -42,5 +43,5 @@ export const scenes = [
   BootScene, ProfileScene, ModeSelectScene, WorldScene, HouseScene, ChurchScene, HudScene, ChallengeMenuScene, LevelSelectScene,
   NumberDash, FractionPizza, PatternBridge, BalloonPop, CountIt, WordBuilder, GrammarGate, WordMatch, FrogHop, LetterTrace,
   RoboMaze, BugHunt, PredictRobot, RobotDance, DuelScene, BibleQuiz, ArkAnimals,
-  ResultsScene, PauseScene, AccountScene, LeaderboardScene, SkillsScene, SpellingScene, SpellingLearnScene, SpellingGameScene, HouseRoomScene, ChurchLessonScene, MarketScene, CreditsScene
+  ResultsScene, PauseScene, AccountScene, LeaderboardScene, SkillsScene, SpellingScene, SpellingLearnScene, SpellingGameScene, HouseRoomScene, ChurchLessonScene, MarketScene, CreditsScene, FxScene   // last: celebrations draw over everything
 ];

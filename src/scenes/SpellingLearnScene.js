@@ -173,7 +173,7 @@ export class SpellingLearnScene extends BaseScene {
     enter(this, k, { from: 'up', distance: 12 });
     const by = area.y + cardH + 30 * ui, bw = Math.min((area.w - 20) / 2, 220 * ui);
     if (canSpeak()) button(this, cx - bw / 2 - 6, by, bw, 48 * ui, '🔊 Say it', { variant: 'secondary', onClick: () => this.sayCurrent() });
-    button(this, canSpeak() ? cx + bw / 2 + 6 : cx, by, bw, 48 * ui, 'Next ▶', { variant: 'primary', onClick: () => this.advance() });
+    button(this, canSpeak() ? cx + bw / 2 + 6 : cx, by, bw, 48 * ui, 'Next ▶', { variant: 'go', onClick: () => this.advance() });
   }
 
   /** The flash card: the word's picture, the word in chunk colours, the chunk chips, the sound button. */
@@ -198,7 +198,7 @@ export class SpellingLearnScene extends BaseScene {
     if (e.sentence) text(this, cx, area.y + cardH + 12 * ui, `“${e.sentence}”`, { ...T.small(this, THEME.ink2), wordWrap: { width: area.w - 24 } }).setOrigin(0.5, 0);
     const by = area.y + cardH + (e.sentence ? 58 : 30) * ui, bw = Math.min((area.w - 20) / 2, 220 * ui);
     if (canSpeak()) button(this, cx - bw / 2 - 6, by, bw, 48 * ui, '🔊 Sound it out', { variant: 'secondary', onClick: () => this.sayCurrent() });
-    button(this, canSpeak() ? cx + bw / 2 + 6 : cx, by, bw, 48 * ui, 'Next ▶', { variant: 'primary', onClick: () => this.advance() });
+    button(this, canSpeak() ? cx + bw / 2 + 6 : cx, by, bw, 48 * ui, 'Next ▶', { variant: 'go', onClick: () => this.advance() });
     button(this, cx, by + 60 * ui, Math.min(area.w - 40, 220 * ui), 38 * ui, 'Skip to the test', { variant: 'ghost', fontSize: 14, onClick: () => this.startTest() });
   }
 
@@ -230,7 +230,7 @@ export class SpellingLearnScene extends BaseScene {
     enter(this, k, { from: 'up', distance: 12 });
     const by = area.y + cardH + 30 * ui, bw = Math.min((area.w - 20) / 2, 220 * ui);
     button(this, cx - bw / 2 - 6, by, bw, 48 * ui, 'Clear', { variant: 'secondary', onClick: () => { s.strokes = []; s.traced = {}; this.rebuild(); } });
-    button(this, cx + bw / 2 + 6, by, bw, 48 * ui, done ? 'Next ▶' : 'Skip ▶', { variant: done ? 'primary' : 'ghost', onClick: () => this.advance() });
+    button(this, cx + bw / 2 + 6, by, bw, 48 * ui, done ? 'Next ▶' : 'Skip ▶', { variant: done ? 'go' : 'ghost', onClick: () => this.advance() });
   }
 
   drawStrokes() {
@@ -302,7 +302,7 @@ export class SpellingLearnScene extends BaseScene {
     chunkChips(this, { cx, cy: area.y + 44 * ui + size + 40 * ui, chunks: s.order.map((ci) => e.chunks[ci]), ui, maxW: area.w - 32, state, onTap: s.result === 'right' ? null : (pos) => this.tapChunk(s.order[pos]) });
     if (canSpeak()) iconButton(this, area.x + area.w - 30 * ui, area.y + 28 * ui, 40 * ui, '🔊', { variant: 'ghost', onClick: () => this.sayCurrent() });
     enter(this, k, { from: 'up', distance: 12 });
-    if (s.result === 'right') button(this, cx, area.y + cardH + 30 * ui, Math.min(area.w - 40, 240 * ui), 48 * ui, 'Next ▶', { variant: 'primary', onClick: () => this.advance() });
+    if (s.result === 'right') button(this, cx, area.y + cardH + 30 * ui, Math.min(area.w - 40, 240 * ui), 48 * ui, 'Next ▶', { variant: 'go', onClick: () => this.advance() });
   }
 
   tapChunk(ci) {
@@ -473,7 +473,7 @@ export class SpellingLearnScene extends BaseScene {
     enter(this, made, { from: 'pop', stagger: 40 });
     const by = area.y + cardH + 30 * ui, bw = Math.min((area.w - 20) / 2, 220 * ui);
     if (canSpeak()) button(this, cx - bw / 2 - 6, by, bw, 48 * ui, '🔊 Say it', { variant: 'secondary', onClick: () => this.sayFamily() });
-    button(this, canSpeak() ? cx + bw / 2 + 6 : cx, by, bw, 48 * ui, done ? 'Next ▶' : 'Skip ▶', { variant: done ? 'primary' : 'ghost', onClick: () => this.advance() });
+    button(this, canSpeak() ? cx + bw / 2 + 6 : cx, by, bw, 48 * ui, done ? 'Next ▶' : 'Skip ▶', { variant: done ? 'go' : 'ghost', onClick: () => this.advance() });
   }
 
   tapFamily(x) {

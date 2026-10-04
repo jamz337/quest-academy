@@ -4,11 +4,12 @@ import { generateRounds, orderRounds } from '../../../generators/bible/quiz.js';
 import { tuningFor } from '../../../data/grades.js';
 import { grid } from '../../../systems/Layout.js';
 import { FONT, WEIGHT } from '../../../ui/TextStyles.js';
-import { speakButton } from '../../../ui/Button.js';
+import { button, speakButton } from '../../../ui/Button.js';
 import { readable } from '../../../ui/ReadableText.js';
 import { enter } from '../../../ui/motion.js';
 import { Sfx } from '../../../systems/Audio.js';
 import { readingDifficulty } from '../../../generators/boss.js';
+import { draggable, nearestTarget } from '../../../ui/Drag.js';
 import { VILLAGE, drawBackdrop, drawVillage, glassPanel, answerCard, SegmentBar, statsBar, villageLessonTheme, bindLetterKeys } from './VillageScenery.js';
 
 const KIND = { 'bible-quiz': 'quiz', 'bible-verse': 'verse' };
@@ -17,7 +18,7 @@ const LETTERS = 'ABCD';
 /**
  * Bible Quiz and Verse Builder, "Bible Village" style: 10 timed questions under a night-time village street where
  * each right answer lights a window. The reference and an explanation follow each answer. Bible Quiz mixes in
- * "put the story in order" rounds, answered by tapping the events in sequence. Answers can also be picked with
+ * "put the story in order" rounds, answered by dragging the events into order (or tapping two to swap). Answers can also be picked with
  * the A-D (or 1-4) keys.
  */
 export class BibleQuiz extends MinigameScene {
@@ -34,7 +35,7 @@ export class BibleQuiz extends MinigameScene {
       if (questions.length > 7 && orders.length === 2) { questions[3] = orders[0]; questions[7] = orders[1]; }
     }
     return {
-      questions, idx: 0, correct: 0, streak: 0, locked: false, picked: null, right: null, sequence: [],
+      questions, idx: 0, correct: 0, streak: 0, locked: false, picked: null, right: null, arrangement: null, swapPick: null,
       qStart: Date.now(), timeLimit: tune.questionTimeMs + 6000, parTimeMs: tune.parTimeMs + 30000, missed: {}   // reading time
     };
   }
@@ -132,30 +133,72 @@ export class BibleQuiz extends MinigameScene {
     enter(this, this.choiceButtons, { from: 'up', delay: 60, stagger: 40 });
   }
 
-  /** Ordering: one card per event; tapping numbers them 1, 2, 3, 4. After the last tap each shows its right place. */
+  /**
+   * Ordering: the events as a numbered column of cards. Drag a card up or down to move it (the others make room), or
+   * tap one card and then another to swap them; "Check the order" answers. Afterwards each card shows if its place
+   * was right.
+   */
   buildOrder(room, q, f) {
     const s = this.state, gap = 10 * f, n = q.shuffled.length;
-    const h = Math.max(44 * f, Math.min(64 * f, (room.h - gap * (n - 1)) / n));
-    const cells = grid({ x: room.x, y: room.y, w: room.w, h: h * n + gap * (n - 1) }, 1, n, gap);
-    const made = q.shuffled.map((step, i) => {
-      const c = cells[i], pos = s.sequence.indexOf(i), correctPos = q.steps.indexOf(step);
-      let state = 'idle', badge = null;
-      if (s.picked !== null) { state = pos === correctPos ? 'right' : 'wrong'; badge = String(correctPos + 1); }
-      else if (pos >= 0) { state = 'chosen'; badge = String(pos + 1); }
-      const card = answerCard(this, c.x, c.y, c.w, c.h, step, { state, letter: badge, f, onTap: s.locked || pos >= 0 ? null : () => this.pickStep(i) });
-      this.answerSpeaker(card, c.w, c.h, step);
+    if (!s.arrangement || s.arrangement.length !== n) s.arrangement = q.shuffled.map((_, i) => i);
+    const done = s.picked !== null;
+    const btnH = done ? 0 : 54 * f, hintH = done ? 0 : 22 * f;
+    if (!done) this.add.text(room.x + room.w / 2, room.y + 8 * f, 'Drag the cards into the right order, then check', { fontFamily: FONT, fontSize: Math.round(14 * f) + 'px', color: hex(VILLAGE.glowSoft), fontStyle: WEIGHT.bold }).setOrigin(0.5);
+    const top = room.y + hintH;
+    const h = Math.max(44 * f, Math.min(64 * f, (room.h - hintH - btnH - 10 * f - gap * (n - 1)) / n));
+    const cells = grid({ x: room.x, y: top, w: room.w, h: h * n + gap * (n - 1) }, 1, n, gap);
+    const targets = cells.map((c) => ({ x: c.x, y: c.y }));
+    const hover = this.add.graphics().setDepth(900);
+    const showHover = (x, y) => {
+      hover.clear();
+      const to = nearestTarget(targets, cells[0].x, y, h * 1.2);
+      if (to < 0) return;
+      hover.lineStyle(3 * f, VILLAGE.glowSoft, 0.9); hover.strokeRoundedRect(cells[to].x - cells[to].w / 2 - 4, cells[to].y - h / 2 - 4, cells[to].w + 8, h + 8, 16 * f);
+    };
+    const made = s.arrangement.map((si, pos) => {
+      const c = cells[pos], step = q.shuffled[si];
+      let state = 'idle';
+      if (done) state = step === q.steps[pos] ? 'right' : 'wrong';
+      else if (s.swapPick === pos) state = 'chosen';
+      const card = answerCard(this, c.x, c.y, c.w, h, step, { state, letter: String(pos + 1), f });
+      this.answerSpeaker(card, c.w, h, step);
+      if (!done && !s.locked) draggable(this, card, {
+        onTap: () => this.tapOrder(pos), onMove: showHover, onCancel: () => hover.clear(),
+        onDrop: (x, y) => { hover.clear(); const to = nearestTarget(targets, cells[0].x, y, h * 1.2); if (to < 0 || to === pos) return false; this.moveOrder(pos, to); return true; }
+      });
       return card;
     });
-    enter(this, made, { from: 'up', delay: 60, stagger: 30 });
+    if (s.lastMoved === undefined || s.lastMoved === null) enter(this, made, { from: 'up', delay: 60, stagger: 30 });
+    s.lastMoved = null;
+    if (!done) button(this, room.x + room.w / 2, top + h * n + gap * (n - 1) + 14 * f + btnH / 2, Math.min(280 * f, room.w * 0.7), btnH - 6 * f, 'Check the order ✓', { variant: 'go', fontSize: 18 * (f / this.ui), onClick: () => this.submitOrder() });
   }
 
-  pickStep(i) {
-    const s = this.state, q = s.questions[s.idx];
-    if (s.locked || s.sequence.includes(i)) return;
+  /** Drag-and-drop: the card at `from` moves to `to`, the cards between shift along. */
+  moveOrder(from, to) {
+    const s = this.state;
+    if (s.locked || !s.arrangement) return;
+    const [card] = s.arrangement.splice(from, 1);
+    s.arrangement.splice(to, 0, card);
+    s.swapPick = null; s.lastMoved = to;
+    Sfx.pop();
+    this.rebuild();
+  }
+
+  /** Tap-to-swap: the first tap picks a card, the second swaps it with the one tapped (tapping it again lets go). */
+  tapOrder(pos) {
+    const s = this.state;
+    if (s.locked || !s.arrangement) return;
     Sfx.click();
-    s.sequence.push(i);
-    if (s.sequence.length < q.shuffled.length) return this.rebuild();
-    const right = s.sequence.every((si, pos) => q.shuffled[si] === q.steps[pos]);
+    if (s.swapPick === null || s.swapPick === undefined) { s.swapPick = pos; s.lastMoved = pos; return this.rebuild(); }
+    if (s.swapPick !== pos) { const a = s.swapPick; [s.arrangement[a], s.arrangement[pos]] = [s.arrangement[pos], s.arrangement[a]]; }
+    s.swapPick = null; s.lastMoved = pos;
+    this.rebuild();
+  }
+
+  submitOrder() {
+    const s = this.state, q = s.questions[s.idx];
+    if (s.locked || !q || q.kind !== 'order' || !s.arrangement) return;
+    const right = s.arrangement.every((si, pos) => q.shuffled[si] === q.steps[pos]);
     this.answer(q, right, -3);
   }
 
@@ -191,7 +234,7 @@ export class BibleQuiz extends MinigameScene {
       const missedSkills = Object.entries(s.missed).sort((a, b) => b[1] - a[1]).map(([k]) => k);
       return this.finish({ correct: s.correct, total: s.questions.length, parTimeMs: s.parTimeMs, missedSkills });
     }
-    s.locked = false; s.picked = null; s.right = null; s.sequence = []; s.qStart = Date.now();
+    s.locked = false; s.picked = null; s.right = null; s.arrangement = null; s.swapPick = null; s.qStart = Date.now();
     this.rebuild();
   }
 

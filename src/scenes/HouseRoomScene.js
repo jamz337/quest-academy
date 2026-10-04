@@ -109,7 +109,7 @@ export class HouseRoomScene extends BaseScene {
     const by = dotsY + 38 * ui, bw = Math.min((area.w - 20) / 2, 220 * ui);
     const last = s.page >= this.room.story.length - 1;
     button(this, cx - bw / 2 - 6, by, bw, 48 * ui, s.page === 0 ? 'Leave the room' : '◀ Back', { variant: 'secondary', onClick: () => (s.page === 0 ? this.close() : this.prevPage()) });
-    button(this, cx + bw / 2 + 6, by, bw, 48 * ui, last ? 'Take the quiz ▶' : 'Next ▶', { variant: 'primary', onClick: () => this.nextPage() });
+    button(this, cx + bw / 2 + 6, by, bw, 48 * ui, last ? 'Take the quiz ▶' : 'Next ▶', { variant: 'go', onClick: () => this.nextPage() });
     if (!last && roomRecord(Store.getProfile() || {}, this.room.id).read) button(this, cx, by + 58 * ui, Math.min(area.w - 40, 220 * ui), 38 * ui, 'Skip to the quiz', { variant: 'ghost', fontSize: 14, onClick: () => this.startQuiz() });
   }
 
@@ -175,7 +175,7 @@ export class HouseRoomScene extends BaseScene {
       text(this, cx, ey + 18 * ui + 24 * ui, q.why, { ...T.small(this, THEME.ink2), wordWrap: { width: area.w - 32 }, align: 'center' }).setOrigin(0.5, 0);
       enter(this, ek, { from: 'up', distance: 10 });
       const last = s.qIdx + 1 >= s.quiz.length;
-      button(this, cx, ey + eh + 34 * ui, Math.min(area.w - 40, 240 * ui), 48 * ui, last ? 'See my stars ▶' : 'Next question ▶', { variant: 'primary', onClick: () => this.next() });
+      button(this, cx, ey + eh + 34 * ui, Math.min(area.w - 40, 240 * ui), 48 * ui, last ? 'See my stars ▶' : 'Next question ▶', { variant: 'go', onClick: () => this.next() });
     }
   }
 
@@ -263,8 +263,8 @@ export class HouseRoomScene extends BaseScene {
     text(this, w / 2, y, `+${r.coins} coins   +${r.xp} XP`, T.bodyBold(this, THEME.warningDark)); y += 28 * ui;
     text(this, w / 2, y, r.stars === 3 ? 'You know this room by heart!' : r.stars >= 1 ? 'Read the story again to catch the ones you missed.' : 'Have another read of the story, then try again.', { ...T.small(this, THEME.ink2), wordWrap: { width: m.w - 48 }, align: 'center' });
     const bw = Math.min((m.w - 72) / 2, 190 * ui), bh = 48 * ui, by = m.y + m.h - 40 * ui;
-    button(this, w / 2 - bw / 2 - 8, by, bw, bh, 'Read again', { variant: 'secondary', onClick: () => this.scene.restart({ roomId: this.roomId, returnTo: this.returnTo }) });
-    button(this, w / 2 + bw / 2 + 8, by, bw, bh, 'Back to the house', { variant: 'primary', onClick: () => this.close() });
+    button(this, w / 2 - bw / 2 - 8, by, bw, bh, 'Read again', { variant: 'helper', onClick: () => this.scene.restart({ roomId: this.roomId, returnTo: this.returnTo }) });
+    button(this, w / 2 + bw / 2 + 8, by, bw, bh, 'Back to the house', { variant: 'go', onClick: () => this.close() });
   }
 
   /** Stop this scene, wake the Hud and hand control back to the house with what happened. */

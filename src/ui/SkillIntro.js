@@ -5,7 +5,7 @@
 //          two misses the answer is shown); once it is answered, "Got it!" starts the game.
 // "Skip" is always there for a child who already knows it. The look comes from a theme:
 //   { backdrop(scene, area, f) -> content rect, card(scene, rect, f) -> inner rect,
-//     title, ink, soft (colours), button: { color, textColor },
+//     title, ink, ink2, soft (colours); its buttons are the shared green 'go' / ghost ones, the same in every game,
 //     drawProblem?(scene, rect, text, { solved, f }) (default: big text),
 //     choice?(scene, x, y, w, h, label, { state, onTap, seed, f }) (default: a Button) }
 import { THEME, hex } from './theme.js';
@@ -107,7 +107,7 @@ export function skillIntro(scene, area, it, theme, on) {
     const lines = it.steps.slice(0, it.shown);
     let size = 17;
     let blocks = [];
-    for (; size >= 12; size -= 1) {
+    for (; size >= 14; size -= 1) {
       blocks.forEach((b) => b.destroy());
       blocks = []; let yy = y;
       for (let i = 0; i < lines.length; i++) {
@@ -156,9 +156,9 @@ export function skillIntro(scene, area, it, theme, on) {
       else if (action === INTRO_LABELS.turn) { startTry(it); on.change(); }
       else on.done();
     };
-    const b = button(scene, R.x + R.w - bw / 2 - 6 * f, fy, bw, 46 * f, action, { ...(theme.button ? { color: theme.button.color, textColor: theme.button.textColor } : { variant: 'primary' }), fontSize: 18 * (f / ui), onClick });
+    const b = button(scene, R.x + R.w - bw / 2 - 6 * f, fy, bw, 46 * f, action, { variant: 'go', fontSize: 18 * (f / ui), onClick });
     if (action === INTRO_LABELS.done && it.solved) enter(scene, b, { from: 'pop' });
   }
-  if (!canFinish(it)) button(scene, R.x + 44 * f, fy, 76 * f, 38 * f, INTRO_LABELS.skip, { variant: 'ghost', fontSize: 14 * (f / ui), onClick: () => { Sfx.click(); on.done(); } });
+  if (!canFinish(it)) button(scene, R.x + 44 * f, fy, 76 * f, 38 * f, INTRO_LABELS.skip, { variant: 'ghost', ...(theme.ink2 !== undefined ? { textColor: theme.ink2 } : {}), fontSize: 15 * (f / ui), onClick: () => { Sfx.click(); on.done(); } });
   return made;
 }

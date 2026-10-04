@@ -17,8 +17,8 @@ export const T = {
   heading: (scene, color) => style(scene, 22, color),
   body: (scene, color) => style(scene, 17, color, { fontStyle: WEIGHT.normal }),
   bodyBold: (scene, color) => style(scene, 17, color),
-  small: (scene, color) => style(scene, 13, color, { fontStyle: WEIGHT.normal }),
-  caption: (scene, color) => style(scene, 12, color ?? THEME.ink2),
+  small: (scene, color) => style(scene, 14, color, { fontStyle: WEIGHT.normal }),   // 14: the smallest instruction a young reader should get
+  caption: (scene, color) => style(scene, 13, color ?? THEME.ink2),
   number: (scene, color) => style(scene, 28, color, { fontStyle: WEIGHT.heavy }),
   big: (scene, color) => style(scene, 44, color, { fontStyle: WEIGHT.heavy }),
   /** Any size in design pixels, for the few places that need a custom size. */

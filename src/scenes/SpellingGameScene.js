@@ -163,11 +163,11 @@ export class SpellingGameScene extends BaseScene {
       if (!s.right && !this.testMode) {
         // Write it right once before moving on (the recommended way), or move on.
         const bw = Math.min((area.w - 20) / 2, 220 * ui);
-        button(this, cx - bw / 2 - 6, by, bw, 48 * ui, '✍ Write it right', { variant: 'primary', onClick: () => this.startFix() });
+        button(this, cx - bw / 2 - 6, by, bw, 48 * ui, '✍ Write it right', { variant: 'go', onClick: () => this.startFix() });
         button(this, cx + bw / 2 + 6, by, bw, 48 * ui, last ? 'Finish' : 'Next ▶', { variant: 'ghost', onClick: () => this.next() });
         return;
       }
-      button(this, cx, by, Math.min(area.w - 40, 240 * ui), 48 * ui, last ? 'Finish' : 'Next ▶', { variant: 'primary', onClick: () => this.next() });
+      button(this, cx, by, Math.min(area.w - 40, 240 * ui), 48 * ui, last ? 'Finish' : 'Next ▶', { variant: 'go', onClick: () => this.next() });
       return;
     }
     if (s.phase === 'fix' && s.fixed === 'right') return;

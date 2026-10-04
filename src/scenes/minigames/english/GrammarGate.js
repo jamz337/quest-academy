@@ -85,7 +85,7 @@ export class GrammarGate extends MinigameScene {
     const boardH = Math.min(150 * f, Math.max(104 * f, area.h * 0.2));
     const board = noticeBoard(this, cx, y + boardH / 2, boardW, boardH, f);
     const inner = board.inner;
-    const label = this.add.text(inner.x + 4 * f, inner.y + 2 * f, `Which word fits?  (${skillLabel(r.skill)})`, { fontFamily: FONT, fontSize: Math.round(13 * f) + 'px', color: hex(darken(CASTLE.ink, 1.6)), fontStyle: WEIGHT.bold });
+    const label = this.add.text(inner.x + 4 * f, inner.y + 2 * f, `Which word fits?  (${skillLabel(r.skill)})`, { fontFamily: FONT, fontSize: Math.round(15 * f) + 'px', color: hex(darken(CASTLE.ink, 1.6)), fontStyle: WEIGHT.bold });
     const shown = reveal ? fillBlank(r.sentence, r.options[r.answer]) : fillBlank(r.sentence);
     const textTop = inner.y + (label.height || 16 * f) + 2 * f, textH = inner.y + inner.h - textTop;
     let sentence = null;

@@ -26,7 +26,7 @@ export const SCENES = {
   Boot: 'Boot', Profile: 'Profile', ModeSelect: 'ModeSelect', World: 'World', Hud: 'Hud',
   ChallengeMenu: 'ChallengeMenu', LevelSelect: 'LevelSelect', Results: 'Results', Pause: 'Pause',
   Account: 'Account', Leaderboard: 'Leaderboard', Skills: 'Skills', Spelling: 'Spelling', SpellingLearn: 'SpellingLearn', SpellingGame: 'SpellingGame',
-  House: 'House', HouseRoom: 'HouseRoom', Church: 'Church', ChurchLesson: 'ChurchLesson', Market: 'Market', Credits: 'Credits'
+  House: 'House', HouseRoom: 'HouseRoom', Church: 'Church', ChurchLesson: 'ChurchLesson', Fx: 'Fx', Market: 'Market', Credits: 'Credits'
 };
 
 export const SAVE_KEY = 'qa.save';

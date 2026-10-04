@@ -68,7 +68,7 @@ export class RobotDance extends MazeGameScene {
     const fx = er.x + er.w / 2, fy = er.y + er.h - footH / 2 + 4;
     if (s.phase === 'watch') text(this, fx, fy, 'Dancing…', T.small(this, THEME.ink2));
     else if (s.phase === 'pick') button(this, fx, fy, Math.min(er.w - 20, 220 * ui), 44 * ui, '▶ Watch again', { variant: 'secondary', fontSize: 15, onClick: () => this.replay() });
-    else if (r.choices[s.picked].right) button(this, fx, fy, Math.min(er.w - 20, 220 * ui), 46 * ui, s.idx + 1 >= ROUNDS ? 'Finish' : 'Next ▶', { variant: 'primary', onClick: () => this.next() });
+    else if (r.choices[s.picked].right) button(this, fx, fy, Math.min(er.w - 20, 220 * ui), 46 * ui, s.idx + 1 >= ROUNDS ? 'Finish' : 'Next ▶', { variant: 'go', onClick: () => this.next() });
     if (s.phase === 'result' && !r.choices[s.picked].right) {
       const moves = r.steps.filter((st) => st.kind === 'move').length, turns = r.steps.filter((st) => st.kind === 'turn').length;
       this.explanationPanel(area, { skill: r.skill, prompt: 'dance', answer: r.answer, explain: `The robot moved ${moves} ${moves === 1 ? 'square' : 'squares'} and turned ${turns} ${turns === 1 ? 'time' : 'times'}. The green program is the one it followed.` }, () => this.next());
