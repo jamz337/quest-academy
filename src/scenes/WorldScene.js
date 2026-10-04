@@ -446,8 +446,8 @@ export class WorldScene extends Phaser.Scene {
     this.lesson = 'move';
     this.lessonStart = { x: this.player.x, y: this.player.y };
     const hud = this.hud();
-    if (hud) hud.setHint(this.touchDevice ? '👆 Drag the joystick at the bottom left to walk' : '⌨️ Walk with the arrow keys or W A S D');
-    Companion.showCompanion(this, this.touchDevice ? 'First, let us walk! Drag the joystick at the bottom left.' : 'First, let us walk! Use the arrow keys or W A S D.');
+    if (hud) hud.setHint(this.touchDevice ? '👆 Drag anywhere on the screen to walk' : '⌨️ Walk with the arrow keys or W A S D');
+    Companion.showCompanion(this, this.touchDevice ? 'First, let us walk! Put your finger on the screen and drag.' : 'First, let us walk! Use the arrow keys or W A S D.');
   }
 
   lessonTick() {

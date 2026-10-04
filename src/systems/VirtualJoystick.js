@@ -1,10 +1,12 @@
-// Floating touch joystick drawn with the 'joy-base' / 'joy-thumb' textures. Appears where the finger
+// Floating touch joystick drawn with the 'joy-base' / 'joy-thumb' textures. Appears wherever the finger
 // lands, tracks that one pointer only, so a second finger can press the action button at the same time.
 import { uiScale, viewport, pointerPos } from './Layout.js';
 
 export class VirtualJoystick {
   /**
-   * opts.zone(x, y) -> boolean: where a touch may start the stick (default: left 60%, below top 15%).
+   * opts.zone(x, y) -> boolean: where a touch may start the stick (default: anywhere below the top 15%; buttons
+   * under the finger keep their own touches). It used to be the left 60% only, which left a child "stuck" at the
+   * map's east edge, where the player is drawn on the right and that is where they drag.
    * opts.enabled() -> boolean: extra gate (e.g. no stick while a dialog is open).
    */
   constructor(scene, opts = {}) {
@@ -12,7 +14,7 @@ export class VirtualJoystick {
     const ui = uiScale(scene);
     this.radius = (opts.radius ?? 56) * ui;
     this.deadzone = opts.deadzone ?? 0.25;
-    this.zone = opts.zone || ((x, y) => { const v = viewport(scene); return x < v.w * 0.6 && y > v.h * 0.15; });
+    this.zone = opts.zone || ((x, y) => { const v = viewport(scene); return x >= 0 && x <= v.w && y > v.h * 0.15; });
     this.enabled = opts.enabled || (() => true);
     this.pointer = null;
     this.vector = { x: 0, y: 0 };
