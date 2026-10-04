@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { THEME, hex, mix, textOn, subjectOf, drawShadow } from './theme.js';
+import { THEME, METALS, hex, mix, lighten, darken, textOn, subjectOf, drawShadow, shadeRoundedRect } from './theme.js';
 import { Sfx } from '../systems/Audio.js';
 import { uiScale } from '../systems/Layout.js';
 import { FONT, WEIGHT } from './TextStyles.js';
@@ -18,7 +18,12 @@ const VARIANTS = {
   // The two controls every game shares, the same everywhere so children learn them once:
   // go = the step forward (Next, Got it!, Check), always green; helper = a side action (help, start over, back, skip).
   go: () => ({ fill: THEME.success, text: THEME.onAccent, stroke: THEME.successDark, shadow: 'md' }),
-  helper: () => ({ fill: THEME.surface, text: THEME.ink, stroke: THEME.lineStrong, shadow: 'sm' })
+  helper: () => ({ fill: METALS.silver[1], text: METALS.silver[4], stroke: null, shadow: 'sm', metal: 'silver' }),
+  // Brushed-metal finishes (see METALS): opts.variant 'silver' | 'bronze' | 'gunmetal' | 'steel'.
+  silver: () => ({ fill: METALS.silver[1], text: METALS.silver[4], stroke: null, shadow: 'sm', metal: 'silver' }),
+  bronze: () => ({ fill: METALS.bronze[1], text: METALS.bronze[4], stroke: null, shadow: 'sm', metal: 'bronze' }),
+  gunmetal: () => ({ fill: METALS.gunmetal[1], text: METALS.gunmetal[4], stroke: null, shadow: 'sm', metal: 'gunmetal' }),
+  steel: () => ({ fill: METALS.steel[1], text: METALS.steel[4], stroke: null, shadow: 'sm', metal: 'steel' })
 };
 
 const stop = (ev) => { if (ev && typeof ev.stopPropagation === 'function') ev.stopPropagation(); };
@@ -106,7 +111,23 @@ export class Button extends Phaser.GameObjects.Container {
     }
     let fill = look.fill, stroke = look.stroke, strokeW = 2;
     if (this.selected) { fill = mix(this.selectedAccent, 0xffffff, 0.82); stroke = this.selectedAccent; strokeW = 3; }
-    if (fill !== null) {
+    const metal = !this.selected && look.metal ? METALS[look.metal] : null;
+    // Coloured buttons are glossy: shaded top to bottom, a thin light inner edge and a glow in their own colour.
+    const glossy = !metal && !this.selected && fill !== null && fill !== THEME.surface && look.gloss !== false;
+    if (metal || glossy) {
+      const g = this.face, x = -w / 2, y = -h / 2;
+      const base = pressed ? darken(fill, 0.9) : fill;
+      if (glossy && look.shadow !== 'none') {
+        this.shadow.clear();
+        const spread = pressed ? 1 : 3;
+        this.shadow.fillStyle(fill, 0.16); this.shadow.fillRoundedRect(x - spread, y - spread + (pressed ? 2 : 6), w + spread * 2, h + spread * 2, r + spread);
+        this.shadow.fillStyle(fill, 0.22); this.shadow.fillRoundedRect(x - 1, y - 1 + (pressed ? 1 : 3), w + 2, h + 2, r + 1);
+      }
+      if (metal) { g.fillStyle(metal[3], 1); g.fillRoundedRect(x, y, w, h, r); shadeRoundedRect(g, x + 2, y + 2, w - 4, h - 4, Math.max(2, r - 2), pressed ? [metal[1], metal[1], metal[2]] : [metal[0], metal[1], metal[2]]); }
+      else shadeRoundedRect(g, x, y, w, h, r, [lighten(base, 0.14), darken(base, 0.86)]);
+      g.fillStyle(0xffffff, metal ? 0.5 : 0.28); g.fillRoundedRect(x + r * 0.6, y + (metal ? 3 : 2), w - r * 1.2, 2, 1);   // the light catching the top edge
+      if (!metal) { g.lineStyle(1.5, 0xffffff, 0.5); g.strokeRoundedRect(x + 0.75, y + 0.75, w - 1.5, h - 1.5, Math.max(2, r - 0.75)); }
+    } else if (fill !== null) {
       this.face.fillStyle(pressed ? mix(fill, THEME.ink, 0.12) : fill, 1);
       this.face.fillRoundedRect(-w / 2, -h / 2, w, h, r);
     } else if (pressed) {

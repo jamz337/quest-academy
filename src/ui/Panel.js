@@ -1,5 +1,4 @@
 import { THEME, drawShadow } from './theme.js';
-import { mulberry32 } from '../systems/Rng.js';
 
 /** Rounded surface with a soft shadow. Returns the Graphics object (origin at its top-left x,y). */
 export function panel(scene, x, y, w, h, opts = {}) {
@@ -23,27 +22,24 @@ export function dimmer(scene, alpha = 0.35, color = THEME.ink) {
 }
 
 /**
- * Light playful backdrop: cream gradient, two large soft colour blobs and a sprinkle of dots.
- * Cheap to draw (about 40 fills) because scenes redraw it on every rebuild.
+ * Warm paper backdrop with soft blurred colour shapes in the corners.
+ * Cheap to draw (about 25 fills) because scenes redraw it on every rebuild.
  * opts: { accent, accent2, dots }
  */
 export function background(scene, opts = {}) {
   const o = typeof opts === 'number' ? { accent: arguments[3] ?? THEME.primary } : opts;   // tolerate the old positional call
-  const { accent = THEME.primary, accent2 = THEME.pink, dots = true } = o;
+  const { accent = THEME.primary, accent2 = THEME.pink } = o;   // (the old `dots` option is accepted and ignored)
   const { width: w, height: h } = scene.scale;
   const g = scene.add.graphics();
   g.fillGradientStyle(THEME.bg, THEME.bg, THEME.bgBottom, THEME.bgBottom, 1);
   g.fillRect(0, 0, w, h);
   const m = Math.min(w, h);
-  const blob = (x, y, r, color, a) => { g.fillStyle(color, a * 0.5); g.fillCircle(x, y, r * 1.3); g.fillStyle(color, a); g.fillCircle(x, y, r); };
-  blob(w * 0.08, h * 0.05, m * 0.42, accent, 0.07);
-  blob(w * 0.96, h * 0.94, m * 0.38, accent2, 0.06);
-  blob(w * 0.9, h * 0.14, m * 0.13, THEME.gold, 0.09);
-  if (dots) {
-    const rnd = mulberry32(3);
-    g.fillStyle(THEME.ink, 0.045);
-    for (let i = 0; i < 34; i++) g.fillCircle(rnd() * w, rnd() * h, 1.5 + rnd() * 1.5);
-  }
+  // Soft out-of-focus colour shapes in the corners (rings of fading alpha stand in for a blur).
+  const blob = (x, y, r, color, a) => { for (let i = 6; i >= 1; i--) { g.fillStyle(color, a / 6); g.fillCircle(x, y, r * (0.45 + i * 0.11)); } };
+  blob(w * 0.02, h * 0.12, m * 0.26, accent, 0.2);
+  blob(w * 0.98, h * 0.16, m * 0.22, accent2, 0.2);
+  blob(w * 0.04, h * 0.95, m * 0.3, THEME.gold, 0.28);
+  blob(w * 0.98, h * 0.94, m * 0.3, 0x7bc47f, 0.24);
   return g;
 }
 

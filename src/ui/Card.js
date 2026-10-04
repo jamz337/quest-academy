@@ -11,7 +11,7 @@ import { FONT, WEIGHT } from './TextStyles.js';
 export class Card extends Phaser.GameObjects.Container {
   constructor(scene, x, y, w, h, opts = {}) {
     super(scene, x, y);
-    const { color = THEME.surface, alpha = 1, radius = THEME.radius.md, stroke = null, strokeWidth = 2, shadow = 'md', onTap = null, depth } = opts;
+    const { color = THEME.surface, alpha = 1, radius = THEME.radius.lg, stroke = null, strokeWidth = 2, shadow = 'md', onTap = null, depth } = opts;
     this.w = w; this.h = h;
     this.look = { color, alpha, radius, stroke, strokeWidth, shadow };
     this.bg = scene.add.graphics();

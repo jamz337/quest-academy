@@ -3,9 +3,9 @@
 
 export const THEME = {
   // surfaces
-  bg: 0xfff8ef, bgBottom: 0xfdefe0, surface: 0xffffff, surfaceAlt: 0xfbf6ee, sunken: 0xf3ede4,
+  bg: 0xfbf3ea, bgBottom: 0xf8eadb, surface: 0xffffff, surfaceAlt: 0xfbf6ee, sunken: 0xf3ede4,
   // ink
-  ink: 0x2d2a4a, ink2: 0x625f7e, ink3: 0x9794ad, onAccent: 0xffffff, line: 0xe9e2d8, lineStrong: 0xd6cfc4,
+  ink: 0x1e1b4b, ink2: 0x5f5c85, ink3: 0x9794ad, onAccent: 0xffffff, line: 0xe9e2d8, lineStrong: 0xd6cfc4,
   // accents
   primary: 0x3d8bff, primaryDark: 0x2a6fd6, primarySoft: 0xdcebff,
   brand: 0x7c5cff, brandDark: 0x6244d9, brandSoft: 0xe9e3ff,
@@ -16,16 +16,16 @@ export const THEME = {
   warning: 0xffb627, warningDark: 0xe09a12, warningSoft: 0xfff0cc,
   gold: 0xffc531, coin: 0xffb627, starOff: 0xe4ddd2,
   subjects: {
-    math: { accent: 0x3d8bff, dark: 0x2a6fd6, soft: 0xdcebff },
-    words: { accent: 0x2ec46a, dark: 0x229c53, soft: 0xdcf6e6 },
-    code: { accent: 0xff8f3f, dark: 0xdd6f22, soft: 0xffe6d3 },
-    bible: { accent: 0x8b5cf6, dark: 0x6d3fd9, soft: 0xeee6ff }
+    math: { accent: 0x4c8df6, dark: 0x2e63d6, soft: 0xdcebff },
+    words: { accent: 0x249762, dark: 0x17694a, soft: 0xdcf6e6 },
+    code: { accent: 0xe8623f, dark: 0xcf4a2e, soft: 0xffe6d3 },
+    bible: { accent: 0x8566ee, dark: 0x6243cf, soft: 0xeee6ff }
   },
   radius: { xs: 8, sm: 12, md: 16, lg: 20, xl: 28, pill: 999 },
   space: { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32 },
   // "Soft" shadows drawn as stacked offset rects (Graphics cannot blur). Each entry is one rounded rect.
   shadow: {
-    color: 0x2d2a4a,
+    color: 0x1e1b4b,
     none: [],
     sm: [{ dy: 3, a: 0.10 }],
     md: [{ dy: 3, a: 0.06 }, { dy: 8, a: 0.06 }],
@@ -62,6 +62,32 @@ export function luma(c) {
 }
 /** Ink on light fills, white on dark fills. */
 export const textOn = (c) => (luma(c) > 0.62 ? THEME.ink : THEME.onAccent);
+
+/**
+ * Brushed-metal finishes for small buttons: [top, middle, bottom, border, text]. Silver is the default side action;
+ * bronze, gunmetal and steel give the home screen's four small buttons their own character.
+ */
+export const METALS = {
+  silver: [0xf6f8fb, 0xc6cdd9, 0xe9edf3, 0x9aa3b2, 0x1e1b4b],
+  bronze: [0xefe1d0, 0xb9a088, 0xe0cdb8, 0x8e7862, 0x3a2a1c],
+  gunmetal: [0x555b6b, 0x2a2e39, 0x484d5c, 0x1f222b, 0xffffff],
+  steel: [0x8fa5bc, 0x5c748d, 0x7f96ae, 0x4d6279, 0xffffff]
+};
+
+/**
+ * Fill a rounded rect with top-to-bottom shading (Graphics cannot gradient a rounded shape): thin strips, inset at
+ * the corners. `stops` is [top, bottom] or [top, middle, bottom] (the middle sits at 55%).
+ */
+export function shadeRoundedRect(g, x, y, w, h, r, stops) {
+  const at = (t) => (stops.length === 2 ? mix(stops[0], stops[1], t) : t < 0.55 ? mix(stops[0], stops[1], t / 0.55) : mix(stops[1], stops[2], (t - 0.55) / 0.45));
+  const step = 2;
+  for (let yy = 0; yy < h; yy += step) {
+    const sh = Math.min(step, h - yy), d = Math.min(yy, h - yy - sh);
+    const inset = d < r ? r - Math.sqrt(Math.max(0, r * r - (r - d) * (r - d))) : 0;
+    g.fillStyle(at(yy / h), 1);
+    g.fillRect(x + inset, y + yy, w - inset * 2, sh);
+  }
+}
 
 /** Subject accent set; falls back to primary for unknown ids. */
 export function subjectOf(id) {

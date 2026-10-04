@@ -21,10 +21,12 @@ import { Sfx, audioReady, onUnlocked } from '../systems/Audio.js';
 import { resolveLook } from '../data/avatars.js';
 import { badgeTexture } from '../systems/Textures.js';
 import { gradeLabel, isEarly, gradeOf } from '../data/grades.js';
+import { icon } from '../ui/Icons.js';
+import { METALS } from '../ui/theme.js';
 
 const EMOJI = { map: '\u{1F5FA}️', trophy: '\u{1F3C6}', bee: '\u{1F41D}', medal: '\u{1F3C5}', cloud: '☁️', family: '\u{1F46A}', swap: '\u{1F501}', soundOn: '\u{1F50A}', soundOff: '\u{1F507}' };
 
-/** Home screen: profile summary and the two big mode buttons. */
+/** Home screen: profile summary on frosted glass, three glossy mode cards and four brushed-metal buttons. */
 export class ModeSelectScene extends BaseScene {
   constructor() { super(SCENES.ModeSelect); this.fade = true; }
 
@@ -46,9 +48,10 @@ export class ModeSelectScene extends BaseScene {
     const p = Store.getProfile();
     if (!p) return this.scene.start(SCENES.Profile);
     this.claimDailyStreak(p);
-    background(this, { accent: THEME.primary, accent2: THEME.subjects.code.accent });
+    background(this, { accent: THEME.gold, accent2: THEME.subjects.code.accent });
     const top0 = safeArea().top;
-    const title = text(this, w / 2, top0 + 40 * ui, 'Quest Academy', T.display(this));
+    const title = text(this, w / 2, top0 + 40 * ui, 'QUEST ACADEMY', { ...T.display(this), fontSize: Math.round(Math.min(40 * ui, (w - 24) / 8.2)) + 'px' });
+    if (typeof title.setLetterSpacing === 'function') title.setLetterSpacing(1.5);
     enter(this, title, { from: 'down', distance: 12 });
 
     // Profile card
@@ -56,7 +59,9 @@ export class ModeSelectScene extends BaseScene {
     const pc = card(this, w / 2, chipY + chipH / 2, chipW, chipH, { onTap: () => this.go(SCENES.Profile) });
     const lvl = levelFromXp(p.xp), lo = xpForLevel(lvl), hi = xpForLevel(lvl + 1);
     const ax = -chipW / 2 + 42 * ui, tx = -chipW / 2 + 82 * ui;
-    pc.add(this.add.circle(ax, 0, 30 * ui, THEME.primarySoft));
+    // The avatar sits in a blue disc with a silver ring.
+    pc.add(this.add.circle(ax, 0, 32 * ui, 0xd5dbe6));
+    pc.add(this.add.circle(ax, 0, 29 * ui, THEME.subjects.math.accent));
     pc.add(this.add.image(ax, 0, badgeTexture(this, resolveLook(p), outfitOf(p), outfitId(p))).setDisplaySize(52 * ui, 52 * ui));
     pc.add(this.add.text(tx, -20 * ui, `${p.name}  ·  ${gradeLabel(p.grade)}`, T.bodyBold(this)).setOrigin(0, 0.5));
     const streak = currentStreak(p);
@@ -65,7 +70,7 @@ export class ModeSelectScene extends BaseScene {
     const roomW = chipW / 2 - 14 * ui - coins.w - 12 - tx;
     pc.add(this.add.text(tx, 3 * ui, `Level ${lvl}${streak > 1 ? `  ·  🔥 ${streak}-day streak` : ''}`, { ...T.small(this, THEME.ink2), wordWrap: { width: roomW } }).setOrigin(0, 0.5));
     const barW = Math.max(60 * ui, Math.min(180 * ui, roomW));
-    pc.add(new ProgressBar(this, tx + barW / 2, 24 * ui, barW, 8 * ui, { value: (p.xp - lo) / (hi - lo), color: THEME.primary }));
+    pc.add(new ProgressBar(this, tx + barW / 2, 24 * ui, barW, 8 * ui, { value: (p.xp - lo) / (hi - lo), color: THEME.brand }));
     pc.add(coins);
 
     // Today's goal and the family's weekly goal, under the profile card
@@ -107,35 +112,35 @@ export class ModeSelectScene extends BaseScene {
     const early = isEarly(p.grade);   // the world opens at Grade 1; Pre-K and K play from the Challenge menu
     const exploreFit = fit(22, 'Explore the World', early ? 'Opens in Grade 1' : 'Walk around, meet friends, play games', bw, bh);
     const explore = button(this, positions[0].x, positions[0].y, bw, bh, 'Explore the World', {
-      color: THEME.success, ...exploreFit, radius: THEME.radius.lg, emoji: early ? '🔒' : EMOJI.map, disabled: early,
+      color: THEME.success, ...exploreFit, radius: THEME.radius.lg, icon: icon(this, early ? 'lock' : 'compass', 0xffffff), disabled: early,
       onClick: () => { if (early) return; Store.setSetting('lastMode', 'roam'); this.go(SCENES.World); }
     });
     const challengeFit = fit(22, 'Challenge Mode', 'Pick any game and earn stars', bw, bh);
     const challenge = button(this, positions[1].x, positions[1].y, bw, bh, 'Challenge Mode', {
-      color: THEME.subjects.code.accent, ...challengeFit, radius: THEME.radius.lg, emoji: EMOJI.trophy,
+      color: THEME.subjects.code.accent, ...challengeFit, radius: THEME.radius.lg, icon: icon(this, 'spark', 0xffffff),
       onClick: () => { Store.setSetting('lastMode', 'challenge'); this.go(SCENES.ChallengeMenu); }
     });
     const beeW = Math.min(this.portrait ? w - 40 : bw * 2 + 24, 640 * ui);
     const preK = gradeOf(p.grade) < 0;   // Pre-K learns letters and sounds first; the Spelling Bee opens in Kindergarten
     const beeFit = fit(18, 'Spelling Bee', preK ? 'Opens in Kindergarten' : 'Learn to spell your class words', beeW, beeH);
     const bee = button(this, w / 2, areaBottom - beeH / 2, beeW, beeH, 'Spelling Bee', {
-      color: THEME.gold, textColor: THEME.ink, ...beeFit, radius: THEME.radius.lg, emoji: preK ? '🔒' : EMOJI.bee, disabled: preK,
+      color: THEME.gold, textColor: THEME.ink, ...beeFit, radius: THEME.radius.lg, icon: icon(this, preK ? 'lock' : 'book', THEME.ink), disabled: preK,
       onClick: () => { if (!preK) this.go(SCENES.Spelling); }
     });
 
     // Bottom rows: online features, then device settings
     const sw = Math.min(180 * ui, (w - 48) / 2), sh = rowH;
-    const lb = button(this, w / 2 - sw / 2 - 8, row1Y, sw, sh, 'Leaderboard', { variant: 'secondary', fontSize: 15, emoji: EMOJI.medal, onClick: () => this.go(SCENES.Leaderboard) });
+    const lb = button(this, w / 2 - sw / 2 - 8, row1Y, sw, sh, 'Leaderboard', { variant: 'silver', fontSize: 15, icon: icon(this, 'trophy', METALS.silver[4]), onClick: () => this.go(SCENES.Leaderboard) });
     const cloud = Cloud.info();
     const cloudLabel = !cloud.signedIn ? 'Family account' : cloud.status === 'offline' ? 'Account: offline' : cloud.status === 'syncing' ? 'Account: syncing…' : 'Account: synced';
-    const acc = button(this, w / 2 + sw / 2 + 8, row1Y, sw, sh, cloudLabel, { variant: 'secondary', fontSize: 14, emoji: cloud.signedIn ? EMOJI.cloud : EMOJI.family, onClick: () => this.go(SCENES.Account) });
-    const sw2 = button(this, w / 2 - sw / 2 - 8, row2Y, sw, sh, 'Switch player', { variant: 'secondary', fontSize: 15, emoji: EMOJI.swap, onClick: () => this.go(SCENES.Profile) });
+    const acc = button(this, w / 2 + sw / 2 + 8, row1Y, sw, sh, cloudLabel, { variant: 'bronze', fontSize: 14, icon: icon(this, cloud.signedIn ? 'cloud' : 'family', METALS.bronze[4]), onClick: () => this.go(SCENES.Account) });
+    const sw2 = button(this, w / 2 - sw / 2 - 8, row2Y, sw, sh, 'Switch player', { variant: 'gunmetal', fontSize: 15, icon: icon(this, 'person', 0xffffff), onClick: () => this.go(SCENES.Profile) });
     const sound = Store.settings().sound;
     const snd = button(this, w / 2 + sw / 2 + 8, row2Y, sw, sh, sound ? 'Sound: on' : 'Sound: off', {
-      variant: 'secondary', fontSize: 15, emoji: sound ? EMOJI.soundOn : EMOJI.soundOff,
+      variant: 'steel', fontSize: 15, icon: icon(this, sound ? 'sound' : 'mute', 0xffe08a),
       onClick: (b) => {
         const on = !Store.settings().sound; Store.setSetting('sound', on);
-        b.setLabel(on ? 'Sound: on' : 'Sound: off'); if (b.emoji) b.emoji.setText(on ? EMOJI.soundOn : EMOJI.soundOff);
+        b.setLabel(on ? 'Sound: on' : 'Sound: off'); if (b.icon) b.icon.setTexture(icon(this, on ? 'sound' : 'mute', 0xffe08a));
       }
     });
     enter(this, [pc, explore, challenge, bee], { from: 'up', delay: 60, stagger: 70 });

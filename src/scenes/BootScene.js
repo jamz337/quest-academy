@@ -45,6 +45,6 @@ function hideSplash() {
 function fontsReady() {
   try {
     if (typeof document === 'undefined' || !document.fonts || !document.fonts.load) return Promise.resolve();
-    return Promise.all(['500', '600', '700'].map((w) => document.fonts.load(`${w} 20px Fredoka`))).catch(() => null);
+    return Promise.all(['500', '600', '700', '800'].map((w) => document.fonts.load(`${w} 20px Outfit`))).catch(() => null);
   } catch { return Promise.resolve(); }
 }
