@@ -94,7 +94,15 @@ export class ChallengeMenuScene extends BaseScene {
     const iy = -h / 2 + 32 * ui;
     k.add(this.iconBlock(0, iy, 24 * ui, subject));
     k.add(this.add.text(0, iy, g.icon, { fontSize: Math.round(26 * ui) + 'px' }).setOrigin(0.5));
-    k.add(this.add.text(0, -h / 2 + 66 * ui, g.title, T.at(this, 16, THEME.ink, { wordWrap: { width: c.w - 12 } })).setOrigin(0.5));
+    // The title starts under the icon block and shrinks until it fits above the stars (two-line names on a phone).
+    const titleTop = iy + 24 * ui + 6 * ui, room = h / 2 - 34 * ui - titleTop;
+    let title = null;
+    for (const size of [16, 14, 13, 12]) {
+      if (title) title.destroy();
+      title = this.add.text(0, titleTop, g.title, T.at(this, size, THEME.ink, { wordWrap: { width: c.w - 10 }, lineSpacing: -2 })).setOrigin(0.5, 0);
+      if ((title.height || 0) <= room) break;
+    }
+    k.add(title);
     k.add(new StarRow(this, 0, h / 2 - 20 * ui, rec ? rec.bestStars : 0, 20 * ui));
     return k;
   }
