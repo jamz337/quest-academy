@@ -34,6 +34,7 @@ import { getBadge } from '../data/badges.js';
 import { drinkUp } from './world/drink.js';
 import { createTrail, trailTick } from './world/trail.js';
 import * as Hub from './world/hub.js';
+import { heartsOf } from '../systems/Hearts.js';
 import { villagerKey, VILLAGER_CELL, VILLAGER_WORLD_HEIGHT } from '../ui/Villagers.js';
 import { refreshRequestBubbles, requestLine, requestAfterGame } from './world/requests.js';
 import { createLamps, refreshLamps } from './world/lamps.js';
@@ -565,6 +566,11 @@ export class WorldScene extends Phaser.Scene {
   /** Challenge a villager to a duel (see DuelScene); the world pauses like it does for a game. */
   duelVillager(npc) {
     if (!duelFor(npc.id)) return;
+    if (heartsOf(Store.getProfile()) <= 0) {
+      // Out of hearts: a drink from the market (or a new day) brings them back.
+      this.say('♥ You are out of hearts! A drink from Auntie Vee will fill them up.', { accent: THEME.danger });
+      return;
+    }
     this.stopPlayer();
     this.savePosition();
     if (this.scene.isActive(SCENES.Hud)) this.scene.sleep(SCENES.Hud);
@@ -609,8 +615,9 @@ export class WorldScene extends Phaser.Scene {
 
   /** Back from a game: pop the new star up to the house, topple a beaten boss, announce an errand. */
   afterGame(payload, result) {
-    if (!result || result.aborted) return;
     const hud = this.hud();
+    if (hud && hud.refreshHearts) hud.refreshHearts();   // a duel may have cost hearts, even one that was run from
+    if (!result || result.aborted) return;
     requestAfterGame(this, payload, result);
     if (payload.boss && result.won) {
       const s = this.npcs.find((x) => x.boss && x.boss.id === payload.boss.id);

@@ -517,6 +517,17 @@ export function uiTextures(scene) {
     g.fillStyle(THEME.ink, 1); g.fillRect(22, 0, 4, 10);
     g.generateTexture('bobber', 48, 48); g.clear();
   }
+  // Hearts (full and empty), painted smooth and large: the Hud's heart counter and the duel's party card.
+  for (const [key, light, dark] of [['heart', '#ff8a98', '#e23d5b'], ['heart-off', '#e2deeb', '#b9b4c8']]) {
+    if (scene.textures.exists(key)) continue;
+    const tex = scene.textures.createCanvas(key, 96, 96), c = tex.getContext();
+    const shape = () => { c.beginPath(); c.moveTo(48, 84); c.bezierCurveTo(8, 56, 4, 30, 22, 18); c.bezierCurveTo(34, 10, 46, 16, 48, 28); c.bezierCurveTo(50, 16, 62, 10, 74, 18); c.bezierCurveTo(92, 30, 88, 56, 48, 84); c.closePath(); };
+    c.save(); c.translate(0, 4); c.fillStyle = dark; shape(); c.fill(); c.restore();
+    const gr = c.createLinearGradient(0, 12, 0, 84); gr.addColorStop(0, light); gr.addColorStop(1, dark);
+    c.fillStyle = gr; shape(); c.fill();
+    c.fillStyle = 'rgba(255,255,255,0.55)'; c.beginPath(); c.ellipse(30, 30, 9, 6, -0.6, 0, Math.PI * 2); c.fill();
+    tex.refresh();
+  }
   if (!scene.textures.exists('bubble')) {
     g.fillStyle(THEME.ink, 0.15); g.fillRoundedRect(1, 3, 30, 30, 10);
     g.fillStyle(0xffffff, 1); g.fillRoundedRect(0, 0, 32, 32, 10);

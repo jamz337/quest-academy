@@ -15,6 +15,8 @@ import { cheer, oops } from './FxScene.js';
 import { VirtualJoystick } from '../systems/VirtualJoystick.js';
 import * as Store from '../systems/Store.js';
 import { flyCoins } from '../ui/Coins.js';
+import { heartsOf, HEARTS_MAX } from '../systems/Hearts.js';
+import { drinkFromBag } from './world/drink.js';
 import { Minimap, paintMinimap } from '../ui/Minimap.js';
 import { ensureExplored } from '../data/world/explore.js';
 import { buildHome } from './hud/homePanel.js';
@@ -84,6 +86,14 @@ export class HudScene extends BaseScene {
     // Top-left: coins and zone
     const chipH = 34 * ui, top = 10 + sa.top, left = 10 + sa.left;
     this.coinChip = chip(this, left, top + chipH / 2, { text: String(s.coins), icon: 'coin', height: chipH, textColor: THEME.warningDark, fontSize: 15 });
+    // Hearts beside the coins: three of them, refilled by a drink from the market (tap them to drink one from the bag).
+    this.heartIcons = [];
+    if (this.textures.exists('heart')) {
+      const hs = 24 * ui, hx0 = left + (this.coinChip.w || 70) + 12 + hs / 2, have = heartsOf(Store.getProfile());
+      for (let i = 0; i < HEARTS_MAX; i++) this.heartIcons.push(this.add.image(hx0 + i * (hs + 3), top + chipH / 2, i < have ? 'heart' : 'heart-off').setDisplaySize(hs, hs));
+      const zone = this.add.zone(hx0 + hs + 3, top + chipH / 2, hs * 3 + 18, chipH + 6).setInteractive({ useHandCursor: true });
+      zone.on('pointerup', () => { const roam = this.scene.get(this.roamKey); if (roam && !this.blocking) drinkFromBag(roam); });
+    }
     this.zoneChip = chip(this, left, top + chipH + 8 + 13 * ui, { text: s.zone, height: 26 * ui, fontSize: 12, textColor: THEME.ink2, shadow: 'none', stroke: THEME.line });
     this.zoneChip.setVisible(!!s.zone);
     // What the player is carrying for an errand
@@ -209,6 +219,29 @@ export class HudScene extends BaseScene {
   // ---- Coins / zone -------------------------------------------------------------------------
 
   setCoins(n) { this.state.coins = n; if (this.coinChip && this.coinChip.active) this.coinChip.setText(String(n)); }
+  /** Show the hearts the player has now. */
+  refreshHearts() {
+    const have = heartsOf(Store.getProfile());
+    (this.heartIcons || []).forEach((img, i) => { if (img.active) img.setTexture(i < have ? 'heart' : 'heart-off'); });
+  }
+
+  /** Hearts fly from the middle of the screen into the heart counter, each one filling as it lands. */
+  awardHearts(n) {
+    const icons = (this.heartIcons || []).filter((img) => img.active), have = heartsOf(Store.getProfile());
+    if (!n || !icons.length || !this.scene.isActive()) { this.refreshHearts(); return; }
+    for (let k = 0; k < n; k++) {
+      const slot = icons[Math.max(0, have - n + k)];
+      if (!slot) continue;
+      const h = this.add.image(this.w / 2, this.h / 2, 'heart').setDisplaySize(slot.displayWidth * 1.6, slot.displayHeight * 1.6).setDepth(700).setAlpha(0);
+      this.tweens.add({ targets: h, alpha: 1, duration: 140, delay: k * 160 });
+      this.tweens.add({
+        targets: h, x: slot.x, y: slot.y, displayWidth: slot.displayWidth, displayHeight: slot.displayHeight, duration: 520, delay: 140 + k * 160, ease: 'Cubic.In',
+        onComplete: () => { h.destroy(); Sfx.coin(); if (slot.active) { slot.setTexture('heart'); this.tweens.add({ targets: slot, scale: slot.scale * 1.35, duration: 120, yoyo: true }); } }
+      });
+    }
+    this.time.delayedCall(900 + n * 160, () => this.refreshHearts());
+  }
+
   setCarry(text) { if (this.state.carry !== text) { this.state.carry = text || null; this.rebuild(); } }
 
   /** Coins fly from `from` (CSS px; default: screen centre) into the coin counter, which counts up as they land. */

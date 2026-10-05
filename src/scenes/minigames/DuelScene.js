@@ -25,6 +25,7 @@ import { Sfx } from '../../systems/Audio.js';
 import * as Store from '../../systems/Store.js';
 import * as Music from '../../systems/Music.js';
 import { pieceStyle, duelPiece } from './DuelPieces.js';
+import { heartsOf, setHearts, HEARTS_MAX } from '../../systems/Hearts.js';
 
 const POOL = 24;   // more questions than any duel can use
 /** Button labels (tests find buttons by these). */
@@ -49,12 +50,13 @@ export class DuelScene extends MinigameScene {
       ? { kind: 'boss', id: boss.id, name: boss.name, title: boss.title, hp: boss.hp, look: boss.look, scale: boss.scale || 1.3, prop: '⚡', voice: boss.voice, pitch: boss.pitch, rate: boss.rate, win: boss.win, lose: boss.lose }
       : { kind: 'villager', id: duel.npcId, name: duel.name, title: null, hp: duel.hp, sprite: duel.sprite, scale: 1, prop: duel.prop, voice: duel.voice, pitch: duel.pitch, rate: duel.rate, win: duel.win, lose: duel.lose };
     const profile = Store.getProfile();
-    const playerHp = boss ? boss.hearts : DUEL.playerHp, mangoHp = boss ? 0 : DUEL.mangoHp;
+    // A villager's duel is fought with the hearts the player carries (three when full; see systems/Hearts.js).
+    const playerHp = boss ? boss.hearts : Math.max(1, heartsOf(profile)), playerMax = boss ? boss.hearts : HEARTS_MAX, mangoHp = boss ? 0 : DUEL.mangoHp;
     const timeLimit = p.timers === false ? Infinity : boss ? boss.questionTimeMs : Math.round(tuningFor(p).questionTimeMs * DUEL.timeFactor);
     return {
       questions: duel ? duelQuestions(duel.gameId, p.grade, this.rng, POOL) : bossDuelQuestions(p.subject, p.grade, this.rng, POOL),
       idx: 0, correct: 0, oppHp: this.opp.hp, phase: 'menu',
-      party: [{ id: 'player', name: (profile && profile.name) || 'You', hp: playerHp, max: playerHp }, { id: 'mango', name: 'Mango', hp: mangoHp, max: mangoHp }],
+      party: [{ id: 'player', name: (profile && profile.name) || 'You', hp: playerHp, max: playerMax }, { id: 'mango', name: 'Mango', hp: mangoHp, max: mangoHp }],
       logic: DUEL.logicUses, hidden: [], logicUsedOn: -1, charmsUsed: {}, useDoubleCoins: false,
       locked: false, picked: null, hit: null, qStart: Date.now(), bonusMs: 0, pausedAt: null, timeLimit,
       defeated: false, lost: false, missed: {}
@@ -87,6 +89,10 @@ export class DuelScene extends MinigameScene {
     const gy = area.y + sceneH * 0.86;
     const sc = Math.max(2, Math.floor(sceneH * 0.62 / LPC_FRAME));
 
+    // Shadows on the ground under the three of them (drawn first, so they sit beneath).
+    const shadows = this.add.graphics();
+    shadows.fillStyle(0x000000, 0.16);
+    for (const [sx, sw] of [[px, 16 * sc], [px - 30 * sc, 14 * sc], [ox, 17 * sc * opp.scale]]) shadows.fillEllipse(sx, gy - 2 * sc, sw * 2, 5 * sc);
     // The party: the player faces right with a prop, Mango beside them.
     const profile = this.profile;
     const pKey = lookSpriteTexture(this, resolveLook(profile), outfitOf(profile), outfitId(profile));
@@ -100,6 +106,12 @@ export class DuelScene extends MinigameScene {
     const oKey = opp.kind === 'boss' ? lookSpriteTexture(this, opp.look) : opp.sprite;
     const foe = this.add.sprite(ox, gy, oKey, IDLE_FRAMES.side).setScale(sc * opp.scale).setOrigin(0.5, 1);
     const oProp = this.add.text(ox - 15 * sc * opp.scale, gy - 24 * sc * opp.scale, opp.prop, { fontSize: Math.round(9 * sc) + 'px' }).setOrigin(0.5);
+    // A gentle breathing bob while nobody is being hit.
+    if (!s.hit && !s.defeated && !s.lost && this.tweens) {
+      [[player, pProp, 0], [mango, null, 180], [foe, oProp, 90]].forEach(([body, prop, delay]) => {
+        this.tweens.add({ targets: prop ? [body, prop] : body, y: '-=' + 2.5 * ui, duration: 900, delay, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+      });
+    }
     const barW = Math.min(150 * ui, area.w * 0.3);
     chip(this, ox, area.y + 18 * ui, { text: opp.name, originX: 0.5, color: THEME.surface, textColor: THEME.ink, fontSize: 13, height: 26 * ui, shadow: 'sm', stroke: THEME.line });
     const oppBar = new ProgressBar(this, ox, area.y + 40 * ui, barW, 9 * ui, { value: s.oppHp / opp.hp, color: THEME.danger });
@@ -112,12 +124,14 @@ export class DuelScene extends MinigameScene {
       foe.setTint(0xff5c6c); this.time.delayedCall(220, () => { if (foe.active) foe.clearTint(); });
       this.floatHit(ox, gy - 60 * sc * opp.scale);
       oppBar.animateTo(s.oppHp / opp.hp, THEME.danger);
+      this.throwAt({ x: px + 14 * sc, y: gy - 30 * sc }, { x: ox, y: gy - 30 * sc * opp.scale }, { star: true });
     } else if (s.hit && s.hit.startsWith('party')) {
       const victim = s.hit.endsWith('mango') ? mango : player;
       this.tweens.add({ targets: foe, x: ox - 26 * ui, yoyo: true, duration: 120, ease: 'Sine.Out' });
       this.tweens.add({ targets: victim, x: victim.x - 8, yoyo: true, repeat: 3, duration: 40 });
       victim.setTint(0xff5c6c); this.time.delayedCall(220, () => { if (victim.active && !s.lost) victim.clearTint(); });
       this.floatHit(victim.x, victim.y - 50 * sc);
+      this.throwAt({ x: ox - 14 * sc, y: gy - 30 * sc }, { x: victim.x, y: gy - 28 * sc }, { emoji: opp.prop, size: 12 * sc });
     }
     if (s.defeated) {
       this.tweens.add({ targets: [foe, oProp], angle: 95, y: '+=' + 30 * ui, alpha: 0.25, duration: 750, ease: 'Cubic.easeIn' });
@@ -174,35 +188,66 @@ export class DuelScene extends MinigameScene {
     if (s.hit && s.hit.startsWith('party') && this.partyHp > 0 && s.locked) this.explanationPanel(area, q, () => this.next());
   }
 
-  /** Sky, meadow, sun and clouds, and the opponent's house behind them. */
+  /** A soft sky with a turning sun and drifting clouds, rolling hills, the opponent's house, and a sandy ring to duel in. */
   drawScenery(area, sceneH, houseX) {
     const ui = this.ui, sub = this.subject;
     const g = this.add.graphics();
-    const r = THEME.radius.lg;
-    // Sky: a rounded top in the deepest blue, then horizontal bands fading to the horizon (a gradient fill would
-    // show a diagonal seam across the rounded rect).
-    const skyH = sceneH * 0.62, bands = 8;
-    g.fillStyle(0x9fdcff, 1); g.fillRoundedRect(area.x, area.y, area.w, skyH, { tl: r, tr: r, bl: 0, br: 0 });
+    const r = THEME.radius.lg, horizon = area.y + sceneH * 0.62;
+    // Sky: many thin bands from deep blue to a pale horizon read as one smooth wash.
+    const skyH = sceneH * 0.62, bands = 28;
+    g.fillStyle(0x8fd3ff, 1); g.fillRoundedRect(area.x, area.y, area.w, skyH, { tl: r, tr: r, bl: 0, br: 0 });
     for (let i = 1; i < bands; i++) {
       const t = i / bands;
-      g.fillStyle(mix(0x9fdcff, 0xe6f7ff, t), 1); g.fillRect(area.x, area.y + r + (skyH - r) * t, area.w, (skyH - r) / bands + 1);
+      g.fillStyle(mix(0x8fd3ff, 0xeaf8ff, t), 1); g.fillRect(area.x, area.y + r + (skyH - r) * t, area.w, (skyH - r) / bands + 1);
     }
-    g.fillStyle(0xffe27a, 1); g.fillCircle(area.x + area.w * 0.12, area.y + sceneH * 0.2, 16 * ui);
-    g.fillStyle(0xffffff, 0.9);
-    for (const [fx, fy, fr] of [[0.32, 0.16, 12], [0.36, 0.18, 16], [0.41, 0.16, 11], [0.62, 0.26, 10], [0.66, 0.27, 14], [0.7, 0.25, 9]]) g.fillCircle(area.x + area.w * fx, area.y + sceneH * fy, fr * ui);
-    // The house: wall in the subject's soft colour, roof in its dark one.
-    const hw = Math.min(area.w * 0.36, 220 * ui), hh = sceneH * 0.5, hx = houseX - hw / 2, hy = area.y + sceneH * 0.62 - hh;
-    g.fillStyle(sub.dark, 1); g.fillTriangle(hx - 10, hy + hh * 0.3, houseX, hy - 8, hx + hw + 10, hy + hh * 0.3);
-    g.fillStyle(sub.soft, 1); g.fillRect(hx, hy + hh * 0.3, hw, hh * 0.7);
-    g.fillStyle(0x8a5a3a, 1); g.fillRoundedRect(houseX - hw * 0.09, hy + hh * 0.55, hw * 0.18, hh * 0.45, { tl: 8, tr: 8, bl: 0, br: 0 });
-    g.fillStyle(0xbfe6ff, 1); g.fillRect(hx + hw * 0.12, hy + hh * 0.45, hw * 0.18, hh * 0.22); g.fillRect(hx + hw * 0.7, hy + hh * 0.45, hw * 0.18, hh * 0.22);
-    g.lineStyle(2, THEME.ink, 0.25); g.strokeRect(hx + hw * 0.12, hy + hh * 0.45, hw * 0.18, hh * 0.22); g.strokeRect(hx + hw * 0.7, hy + hh * 0.45, hw * 0.18, hh * 0.22);
-    // The meadow and a sandy path.
-    g.fillStyle(0x7ed36b, 1); g.fillRoundedRect(area.x, area.y + sceneH * 0.62, area.w, sceneH * 0.38, { tl: 0, tr: 0, bl: r, br: r });
-    g.fillStyle(0x5cb85c, 1); g.fillRect(area.x, area.y + sceneH * 0.62, area.w, 4 * ui);
-    g.fillStyle(0xe8c986, 1); g.fillEllipse(area.x + area.w / 2, area.y + sceneH * 0.88, area.w * 0.7, sceneH * 0.16);
-    g.fillStyle(0xffffff, 0.8);
-    for (let i = 0; i < 7; i++) g.fillCircle(area.x + area.w * (0.05 + i * 0.15), area.y + sceneH * (0.7 + (i % 2) * 0.24), 2.5 * ui);
+    // The sun, with rays that slowly turn.
+    const sx = area.x + area.w * 0.12, sy = area.y + sceneH * 0.2;
+    const rays = this.add.graphics({ x: sx, y: sy });
+    rays.fillStyle(0xffe27a, 0.45);
+    for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2; rays.fillTriangle(Math.cos(a - 0.14) * 20 * ui, Math.sin(a - 0.14) * 20 * ui, Math.cos(a + 0.14) * 20 * ui, Math.sin(a + 0.14) * 20 * ui, Math.cos(a) * 34 * ui, Math.sin(a) * 34 * ui); }
+    if (this.tweens) this.tweens.add({ targets: rays, angle: 360, duration: 24000, repeat: -1 });
+    g.fillStyle(0xfff3b0, 0.6); g.fillCircle(sx, sy, 21 * ui);
+    g.fillStyle(0xffd75e, 1); g.fillCircle(sx, sy, 16 * ui);
+    // Clouds drift slowly across.
+    for (const [fx, fy, k, speed] of [[0.34, 0.15, 1, 26000], [0.66, 0.27, 0.8, 34000]]) {
+      const cloud = this.add.graphics({ x: area.x + area.w * fx, y: area.y + sceneH * fy });
+      cloud.fillStyle(0xffffff, 0.95);
+      for (const [dx, dy, cr] of [[-18, 2, 11], [-4, -4, 15], [12, 0, 12], [24, 4, 8]]) cloud.fillCircle(dx * ui * k, dy * ui * k, cr * ui * k);
+      cloud.fillRoundedRect(-26 * ui * k, 2 * ui * k, 56 * ui * k, 12 * ui * k, 6 * ui * k);
+      if (this.tweens) this.tweens.add({ targets: cloud, x: cloud.x + area.w * 0.08, duration: speed, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+    }
+    // Far hills in two soft greens.
+    g.fillStyle(0xa9e08f, 1); g.fillEllipse(area.x + area.w * 0.28, horizon + sceneH * 0.04, area.w * 0.7, sceneH * 0.3);
+    g.fillStyle(0x93d67c, 1); g.fillEllipse(area.x + area.w * 0.8, horizon + sceneH * 0.05, area.w * 0.8, sceneH * 0.26);
+    // The house: a rounded roof in the land's dark colour over a soft wall, with a chimney, door and shining windows.
+    const hw = Math.min(area.w * 0.34, 210 * ui), hh = sceneH * 0.48, hx = houseX - hw / 2, hy = horizon - hh;
+    g.fillStyle(0x8a5a3a, 1); g.fillRoundedRect(hx + hw * 0.7, hy - hh * 0.08, hw * 0.1, hh * 0.3, 3 * ui);
+    g.fillStyle(sub.soft, 1); g.fillRoundedRect(hx, hy + hh * 0.3, hw, hh * 0.7, { tl: 0, tr: 0, bl: 6 * ui, br: 6 * ui });
+    g.fillStyle(0x000000, 0.07); g.fillRect(hx, hy + hh * 0.3, hw, hh * 0.08);
+    g.fillStyle(sub.dark, 1); g.fillRoundedRect(hx - hw * 0.07, hy + hh * 0.02, hw * 1.14, hh * 0.32, { tl: hh * 0.3, tr: hh * 0.3, bl: 6 * ui, br: 6 * ui });
+    g.fillStyle(sub.accent, 1); g.fillRoundedRect(hx - hw * 0.07, hy + hh * 0.02, hw * 1.14, hh * 0.22, { tl: hh * 0.3, tr: hh * 0.3, bl: 0, br: 0 });
+    g.fillStyle(0x8a5a3a, 1); g.fillRoundedRect(houseX - hw * 0.09, hy + hh * 0.56, hw * 0.18, hh * 0.44, { tl: hw * 0.09, tr: hw * 0.09, bl: 0, br: 0 });
+    g.fillStyle(0xffd75e, 1); g.fillCircle(houseX + hw * 0.05, hy + hh * 0.8, 2.2 * ui);
+    for (const wx of [hx + hw * 0.12, hx + hw * 0.7]) {
+      g.fillStyle(0xffffff, 1); g.fillRoundedRect(wx - 2 * ui, hy + hh * 0.45 - 2 * ui, hw * 0.18 + 4 * ui, hh * 0.24 + 4 * ui, 4 * ui);
+      g.fillStyle(0xbfe6ff, 1); g.fillRoundedRect(wx, hy + hh * 0.45, hw * 0.18, hh * 0.24, 3 * ui);
+      g.fillStyle(0xffffff, 0.7); g.fillTriangle(wx, hy + hh * 0.45, wx + hw * 0.1, hy + hh * 0.45, wx, hy + hh * 0.57);
+    }
+    // The meadow, with a darker lip at the horizon, bushes by the house, and the sandy duelling ring.
+    g.fillStyle(0x7ed36b, 1); g.fillRoundedRect(area.x, horizon, area.w, sceneH * 0.38, { tl: 0, tr: 0, bl: r, br: r });
+    g.fillStyle(0x5cb85c, 0.7); g.fillRect(area.x, horizon, area.w, 3 * ui);
+    for (const [bx, br] of [[hx - 8 * ui, 13], [hx + 6 * ui, 9], [hx + hw + 6 * ui, 12]]) { g.fillStyle(0x3fa34d, 1); g.fillCircle(bx, horizon + 2 * ui, br * ui); g.fillStyle(0x58bd63, 1); g.fillCircle(bx - 2 * ui, horizon - 1 * ui, br * 0.7 * ui); }
+    g.fillStyle(0xd2ae6c, 1); g.fillEllipse(area.x + area.w / 2, area.y + sceneH * 0.885, area.w * 0.72, sceneH * 0.17);
+    g.fillStyle(0xecd09a, 1); g.fillEllipse(area.x + area.w / 2, area.y + sceneH * 0.875, area.w * 0.7, sceneH * 0.155);
+    // Flowers nod in the grass.
+    for (let i = 0; i < 6; i++) {
+      const fx = area.x + area.w * (0.04 + i * 0.185), fy = area.y + sceneH * (0.69 + (i % 2) * 0.26), col = [0xffffff, 0xff8fb8, 0xffd75e][i % 3];
+      const f = this.add.graphics({ x: fx, y: fy });
+      f.lineStyle(1.5 * ui, 0x3fa34d, 1); f.lineBetween(0, 0, 0, 7 * ui);
+      f.fillStyle(col, 1); for (let k = 0; k < 5; k++) { const a = (k / 5) * Math.PI * 2; f.fillCircle(Math.cos(a) * 2.6 * ui, Math.sin(a) * 2.6 * ui, 2 * ui); }
+      f.fillStyle(0xffb627, 1); f.fillCircle(0, 0, 1.6 * ui);
+      if (this.tweens) this.tweens.add({ targets: f, angle: i % 2 ? 9 : -9, duration: 1300 + i * 110, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+    }
   }
 
   /** Portraits, names and hearts for the player and Mango. */
@@ -221,10 +266,16 @@ export class DuelScene extends MinigameScene {
       const name = this.add.text(tx, ry - rowH * 0.28, m.name.toUpperCase(), T.at(this, 13, THEME.ink, { fontStyle: '700' })).setOrigin(0, 0.5);
       const bw = w - size - 40;
       if (m.max > 0) {
-        const ratio = Math.max(0, m.hp) / m.max;
-        const hp = this.add.text(tx, ry, `♥ ${Math.max(0, m.hp)}/${m.max}`, T.at(this, 12, THEME.ink2)).setOrigin(0, 0.5);
-        const bar = new ProgressBar(this, tx + bw / 2, ry + rowH * 0.28, bw, 8 * ui, { value: ratio, color: ratio > 0.6 ? THEME.success : ratio > 0.3 ? THEME.warning : THEME.danger });
-        k.add([img, name, hp, bar]);
+        // A heart for each life; the one just lost bursts.
+        const hs = Math.min(22 * ui, (bw + 8) / m.max - 3, rowH * 0.44), hy = ry + rowH * 0.16, left = Math.max(0, m.hp);
+        const icons = [];
+        for (let j = 0; j < m.max; j++) icons.push(this.add.image(tx + hs / 2 + j * (hs + 3), hy, j < left ? 'heart' : 'heart-off').setDisplaySize(hs, hs));
+        k.add([img, name, ...icons]);
+        if (s.hit === 'party:' + m.id && icons[left] && this.tweens) {
+          const lost = this.add.image(icons[left].x, hy, 'heart').setDisplaySize(hs, hs);
+          k.add(lost);
+          this.tweens.add({ targets: lost, scale: lost.scale * 2.2, alpha: 0, angle: 20, duration: 520, ease: 'Cubic.Out', onComplete: () => lost.destroy() });
+        }
       } else {
         const hint = this.add.text(tx, ry + 2, boss ? `Logic ×${s.logic}` : '', T.at(this, 12, THEME.brandDark)).setOrigin(0, 0.5);
         k.add([img, name, hint]);
@@ -309,6 +360,29 @@ export class DuelScene extends MinigameScene {
     button(this, cmd.x + cmd.w / 2, cmd.y + cmd.h - closeH / 2 - 8, Math.min(140 * ui, cmd.w - 24), closeH, LABELS.close, { variant: 'ghost', fontSize: 14, onClick: () => this.closeItems() });
   }
 
+  /** Something thrown across the arena: a spinning star from the player, the opponent's prop the other way, and a burst where it lands. */
+  throwAt(from, to, { star = false, emoji = null, size = 0 } = {}) {
+    if (!this.tweens) return;
+    const ui = this.ui;
+    const shot = star && this.textures.exists('star') ? this.add.image(from.x, from.y, 'star').setDisplaySize(26 * ui, 26 * ui)
+      : this.add.text(from.x, from.y, emoji || '✦', { fontSize: Math.round(size || 22 * ui) + 'px' }).setOrigin(0.5);
+    shot.setDepth(14);
+    this.tweens.add({ targets: shot, x: to.x, duration: 230, ease: 'Sine.In' });
+    this.tweens.add({ targets: shot, y: Math.min(from.y, to.y) - 34 * ui, duration: 115, yoyo: true, ease: 'Quad.Out' });
+    this.tweens.add({
+      targets: shot, angle: star ? 540 : -360, duration: 230,
+      onComplete: () => {
+        shot.destroy();
+        const ring = this.add.circle(to.x, to.y, 8 * ui).setStrokeStyle(4 * ui, star ? THEME.gold : THEME.danger, 1).setDepth(14);
+        this.tweens.add({ targets: ring, scale: 4, alpha: 0, duration: 380, ease: 'Cubic.Out', onComplete: () => ring.destroy() });
+        for (let i = 0; i < 7; i++) {
+          const a = (i / 7) * Math.PI * 2, d = this.add.circle(to.x, to.y, 3.5 * ui, star ? THEME.gold : 0xffffff, 1).setDepth(14);
+          this.tweens.add({ targets: d, x: to.x + Math.cos(a) * 42 * ui, y: to.y + Math.sin(a) * 34 * ui, alpha: 0, scale: 0.3, duration: 420, ease: 'Cubic.Out', onComplete: () => d.destroy() });
+        }
+      }
+    });
+  }
+
   floatHit(x, y) {
     const dmg = this.add.text(x, y, '−1', T.at(this, 22, THEME.danger, { fontStyle: '700' })).setOrigin(0.5).setDepth(15);
     this.tweens.add({ targets: dmg, y: y - 50 * this.ui, alpha: 0, duration: 700, ease: 'Cubic.easeOut' });
@@ -377,7 +451,14 @@ export class DuelScene extends MinigameScene {
     for (const m of this.state.party) while (n > 0 && m.max > 0 && m.hp < m.max) { m.hp += 1; n -= 1; }
   }
 
-  run() { if (this.state.locked) return; Sfx.pop(); this.abort(); }
+  run() { if (this.state.locked) return; Sfx.pop(); this.keepHearts(); this.abort(); }
+
+  /** The hearts left after a villager's duel stay with the player (a boss fight has hearts of its own). */
+  keepHearts() {
+    if (this.opp.kind === 'boss') return;
+    const left = this.state.party[0].hp;
+    Store.updateProfile((p) => setHearts(p, left));
+  }
 
   // ---- The duel loop (shared with the old boss fight) ----------------------------------------------
 
@@ -437,6 +518,7 @@ export class DuelScene extends MinigameScene {
       this.time.delayedCall(2800, () => this.end(true));
       return;
     }
+    this.keepHearts();
     const missedSkills = Object.entries(s.missed).sort((a, b) => b[1] - a[1]).map(([k]) => k);
     const base = { won, hpLeft: Math.max(0, s.oppHp), correct: s.correct, total: s.idx + 1, missedSkills, useDoubleCoins: s.useDoubleCoins, delay: 300 };
     if (this.opp.kind === 'boss') this.finish({ ...base, heartsLeft: Math.max(0, s.party[0].hp), maxHearts: s.party[0].max });
