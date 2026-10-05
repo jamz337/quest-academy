@@ -24,6 +24,7 @@ import { enter } from '../../ui/motion.js';
 import { Sfx } from '../../systems/Audio.js';
 import * as Store from '../../systems/Store.js';
 import * as Music from '../../systems/Music.js';
+import { pieceStyle, duelPiece } from './DuelPieces.js';
 
 const POOL = 24;   // more questions than any duel can use
 /** Button labels (tests find buttons by these). */
@@ -36,7 +37,7 @@ const CHARMS = [
 /**
  * A duel: the player (with Mango) on the left, a villager or boss on the right, a puzzle between them.
  * Every right answer knocks a point off the opponent; every wrong or slow answer costs a heart, the player's
- * first and then Mango's. SOLVE shows the choices, LOGIC hides two wrong ones, ITEMS uses charms and market
+ * first and then Mango's. SOLVE shows the choices as pieces of the opponent's own game (see DuelPieces.js), LOGIC hides two wrong ones, ITEMS uses charms and market
  * snacks, RUN leaves without a result. Bosses keep their own hp, hearts and clock (see data/world/bosses.js).
  */
 export class DuelScene extends MinigameScene {
@@ -261,9 +262,17 @@ export class DuelScene extends MinigameScene {
       });
     } else if (s.phase === 'solve') {
       const reveal = s.picked !== null && (q.choices[s.picked] === q.answer || this.answerRevealed(q));   // hidden while the child works it out
+      const style = pieceStyle(this.payload, q);
       buttons = q.choices.map((choice, i) => {
         const c = cells[i]; if (!c) return null;
         if (s.hidden.includes(i)) return button(this, c.x, c.y, c.w, c.h, '—', { variant: 'ghost', disabled: true });
+        // The answers are drawn as the opponent's own game draws them (stones, balloons, pizzas, planks, lily pads…).
+        if (style) {
+          const state = s.picked === null ? 'idle' : choice === q.answer && reveal ? 'right' : i === s.picked ? 'wrong' : reveal ? 'dim' : 'idle';
+          const piece = duelPiece(this, style, c.x, c.y, c.w, c.h, choice, { state, seed: i, onTap: s.picked === null && !s.locked ? () => this.pick(i) : null });
+          this.answerSpeaker(piece, c.w, c.h, choice);
+          return piece;
+        }
         const opts = { variant: 'secondary', fontSize: choice.length > 8 ? 15 : 22, radius: THEME.radius.md, onClick: () => this.pick(i) };
         if (s.picked !== null) { if (choice === q.answer && reveal) opts.variant = 'success'; else if (i === s.picked) opts.variant = 'danger'; }
         const b = button(this, c.x, c.y, c.w, c.h, choice, opts);

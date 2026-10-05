@@ -352,3 +352,20 @@ describe('launching and scoring duels', () => {
     expect(BADGES.find((b) => b.id === 'duel-master').test(p)).toBe(false);
   });
 });
+
+describe("duel answers as the opponent's game pieces", () => {
+  it('picks the pieces of the game, and falls back when an answer would not fit', async () => {
+    const { pieceStyle, fraction } = await import('../src/scenes/minigames/DuelPieces.js');
+    const q = (choices, extra = {}) => ({ prompt: 'x', choices, answer: choices[0], ...extra });
+    expect(pieceStyle({ duel: { gameId: 'math-balloons' }, subject: 'math' }, q(['10', '11', '12']))).toBe('balloon');
+    expect(pieceStyle({ duel: { gameId: 'math-dash' }, subject: 'math' }, q(['three hundred', '4']))).toBe('plank');   // too wordy for a stone
+    expect(pieceStyle({ duel: { gameId: 'math-pizza' }, subject: 'math' }, q(['1/2', '2/3']))).toBe('pizza');
+    expect(pieceStyle({ duel: { gameId: 'math-pizza' }, subject: 'math' }, q(['0.5', '50%']))).toBe('plank');
+    expect(pieceStyle({ duel: { gameId: 'eng-frog' }, subject: 'words' }, q(['cat', 'dog']))).toBe('pad');
+    expect(pieceStyle({ boss: {}, subject: 'bible' }, q(['Noah', 'Moses']))).toBe('scroll');      // a boss uses its land's pieces
+    expect(pieceStyle({ duel: { gameId: 'code-maze' }, subject: 'code' }, q(['a'], { code: {} }))).toBe(null);
+    expect(fraction('3/4')).toEqual({ num: 3, den: 4 });
+    expect(fraction('5/4')).toBe(null);
+    expect(fraction('half')).toBe(null);
+  });
+});
