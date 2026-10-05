@@ -34,6 +34,7 @@ import { getBadge } from '../data/badges.js';
 import { drinkUp } from './world/drink.js';
 import { createTrail, trailTick } from './world/trail.js';
 import * as Hub from './world/hub.js';
+import { createLamps, refreshLamps } from './world/lamps.js';
 import { createGateways, refreshGateways, createGuide, retargetGuide, guideTick } from './world/guide.js';
 
 const SPEED = 110;          // px/s
@@ -95,6 +96,7 @@ export class WorldScene extends Phaser.Scene {
     createGateways(this);
     Hub.createFountain(this);
     Hub.createQuestBoard(this);
+    createLamps(this);
     createGuide(this);
     Companion.createCompanion(this);
     // Loading while standing in the doorway should not open the house until the player steps out and back in.
@@ -624,12 +626,12 @@ export class WorldScene extends Phaser.Scene {
       if (npc && slot) {
         this.time.delayedCall(400, () => {
           Sfx.unlock();
-          starPop(this, npc.x, npc.y - 22, slot.x, slot.y, 10, () => (Decor.refreshHouseStars(this), refreshGateways(this), retargetGuide(this), Hub.refreshFountain(this)));
+          starPop(this, npc.x, npc.y - 22, slot.x, slot.y, 10, () => (Decor.refreshHouseStars(this), refreshGateways(this), retargetGuide(this), Hub.refreshFountain(this), refreshLamps(this)));
           const left = HOUSE_LEVELS - result.houseStars;
           this.say(left > 0 ? `⭐ Level ${result.level} passed! ${left} more to go` : `⭐ All ${HOUSE_LEVELS} levels passed here!`, { icon: 'star', accent: THEME.warning });
         });
       }
-    } else (Decor.refreshHouseStars(this), refreshGateways(this), retargetGuide(this), Hub.refreshFountain(this));
+    } else (Decor.refreshHouseStars(this), refreshGateways(this), retargetGuide(this), Hub.refreshFountain(this), refreshLamps(this));
     if (result.gradeUp) this.time.delayedCall(2200, () => this.say(`📈 ${payload.title} moves up to ${gradeLabel(result.gradeUp.to)}!`, { icon: 'star', accent: THEME.brand }));
     if (result.errandUnlocked) {
       const giver = NPCS.find((n) => n.id === result.errandUnlocked.npc);

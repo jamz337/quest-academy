@@ -60,3 +60,23 @@ describe('the next-step trail', () => {
     expect(stepsFrom(routeField(map, target), map, target.tx, target.ty)).toEqual([]);
   });
 });
+
+describe('lamps along the roads', () => {
+  it('each land has a good row of them, beside its roads and never in the way', async () => {
+    const { lampSpots } = await import('../src/scenes/world/lamps.js');
+    const all = new Set();
+    for (const g of GATEWAYS) {
+      const spots = lampSpots(map, g.zone);
+      expect(spots.length, g.zone).toBeGreaterThanOrEqual(8);
+      expect(spots.length).toBeLessThanOrEqual(12);
+      for (const s of spots) {
+        const k = `${s.tx},${s.ty}`;
+        expect(all.has(k)).toBe(false); all.add(k);
+        expect(zoneAt(map, s.tx, s.ty)).toBe(g.zone);
+        expect(isWalkable(map.data[s.ty][s.tx])).toBe(true);
+        expect(map.data[s.ty][s.tx]).not.toBe(TID.path);
+        expect(Object.values(map.npcSpots).some((n) => n.tx === s.tx && n.ty === s.ty)).toBe(false);
+      }
+    }
+  });
+});
