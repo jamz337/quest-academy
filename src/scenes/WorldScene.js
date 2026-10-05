@@ -33,6 +33,7 @@ import { outfitOf, outfitId } from '../systems/Market.js';
 import { getBadge } from '../data/badges.js';
 import { drinkUp } from './world/drink.js';
 import { createTrail, trailTick } from './world/trail.js';
+import { createGateways, refreshGateways, createGuide, retargetGuide, guideTick } from './world/guide.js';
 
 const SPEED = 110;          // px/s
 const TALK_DIST = 44;       // px between player and NPC centres
@@ -90,6 +91,8 @@ export class WorldScene extends Phaser.Scene {
     Decor.createBellTower(this);
     Decor.createMarketStall(this);
     Decor.createChurch(this);
+    createGateways(this);
+    createGuide(this);
     Companion.createCompanion(this);
     // Loading while standing in the doorway should not open the house until the player steps out and back in.
     this.atHomeDoor = !!this.map.home && Math.floor(this.player.x / TILE) === this.map.home.door.tx && Math.floor(this.player.y / TILE) === this.map.home.door.ty;
@@ -309,6 +312,7 @@ export class WorldScene extends Phaser.Scene {
     Encounters.maybeSurprise(this, tx, ty);
     trailTick(this, tx, ty);
     Fishing.fishCueTick(this, tx, ty);
+    guideTick(this, tx, ty);
     this.lessonTick();
     if (hud && p) { const line = errandLine(p); if (hud.state.carry !== line) hud.setCarry(line); }
     if (this.errandItem && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.errandItem.x, this.errandItem.y) < 22) Errands.pickUpItem(this);
@@ -614,12 +618,12 @@ export class WorldScene extends Phaser.Scene {
       if (npc && slot) {
         this.time.delayedCall(400, () => {
           Sfx.unlock();
-          starPop(this, npc.x, npc.y - 22, slot.x, slot.y, 10, () => Decor.refreshHouseStars(this));
+          starPop(this, npc.x, npc.y - 22, slot.x, slot.y, 10, () => (Decor.refreshHouseStars(this), refreshGateways(this), retargetGuide(this)));
           const left = HOUSE_LEVELS - result.houseStars;
           this.say(left > 0 ? `⭐ Level ${result.level} passed! ${left} more to go` : `⭐ All ${HOUSE_LEVELS} levels passed here!`, { icon: 'star', accent: THEME.warning });
         });
       }
-    } else Decor.refreshHouseStars(this);
+    } else (Decor.refreshHouseStars(this), refreshGateways(this), retargetGuide(this));
     if (result.gradeUp) this.time.delayedCall(2200, () => this.say(`📈 ${payload.title} moves up to ${gradeLabel(result.gradeUp.to)}!`, { icon: 'star', accent: THEME.brand }));
     if (result.errandUnlocked) {
       const giver = NPCS.find((n) => n.id === result.errandUnlocked.npc);
