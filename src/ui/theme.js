@@ -80,12 +80,17 @@ export const METALS = {
  */
 export function shadeRoundedRect(g, x, y, w, h, r, stops) {
   const at = (t) => (stops.length === 2 ? mix(stops[0], stops[1], t) : t < 0.55 ? mix(stops[0], stops[1], t / 0.55) : mix(stops[1], stops[2], (t - 0.55) / 0.45));
-  const step = 2;
-  for (let yy = 0; yy < h; yy += step) {
-    const sh = Math.min(step, h - yy), d = Math.min(yy, h - yy - sh);
+  // Strips are one screen pixel tall inside the rounded corners (so the curve has no visible steps on a sharp
+  // phone screen) and 2 units tall along the straight sides, where only the colour changes.
+  const fine = 1 / Math.max(1, Math.min(4, (typeof window !== 'undefined' && window.devicePixelRatio) || 1));
+  for (let yy = 0; yy < h - 0.001;) {
+    const corner = yy < r || yy >= h - r;
+    const sh = Math.min(corner ? fine : Math.min(2, Math.max(fine, h - r - yy)), h - yy);
+    const mid = yy + sh / 2, d = Math.min(mid, h - mid);
     const inset = d < r ? r - Math.sqrt(Math.max(0, r * r - (r - d) * (r - d))) : 0;
     g.fillStyle(at(yy / h), 1);
     g.fillRect(x + inset, y + yy, w - inset * 2, sh);
+    yy += sh;
   }
 }
 

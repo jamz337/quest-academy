@@ -46,7 +46,8 @@ for (const [id, shape] of Object.entries(GAMES)) PATHS[`game-${id}`] = shape;
 export const ICON_NAMES = Object.keys(PATHS);
 /** Is there a drawn icon with this name? */
 export const hasIcon = (name) => !!PATHS[name];
-const SIZE = 96;
+// Sized for the screen: sharp on a 3x phone, without being shrunk so far on a 1x screen that it shimmers.
+const SIZE = Math.round(64 * Math.max(1.5, Math.min(3.5, (typeof window !== 'undefined' && window.devicePixelRatio) || 1)));
 
 /** Texture key for an icon in a colour (0xrrggbb), drawing it the first time it is asked for. */
 export function icon(scene, name, color = 0xffffff) {
