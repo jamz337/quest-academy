@@ -8,12 +8,13 @@ export const W = 56, H = 40;
 export const TID = {
   grass: 0, path: 1, water: 2, tree: 3, wall: 4, door: 5, flower: 6, meadow: 7, woods: 8, cove: 9, gateLocked: 10, gateOpen: 11, roof: 12,
   roofMath: 13, wallMath: 14, doorMath: 15, roofWords: 16, wallWords: 17, doorWords: 18, roofCode: 19, wallCode: 20, doorCode: 21,
-  roofBible: 22, wallBible: 23, doorBible: 24, castleTop: 25, castleWall: 26, castleDoor: 27, village: 28
+  roofBible: 22, wallBible: 23, doorBible: 24, castleTop: 25, castleWall: 26, castleDoor: 27, village: 28,
+  plinth: 41   // paving that something stands on (the fountain, the quest board): looks like path, cannot be walked on
 };
 export const ROOF_TILES = [TID.roof, TID.roofMath, TID.roofWords, TID.roofCode, TID.roofBible, TID.castleTop];
 export const WALL_TILES = [TID.wall, TID.wallMath, TID.wallWords, TID.wallCode, TID.wallBible, TID.castleWall];
 export const DOOR_TILES = [TID.door, TID.doorMath, TID.doorWords, TID.doorCode, TID.doorBible, TID.castleDoor];
-export const SOLID = [TID.water, TID.tree, TID.gateLocked, ...ROOF_TILES, ...WALL_TILES];
+export const SOLID = [TID.water, TID.tree, TID.gateLocked, TID.plinth, ...ROOF_TILES, ...WALL_TILES];
 export const isWalkable = (id) => !SOLID.includes(id);
 
 /** Each neighbourhood builds in its own style; bosses get a castle. */
@@ -203,7 +204,12 @@ export function buildMap() {
     if (touching) data[ty][tx] = groundAt(tx, ty);
   }
 
-  const spawn = { tx: 24, ty: 22 };
+  // The Star Fountain in the middle of the plaza and the quest board beside Signpost Sam (scenes/world/hub.js).
+  const fountain = { tx: 23, ty: 20, w: 3, h: 3 }, questBoard = { tx: 26, ty: 17 };
+  fillRect(data, fountain.tx, fountain.ty, fountain.w, fountain.h, TID.plinth);
+  data[questBoard.ty][questBoard.tx] = TID.plinth;
+
+  const spawn = { tx: 24, ty: 23 };   // just south of the fountain, facing it
 
   // Collectible coins scattered along the roads.
   const coins = [
@@ -214,7 +220,7 @@ export function buildMap() {
     { tx: 42, ty: 17 }, { tx: 45, ty: 22 }, { tx: 50, ty: 25 }
   ];
 
-  return { width: W, height: H, data, spawn, zones, gates, npcSpots, bossSpots, buildings, coins, signSpot, bellSpot, marketSpot, home, church, trail: TRAIL_STONES, bridge: TRAIL_BRIDGE, fishSign: { tx: 5, ty: 13 } };
+  return { width: W, height: H, data, spawn, zones, gates, npcSpots, bossSpots, buildings, coins, signSpot, bellSpot, marketSpot, home, church, trail: TRAIL_STONES, bridge: TRAIL_BRIDGE, fishSign: { tx: 5, ty: 13 }, fountain, questBoard };
 }
 
 /** Ground tile shown beneath a tree (trees are drawn on an overlay layer so the local ground shows through). */

@@ -19,7 +19,7 @@ import { FONT } from '../../ui/TextStyles.js';
 export function drawDecor(w) {
   const { data, width: W, height: H } = w.map;
   const at = (x, y) => (x < 0 || y < 0 || x >= W || y >= H ? -1 : data[y][x]);
-  const PATHY = new Set([TID.path, ...DOOR_TILES, TID.gateLocked, TID.gateOpen]);
+  const PATHY = new Set([TID.path, TID.plinth, ...DOOR_TILES, TID.gateLocked, TID.gateOpen]);
   const BUILDING = new Set([...WALL_TILES, ...ROOF_TILES, ...DOOR_TILES]);
   const g = w.make.graphics({ add: false });
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {

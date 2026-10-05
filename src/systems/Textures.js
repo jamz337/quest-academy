@@ -104,7 +104,8 @@ export const TILE_IDS = {
   roofMath: 13, wallMath: 14, doorMath: 15, roofWords: 16, wallWords: 17, doorWords: 18, roofCode: 19, wallCode: 20, doorCode: 21,
   roofBible: 22, wallBible: 23, doorBible: 24, castleTop: 25, castleWall: 26, castleDoor: 27, village: 28,
   flower2: 29, flower3: 30, flower4: 31, flower5: 32, flower6: 33,
-  meadow2: 34, meadow3: 35, meadow4: 36, meadow5: 37, meadow6: 38, meadow7: 39, meadow8: 40
+  meadow2: 34, meadow3: 35, meadow4: 36, meadow5: 37, meadow6: 38, meadow7: 39, meadow8: 40,
+  plinth: 41
 };
 /** Flower and daisy patches come in several looks; the world picks one per map square so no two neighbours match. */
 export const FLOWER_TILES = [6, 29, 30, 31, 32, 33], MEADOW_TILES = [7, 34, 35, 36, 37, 38, 39, 40];
@@ -368,6 +369,7 @@ export function tilesTexture(scene) {
   const T = TILE_IDS;
   tile(T.grass, (c) => grassTile(c, 0, rnd, '#5cc45a', '#45a648', '#8fe07c'));
   tile(T.path, (c) => pathTile(c, 0, rnd));
+  tile(T.plinth, (c) => pathTile(c, 0, rnd));   // paving under the fountain and the quest board
   tile(T.water, (c) => waterTile(c, 0, rnd));
   tile(T.tree, (c) => treeTile(c, 0), { transparent: true });   // drawn on the tree overlay layer
   tile(T.wall, (c) => wallTile(c, 0));

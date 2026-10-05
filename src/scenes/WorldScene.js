@@ -33,6 +33,7 @@ import { outfitOf, outfitId } from '../systems/Market.js';
 import { getBadge } from '../data/badges.js';
 import { drinkUp } from './world/drink.js';
 import { createTrail, trailTick } from './world/trail.js';
+import * as Hub from './world/hub.js';
 import { createGateways, refreshGateways, createGuide, retargetGuide, guideTick } from './world/guide.js';
 
 const SPEED = 110;          // px/s
@@ -92,6 +93,8 @@ export class WorldScene extends Phaser.Scene {
     Decor.createMarketStall(this);
     Decor.createChurch(this);
     createGateways(this);
+    Hub.createFountain(this);
+    Hub.createQuestBoard(this);
     createGuide(this);
     Companion.createCompanion(this);
     // Loading while standing in the doorway should not open the house until the player steps out and back in.
@@ -272,11 +275,14 @@ export class WorldScene extends Phaser.Scene {
       if (d < best) { best = d; near = s; }
     }
     this.nearNpc = near;
+    const board = !near && Hub.boardNear(this) ? this.questBoard : null;   // the quest board can be read like a villager
     if (near) this.bubble.setVisible(true).setPosition(near.x, near.y - 26 + Math.sin(time / 150) * 2);
+    else if (board) this.bubble.setVisible(true).setPosition(board.x, board.y - 38 + Math.sin(time / 150) * 2);
     else this.bubble.setVisible(false);
 
     if (inp.actionJustPressed && !skipAction) {
       if (near) this.talk(near);
+      else if (board) Hub.readBoard(this);
       else Fishing.tryFishing(this);
     }
   }
@@ -618,12 +624,12 @@ export class WorldScene extends Phaser.Scene {
       if (npc && slot) {
         this.time.delayedCall(400, () => {
           Sfx.unlock();
-          starPop(this, npc.x, npc.y - 22, slot.x, slot.y, 10, () => (Decor.refreshHouseStars(this), refreshGateways(this), retargetGuide(this)));
+          starPop(this, npc.x, npc.y - 22, slot.x, slot.y, 10, () => (Decor.refreshHouseStars(this), refreshGateways(this), retargetGuide(this), Hub.refreshFountain(this)));
           const left = HOUSE_LEVELS - result.houseStars;
           this.say(left > 0 ? `⭐ Level ${result.level} passed! ${left} more to go` : `⭐ All ${HOUSE_LEVELS} levels passed here!`, { icon: 'star', accent: THEME.warning });
         });
       }
-    } else (Decor.refreshHouseStars(this), refreshGateways(this), retargetGuide(this));
+    } else (Decor.refreshHouseStars(this), refreshGateways(this), retargetGuide(this), Hub.refreshFountain(this));
     if (result.gradeUp) this.time.delayedCall(2200, () => this.say(`📈 ${payload.title} moves up to ${gradeLabel(result.gradeUp.to)}!`, { icon: 'star', accent: THEME.brand }));
     if (result.errandUnlocked) {
       const giver = NPCS.find((n) => n.id === result.errandUnlocked.npc);
