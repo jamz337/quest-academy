@@ -8,6 +8,28 @@ import { TID } from '../../data/world/map.js';
 import { dayKey, FISH_MAX_PER_DAY } from '../../data/world/encounters.js';
 import { VERSES } from '../../data/bible/bank.js';
 
+/** Is the tile the player stands on beside water (the cove's sea, the village pond, Math Meadow's river)? */
+export function besideWater(w, tx, ty) {
+  return [[0, 1], [0, -1], [-1, 0], [1, 0]].some(([dx, dy]) => w.map.data[ty + dy] && w.map.data[ty + dy][tx + dx] === TID.water);
+}
+
+/**
+ * A little fishing rod bobbing over the player's head wherever a line can be cast, so children find out that the
+ * action button fishes there. Called from the world's tick with the player's tile.
+ */
+export function fishCueTick(w, tx, ty) {
+  if (!w.fishCue) {
+    w.fishCue = w.add.text(0, 0, '🎣', { fontSize: '9px' }).setOrigin(0.5).setDepth(20).setResolution(6).setVisible(false);
+    const follow = () => { const c = w.fishCue; if (c && c.active && c.visible && w.player) c.setPosition(w.player.x, w.player.y - 24 + Math.sin(w.time.now / 260) * 1.5); };
+    w.events.on('update', follow);
+    w.events.once('shutdown', () => { w.events.off('update', follow); w.fishCue = null; });
+  }
+  const hud = w.hud();
+  const show = besideWater(w, tx, ty) && !w.nearNpc && !(hud && hud.blocking);
+  if (show && !w.fishCue.visible) w.fishCue.setPosition(w.player.x, w.player.y - 24);
+  w.fishCue.setVisible(show);
+}
+
 /** Action pressed with nobody near: if the player faces water, cast a line. */
 export function tryFishing(w) {
   const tx = Math.floor(w.player.x / TILE), ty = Math.floor(w.player.y / TILE);

@@ -53,7 +53,16 @@ export function drawDecor(w) {
  * numbers are text on top) and a little something by each game's house: a start flag, balloons, a pizza sign.
  */
 function drawTrail(w, g) {
-  const { trail, bridge, npcSpots } = w.map;
+  const { trail, bridge, npcSpots, fishSign } = w.map;
+  if (fishSign) {   // "you can fish here": a fish on a board by the river bank
+    const x = (fishSign.tx + 0.5) * TILE, y = (fishSign.ty + 0.5) * TILE;
+    g.fillStyle(0x000000, 0.15); g.fillEllipse(x, y + 12, 12, 3);
+    g.fillStyle(0x6e4a28, 1); g.fillRect(x - 1, y - 4, 2, 16);
+    g.fillStyle(0x8f6238, 1); g.fillRoundedRect(x - 11, y - 14, 22, 13, 2.5);
+    g.fillStyle(0xf4e3c1, 1); g.fillRoundedRect(x - 9.5, y - 12.5, 19, 10, 2);
+    g.fillStyle(0x4c8df6, 1); g.fillEllipse(x - 1, y - 7.5, 10, 5.5); g.fillTriangle(x + 3, y - 7.5, x + 7.5, y - 10.5, x + 7.5, y - 4.5);
+    g.fillStyle(0xffffff, 1); g.fillCircle(x - 3.5, y - 8.2, 0.9);
+  }
   if (bridge) {
     const x = bridge.tx * TILE, y = bridge.ty * TILE, h = bridge.h * TILE;
     g.fillStyle(0x0b4f8a, 0.25); g.fillRect(x - 3, y + 3, TILE + 6, h);                     // its shadow on the water

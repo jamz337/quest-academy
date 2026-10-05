@@ -214,7 +214,7 @@ export function buildMap() {
     { tx: 42, ty: 17 }, { tx: 45, ty: 22 }, { tx: 50, ty: 25 }
   ];
 
-  return { width: W, height: H, data, spawn, zones, gates, npcSpots, bossSpots, buildings, coins, signSpot, bellSpot, marketSpot, home, church, trail: TRAIL_STONES, bridge: TRAIL_BRIDGE };
+  return { width: W, height: H, data, spawn, zones, gates, npcSpots, bossSpots, buildings, coins, signSpot, bellSpot, marketSpot, home, church, trail: TRAIL_STONES, bridge: TRAIL_BRIDGE, fishSign: { tx: 5, ty: 13 } };
 }
 
 /** Ground tile shown beneath a tree (trees are drawn on an overlay layer so the local ground shows through). */

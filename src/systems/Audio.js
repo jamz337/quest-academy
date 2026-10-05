@@ -48,10 +48,21 @@ function tone(freq, dur = 0.12, type = 'square', vol = 0.08, when = 0, slide = 0
   o.connect(g).connect(a.destination); o.start(t0); o.stop(t0 + dur + 0.02);
 }
 
+// C major from middle C up to E an octave above: one note per stepping stone.
+const SCALE = [262, 294, 330, 349, 392, 440, 494, 523, 587, 659];
+
 export const Sfx = {
   click: () => tone(660, 0.06, 'square', 0.05),
   /** Right answer: a bright chime climbing three notes, with a sparkle on top. */
   correct: () => { tone(1047, 0.14, 'triangle', 0.1); tone(1319, 0.14, 'triangle', 0.1, 0.08); tone(1568, 0.26, 'triangle', 0.1, 0.16); tone(2093, 0.3, 'sine', 0.04, 0.18); },
+  /** Note `n` (1 to 10) of a rising scale, for the Number Trail's stepping stones. */
+  note: (n) => tone(SCALE[Math.max(1, Math.min(SCALE.length, n | 0)) - 1], 0.4, 'triangle', 0.13),
+  /** The whole scale as a quick run (down when `down`), ending on a held chord. */
+  scale: (down = false) => {
+    const run = down ? [...SCALE].reverse() : SCALE;
+    run.forEach((f, i) => tone(f, 0.16, 'triangle', 0.1, i * 0.11));
+    [run[run.length - 1], run[run.length - 1] * 1.25, run[run.length - 1] * 1.5].forEach((f) => tone(f, 0.6, 'triangle', 0.07, run.length * 0.11));
+  },
   /** Three little swallows, for a drink. */
   gulp: () => { [0, 0.2, 0.4].forEach((t) => tone(170, 0.13, 'sine', 0.14, t, 150)); },
   /** Wrong answer: a soft, low "uh-oh" (two falling notes): clearly not the chime, but never harsh. */

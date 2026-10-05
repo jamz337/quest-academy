@@ -32,6 +32,7 @@ import { checkBadges } from '../systems/Progression.js';
 import { outfitOf, outfitId } from '../systems/Market.js';
 import { getBadge } from '../data/badges.js';
 import { drinkUp } from './world/drink.js';
+import { createTrail, trailTick } from './world/trail.js';
 
 const SPEED = 110;          // px/s
 const TALK_DIST = 44;       // px between player and NPC centres
@@ -70,6 +71,7 @@ export class WorldScene extends Phaser.Scene {
     this.layer.setCollision(SOLID.filter((id) => id !== TID.tree));   // trees collide on their own layer
     Decor.drawDecor(this);
     Decor.createTrailNumbers(this);
+    createTrail(this);
     this.treeLayer = tilemap.createBlankLayer('trees', tileset, 0, 0).setDepth(2).setScale(1 / TILE_RES);
     this.map.data.forEach((row, ty) => row.forEach((id, tx) => { if (id === TID.tree) this.treeLayer.putTileAt(TID.tree, tx, ty); }));
     this.treeLayer.setCollision([TID.tree]);
@@ -305,6 +307,8 @@ export class WorldScene extends Phaser.Scene {
       if (hud) hud.updateMinimap({ tx, ty, explored, repaint, markers: this.mapMarkers(p) });
     }
     Encounters.maybeSurprise(this, tx, ty);
+    trailTick(this, tx, ty);
+    Fishing.fishCueTick(this, tx, ty);
     this.lessonTick();
     if (hud && p) { const line = errandLine(p); if (hud.state.carry !== line) hud.setCarry(line); }
     if (this.errandItem && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.errandItem.x, this.errandItem.y) < 22) Errands.pickUpItem(this);
