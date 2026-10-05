@@ -108,7 +108,7 @@ export function buildMapPage(hud) {
     let y = m.contentTop + 4 + map.height * scale + 16 * ui;
     text(hud, w / 2, y, `Explored ${Math.round(exploredStats(explored).share * 100)}% of Quest Academy`, T.small(hud, THEME.ink2)).setDepth(603);
     y += 20 * ui;
-    text(hud, w / 2, y, '● you     ★ errand     ■ boss castle     ● home', T.small(hud, THEME.ink3)).setDepth(603);
+    text(hud, w / 2, y, '● you     ★ errand     ★ boss castle     ● home', T.small(hud, THEME.ink3)).setDepth(603);
   }
   button(hud, w / 2, m.y + m.h - 34 * ui, Math.min(m.w - 48, 200 * ui), 44 * ui, 'Back', { variant: 'secondary', onClick: () => { hud.state.menuPage = 'menu'; hud.rebuild(); } }).setDepth(603);
 }

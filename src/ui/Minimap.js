@@ -4,36 +4,106 @@ import { TID } from '../data/world/map.js';
 import { isExplored } from '../data/world/explore.js';
 import { FONT, WEIGHT } from './TextStyles.js';
 
-// One colour per tile id. Buildings take their neighbourhood's roof colour so the lands read at a glance.
-const TILE_COLOUR = {
-  [TID.grass]: '#5cc45a', [TID.flower]: '#6fd06a', [TID.meadow]: '#bfe05c', [TID.woods]: '#3f9a45', [TID.cove]: '#e9d8a6', [TID.village]: '#9ad06a',
-  [TID.path]: '#d9b98a', [TID.plinth]: '#8cc6ff', [TID.water]: '#4aa8ff', [TID.tree]: '#2f7a36', [TID.gateLocked]: '#8a5a3c', [TID.gateOpen]: '#d9b98a',
-  [TID.roof]: '#b5443c', [TID.wall]: '#e8d9b5', [TID.door]: '#5a3a22',
-  [TID.roofMath]: '#d9a066', [TID.wallMath]: '#f1e2c2', [TID.doorMath]: '#5a3a22',
-  [TID.roofWords]: '#8a5a3c', [TID.wallWords]: '#b27c4e', [TID.doorWords]: '#5a3a22',
-  [TID.roofCode]: '#7c8ca0', [TID.wallCode]: '#b8c4d4', [TID.doorCode]: '#2d2a4a',
-  [TID.roofBible]: '#9c8f8a', [TID.wallBible]: '#d6cfc4', [TID.doorBible]: '#5a3a22',
-  [TID.castleTop]: '#8a94a6', [TID.castleWall]: '#a9b1bf', [TID.castleDoor]: '#2d2a4a'
+// The map is painted as a little illustration: soft ground colours for each land, roads as rounded ribbons, water
+// with rounded banks, trees as round tufts and every building as a small house in its land's colour.
+const GROUND = {
+  [TID.grass]: '#63c765', [TID.flower]: '#63c765', [TID.meadow]: '#c3e266', [TID.woods]: '#3f9d4a', [TID.cove]: '#f0dfae', [TID.village]: '#a3d66f'
 };
-const FOG = 'rgba(45,42,74,0.88)';
+const ZONE_GROUND = { math: GROUND[TID.meadow], words: GROUND[TID.woods], code: GROUND[TID.cove], bible: GROUND[TID.village] };
+const ROOFS = { math: '#4c8df6', words: '#249762', code: '#e8623f', bible: '#8566ee', hub: '#ff6fae' };
+const ROAD = '#f0d6a4', ROAD_EDGE = '#d2ae6c', WATER = '#58aef7', WATER_DEEP = '#3d8be0';
+const FOG = '#2d2a4a';
+/** Pixels of the map texture per tile. */
+export const MAP_RES = 8;
 export const MINIMAP_TEXTURE = 'minimap';
 
+const zoneOf = (map, tx, ty) => { for (const z of map.zones || []) { const r = z.rect; if (tx >= r.x && tx < r.x + r.w && ty >= r.y && ty < r.y + r.h) return z.id; } return null; };
+const isRoad = (id) => id === TID.path || id === TID.gateOpen || id === TID.gateLocked;
+
 /**
- * Paint the map into a canvas texture, one pixel per tile, with unexplored tiles fogged. Cheap enough to
- * redraw whenever the explored set changes (a few thousand 1px fills).
+ * Paint the map into a canvas texture (MAP_RES px per tile) with the unexplored parts under soft cloud. Redrawn
+ * whenever the explored set changes.
  */
 export function paintMinimap(scene, map, explored) {
-  const key = MINIMAP_TEXTURE;
-  const tex = scene.textures.exists(key) ? scene.textures.get(key) : scene.textures.createCanvas(key, map.width, map.height);
+  const key = MINIMAP_TEXTURE, R = MAP_RES, W = map.width * R, H = map.height * R;
+  const tex = scene.textures.exists(key) ? scene.textures.get(key) : scene.textures.createCanvas(key, W, H);
   const ctx = tex.getContext();
+  if (!ctx || typeof ctx.beginPath !== 'function') return key;   // headless tests have no real canvas
+  const at = (x, y) => (map.data[y] ? map.data[y][x] : undefined);
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.clearRect(0, 0, W, H);
+  // Ground: each tile takes its own ground colour, or its land's where something stands on it.
   for (let ty = 0; ty < map.height; ty++) for (let tx = 0; tx < map.width; tx++) {
-    ctx.fillStyle = TILE_COLOUR[map.data[ty][tx]] || '#5cc45a';
-    ctx.fillRect(tx, ty, 1, 1);
-    if (!isExplored(explored, tx, ty)) { ctx.fillStyle = FOG; ctx.fillRect(tx, ty, 1, 1); }
+    ctx.fillStyle = GROUND[at(tx, ty)] || ZONE_GROUND[zoneOf(map, tx, ty)] || GROUND[TID.grass];
+    ctx.fillRect(tx * R, ty * R, R, R);
   }
+  // Water with rounded banks and a lighter middle.
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  const water = [];
+  for (let ty = 0; ty < map.height; ty++) for (let tx = 0; tx < map.width; tx++) if (at(tx, ty) === TID.water) water.push([tx, ty]);
+  ctx.fillStyle = WATER_DEEP; ctx.strokeStyle = WATER_DEEP; ctx.lineWidth = R * 0.5;
+  for (const [tx, ty] of water) { ctx.fillRect(tx * R, ty * R, R, R); ctx.strokeRect(tx * R, ty * R, R, R); }
+  ctx.fillStyle = WATER;
+  for (const [tx, ty] of water) ctx.fillRect(tx * R - 0.5, ty * R - 0.5, R + 1, R + 1);
+  // Roads: ribbons joining neighbouring road tiles (and the plinths the fountain stands on), edge first.
+  const roadLike = (x, y) => isRoad(at(x, y)) || at(x, y) === TID.plinth || DOOR_IDS.has(at(x, y));
+  for (const [colour, width] of [[ROAD_EDGE, R * 1.05], [ROAD, R * 0.78]]) {
+    ctx.strokeStyle = colour; ctx.lineWidth = width; ctx.beginPath();
+    for (let ty = 0; ty < map.height; ty++) for (let tx = 0; tx < map.width; tx++) {
+      if (!roadLike(tx, ty)) continue;
+      const cx = (tx + 0.5) * R, cy = (ty + 0.5) * R;
+      ctx.moveTo(cx, cy); ctx.lineTo(cx, cy);
+      if (roadLike(tx + 1, ty)) { ctx.moveTo(cx, cy); ctx.lineTo(cx + R, cy); }
+      if (roadLike(tx, ty + 1)) { ctx.moveTo(cx, cy); ctx.lineTo(cx, cy + R); }
+    }
+    ctx.stroke();
+  }
+  // Open squares of road (the plaza, forecourts) are filled in, so the ribbons leave no gaps.
+  ctx.fillStyle = ROAD;
+  for (let ty = 0; ty < map.height; ty++) for (let tx = 0; tx < map.width; tx++) {
+    if (!roadLike(tx, ty)) continue;
+    const n = [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => roadLike(tx + dx, ty + dy)).length;
+    if (n >= 3) ctx.fillRect(tx * R - 0.5, ty * R - 0.5, R + 1, R + 1);
+  }
+  // Trees: round tufts with a highlight.
+  for (let ty = 0; ty < map.height; ty++) for (let tx = 0; tx < map.width; tx++) {
+    if (at(tx, ty) !== TID.tree) continue;
+    const cx = (tx + 0.5) * R, cy = (ty + 0.5) * R;
+    ctx.fillStyle = '#23803f'; ctx.beginPath(); ctx.arc(cx, cy + R * 0.06, R * 0.56, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#37a455'; ctx.beginPath(); ctx.arc(cx - R * 0.08, cy - R * 0.1, R * 0.4, 0, Math.PI * 2); ctx.fill();
+  }
+  // Buildings: a little house in the land's colour; castles in stone with a flag.
+  for (const bld of map.buildings || []) {
+    const x = bld.x * R, y = bld.y * R, w = bld.w * R, h = bld.h * R, castle = bld.style === 'castle';
+    ctx.fillStyle = 'rgba(30,27,75,0.22)'; ctx.beginPath(); ctx.roundRect(x + R * 0.25, y + R * 0.45, w, h - R * 0.2, R * 0.5); ctx.fill();
+    ctx.fillStyle = castle ? '#aab1c2' : '#fff6e6'; ctx.beginPath(); ctx.roundRect(x + R * 0.1, y + R * 0.2, w - R * 0.2, h - R * 0.3, R * 0.45); ctx.fill();
+    ctx.fillStyle = castle ? '#7d869b' : ROOFS[bld.zone] || ROOFS.hub;
+    ctx.beginPath(); ctx.roundRect(x + R * 0.1, y + R * 0.2, w - R * 0.2, h * 0.5, [R * 0.45, R * 0.45, 0, 0]); ctx.fill();
+    ctx.fillStyle = '#5a3a22'; ctx.beginPath(); ctx.roundRect(x + w / 2 - R * 0.3, y + h - R * 0.95, R * 0.6, R * 0.85, R * 0.2); ctx.fill();
+    if (castle) { ctx.fillStyle = ROOFS[bld.zone] || '#e8623f'; ctx.fillRect(x + w / 2 - R * 0.08, y - R * 0.5, R * 0.16, R * 0.9); ctx.beginPath(); ctx.moveTo(x + w / 2, y - R * 0.5); ctx.lineTo(x + w / 2 + R * 0.8, y - R * 0.2); ctx.lineTo(x + w / 2, y + R * 0.1); ctx.fill(); }
+  }
+  // The fountain in the plaza.
+  if (map.fountain) {
+    const f = map.fountain, cx = (f.tx + f.w / 2) * R, cy = (f.ty + f.h / 2) * R;
+    ctx.fillStyle = '#dcd8e6'; ctx.beginPath(); ctx.arc(cx, cy, R * 1.35, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = WATER; ctx.beginPath(); ctx.arc(cx, cy, R * 1.0, 0, Math.PI * 2); ctx.fill();
+  }
+  // Cloud over what has not been explored: soft rounded puffs, all one shade.
+  const fog = fogCanvas(W, H), fx = fog.getContext('2d');
+  fx.clearRect(0, 0, W, H); fx.fillStyle = FOG;
+  for (let ty = 0; ty < map.height; ty++) for (let tx = 0; tx < map.width; tx++) {
+    if (isExplored(explored, tx, ty)) continue;
+    fx.beginPath(); fx.arc((tx + 0.5) * R, (ty + 0.5) * R, R * 0.95, 0, Math.PI * 2); fx.fill();
+  }
+  ctx.globalAlpha = 0.86; ctx.drawImage(fog, 0, 0); ctx.globalAlpha = 1;
   tex.refresh();
-  if (typeof tex.setFilter === 'function') tex.setFilter(Phaser.Textures.FilterMode.NEAREST);
   return key;
+}
+const DOOR_IDS = new Set([TID.door, TID.doorMath, TID.doorWords, TID.doorCode, TID.doorBible, TID.castleDoor]);
+let fogScratch = null;
+function fogCanvas(w, h) {
+  if (!fogScratch) fogScratch = document.createElement('canvas');
+  if (fogScratch.width !== w || fogScratch.height !== h) { fogScratch.width = w; fogScratch.height = h; }
+  return fogScratch;
 }
 
 /**
@@ -49,11 +119,12 @@ export class Minimap extends Phaser.GameObjects.Container {
     const w = map.width * scale, h = map.height * scale;
     this.w = w; this.h = h;
     const frame = scene.add.graphics();
-    frame.fillStyle(THEME.ink, 0.18); frame.fillRoundedRect(-4, -1, w + 8, h + 8, 8);
-    frame.fillStyle(THEME.surface, 1); frame.fillRoundedRect(-4, -4, w + 8, h + 8, 8);
+    frame.fillStyle(THEME.ink, 0.18); frame.fillRoundedRect(-4, -1, w + 8, h + 8, 10);
+    frame.fillStyle(THEME.surface, 1); frame.fillRoundedRect(-4, -4, w + 8, h + 8, 10);
     this.image = scene.add.image(0, 0, MINIMAP_TEXTURE).setOrigin(0).setDisplaySize(w, h);
     this.markers = scene.add.container(0, 0);
-    this.player = scene.add.circle(0, 0, Math.max(2.5, scale * 1.2), THEME.danger, 1).setStrokeStyle(1.5, 0xffffff, 1);
+    this.player = scene.add.circle(0, 0, Math.max(3, scale * 1.3), THEME.danger, 1).setStrokeStyle(Math.max(1.5, scale * 0.35), 0xffffff, 1);
+    if (scene.tweens) scene.tweens.add({ targets: this.player, scale: 1.25, duration: 600, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
     this.label = scene.add.text(w - 3, h - 2, 'MAP', { fontFamily: FONT, fontSize: '8px', color: hex(THEME.onAccent), fontStyle: WEIGHT.heavy }).setOrigin(1, 1).setAlpha(0.8);
     this.add([frame, this.image, this.markers, this.player, this.label]);
     this.setSize(w + 8, h + 8);
@@ -83,7 +154,7 @@ export class Minimap extends Phaser.GameObjects.Container {
         s.tweens.add({ targets: star, scale: star.scale * 1.35, duration: 500, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
         this.markers.add(star);
       } else if (m.kind === 'boss' || m.kind === 'bossDone') {
-        this.markers.add(s.add.rectangle(p.x, p.y, this.px * 2.2, this.px * 2.2, m.kind === 'boss' ? THEME.danger : THEME.ink3, 1).setStrokeStyle(1, 0xffffff, 0.9));
+        this.markers.add(s.add.star(p.x, p.y - this.px * 1.2, 5, this.px * 0.7, this.px * 1.5, m.kind === 'boss' ? THEME.danger : THEME.ink3, 1).setStrokeStyle(1, 0xffffff, 0.9));
       } else if (m.kind === 'home') {
         this.markers.add(s.add.circle(p.x, p.y, this.px, THEME.pink, 1).setStrokeStyle(1, 0xffffff, 0.9));
       } else if (m.kind === 'church') {

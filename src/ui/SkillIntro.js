@@ -57,6 +57,9 @@ export function tipFor(it) {
 export const canFinish = (it) => it.phase === 'ready' || (it.phase === 'try' && it.solved);
 
 const defaultProblem = (scene, r, str, { solved, f, theme }) => {
+  // The example sits on a soft tinted panel, green once it is solved.
+  const g = scene.add.graphics(), pw = Math.min(r.w - 12 * f, 460 * f);
+  g.fillStyle(solved ? THEME.success : theme.ink, solved ? 0.12 : 0.07); g.fillRoundedRect(r.x + r.w / 2 - pw / 2, r.y + 3 * f, pw, r.h - 6 * f, 18 * f);
   const style = { fontFamily: FONT, fontSize: Math.round(Math.min(34 * f, r.h * 0.5)) + 'px', color: hex(solved ? THEME.successDark : theme.ink), fontStyle: WEIGHT.heavy, align: 'center', wordWrap: { width: r.w - 16 } };
   return readable(scene, r.x + r.w / 2, r.y + r.h / 2, str, style, { width: r.w - 16 });
 };
@@ -88,8 +91,14 @@ export function skillIntro(scene, area, it, theme, on) {
   if (title.width > R.w - 110 * f) title.setFontSize(Math.round(17 * f));
   y += 36 * f;
   const sub = trying ? (it.solved ? (gotItRight(it) ? 'Yes! You have got it.' : `The answer is ${p.answer}. You will get the next one!`) : it.picks.length ? 'Not quite. Look at the tip and try again!' : 'Your turn! Tap the answer.')
-    : it.phase === 'ready' ? 'Ready to play!' : `Watch how this one is done  ·  step ${it.shown} of ${it.steps.length}`;
+    : it.phase === 'ready' ? 'Ready to play!' : 'Watch how this one is done';
   text(scene, cx, y + 8 * f, sub, { ...T.small(scene, trying && it.picks.length && !it.solved ? THEME.danger : trying && it.solved && gotItRight(it) ? THEME.successDark : theme.ink2 || THEME.ink2), fontSize: Math.round(14 * f) + 'px', wordWrap: { width: R.w - 20 } });
+  // A dot for every step of the working: filled as each one is shown.
+  if (!trying && it.phase !== 'ready' && it.steps.length > 1) {
+    const dots = scene.add.graphics(), n = it.steps.length, gapX = 14 * f, x0 = cx - ((n - 1) * gapX) / 2;
+    for (let i = 0; i < n; i++) { dots.fillStyle(i < it.shown ? theme.title : theme.ink, i < it.shown ? 1 : 0.2); dots.fillCircle(x0 + i * gapX, y + 24 * f, (i === it.shown - 1 ? 4.5 : 3.5) * f); }
+    y += 8 * f;
+  }
   y += 26 * f;
 
   // The problem: the solved example while watching, the practice question (answered once solved) while trying.
@@ -104,18 +113,28 @@ export function skillIntro(scene, area, it, theme, on) {
   let reader = null;
   if (!trying) {
     // The working, one numbered step per line; the newest slides in.
+    // Each step is a card with its number on a badge; the newest one is tinted.
     const lines = it.steps.slice(0, it.shown);
+    const rows = scene.add.graphics();   // made first, so the cards sit under the words
+    const padY = 7 * f, gapY = 7 * f, textX = R.x + 46 * f, textW = R.w - 60 * f;
     let size = 17;
     let blocks = [];
-    for (; size >= 14; size -= 1) {
+    for (; size >= 13; size -= 1) {
       blocks.forEach((b) => b.destroy());
-      blocks = []; let yy = y;
+      blocks = []; let yy = y + padY;
       for (let i = 0; i < lines.length; i++) {
-        const b = readable(scene, R.x + 12 * f, yy, `${i + 1}.  ${lines[i]}`, T.at(scene, size, theme.ink, { fontStyle: '600' }), { width: R.w - 24 * f, align: 'left', lineGap: 6 }).setOrigin(0, 0);
-        blocks.push(b); yy += (b.height || size * 1.4 * f) + 8 * f;
+        const b = readable(scene, textX, yy, lines[i], T.at(scene, size, theme.ink, { fontStyle: '600' }), { width: textW, align: 'left', lineGap: 4 }).setOrigin(0, 0);
+        blocks.push(b); yy += (b.height || size * 1.4 * f) + padY * 2 + gapY;
       }
-      if (yy <= bodyBottom) break;
+      if (yy - padY - gapY <= bodyBottom) break;
     }
+    const light = ((theme.title >> 16) & 255) * 0.3 + ((theme.title >> 8) & 255) * 0.59 + (theme.title & 255) * 0.11 > 150;   // a pale badge takes dark numbers
+    blocks.forEach((b, i) => {
+      const last = i === blocks.length - 1, rh = (b.height || size * 1.4 * f) + padY * 2, ry = b.y - padY;
+      rows.fillStyle(last ? theme.title : theme.ink, last ? 0.14 : 0.06); rows.fillRoundedRect(R.x + 6 * f, ry, R.w - 12 * f, rh, Math.min(14 * f, rh / 2));
+      rows.fillStyle(theme.title, 1); rows.fillCircle(R.x + 26 * f, ry + rh / 2, 12 * f);
+      made.push(scene.add.text(R.x + 26 * f, ry + rh / 2, String(i + 1), { fontFamily: FONT, fontSize: Math.round(14 * f) + 'px', color: light ? '#1e1b4b' : '#ffffff', fontStyle: WEIGHT.heavy }).setOrigin(0.5));
+    });
     const newest = blocks[blocks.length - 1];
     if (newest && it.shown > 1 && scene.tweens) { newest.setAlpha(0); newest.x += 12 * f; scene.tweens.add({ targets: newest, alpha: 1, x: newest.x - 12 * f, duration: 280, ease: 'Cubic.Out' }); }
     made.push(...blocks);
