@@ -47,10 +47,19 @@ describe('older games with scenery (headless)', () => {
     const q = () => s.state.questions[s.state.idx];
     s.pick(q().choices.indexOf(q().answer)); flushTimers(s); skip(s);
     expect(s.state.correct).toBe(1); expect(s.state.idx).toBe(1);
+    // The first miss earns a second try (the pad clears); the second miss shows why.
     s.state.typed = '999'; s.submit();
+    expect(s.state.right).toBe(null); expect(s.state.again).toBe(true); expect(s.state.typed).toBe('');
+    s.state.typed = '998'; s.submit();
     expect(s.state.right).toBe(false);
     click(findButton(s, 'Next ▶'));
     expect(s.state.idx).toBe(2);
+    // A rescue on the second try moves the runner on, and two rescues are worth one right answer.
+    const wrongI = q().choices.findIndex((c) => c !== q().answer);
+    s.pick(wrongI);
+    expect(s.state.struck).toEqual([wrongI]); expect(s.state.locked).toBe(false);
+    s.pick(q().choices.indexOf(q().answer));
+    expect(s.state.saved).toBe(1); expect(s.state.correct).toBe(1);
   });
 
   it('Grammar Gate lowers the portcullis a notch for each right word, and not for a wrong one', () => {

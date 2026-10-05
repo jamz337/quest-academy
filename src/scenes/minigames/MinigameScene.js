@@ -330,6 +330,23 @@ export class MinigameScene extends BaseScene {
   }
 
   /** A miss: the sound, flash and shake, the streak resets and Mango scratches his head. */
+  /**
+   * The first miss on a question earns a second try instead of the explanation: a soft "try again" (Mango says
+   * so), and the miss is logged once so the skill still comes back for review. Returns true when the game should
+   * keep the question open; false on the second miss (or when the question has already had its second try).
+   */
+  secondChance(q) {
+    const key = this.explainKey(q);
+    if (this.chanceKey === key) return false;
+    this.chanceKey = key;
+    this.logQuestion(q, false);
+    Sfx.wrong(); this.cameras.main.shake(90, 0.003); this.streakRun = 0;
+    setMood(this.buddyMood || (this.buddyMood = newBuddyMood()), 'oops', 'Try again!');
+    return true;
+  }
+  /** Is this question on its second try (so it has been logged already)? */
+  onSecondTry(q) { return this.chanceKey === this.explainKey(q); }
+
   wrongFeedback() {
     Sfx.wrong(); this.flash(THEME.danger, 0.14); this.cameras.main.shake(120, 0.004);
     this.streakRun = 0;
