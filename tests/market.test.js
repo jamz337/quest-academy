@@ -191,6 +191,6 @@ describe('the market screen (headless)', () => {
     const caller = { events: { emit: vi.fn() } };
     s.scene.get = () => caller; s.scene.isPaused = () => true;
     s.close();
-    expect(caller.events.emit).toHaveBeenCalledWith('market:done', {});
+    expect(caller.events.emit).toHaveBeenCalledWith('market:done', { bought: expect.any(Array) });
   });
 });

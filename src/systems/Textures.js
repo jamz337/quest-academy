@@ -8,6 +8,7 @@ import { OUTLINE, MOUTH, BOOTS, CHARACTER_STYLES, NPC_STYLES, lookId } from '../
 export { CHARACTER_STYLES, NPC_STYLES };
 import { MONKEY_FRAMES } from '../ui/FlatCharacter.js';
 import { MANGO_CELL, MANGO_FACE, drawMango, drawMangoFace } from '../ui/Mango.js';
+import { CRITTER_CELL, CRITTER_KEYS, drawCritter } from '../ui/Critters.js';
 import { LPC_FRAME, LPC_COLS, allLayerPaths, composeSheet, drawOutfitBack, drawOutfitFront, drawBustFromSheet, walkRange } from '../ui/LpcCharacter.js';
 export { WORLD_SCALE as CHAR_WORLD_SCALE, IDLE_FRAMES } from '../ui/LpcCharacter.js';
 
@@ -96,35 +97,6 @@ export function characterTexture(scene, key, look, scale = 1, opts = null) {
   tex.setFilter(Phaser.Textures.FilterMode.NEAREST);
   void scale;
 }
-
-// The robot rotates in the maze, so it has no ground shadow.
-const ROBOT = [
-  '.......kk.......', '......kyyk......', '.......kk.......', '...kkkkkkkkkk...',
-  '...kcccccccck...', '...kcbbbbbbck...', '...kcbkbbkbck...', '...kcbbbbbbck...',
-  '...kcccccccck...', '..kyccccccccyk..', '...kcccccccck...', '...kkkkkkkkkk...',
-  '....kddkkddk....', '....kddkkddk....', '....kddkkddk....', '................'
-];
-const ROBOT2 = ROBOT.map((r, i) => (i >= 12 && i <= 14 ? '...kddk..kddk...' : r));
-
-// The wandering sheep (faces left; flipX for right). Two walk frames swap the legs.
-const SHEEP = [
-  '................', '.....wwwwww.....', '....wwwwwwww....', '...wwwwwwwwww...',
-  '..kkwwwwwwwwww..', '.kkkkwwwwwwwwww.', '.kckkwwwwwwwwww.', '.kkkkwwwwwwwwww.',
-  '..kkwwwwwwwwwww.', '...wwwwwwwwwww..', '....wwwwwwwww...', '....kk...kk.....',
-  '....kk...kk.....', '....xxxxxxxx....', '................', '................'
-];
-const SHEEP2 = SHEEP.map((r, i) => (i === 11 || i === 12 ? '...kk.....kk....' : r));
-
-// The bunny: tall ears with pink insides, a pink nose and a white tail. Faces left.
-const BUNNY = [
-  '................', '..kk..kk........', '.kpckkpck.......', '.kpckkpck.......',
-  '.kcckkcck.......', '.kccccccck......', '.kckcccccckkkk..', '.kccccccccccccck',
-  '.kpcccccccccccwk', '..kcccccccccccwk', '...kkccccccccck.', '....kcck..kcck..',
-  '....kkkk..kkkk..', '....xxxxxxxxxx..', '................', '................'
-];
-const BUNNY2 = BUNNY.map((r, i) => (i === 11 ? '...kcck....kcck.' : i === 12 ? '...kkkk....kkkk.' : r));
-
-
 
 /** Tileset 'tiles' with TILE x TILE frames: see TILE_IDS. */
 export const TILE_IDS = {
@@ -557,9 +529,12 @@ export function generateAllTextures(scene) {
   tilesTexture(scene);
   CHARACTER_STYLES.forEach((st, i) => characterTexture(scene, `char${i}`, st));
   NPC_STYLES.forEach((st, i) => characterTexture(scene, `npc${i}`, st, 1, st.outfit ? { outfit: st.outfit, outfitKey: 'npc' + i } : null));
-  pixelTexture(scene, 'robot', [ROBOT, ROBOT2]);
-  pixelTexture(scene, 'sheep', [SHEEP, SHEEP2]);
-  pixelTexture(scene, 'bunny', [BUNNY, BUNNY2]);
+  for (const key of CRITTER_KEYS) {   // the sheep, the bunny and the robot, painted smooth (ui/Critters.js): standing and stepping
+    if (scene.textures.exists(key)) continue;
+    const C = CRITTER_CELL, tex = scene.textures.createCanvas(key, C * 2, C), ctx = tex.getContext();
+    for (let i = 0; i < 2; i++) { drawCritter(ctx, key, C * i, 0, C, i); tex.add(i, 0, C * i, 0, C, C); }
+    tex.refresh();
+  }
   if (!scene.textures.exists('monkey')) {   // Mango, painted smooth (ui/Mango.js): one large cell per pose
     const C = MANGO_CELL, tex = scene.textures.createCanvas('monkey', C * 4, C), ctx = tex.getContext();
     for (const [pose, i] of Object.entries(MONKEY_FRAMES)) { drawMango(ctx, C * i, 0, C, pose); tex.add(i, 0, C * i, 0, C, C); }
@@ -575,8 +550,5 @@ export function generateAllTextures(scene) {
   }
   const sheets = [...CHARACTER_STYLES.map((_, i) => `char${i}`), ...NPC_STYLES.map((_, i) => `npc${i}`)];
   sheets.forEach((key) => walkAnims(scene, key));
-  // The game renders anti-aliased (pixelArt: false); pixel-art sheets opt back in to crisp scaling.
-  // (The 'tiles' sheet is painted at high resolution with smooth shapes, so it keeps the default smooth filtering.)
-  ['robot', 'sheep', 'bunny'].forEach((key) => scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST));
   if (!scene.anims.exists('robot-walk')) scene.anims.create({ key: 'robot-walk', frames: scene.anims.generateFrameNumbers('robot', { start: 0, end: 1 }), frameRate: 8, repeat: -1 });
 }

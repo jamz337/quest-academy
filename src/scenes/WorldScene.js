@@ -31,6 +31,7 @@ import { mentorLines, guideLines, signpostLine, startStory, bellPieces, claimFin
 import { checkBadges } from '../systems/Progression.js';
 import { outfitOf, outfitId } from '../systems/Market.js';
 import { getBadge } from '../data/badges.js';
+import { drinkUp } from './world/drink.js';
 
 const SPEED = 110;          // px/s
 const TALK_DIST = 44;       // px between player and NPC centres
@@ -68,6 +69,7 @@ export class WorldScene extends Phaser.Scene {
     this.layer = tilemap.createLayer(0, tileset, 0, 0).setScale(1 / TILE_RES);
     this.layer.setCollision(SOLID.filter((id) => id !== TID.tree));   // trees collide on their own layer
     Decor.drawDecor(this);
+    Decor.createTrailNumbers(this);
     this.treeLayer = tilemap.createBlankLayer('trees', tileset, 0, 0).setDepth(2).setScale(1 / TILE_RES);
     this.map.data.forEach((row, ty) => row.forEach((id, tx) => { if (id === TID.tree) this.treeLayer.putTileAt(TID.tree, tx, ty); }));
     this.treeLayer.setCollision([TID.tree]);
@@ -123,7 +125,7 @@ export class WorldScene extends Phaser.Scene {
     this.events.on('pause', this.onPauseBound);
     this.onGameDone = (e) => this.afterGame(e.payload, e.result);
     this.events.on('minigame:done', this.onGameDone);
-    this.onMarketDone = () => this.refreshOutfit();
+    this.onMarketDone = (d) => { this.refreshOutfit(); drinkUp(this, d); };
     this.events.on('market:done', this.onMarketDone);
     this.events.once('shutdown', () => this.cleanup());
   }

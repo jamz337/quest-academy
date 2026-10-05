@@ -10,6 +10,7 @@ import { bandFor } from '../../data/grades.js';
 import { moduleProgress, churchProgress } from '../../systems/Church.js';
 import { bellPieces, CHAPTERS } from '../../data/world/story.js';
 import { bakeSharp } from '../../ui/Bake.js';
+import { FONT } from '../../ui/TextStyles.js';
 
 /**
  * One-off overlay baked into a RenderTexture: foam along shorelines, a soft inset edge around paths and
@@ -42,8 +43,62 @@ export function drawDecor(w) {
       if (!BUILDING.has(at(x, y + 1)) && !DOOR_TILES.includes(id)) g.fillRect(px + 4, py + TILE, TILE, 4);
     }
   }
+  drawTrail(w, g);
   bakeSharp(w, g, W * TILE, H * TILE, 1);
   g.destroy();
+}
+
+/**
+ * Math Meadow's Number Trail: the plank bridge over the river, a numbered stepping stone every few steps (the
+ * numbers are text on top) and a little something by each game's house: a start flag, balloons, a pizza sign.
+ */
+function drawTrail(w, g) {
+  const { trail, bridge, npcSpots } = w.map;
+  if (bridge) {
+    const x = bridge.tx * TILE, y = bridge.ty * TILE, h = bridge.h * TILE;
+    g.fillStyle(0x0b4f8a, 0.25); g.fillRect(x - 3, y + 3, TILE + 6, h);                     // its shadow on the water
+    g.fillStyle(0xb98552, 1); g.fillRect(x - 2, y - 2, TILE + 4, h + 4);
+    g.fillStyle(0x8f6238, 1); for (let py = y + 4; py < y + h; py += 8) g.fillRect(x - 2, py, TILE + 4, 1.5);   // gaps between planks
+    g.fillStyle(0x6e4a28, 1); g.fillRoundedRect(x - 5, y - 4, 5, h + 8, 2); g.fillRoundedRect(x + TILE, y - 4, 5, h + 8, 2);   // rails
+    g.fillStyle(0xd9a770, 1); g.fillRect(x - 4, y - 3, 1.5, h + 6); g.fillRect(x + TILE + 1, y - 3, 1.5, h + 6);
+  }
+  for (const s of trail || []) {
+    const cx = (s.tx + 0.5) * TILE, cy = (s.ty + 0.5) * TILE;
+    g.fillStyle(0x000000, 0.18); g.fillEllipse(cx, cy + 2.5, 22, 19);
+    g.fillStyle(0x2e63d6, 1); g.fillEllipse(cx, cy, 22, 19);
+    g.fillStyle(0xffffff, 1); g.fillEllipse(cx, cy - 0.5, 18.5, 15.5);
+  }
+  const beside = (id) => (npcSpots[id] ? { x: (npcSpots[id].tx + 1.5) * TILE, y: (npcSpots[id].ty - 0.5) * TILE } : null);
+  const post = (p) => { g.fillStyle(0x6e4a28, 1); g.fillRect(p.x - 1, p.y - 14, 2, 26); g.fillStyle(0x000000, 0.15); g.fillEllipse(p.x, p.y + 12, 10, 3); };
+  const flag = beside('prof-plus');         // Number Dash: a chequered start flag
+  if (flag) {
+    post(flag);
+    for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) { g.fillStyle((r + c) % 2 ? 0x1e1b4b : 0xffffff, 1); g.fillRect(flag.x + 1 + c * 3.5, flag.y - 14 + r * 3.5, 3.5, 3.5); }
+  }
+  const fair = beside('balloon-seller');    // Balloon Pop: a bunch of balloons
+  if (fair) {
+    post(fair);
+    [[-6, -20, 0xff5c6c], [5, -22, 0xffc531], [0, -29, 0x4c8df6], [9, -14, 0x2ec46a]].forEach(([dx, dy, col]) => {
+      g.lineStyle(0.6, 0x6e6357, 0.8); g.lineBetween(fair.x, fair.y - 10, fair.x + dx, fair.y + dy + 5);
+      g.fillStyle(col, 1); g.fillEllipse(fair.x + dx, fair.y + dy, 9, 11);
+      g.fillStyle(0xffffff, 0.6); g.fillEllipse(fair.x + dx - 1.5, fair.y + dy - 2.5, 2.5, 3.5);
+    });
+  }
+  const pizza = beside('chef-fraction');    // Fraction Pizza: a pizza on a signpost, one slice taken
+  if (pizza) {
+    post(pizza);
+    g.fillStyle(0xd98a3a, 1); g.fillCircle(pizza.x, pizza.y - 18, 9);
+    g.fillStyle(0xffd75e, 1); g.fillCircle(pizza.x, pizza.y - 18, 7.2);
+    g.fillStyle(0xe8623f, 1); [[-3, -2], [2.5, -3.5], [-1, 3], [3.5, 2]].forEach(([dx, dy]) => g.fillCircle(pizza.x + dx, pizza.y - 18 + dy, 1.5));
+    g.fillStyle(0xfff6e6, 1); g.slice(pizza.x, pizza.y - 18, 9.5, -Math.PI / 2, -Math.PI / 6, false); g.fillPath();
+  }
+}
+
+/** The numbers on the trail's stepping stones (text, so they stay crisp). */
+export function createTrailNumbers(w) {
+  for (const s of w.map.trail || []) {
+    w.add.text((s.tx + 0.5) * TILE, (s.ty + 0.5) * TILE - 0.5, String(s.n), { fontFamily: FONT, fontSize: s.n > 9 ? '9px' : '10px', color: '#2e63d6', fontStyle: '700' }).setOrigin(0.5).setDepth(1.5).setResolution(6);
+  }
 }
 
 /** The signpost beside Sam (with a post the player cannot walk through) and the name plate on the player's house. */

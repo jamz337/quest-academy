@@ -16,6 +16,7 @@ import { roomRecord } from '../systems/Social.js';
 import { outfitOf, outfitId, roomDecor } from '../systems/Market.js';
 import { drawFurniture, drawExhibit } from './house/furniture.js';
 import { bakeSharp } from '../ui/Bake.js';
+import { drinkUp } from './world/drink.js';
 
 const SPEED = 110;
 const USE_DIST = 26;          // px from the centre of the tile you stand on to use something
@@ -69,7 +70,7 @@ export class HouseScene extends Phaser.Scene {
     this.events.on('pause', this.onPauseBound);
     this.onRoomDone = (e) => this.afterRoom(e);
     this.events.on('room:done', this.onRoomDone);
-    this.onMarketDone = () => this.refreshOutfit();
+    this.onMarketDone = (d) => { this.refreshOutfit(); drinkUp(this, d); };
     this.events.on('market:done', this.onMarketDone);
     this.events.once('shutdown', () => this.cleanup());
     const hud = this.hud();

@@ -3,11 +3,11 @@
 import Phaser from 'phaser';
 import { TILE } from '../../constants.js';
 import { THEME } from '../../ui/theme.js';
+import { CRITTER_CELL, CRITTER_WORLD_SCALE } from '../../ui/Critters.js';
 import * as Store from '../../systems/Store.js';
 import { Sfx } from '../../systems/Audio.js';
 import { grassSpots, dayKey, CRITTERS, CRITTER_MAX_PER_DAY } from '../../data/world/encounters.js';
 
-export const CHAR_SCALE = 2;
 
 export function createCritters(w) {
   w.critters = [];
@@ -21,8 +21,8 @@ export function spawnCritter(w, def) {
   const far = grassSpots(w.map).filter((s) => Phaser.Math.Distance.Between((s.tx + 0.5) * TILE, (s.ty + 0.5) * TILE, w.player.x, w.player.y) > 10 * TILE);
   const s = Phaser.Utils.Array.GetRandom(far.length ? far : grassSpots(w.map));
   if (!s) return;
-  const c = w.physics.add.sprite((s.tx + 0.5) * TILE, (s.ty + 0.5) * TILE, def.key, 0).setScale(CHAR_SCALE).setDepth(9);
-  c.body.setSize(10, 8).setOffset(3, 7);
+  const c = w.physics.add.sprite((s.tx + 0.5) * TILE, (s.ty + 0.5) * TILE, def.key, 0).setScale(CRITTER_WORLD_SCALE).setDepth(9);
+  c.body.setSize(CRITTER_CELL * 0.62, CRITTER_CELL * 0.5).setOffset(CRITTER_CELL * 0.19, CRITTER_CELL * 0.44);
   c.setCollideWorldBounds(true);
   w.physics.add.collider(c, w.layer);
   w.physics.add.collider(c, w.treeLayer);

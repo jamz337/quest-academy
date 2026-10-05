@@ -55,6 +55,11 @@ function building(data, x, y, w, h, style) {
  * Build the world. Everything is placed in a fixed order: ground, scenery (random), then paths,
  * buildings and NPC spots which overwrite scenery so the path network is always contiguous.
  */
+/** The Number Trail's stepping stones, 1 to 10, in walking order from the hub to the Number Fort. */
+export const TRAIL_STONES = [[14, 20], [13, 23], [11, 26], [8, 26], [4, 26], [3, 22], [3, 19], [5, 18], [7, 15], [7, 9]].map(([tx, ty], i) => ({ n: i + 1, tx, ty }));
+/** Where the trail crosses the river on a plank bridge (path tiles over the water). */
+export const TRAIL_BRIDGE = { tx: 7, ty: 11, h: 2 };
+
 export function buildMap() {
   const rnd = mulberry32(2024);
   const data = Array.from({ length: H }, () => Array(W).fill(TID.grass));
@@ -86,6 +91,7 @@ export function buildMap() {
 
   // Water: a pond in the village and the sea along the bottom of the cove with a wobbly shoreline.
   fillRect(data, 40, 21, 3, 3, TID.water);
+  fillRect(data, 1, 11, 14, 2, TID.water);     // the meadow's river, below the Number Fort (the trail bridges it)
   for (let tx = 1; tx < W - 1; tx++) {
     const top = 35 + (rnd() < 0.35 ? -1 : 0);
     vline(data, tx, top, H - 2, TID.water);
@@ -103,15 +109,16 @@ export function buildMap() {
 
   // Hub plaza and the roads out of it.
   fillRect(data, 21, 17, 7, 8, TID.path);
-  hline(data, 4, 20, 20, TID.path);            // west to Math Meadow
+  hline(data, 13, 20, 20, TID.path);           // west to Math Meadow, where the Number Trail begins
   hline(data, 28, 36, 17, TID.path);           // east, then north to Word Woods
   vline(data, 36, 7, 16, TID.path);
   vline(data, 24, 25, 32, TID.path);           // south to Code Cove
   hline(data, 33, 43, 7, TID.path);            // woods lane
   vline(data, 39, 6, 7, TID.path); vline(data, 43, 5, 7, TID.path);
   hline(data, 6, 38, 33, TID.path);            // beach promenade
-  vline(data, 4, 18, 20, TID.path); vline(data, 10, 17, 20, TID.path);   // meadow lanes
-  vline(data, 7, 25, 26, TID.path); hline(data, 7, 15, 26, TID.path); vline(data, 15, 20, 26, TID.path);
+  // The Number Trail: one winding path through Math Meadow, from the hub road past every game, over the river
+  // and up to the Number Fort. Numbered stepping stones (TRAIL_STONES) count the way along it.
+  vline(data, 13, 20, 26, TID.path); hline(data, 3, 13, 26, TID.path); vline(data, 3, 18, 26, TID.path); hline(data, 3, 10, 18, TID.path);
   hline(data, 37, 50, 17, TID.path);           // village high street, east from the Word Woods road
   vline(data, 45, 17, 25, TID.path); hline(data, 45, 50, 25, TID.path);
 
@@ -123,7 +130,7 @@ export function buildMap() {
     return { tx: door.tx, ty: door.ty + 1 };
   };
   const bossSpots = {};
-  bossSpots.math = castle('math', 5, 4); fillRect(data, 5, 8, 5, 3, TID.path); vline(data, 7, 11, 19, TID.path);
+  bossSpots.math = castle('math', 5, 4); fillRect(data, 5, 8, 5, 3, TID.path); vline(data, 7, 11, 18, TID.path);   // the forecourt, the bridge and the trail's last stretch
   bossSpots.words = castle('words', 30, 8); hline(data, 30, 36, 12, TID.path);
   bossSpots.code = castle('code', 6, 29); fillRect(data, 6, 33, 5, 1, TID.path);
   bossSpots.bible = castle('bible', 48, 20); fillRect(data, 48, 24, 5, 2, TID.path);
@@ -141,9 +148,10 @@ export function buildMap() {
     data[spot.ty][spot.tx] = TID.path;
     npcSpots[npcId] = spot;
   };
-  place('prof-plus', 'math', 3, 15);
+  // Math Meadow's houses stand beside the Number Trail, each villager one step off it so nobody blocks the way.
+  place('prof-plus', 'math', 9, 22);
   place('chef-fraction', 'math', 9, 14);
-  place('bridge-keeper', 'math', 6, 22);
+  place('bridge-keeper', 'math', 2, 14);
   place('owl-librarian', 'words', 32, 4);
   place('gate-guard', 'words', 38, 3);
   place('safari-ranger', 'words', 42, 2);
@@ -154,7 +162,7 @@ export function buildMap() {
   place('scribe', 'bible', 43, 14);
   place('fisherman', 'bible', 47, 14);
   // The newer villagers: one more house in each land, tucked off the main lanes.
-  place('balloon-seller', 'math', 12, 22);
+  place('balloon-seller', 'math', 5, 22);
   place('frog-friend', 'words', 40, 9);
   place('dj-bot', 'code', 44, 30);
   place('ark-builder', 'bible', 42, 18);
@@ -199,14 +207,14 @@ export function buildMap() {
 
   // Collectible coins scattered along the roads.
   const coins = [
-    { tx: 8, ty: 20 }, { tx: 14, ty: 20 }, { tx: 18, ty: 20 }, { tx: 11, ty: 26 },
+    { tx: 13, ty: 25 }, { tx: 9, ty: 26 }, { tx: 18, ty: 20 }, { tx: 3, ty: 24 },
     { tx: 22, ty: 18 }, { tx: 26, ty: 23 }, { tx: 31, ty: 17 }, { tx: 36, ty: 15 },
     { tx: 36, ty: 10 }, { tx: 24, ty: 31 }, { tx: 15, ty: 33 }, { tx: 33, ty: 33 },
     { tx: 35, ty: 7 }, { tx: 41, ty: 7 }, { tx: 7, ty: 13 },
     { tx: 42, ty: 17 }, { tx: 45, ty: 22 }, { tx: 50, ty: 25 }
   ];
 
-  return { width: W, height: H, data, spawn, zones, gates, npcSpots, bossSpots, buildings, coins, signSpot, bellSpot, marketSpot, home, church };
+  return { width: W, height: H, data, spawn, zones, gates, npcSpots, bossSpots, buildings, coins, signSpot, bellSpot, marketSpot, home, church, trail: TRAIL_STONES, bridge: TRAIL_BRIDGE };
 }
 
 /** Ground tile shown beneath a tree (trees are drawn on an overlay layer so the local ground shows through). */

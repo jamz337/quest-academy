@@ -52,6 +52,8 @@ export const Sfx = {
   click: () => tone(660, 0.06, 'square', 0.05),
   /** Right answer: a bright chime climbing three notes, with a sparkle on top. */
   correct: () => { tone(1047, 0.14, 'triangle', 0.1); tone(1319, 0.14, 'triangle', 0.1, 0.08); tone(1568, 0.26, 'triangle', 0.1, 0.16); tone(2093, 0.3, 'sine', 0.04, 0.18); },
+  /** Three little swallows, for a drink. */
+  gulp: () => { [0, 0.2, 0.4].forEach((t) => tone(170, 0.13, 'sine', 0.14, t, 150)); },
   /** Wrong answer: a soft, low "uh-oh" (two falling notes): clearly not the chime, but never harsh. */
   wrong: () => { tone(330, 0.16, 'triangle', 0.11); tone(233, 0.32, 'triangle', 0.11, 0.17, -30); },
   coin: () => { tone(988, 0.07, 'square', 0.06); tone(1319, 0.14, 'square', 0.06, 0.07); },

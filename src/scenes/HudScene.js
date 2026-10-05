@@ -11,6 +11,7 @@ import { chip } from '../ui/Chip.js';
 import { toast } from '../ui/Toast.js';
 import { enter } from '../ui/motion.js';
 import { Sfx } from '../systems/Audio.js';
+import { cheer, oops } from './FxScene.js';
 import { VirtualJoystick } from '../systems/VirtualJoystick.js';
 import * as Store from '../systems/Store.js';
 import { flyCoins } from '../ui/Coins.js';
@@ -178,8 +179,9 @@ export class HudScene extends BaseScene {
     const e = this.state.encounter;
     if (!e || e.picked !== null) return;
     e.picked = i; e.right = e.q.choices[i] === e.q.answer;
-    if (e.right) Sfx.correct(); else Sfx.wrong();
+    if (e.right) Sfx.correct(); else { Sfx.wrong(); if (this.cameras && this.cameras.main) this.cameras.main.shake(120, 0.004); }
     this.rebuild();
+    if (e.right) cheer(this); else oops(this);   // the same stars and streak banner as the games
     if (e.onAnswer) e.onAnswer(e.right);   // after the rebuild so its coin animation is not wiped
   }
 

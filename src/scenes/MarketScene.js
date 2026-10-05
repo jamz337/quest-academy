@@ -11,6 +11,8 @@ import { modal } from '../ui/Modal.js';
 import { toast } from '../ui/Toast.js';
 import { enter, pulse } from '../ui/motion.js';
 import { Sfx } from '../systems/Audio.js';
+import { flyCoins } from '../ui/Coins.js';
+import { fxLayer } from './FxScene.js';
 import { safeArea } from '../systems/Layout.js';
 import { resolveLook } from '../data/avatars.js';
 import { lookSpriteTexture, IDLE_FRAMES } from '../systems/Textures.js';
@@ -31,10 +33,12 @@ export class MarketScene extends BaseScene {
   init(data) {
     this.returnTo = (data && data.returnTo) || null;
     this.state = { tab: (data && data.tab) || 'looks', selected: null, room: null, fact: null, badges: [] };
+    this.bought = [];     // what was bought on this visit (the caller plays the drinking scene for drinks)
+    this.cardPos = {};    // item id -> centre of its card, for the purchase animation
     Store.updateProfile((p) => { ensureInventory(p).visited = true; });
   }
 
-  create(data) { super.create(data); this.scene.bringToTop(); }
+  create(data) { super.create(data); this.scene.bringToTop(); fxLayer(this); }   // the celebration layer is ready by the first purchase
   enterKey() { const s = this.state; return `${s.tab}-${s.fact ? 'f' : ''}${s.room ? 'r' : ''}`; }
 
   build() {
@@ -46,7 +50,8 @@ export class MarketScene extends BaseScene {
     const cy = sa.top + 28 * ui + 2;
     iconButton(this, 12 + sa.left + 22 * ui, cy, 44 * ui, '←', { onClick: () => this.close() });
     text(this, w / 2, cy, '🧺 Cheapside Market', T.heading(this));
-    chip(this, w - 12 - sa.right, cy, { text: String(p.coins), icon: 'coin', originX: 1, textColor: THEME.warningDark, height: 32 * ui, fontSize: 15 });
+    const purse = chip(this, w - 12 - sa.right, cy, { text: String(p.coins), icon: 'coin', originX: 1, textColor: THEME.warningDark, height: 32 * ui, fontSize: 15 });
+    this.pursePos = { x: w - 12 - sa.right - (purse.w || 60) / 2, y: cy };
     // Tabs.
     let y = sa.top + 64 * ui;
     const tabW = Math.min((w - 32 - 16) / TABS.length, 150 * ui), tabH = 38 * ui;
@@ -107,6 +112,7 @@ export class MarketScene extends BaseScene {
     const cards = shown.map((it, i) => {
       const col = i % cols, row = Math.floor(i / cols);
       const cx = grid.x + col * (cw + gap) + cw / 2, cy = grid.y + row * (ch + gap) + ch / 2;
+      this.cardPos[it.id] = { x: cx, y: cy };
       const stack = isStackable(it), count = stack ? snackCount(p, it.id) : 0;
       const owned = !stack && owns(p, it.id), worn = LOOK_KINDS.includes(it.kind) && equipped(p, it.kind) === it.id, selected = s.selected === it.id;
       const k = card(this, cx, cy, cw, ch, { stroke: selected ? THEME.warning : owned ? THEME.success : THEME.line, strokeWidth: selected ? 3 : 2, onTap: onTap ? () => onTap(it) : null });
@@ -199,10 +205,43 @@ export class MarketScene extends BaseScene {
     this.state.selected = it.id;
     this.state.badges = badges;
     if (it.kind === 'card') this.state.fact = it.id;
+    this.bought.push(it.id);
     this.rebuild();
     toast(this, `${it.icon} ${it.name} is yours!`, { icon: 'coin', accent: THEME.success });
     if (this.previewImage) pulse(this, this.previewImage, 1.1);
+    this.purchaseFx(it);
     badges.forEach((id, i) => this.time.delayedCall(1200 + i * 1400, () => { const b = getBadge(id); if (b) { Sfx.unlock(); toast(this, `New badge: ${b.title}`, { icon: 'star', accent: THEME.brand }); } }));
+  }
+
+  /**
+   * The purchase, acted out: coins fly from the purse to the item's card, the item pops up big in the middle of
+   * the screen in a ring of sparkles with confetti, then shrinks back into its card (or onto the character, for
+   * something to wear).
+   */
+  purchaseFx(it) {
+    const { w, h, ui } = this;
+    if (!this.tweens || !this.add) return;
+    const from = this.cardPos[it.id] || { x: w / 2, y: h / 2 }, mid = { x: w / 2, y: h * 0.42 };
+    const home = LOOK_KINDS.includes(it.kind) && this.previewImage && this.previewImage.active ? { x: this.previewImage.x, y: this.previewImage.y } : from;
+    if (this.pursePos) flyCoins(this, this.pursePos, from, Math.max(2, Math.min(6, Math.round(it.price / 20))), { depth: 880 });
+    const big = this.add.text(from.x, from.y, it.icon, { fontSize: Math.round(64 * ui) + 'px' }).setOrigin(0.5).setDepth(900).setScale(0.3);
+    const rays = [];
+    this.tweens.add({
+      targets: big, x: mid.x, y: mid.y, scale: 1.25, duration: 420, delay: 260, ease: 'Back.Out',
+      onComplete: () => {
+        Sfx.fanfare();
+        const fx = fxLayer(this);
+        if (fx) fx.confetti(36);
+        for (let i = 0; i < 10; i++) {
+          const a = (i / 10) * Math.PI * 2, r = 70 * ui;
+          const s = this.add.image(mid.x, mid.y, 'sparkle').setDisplaySize(18 * ui, 18 * ui).setDepth(899);
+          rays.push(s);
+          this.tweens.add({ targets: s, x: mid.x + Math.cos(a) * r, y: mid.y + Math.sin(a) * r, alpha: 0, angle: 200, duration: 700, ease: 'Cubic.Out', onComplete: () => s.destroy() });
+        }
+        this.tweens.add({ targets: big, angle: { from: -8, to: 8 }, duration: 160, yoyo: true, repeat: 2 });
+        this.tweens.add({ targets: big, x: home.x, y: home.y, scale: 0.25, alpha: 0.2, angle: 0, duration: 380, delay: 760, ease: 'Cubic.In', onComplete: () => big.destroy() });
+      }
+    });
   }
 
   wear(it, on) {
@@ -230,7 +269,7 @@ export class MarketScene extends BaseScene {
     if (!to) { mgr.start(SCENES.ModeSelect); return; }
     if (mgr.isSleeping(SCENES.Hud)) mgr.wake(SCENES.Hud);
     const caller = mgr.get(to);
-    if (caller) caller.events.emit('market:done', {});
+    if (caller) caller.events.emit('market:done', { bought: this.bought || [] });
     if (mgr.isPaused(to)) mgr.resume(to);
     else if (!mgr.isActive(to)) mgr.start(to);
   }

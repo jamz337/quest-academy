@@ -10,10 +10,14 @@ export const STACKABLE_KINDS = ['snack'];
 
 /** Treats for duels: `effect` is { heal } hearts, { timeMs } on the clock, or { logic } extra hints. */
 const SNACKS = [
-  { id: 'snack-mango-juice', kind: 'snack', name: 'Mango juice', price: 15, icon: '🥭', desc: 'Heals 1 heart in a duel.', effect: { heal: 1 } },
-  { id: 'snack-coconut', kind: 'snack', name: 'Coconut water', price: 30, icon: '🥥', desc: 'Heals 2 hearts in a duel.', effect: { heal: 2 } },
+  { id: 'snack-mango-juice', kind: 'snack', name: 'Mango juice', price: 15, icon: '🥭', desc: 'Heals 1 heart in a duel.', effect: { heal: 1 }, drink: true },
+  { id: 'snack-coconut', kind: 'snack', name: 'Coconut water', price: 30, icon: '🥥', desc: 'Heals 2 hearts in a duel.', effect: { heal: 2 }, drink: true },
   { id: 'snack-hourglass', kind: 'snack', name: 'Hourglass', price: 20, icon: '⏳', desc: '10 more seconds on the duel clock.', effect: { timeMs: 10000 } },
-  { id: 'snack-fishcake', kind: 'snack', name: 'Fish cake', price: 25, icon: '🐟', desc: 'Mango gets one more Logic hint.', effect: { logic: 1 } }
+  { id: 'snack-fishcake', kind: 'snack', name: 'Fish cake', price: 25, icon: '🐟', desc: 'Mango gets one more Logic hint.', effect: { logic: 1 } },
+  // New stock, October 2026.
+  { id: 'snack-sorrel', kind: 'snack', name: 'Sorrel drink', price: 45, icon: '🧃', desc: 'Heals 3 hearts in a duel.', effect: { heal: 3 }, drink: true },
+  { id: 'snack-lime', kind: 'snack', name: 'Lime squash', price: 28, icon: '🍋', desc: '15 more seconds on the duel clock.', effect: { timeMs: 15000 }, drink: true },
+  { id: 'snack-sweetbread', kind: 'snack', name: 'Sweet bread', price: 45, icon: '🍞', desc: 'Mango gets two more Logic hints.', effect: { logic: 2 } }
 ];
 
 const LOOKS = [
@@ -27,7 +31,14 @@ const LOOKS = [
   { id: 'glasses-sun', kind: 'glasses', name: 'Sunglasses', price: 60, icon: '🕶️', desc: 'Cool in the Caribbean sun.', style: { shape: 'sun' } },
   { id: 'back-pack', kind: 'back', name: 'School backpack', price: 90, icon: '🎒', desc: 'Room for all your books.', style: { shape: 'backpack', colour: '#2ec46a' } },
   { id: 'back-cape', kind: 'back', name: 'Hero cape', price: 120, icon: '🦸', desc: 'It flutters when you run.', style: { shape: 'cape', colour: '#ff5c6c' } },
-  { id: 'back-wings', kind: 'back', name: 'Fairy wings', price: 140, icon: '🧚', desc: 'Light as a flying fish.', style: { shape: 'wings', colour: '#9fdcff' } }
+  { id: 'back-wings', kind: 'back', name: 'Fairy wings', price: 140, icon: '🧚', desc: 'Light as a flying fish.', style: { shape: 'wings', colour: '#9fdcff' } },
+  // New stock, October 2026: the same shapes in fresh colours.
+  { id: 'hat-cap-red', kind: 'hat', name: 'Red cap', price: 60, icon: '🧢', desc: 'A bright red cap for match day.', style: { shape: 'cap', colour: '#e8623f' } },
+  { id: 'hat-beanie-green', kind: 'hat', name: 'Green beanie', price: 70, icon: '🧶', desc: 'Leafy green, with a pompom.', style: { shape: 'beanie', colour: '#249762' } },
+  { id: 'hat-sun-pink', kind: 'hat', name: 'Pink sun hat', price: 80, icon: '👒', desc: 'Shade with a splash of pink.', style: { shape: 'sun', colour: '#ff8fb8' } },
+  { id: 'back-pack-blue', kind: 'back', name: 'Blue backpack', price: 90, icon: '🎒', desc: 'Sea blue, with space for snacks.', style: { shape: 'backpack', colour: '#4c8df6' } },
+  { id: 'back-cape-purple', kind: 'back', name: 'Royal cape', price: 130, icon: '🦸', desc: 'A purple cape fit for a champion.', style: { shape: 'cape', colour: '#8566ee' } },
+  { id: 'back-wings-gold', kind: 'back', name: 'Golden wings', price: 160, icon: '🧚', desc: 'They shimmer like the morning sun.', style: { shape: 'wings', colour: '#ffd75e' } }
 ];
 
 const HOUSE = [
@@ -41,7 +52,12 @@ const HOUSE = [
   { id: 'floor-carpet', kind: 'floor', name: 'Soft carpet', price: 50, icon: '🧶', desc: 'Cosy underfoot.', floor: 'carpet' },
   { id: 'floor-tiles', kind: 'floor', name: 'Lilac tiles', price: 50, icon: '🟪', desc: 'Cool tiles for hot days.', floor: 'tiles' },
   { id: 'floor-checker', kind: 'floor', name: 'Checkerboard', price: 60, icon: '🏁', desc: 'Black and white squares.', floor: 'checker' },
-  { id: 'floor-parquet', kind: 'floor', name: 'Parquet', price: 60, icon: '🪵', desc: 'Little wooden squares.', floor: 'parquet' }
+  { id: 'floor-parquet', kind: 'floor', name: 'Parquet', price: 60, icon: '🪵', desc: 'Little wooden squares.', floor: 'parquet' },
+  // New stock, October 2026.
+  { id: 'paint-sun', kind: 'paint', name: 'Sunshine paint', price: 40, icon: '🎨', desc: 'Cheerful yellow walls.', colour: 0xfff3c4 },
+  { id: 'paint-sea', kind: 'paint', name: 'Sea green paint', price: 40, icon: '🎨', desc: 'Walls the colour of the shallows.', colour: 0xd3f0ea },
+  { id: 'paint-cloud', kind: 'paint', name: 'Cloud white paint', price: 40, icon: '🎨', desc: 'Clean, bright white walls.', colour: 0xf7f7fb },
+  { id: 'floor-stone', kind: 'floor', name: 'Stone flags', price: 60, icon: '🪨', desc: 'Cool grey stone slabs.', floor: 'stone' }
 ];
 
 /** Collector cards: three sets, each card one fact about Barbados. */
