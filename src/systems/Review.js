@@ -14,10 +14,13 @@ const subjectOfMiss = (m) => getGame(m.gameId)?.subject || null;
 export const reviewable = (m) => !!m && Array.isArray(m.choices) && m.choices.length >= 2 && m.choices.includes(m.answer);
 export const dueAt = (m) => (Number.isFinite(m.nextAt) ? m.nextAt : (m.at || 0) + REVIEW_DAYS[0] * DAY);
 
-/** Misses in `subject` that are due now, soonest first (at most `max`). */
-export function dueReviews(profile, subject, now = Date.now(), max = REVIEW_MAX) {
+/**
+ * Misses in `subject` that are due now, soonest first (at most `max`). With `gameId`, only that game's own misses:
+ * a game warms up with its own questions, so Fraction Pizza never opens looking like Number Dash.
+ */
+export function dueReviews(profile, subject, now = Date.now(), max = REVIEW_MAX, gameId = null) {
   return (profile?.recentMisses || [])
-    .filter((m) => reviewable(m) && subjectOfMiss(m) === subject && dueAt(m) <= now)
+    .filter((m) => reviewable(m) && subjectOfMiss(m) === subject && (!gameId || m.gameId === gameId) && dueAt(m) <= now)
     .sort((a, b) => dueAt(a) - dueAt(b))
     .slice(0, max);
 }

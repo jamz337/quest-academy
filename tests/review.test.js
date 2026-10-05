@@ -85,3 +85,15 @@ describe('question banks', () => {
     expect(new Set(r2.flatMap((r) => r.pairs).map((p) => p.l + '|' + p.r)).size).toBe(15);
   });
 });
+
+describe('a game warms up with its own questions', () => {
+  it('leaves out misses from other games of the same subject when a game is named', async () => {
+    const { dueReviews: due } = await import('../src/systems/Review.js');
+    const old = Date.now() - 3 * 86400000;
+    const miss = (gameId, prompt) => ({ gameId, prompt, answer: '4', choices: ['3', '4'], at: old });
+    const p = { recentMisses: [miss('math-dash', '2 + 2'), miss('math-pizza', 'Which is 1/2?'), miss('math-dash', '1 + 3')] };
+    expect(due(p, 'math')).toHaveLength(3);
+    expect(due(p, 'math', Date.now(), 3, 'math-pizza').map((m) => m.prompt)).toEqual(['Which is 1/2?']);
+    expect(due(p, 'math', Date.now(), 3, 'math-bridge')).toEqual([]);
+  });
+});

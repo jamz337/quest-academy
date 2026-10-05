@@ -48,7 +48,7 @@ export class MinigameScene extends BaseScene {
     this.qStartAt = Date.now();
     this.state = this.initState();
     // Spaced review: a few questions missed in earlier games of this subject come back before this one starts.
-    this.review = payload.boss || payload.duel || payload.noReview ? [] : dueReviews(this.profile, payload.subject);
+    this.review = payload.boss || payload.duel || payload.noReview ? [] : dueReviews(this.profile, payload.subject, Date.now(), undefined, payload.gameId);
     this.reviewIdx = 0; this.reviewPicked = null; this.reviewRight = 0;
     // Scenes are reused between launches, so the wrapper always goes around the class's own enterKey.
     delete this.enterKey;
@@ -70,7 +70,7 @@ export class MinigameScene extends BaseScene {
     const lines = q.prompt.split('\n').length;
     const promptH = Math.min(area.h * 0.42, (lines > 2 ? 250 : 210) * ui);
     const k = card(this, cx, area.y + promptH / 2, area.w, promptH, { stroke: THEME.brandSoft });
-    text(this, cx, area.y + 26 * ui, `Quick review  ·  ${this.reviewIdx + 1} of ${this.review.length}`, T.small(this, THEME.brandDark));
+    text(this, cx, area.y + 26 * ui, `Warm-up before ${this.payload.title}  ·  ${this.reviewIdx + 1} of ${this.review.length}`, T.small(this, THEME.brandDark));
     const reveal = this.reviewPicked === null || this.reviewPicked === -2 || this.answerRevealed(q);
     text(this, cx, area.y + 48 * ui, this.reviewPicked === null ? 'You missed this one last time. Try again!' : this.reviewPicked === -2 ? 'Yes! That one is sticking.' : reveal ? `The answer is ${q.answer}.` : "Not this time. Let's see why.", T.small(this, THEME.ink2));
     const body = readable(this, cx, area.y + promptH / 2 + 18 * ui, q.prompt, T.at(this, q.prompt.length > 60 || lines > 2 ? 17 : 24, THEME.ink, { fontStyle: '700' }), { width: area.w - 56 * ui });
