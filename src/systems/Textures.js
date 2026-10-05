@@ -123,61 +123,100 @@ const BUNNY = [
 ];
 const BUNNY2 = BUNNY.map((r, i) => (i === 11 ? '...kcck....kcck.' : i === 12 ? '...kkkk....kkkk.' : r));
 
-const TREE = [
-  '......kkkk......', '....kkGGGGkk....', '...kGGgGGGGGk...', '..kGgggGGGGGDk..',
-  '..kGgGGGGGGGDk..', '.kGGGGGGGGGDDDk.', '.kGgGGGGGGGDDDk.', '.kGGGGGGGGDDDDk.',
-  '..kGGGGGGDDDDk..', '..kkGGGGDDDDkk..', '....kkGDDDkk....', '.....kkhhkk.....',
-  '......khtk......', '......khtk......', '.....khhttk.....', '....xxxxxxxx....'
-];
 
-const FLOWERS = [
-  '................', '....r...........', '...ryr......y...', '....r......ywy..',
-  '....D.......y...', '....D....p...D..', '........pwp..D..', '.........p......',
-  '..........D.....', '..y.......D.....', '.ywy........r...', '..y........rwr..',
-  '..D.........r...', '..D..........D..', '.............D..', '................'
-];
 
 /** Tileset 'tiles' with TILE x TILE frames: see TILE_IDS. */
 export const TILE_IDS = {
   grass: 0, path: 1, water: 2, tree: 3, wall: 4, door: 5, flower: 6, meadow: 7, woods: 8, cove: 9, gateLocked: 10, gateOpen: 11, roof: 12,
   roofMath: 13, wallMath: 14, doorMath: 15, roofWords: 16, wallWords: 17, doorWords: 18, roofCode: 19, wallCode: 20, doorCode: 21,
-  roofBible: 22, wallBible: 23, doorBible: 24, castleTop: 25, castleWall: 26, castleDoor: 27, village: 28
+  roofBible: 22, wallBible: 23, doorBible: 24, castleTop: 25, castleWall: 26, castleDoor: 27, village: 28,
+  flower2: 29, flower3: 30, flower4: 31, flower5: 32, flower6: 33,
+  meadow2: 34, meadow3: 35, meadow4: 36, meadow5: 37, meadow6: 38, meadow7: 39, meadow8: 40
 };
+/** Flower and daisy patches come in several looks; the world picks one per map square so no two neighbours match. */
+export const FLOWER_TILES = [6, 29, 30, 31, 32, 33], MEADOW_TILES = [7, 34, 35, 36, 37, 38, 39, 40];
 
 const px = (ctx, x, y, col, w = 1, h = 1) => { ctx.fillStyle = col; ctx.fillRect(x, y, w, h); };
+// Smooth-shape helpers. Tiles are painted in a 32-unit space that the tileset scales up (see tilesTexture), so
+// circles, curves and rounded shapes come out smooth instead of blocky.
+const disc = (ctx, x, y, r, col, a = 1) => { ctx.globalAlpha = a; ctx.fillStyle = col; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; };
+const oval = (ctx, x, y, rx, ry, col, a = 1, rot = 0) => { ctx.globalAlpha = a; ctx.fillStyle = col; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, rot, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1; };
+const stroke = (ctx, pts, col, w = 1, a = 1) => {
+  ctx.globalAlpha = a; ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(pts[0], pts[1]);
+  if (pts.length === 6) ctx.quadraticCurveTo(pts[2], pts[3], pts[4], pts[5]); else for (let i = 2; i < pts.length; i += 2) ctx.lineTo(pts[i], pts[i + 1]);
+  ctx.stroke(); ctx.globalAlpha = 1;
+};
+/** A spot well inside the tile, so nothing is cut off at a tile edge. */
+const inside = (rnd, m = 4) => m + rnd() * (TILE - m * 2);
 
-/** Grass-like ground: base colour, little blade tips in a darker tone and a few light specks. */
+/** Grass-like ground: base colour, soft darker patches, little fans of blades and a few light specks. */
 function grassTile(ctx, x0, rnd, base, dark, light, tufts = 7) {
   px(ctx, x0, 0, base, TILE, TILE);
+  for (let i = 0; i < 3; i++) oval(ctx, x0 + inside(rnd, 8), inside(rnd, 8), 5 + rnd() * 3, 3 + rnd() * 2, dark, 0.1, rnd() * 3);
   for (let i = 0; i < tufts; i++) {
-    const x = x0 + 1 + Math.floor(rnd() * (TILE - 4)), y = 1 + Math.floor(rnd() * (TILE - 3));
-    px(ctx, x, y + 1, dark); px(ctx, x + 1, y, dark); px(ctx, x + 2, y + 1, dark);
+    const x = x0 + inside(rnd), y = inside(rnd, 5);
+    stroke(ctx, [x, y, x - 1.6, y - 2.6], dark, 0.9); stroke(ctx, [x, y, x, y - 3.4], dark, 0.9); stroke(ctx, [x, y, x + 1.6, y - 2.6], dark, 0.9);
   }
-  for (let i = 0; i < 4; i++) px(ctx, x0 + Math.floor(rnd() * TILE), Math.floor(rnd() * TILE), light);
+  for (let i = 0; i < 4; i++) disc(ctx, x0 + inside(rnd, 3), inside(rnd, 3), 0.7, light, 0.8);
 }
 
 function pathTile(ctx, x0, rnd, base = '#e6c58a', dark = '#cfa96a', light = '#f4dca8') {
   px(ctx, x0, 0, base, TILE, TILE);
+  for (let i = 0; i < 2; i++) oval(ctx, x0 + inside(rnd, 8), inside(rnd, 8), 6, 3.5, dark, 0.12, rnd() * 3);
   for (let i = 0; i < 5; i++) {
-    const x = x0 + Math.floor(rnd() * (TILE - 2)), y = Math.floor(rnd() * (TILE - 2));
-    px(ctx, x, y, dark, 2, 2); px(ctx, x, y, light);
+    const x = x0 + inside(rnd), y = inside(rnd), r = 1.3 + rnd() * 0.9;
+    oval(ctx, x, y, r * 1.3, r, dark, 1, rnd() * 3); oval(ctx, x - 0.4, y - 0.4, r * 0.6, r * 0.4, light, 0.9);
   }
-  for (let i = 0; i < 6; i++) px(ctx, x0 + Math.floor(rnd() * TILE), Math.floor(rnd() * TILE), light);
+  for (let i = 0; i < 6; i++) disc(ctx, x0 + inside(rnd, 3), inside(rnd, 3), 0.6, light, 0.9);
 }
 
 function waterTile(ctx, x0, rnd) {
   px(ctx, x0, 0, '#4aa8ff', TILE, TILE);
-  for (let i = 0; i < 4; i++) px(ctx, x0 + Math.floor(rnd() * (TILE - 4)), Math.floor(rnd() * (TILE - 3)), '#3a8fe0', 4, 2);
-  [[4, 6], [17, 13], [8, 23], [21, 27]].forEach(([wx, wy]) => {
-    px(ctx, x0 + wx, wy, '#c5e8ff', 3, 1); px(ctx, x0 + wx + 3, wy + 1, '#c5e8ff', 3, 1);
+  for (let i = 0; i < 3; i++) oval(ctx, x0 + inside(rnd, 8), inside(rnd, 7), 6 + rnd() * 2, 2.2, '#3a8fe0', 0.45);
+  [[9, 7], [22, 14], [10, 23], [23, 27]].forEach(([wx, wy]) => {
+    stroke(ctx, [x0 + wx - 3.5, wy, x0 + wx - 1.5, wy - 1.6, x0 + wx, wy], '#d6efff', 1, 0.95);
+    stroke(ctx, [x0 + wx, wy, x0 + wx + 1.5, wy + 1.6, x0 + wx + 3.5, wy], '#d6efff', 1, 0.95);
   });
 }
 
 function sandTile(ctx, x0, rnd) {
   px(ctx, x0, 0, '#f3e2ad', TILE, TILE);
-  for (let i = 0; i < 8; i++) px(ctx, x0 + Math.floor(rnd() * TILE), Math.floor(rnd() * TILE), '#dcc88e');
-  for (let i = 0; i < 3; i++) px(ctx, x0 + Math.floor(rnd() * TILE), Math.floor(rnd() * TILE), '#fff8e0');
-  px(ctx, x0 + 22, 20, '#fff8e0', 3, 2); px(ctx, x0 + 23, 22, '#dcc88e', 1, 1);   // a tiny shell
+  for (let i = 0; i < 2; i++) oval(ctx, x0 + inside(rnd, 8), inside(rnd, 8), 6, 3, '#dcc88e', 0.22, rnd() * 3);
+  for (let i = 0; i < 8; i++) disc(ctx, x0 + inside(rnd, 3), inside(rnd, 3), 0.6, '#dcc88e');
+  for (let i = 0; i < 3; i++) disc(ctx, x0 + inside(rnd, 3), inside(rnd, 3), 0.6, '#fff8e0');
+  // a tiny shell
+  ctx.fillStyle = '#fff8e0'; ctx.beginPath(); ctx.moveTo(x0 + 23, 23); ctx.arc(x0 + 23, 23, 2.6, Math.PI * 1.1, Math.PI * 1.9); ctx.closePath(); ctx.fill();
+  stroke(ctx, [x0 + 23, 23, x0 + 21.6, 21], '#dcc88e', 0.5); stroke(ctx, [x0 + 23, 23, x0 + 23, 20.5], '#dcc88e', 0.5); stroke(ctx, [x0 + 23, 23, x0 + 24.4, 21], '#dcc88e', 0.5);
+}
+
+/** A round leafy tree with a short trunk and a soft shadow (transparent around it: it sits on the tree overlay layer). */
+function treeTile(ctx, x0) {
+  oval(ctx, x0 + 16, 29.2, 8, 2.2, '#1e1b4b', 0.18);
+  ctx.fillStyle = '#7a4a2a'; ctx.beginPath(); ctx.roundRect(x0 + 13.6, 19, 4.8, 10.6, 1.6); ctx.fill();
+  ctx.fillStyle = '#a06a3e'; ctx.beginPath(); ctx.roundRect(x0 + 13.6, 19, 2.2, 10.6, 1.2); ctx.fill();
+  const blobs = [[16, 12, 10.2], [9, 15.5, 6.6], [23, 15.5, 6.6], [16, 18, 7]];
+  blobs.forEach(([bx, by, r]) => disc(ctx, x0 + bx, by, r + 0.9, '#1f6b3a'));        // the darker rim
+  blobs.forEach(([bx, by, r]) => disc(ctx, x0 + bx, by, r, '#2f9a4f'));
+  [[14.5, 10, 7.6], [9, 14, 4.4], [22, 14, 4.4]].forEach(([bx, by, r]) => disc(ctx, x0 + bx, by, r, '#46b862'));
+  [[12.5, 7.5, 3.4], [8, 12.8, 1.9], [20.5, 11.5, 2.1]].forEach(([bx, by, r]) => disc(ctx, x0 + bx, by, r, '#7ad98a', 0.85));
+}
+
+const PETALS = ['#ff6fae', '#ffd23f', '#ffffff', '#ff8f5a', '#b98cff', '#ff5a6e', '#7fd4ff'];
+/** A few flowers on stems, over whatever ground was painted first: how many, where, which colours and sizes all vary. */
+function flowersOn(ctx, x0, rnd) {
+  const spots = [], count = 2 + Math.floor(rnd() * 4);
+  for (let tries = 0; spots.length < count && tries < 40; tries++) {
+    const fx = inside(rnd, 5), fy = 5 + rnd() * (TILE - 13);
+    if (spots.every(([sx, sy]) => Math.hypot(sx - fx, sy - fy) > 7)) spots.push([fx, fy]);
+  }
+  spots.sort((a, b) => a[1] - b[1]).forEach(([fx, fy]) => {
+    const col = PETALS[Math.floor(rnd() * PETALS.length)], size = 0.75 + rnd() * 0.6, petals = rnd() < 0.3 ? 6 : 5, turn = rnd() * 6, lean = (rnd() - 0.5) * 2.4;
+    stroke(ctx, [x0 + fx, fy + 1, x0 + fx + lean, fy + 3, x0 + fx + lean * 0.4, fy + 4 + size * 2], '#2f8f46', 0.9);
+    if (rnd() < 0.5) oval(ctx, x0 + fx + lean + 1.2, fy + 3.4, 1.4, 0.7, '#3fa856', 1, 0.5);   // a leaf
+    for (let i = 0; i < petals; i++) { const a = turn + (i / petals) * Math.PI * 2; disc(ctx, x0 + fx + Math.cos(a) * 1.7 * size, fy + Math.sin(a) * 1.7 * size, 1.25 * size, col); }
+    disc(ctx, x0 + fx, fy, size, col === '#ffd23f' ? '#ff8f3f' : '#ffc531');
+  });
 }
 
 /** Plaster wall with wooden beams on both sides. */
@@ -300,14 +339,15 @@ function castleDoor(ctx, x0) {
   for (const [sx, sy] of [[10, 14], [20, 14], [10, 20], [20, 20], [10, 26], [20, 26]]) px(ctx, x0 + sx, sy, '#9aa3ad', 2, 2);
 }
 
-/** Cobbled village ground. */
+/** Cobbled village ground: rounded stones with a light top edge. */
 function villageTile(ctx, x0, rnd) {
   px(ctx, x0, 0, '#d9c9a8', TILE, TILE);
   for (let i = 0; i < 7; i++) {
-    const x = x0 + Math.floor(rnd() * (TILE - 6)), y = Math.floor(rnd() * (TILE - 5));
-    px(ctx, x, y, '#c4b08a', 6, 4); px(ctx, x + 1, y, '#ece0c4', 3, 1);
+    const x = x0 + 2 + rnd() * (TILE - 10), y = 2 + rnd() * (TILE - 8);
+    ctx.fillStyle = '#c4b08a'; ctx.beginPath(); ctx.roundRect(x, y, 6, 4, 1.6); ctx.fill();
+    stroke(ctx, [x + 1.4, y + 0.9, x + 4.2, y + 0.9], '#ece0c4', 0.8);
   }
-  for (let i = 0; i < 3; i++) px(ctx, x0 + Math.floor(rnd() * TILE), Math.floor(rnd() * TILE), '#b39d78');
+  for (let i = 0; i < 3; i++) disc(ctx, x0 + inside(rnd, 3), inside(rnd, 3), 0.6, '#b39d78');
 }
 
 function gateLockedTile(ctx, x0, rnd) {
@@ -326,38 +366,69 @@ function gateOpenTile(ctx, x0, rnd) {
   });
 }
 
+/**
+ * The tileset is painted at TILE_RES times the world's tile size, so the camera's zoom shows smooth shapes instead of
+ * enlarged pixels. Each tile sits in its own padded cell (its edges stretched into the padding) so smooth filtering
+ * never pulls a neighbour's colour across a seam. The world's tile layers scale the result back down by 1 / TILE_RES.
+ */
+export const TILE_RES = 4, TILE_PAD = 4;
+const TILE_COLS = 12;
+
 export function tilesTexture(scene) {
   if (scene.textures.exists('tiles')) return;
   const n = Object.keys(TILE_IDS).length, rnd = mulberry32(7);
-  const tex = scene.textures.createCanvas('tiles', TILE * n, TILE);
-  const ctx = tex.getContext();
-  const at = (i) => i * TILE;
-  grassTile(ctx, at(TILE_IDS.grass), rnd, '#5cc45a', '#45a648', '#8fe07c');
-  pathTile(ctx, at(TILE_IDS.path), rnd);
-  waterTile(ctx, at(TILE_IDS.water), rnd);
-  blit(ctx, TREE, at(TILE_IDS.tree), 0, 2);                       // transparent: drawn on the tree overlay layer
-  wallTile(ctx, at(TILE_IDS.wall));
-  doorTile(ctx, at(TILE_IDS.door));
-  grassTile(ctx, at(TILE_IDS.flower), rnd, '#5cc45a', '#45a648', '#8fe07c', 3);
-  blit(ctx, FLOWERS, at(TILE_IDS.flower), 0, 2);
-  grassTile(ctx, at(TILE_IDS.meadow), rnd, '#7ad36a', '#5cc45a', '#b6f0a4', 5);
-  for (let i = 0; i < 3; i++) {
-    const x = at(TILE_IDS.meadow) + 2 + Math.floor(rnd() * 26), y = 2 + Math.floor(rnd() * 26);
-    px(ctx, x, y, '#ffffff', 2, 2); px(ctx, x + 1, y + 1, '#ffc531');
-  }
-  grassTile(ctx, at(TILE_IDS.woods), rnd, '#3f9a45', '#2f7a36', '#57b25a', 8);
-  for (let i = 0; i < 3; i++) px(ctx, at(TILE_IDS.woods) + Math.floor(rnd() * TILE), Math.floor(rnd() * TILE), '#a06a3e');
-  sandTile(ctx, at(TILE_IDS.cove), rnd);
-  gateLockedTile(ctx, at(TILE_IDS.gateLocked), rnd);
-  gateOpenTile(ctx, at(TILE_IDS.gateOpen), rnd);
-  roofTile(ctx, at(TILE_IDS.roof));
-  thatchRoof(ctx, at(TILE_IDS.roofMath)); wallTile(ctx, at(TILE_IDS.wallMath)); doorTile(ctx, at(TILE_IDS.doorMath), wallBase);
-  shingleRoof(ctx, at(TILE_IDS.roofWords)); logWall(ctx, at(TILE_IDS.wallWords)); doorTile(ctx, at(TILE_IDS.doorWords), (c, x) => logWall(c, x, false));
-  techRoof(ctx, at(TILE_IDS.roofCode)); panelWall(ctx, at(TILE_IDS.wallCode)); doorTile(ctx, at(TILE_IDS.doorCode), (c, x) => panelWall(c, x, false));
-  slateRoof(ctx, at(TILE_IDS.roofBible)); stoneWall(ctx, at(TILE_IDS.wallBible)); doorTile(ctx, at(TILE_IDS.doorBible), (c, x) => stoneWall(c, x, false));
-  castleTop(ctx, at(TILE_IDS.castleTop)); castleWall(ctx, at(TILE_IDS.castleWall)); castleDoor(ctx, at(TILE_IDS.castleDoor));
-  villageTile(ctx, at(TILE_IDS.village), rnd);
-  for (let i = 0; i < n; i++) tex.add(i, 0, at(i), 0, TILE, TILE);
+  const size = TILE * TILE_RES, cell = size + TILE_PAD * 2;
+  const tex = scene.textures.createCanvas('tiles', cell * Math.min(n, TILE_COLS), cell * Math.ceil(n / TILE_COLS));   // rows, so it fits a phone's texture limit
+  const atlas = tex.getContext();
+  const scratch = document.createElement('canvas'); scratch.width = size; scratch.height = size;
+  const ctx = scratch.getContext('2d');
+  /** Paint one tile in 32-unit space, then copy it into its padded cell. Transparent tiles get no stretched edge. */
+  const tile = (id, paint, { transparent = false } = {}) => {
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, size, size);
+    ctx.setTransform(TILE_RES, 0, 0, TILE_RES, 0, 0);
+    paint(ctx);
+    const x = (id % TILE_COLS) * cell, y = Math.floor(id / TILE_COLS) * cell;
+    if (!transparent) atlas.drawImage(scratch, x, y, cell, cell);
+    atlas.drawImage(scratch, x + TILE_PAD, y + TILE_PAD);
+    tex.add(id, 0, x + TILE_PAD, y + TILE_PAD, size, size);
+  };
+  const T = TILE_IDS;
+  tile(T.grass, (c) => grassTile(c, 0, rnd, '#5cc45a', '#45a648', '#8fe07c'));
+  tile(T.path, (c) => pathTile(c, 0, rnd));
+  tile(T.water, (c) => waterTile(c, 0, rnd));
+  tile(T.tree, (c) => treeTile(c, 0), { transparent: true });   // drawn on the tree overlay layer
+  tile(T.wall, (c) => wallTile(c, 0));
+  tile(T.door, (c) => doorTile(c, 0));
+  FLOWER_TILES.forEach((id) => tile(id, (c) => { grassTile(c, 0, rnd, '#5cc45a', '#45a648', '#8fe07c', 3); flowersOn(c, 0, rnd); }));
+  MEADOW_TILES.forEach((id) => tile(id, (c) => {
+    grassTile(c, 0, rnd, '#bfe05c', '#96c240', '#ecf7a6', 5);   // sunny lime, clearly not the hub's green
+    // Daisies: none to four of them, big and small, mostly white with the odd pink, yellow or lilac one.
+    const spots = [], count = Math.floor(rnd() * 5);
+    for (let tries = 0; spots.length < count && tries < 30; tries++) {
+      const x = inside(rnd, 5), y = inside(rnd, 5);
+      if (spots.every(([sx, sy]) => Math.hypot(sx - x, sy - y) > 6)) spots.push([x, y]);
+    }
+    spots.forEach(([x, y]) => {
+      const pick = rnd(), col = pick < 0.6 ? '#ffffff' : pick < 0.75 ? '#ffd9ec' : pick < 0.9 ? '#fff1a6' : '#e2d4ff';
+      const size = 0.6 + rnd() * 0.75, petals = 5 + Math.floor(rnd() * 2), turn = rnd() * 6;
+      for (let k = 0; k < petals; k++) { const a = turn + (k / petals) * Math.PI * 2; disc(c, x + Math.cos(a) * 1.3 * size, y + Math.sin(a) * 1.3 * size, 0.95 * size, col); }
+      disc(c, x, y, 0.8 * size, '#ffc531');
+    });
+  }));
+  tile(T.woods, (c) => {
+    grassTile(c, 0, rnd, '#3f9a45', '#2f7a36', '#57b25a', 8);
+    for (let i = 0; i < 3; i++) { const x = inside(rnd, 5), y = inside(rnd, 5); stroke(c, [x, y, x + 2.4, y + 0.8], '#8a5a34', 0.8); }   // fallen twigs
+  });
+  tile(T.cove, (c) => sandTile(c, 0, rnd));
+  tile(T.gateLocked, (c) => gateLockedTile(c, 0, rnd));
+  tile(T.gateOpen, (c) => gateOpenTile(c, 0, rnd));
+  tile(T.roof, (c) => roofTile(c, 0));
+  tile(T.roofMath, (c) => thatchRoof(c, 0)); tile(T.wallMath, (c) => wallTile(c, 0)); tile(T.doorMath, (c) => doorTile(c, 0, wallBase));
+  tile(T.roofWords, (c) => shingleRoof(c, 0)); tile(T.wallWords, (c) => logWall(c, 0)); tile(T.doorWords, (c) => doorTile(c, 0, (cc, x) => logWall(cc, x, false)));
+  tile(T.roofCode, (c) => techRoof(c, 0)); tile(T.wallCode, (c) => panelWall(c, 0)); tile(T.doorCode, (c) => doorTile(c, 0, (cc, x) => panelWall(cc, x, false)));
+  tile(T.roofBible, (c) => slateRoof(c, 0)); tile(T.wallBible, (c) => stoneWall(c, 0)); tile(T.doorBible, (c) => doorTile(c, 0, (cc, x) => stoneWall(cc, x, false)));
+  tile(T.castleTop, (c) => castleTop(c, 0)); tile(T.castleWall, (c) => castleWall(c, 0)); tile(T.castleDoor, (c) => castleDoor(c, 0));
+  tile(T.village, (c) => villageTile(c, 0, rnd));
   tex.refresh();
 }
 
@@ -503,6 +574,7 @@ export function generateAllTextures(scene) {
   const sheets = [...CHARACTER_STYLES.map((_, i) => `char${i}`), ...NPC_STYLES.map((_, i) => `npc${i}`)];
   sheets.forEach((key) => walkAnims(scene, key));
   // The game renders anti-aliased (pixelArt: false); pixel-art sheets opt back in to crisp scaling.
-  ['tiles', 'robot', 'sheep', 'bunny'].forEach((key) => scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST));
+  // (The 'tiles' sheet is painted at high resolution with smooth shapes, so it keeps the default smooth filtering.)
+  ['robot', 'sheep', 'bunny'].forEach((key) => scene.textures.get(key).setFilter(Phaser.Textures.FilterMode.NEAREST));
   if (!scene.anims.exists('robot-walk')) scene.anims.create({ key: 'robot-walk', frames: scene.anims.generateFrameNumbers('robot', { start: 0, end: 1 }), frameRate: 8, repeat: -1 });
 }

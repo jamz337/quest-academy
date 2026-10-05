@@ -13,6 +13,7 @@ import { card } from './Card.js';
 import { shake } from './motion.js';
 import { grid } from '../systems/Layout.js';
 import { Sfx } from '../systems/Audio.js';
+import { playStory } from './StoryAnim.js';
 
 export const EXPLAIN_LABELS = { more: 'Show me why ▶', turn: 'Your turn ▶', next: 'Next ▶' };
 // Steps that just say the answer ("Here it is …", "So 10 × 2 = 20.", "… so the missing one is 12."): held back
@@ -100,12 +101,16 @@ function render(scene, area, it, theme, on) {
   const choicesH = picking ? Math.min(58 * f, (R.h - 30 * f - footH) * 0.42) * (it.choices.length === 4 && scene.portrait ? 2 : 1) + 8 * f : 0;
   const bottom = R.y + R.h - footH - choicesH;
   const lines = it.steps.slice(0, it.shown);
+  // A Bible passage brings a little moving picture of its story, on the right of the working.
+  // (It may use the heading's height too: it sits to the left of the speaker button.)
+  const storyTop = R.y + 6 * f, storyH = bottom - storyTop - 2 * f, storyW = it.story && storyH >= 38 * f ? Math.min(R.w * 0.34, 190 * f) : 0;
+  if (storyW) playStory(scene, R.x + R.w - 42 * f - storyW / 2, storyTop + storyH / 2, storyW, storyH, it.story);
   let blocks = [];
   for (let size = 16; size >= 14; size -= 1) {
     blocks.forEach((b) => b.destroy());
     blocks = []; let yy = y;
     for (let i = 0; i < lines.length; i++) {
-      const b = readable(scene, R.x + 6 * f, yy, `${i + 1}.  ${lines[i]}`, T.at(scene, size, theme.ink, { fontStyle: '600' }), { width: R.w - 60 * f, align: 'left', lineGap: 4 }).setOrigin(0, 0);
+      const b = readable(scene, R.x + 6 * f, yy, `${i + 1}.  ${lines[i]}`, T.at(scene, size, theme.ink, { fontStyle: '600' }), { width: R.w - (storyW ? 50 * f + storyW : 60 * f), align: 'left', lineGap: 4 }).setOrigin(0, 0);
       blocks.push(b); yy += (b.height || size * 1.3 * f) + 4 * f;
     }
     if (yy <= bottom) break;

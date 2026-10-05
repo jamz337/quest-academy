@@ -15,7 +15,7 @@ import { button } from '../ui/Button.js';
 import { topBar } from '../ui/TopBar.js';
 import { StarRow } from '../ui/StarRow.js';
 import { enter } from '../ui/motion.js';
-import { icon } from '../ui/Icons.js';
+import { icon, hasIcon } from '../ui/Icons.js';
 
 /** Challenge mode: every game on one screen, grouped in a frosted panel per land, each with its best star rating. */
 export class ChallengeMenuScene extends BaseScene {
@@ -77,7 +77,7 @@ export class ChallengeMenuScene extends BaseScene {
     if (compact && c.w >= 150 * ui) {
       // Short but wide (a landscape screen): icon, title and stars in one row.
       const r = Math.min(13 * ui, h * 0.3), ix = -c.w / 2 + 12 + r, starSize = Math.min(14 * ui, h * 0.36);
-      k.add([this.iconBlock(ix, 0, r, subject), this.add.text(ix, 0, g.icon, { fontSize: Math.round(r * 1.1) + 'px' }).setOrigin(0.5)]);
+      k.add([this.iconBlock(ix, 0, r, subject), this.gameIcon(ix, 0, r, g)]);
       const starsW = 3 * (starSize + 4), titleW = c.w - (r * 2 + 20) - starsW - 16;
       k.add(this.add.text(ix + r + 8, 0, g.title, { ...T.at(this, g.title.length > 14 ? 11 : 13, THEME.ink), wordWrap: { width: titleW }, align: 'left' }).setOrigin(0, 0.5));
       k.add(new StarRow(this, c.w / 2 - 12 - starsW / 2, 0, rec ? rec.bestStars : 0, starSize));
@@ -86,14 +86,14 @@ export class ChallengeMenuScene extends BaseScene {
     if (compact) {
       // Short and narrow (four games per subject on a phone): icon on top, a small title, stars underneath.
       const r = 13 * ui, iy = -h / 2 + r + 6 * ui;
-      k.add([this.iconBlock(0, iy, r, subject), this.add.text(0, iy, g.icon, { fontSize: Math.round(14 * ui) + 'px' }).setOrigin(0.5)]);
+      k.add([this.iconBlock(0, iy, r, subject), this.gameIcon(0, iy, r, g)]);
       k.add(this.add.text(0, iy + r + 8 * ui, g.title, { ...T.at(this, c.w < 96 ? 10 : 12, THEME.ink), wordWrap: { width: c.w - 8 } }).setOrigin(0.5, 0));
       k.add(new StarRow(this, 0, h / 2 - 10 * ui, rec ? rec.bestStars : 0, Math.min(12 * ui, (c.w - 12) / 3.6)));
       return k;
     }
     const iy = -h / 2 + 32 * ui;
     k.add(this.iconBlock(0, iy, 24 * ui, subject));
-    k.add(this.add.text(0, iy, g.icon, { fontSize: Math.round(26 * ui) + 'px' }).setOrigin(0.5));
+    k.add(this.gameIcon(0, iy, 24 * ui, g));
     // The title starts under the icon block and shrinks until it fits above the stars (two-line names on a phone).
     const titleTop = iy + 24 * ui + 6 * ui, room = h / 2 - 34 * ui - titleTop;
     let title = null;
@@ -105,6 +105,13 @@ export class ChallengeMenuScene extends BaseScene {
     k.add(title);
     k.add(new StarRow(this, 0, h / 2 - 20 * ui, rec ? rec.bestStars : 0, 20 * ui));
     return k;
+  }
+
+  /** A game's drawn white icon for a block of half-size r (its emoji, should a game have no drawing yet). */
+  gameIcon(x, y, r, g) {
+    const name = `game-${g.id}`;
+    if (!hasIcon(name)) return this.add.text(x, y, g.icon, { fontSize: Math.round(r * 1.1) + 'px' }).setOrigin(0.5);
+    return this.add.image(x, y, icon(this, name, 0xffffff)).setDisplaySize(r * 1.3, r * 1.3);
   }
 
   /** A glossy rounded block in the land's colour behind a game's icon (centre x, y; half-size r). */

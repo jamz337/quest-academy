@@ -10,6 +10,7 @@ import { button, iconButton } from '../ui/Button.js';
 import { ProgressBar } from '../ui/ProgressBar.js';
 import { enter, shake, pulse } from '../ui/motion.js';
 import { Sfx } from '../systems/Audio.js';
+import { cheer, oops } from './FxScene.js';
 import { speak, stop as stopSpeech, rateFor, canSpeak } from '../systems/Speech.js';
 import { safeArea, pointerPos } from '../systems/Layout.js';
 import { Rng } from '../systems/Rng.js';
@@ -257,7 +258,7 @@ export class SpellingLearnScene extends BaseScene {
     const wasDone = this.traceDone();
     (this.traceRects || []).forEach((r, i) => { if (p.x >= r.x0 && p.x <= r.x1 && p.y >= r.y0 && p.y <= r.y1) s.traced[i] = (s.traced[i] | 0) + 1; });
     this.drawStrokes();
-    if (!wasDone && this.traceDone()) { Sfx.correct(); this.rebuild(); return; }
+    if (!wasDone && this.traceDone()) { Sfx.correct(); cheer(this); this.rebuild(); return; }
     // Keep the letter count live without redrawing the whole screen mid-stroke.
     const e = this.entry;
     if (e && this.traceLabel && this.traceLabel.active) {
@@ -310,11 +311,11 @@ export class SpellingLearnScene extends BaseScene {
     if (s.step !== 'build' || s.result === 'right' || s.placed.includes(ci)) return;
     if (ci === s.placed.length) {
       s.placed.push(ci); Sfx.pop();
-      if (s.placed.length === e.chunks.length) { s.result = 'right'; Sfx.correct(); if (canSpeak()) speak(e.word, { rate: this.speechRate }); this.rebuild(); if (this.pic) pulse(this, this.pic, 1.15); this.time.delayedCall(1000, () => { if (s.step === 'build' && s.result === 'right') this.advance(); }); return; }
+      if (s.placed.length === e.chunks.length) { s.result = 'right'; Sfx.correct(); cheer(this); if (canSpeak()) speak(e.word, { rate: this.speechRate }); this.rebuild(); if (this.pic) pulse(this, this.pic, 1.15); this.time.delayedCall(1000, () => { if (s.step === 'build' && s.result === 'right') this.advance(); }); return; }
       this.rebuild();
       return;
     }
-    Sfx.wrong();
+    Sfx.wrong(); oops(this);
     if (canSpeak()) speak(e.chunks[s.placed.length], { rate: this.speechRate });
     if (this.wordTiles && this.wordTiles[0]) shake(this, this.wordTiles[0], 4);
   }
@@ -361,9 +362,9 @@ export class SpellingLearnScene extends BaseScene {
     const right = s.typed === e.word;
     s.result = right ? 'right' : 'wrong'; s.tries += 1;
     if (right) {
-      Sfx.correct(); Store.updateProfile((p) => recordTaught(p, e.word)); if (canSpeak()) speak(e.word, { rate: this.speechRate });
+      Sfx.correct(); cheer(this); Store.updateProfile((p) => recordTaught(p, e.word)); if (canSpeak()) speak(e.word, { rate: this.speechRate });
       s.honey += 1; if (s.tries === 1) s.firstTries += 1;
-    } else { Sfx.wrong(); this.cameras.main.shake(120, 0.004); }
+    } else { Sfx.wrong(); oops(this); this.cameras.main.shake(120, 0.004); }
     this.rebuild();
     if (right) {
       // The bee carries the word's honey to the pot.
@@ -480,8 +481,8 @@ export class SpellingLearnScene extends BaseScene {
     const f = this.state.family;
     if (!f || f.found.includes(x.word) || f.wrong.includes(x.word)) return;
     if (canSpeak()) speak(x.word, { rate: this.speechRate });
-    if (x.member) { f.found.push(x.word); if (this.familyDone()) Sfx.correct(); else Sfx.pop(); }
-    else { f.wrong.push(x.word); Sfx.wrong(); }
+    if (x.member) { f.found.push(x.word); if (this.familyDone()) { Sfx.correct(); cheer(this); } else Sfx.pop(); }
+    else { f.wrong.push(x.word); Sfx.wrong(); oops(this); }
     this.rebuild();
   }
 
@@ -551,10 +552,10 @@ export class SpellingLearnScene extends BaseScene {
     s.coverTries += 1; s.cover = 'check'; s.result = right ? 'right' : 'wrong';
     if (s.coverTries === 1) { const typed = s.typed; Store.updateProfile((p) => recordSpelling(p, e.word, right, 'cover', typed)); }
     if (right) {
-      Sfx.correct(); s.remembered += 1; if (canSpeak()) speak(e.word, { rate: this.speechRate });
+      Sfx.correct(); cheer(this); s.remembered += 1; if (canSpeak()) speak(e.word, { rate: this.speechRate });
       this.rebuild();
       this.time.delayedCall(1300, () => { if (s.step === 'cover' && s.cover === 'check' && s.result === 'right') this.advance(); });
-    } else { Sfx.wrong(); this.cameras.main.shake(120, 0.004); this.rebuild(); }
+    } else { Sfx.wrong(); oops(this); this.cameras.main.shake(120, 0.004); this.rebuild(); }
   }
 
   buildReady() {

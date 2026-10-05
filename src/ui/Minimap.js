@@ -6,7 +6,7 @@ import { FONT, WEIGHT } from './TextStyles.js';
 
 // One colour per tile id. Buildings take their neighbourhood's roof colour so the lands read at a glance.
 const TILE_COLOUR = {
-  [TID.grass]: '#5cc45a', [TID.flower]: '#6fd06a', [TID.meadow]: '#7ad36a', [TID.woods]: '#3f9a45', [TID.cove]: '#e9d8a6', [TID.village]: '#9ad06a',
+  [TID.grass]: '#5cc45a', [TID.flower]: '#6fd06a', [TID.meadow]: '#bfe05c', [TID.woods]: '#3f9a45', [TID.cove]: '#e9d8a6', [TID.village]: '#9ad06a',
   [TID.path]: '#d9b98a', [TID.water]: '#4aa8ff', [TID.tree]: '#2f7a36', [TID.gateLocked]: '#8a5a3c', [TID.gateOpen]: '#d9b98a',
   [TID.roof]: '#b5443c', [TID.wall]: '#e8d9b5', [TID.door]: '#5a3a22',
   [TID.roofMath]: '#d9a066', [TID.wallMath]: '#f1e2c2', [TID.doorMath]: '#5a3a22',

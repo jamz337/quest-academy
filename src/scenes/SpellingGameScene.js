@@ -16,6 +16,7 @@ import { enter, shake, pulse } from '../ui/motion.js';
 import { letterRow, letterKeyboard, keyFromEvent, wordPicture, beeFly } from '../ui/SpellingWidgets.js';
 import { fireworks } from '../ui/Fireworks.js';
 import { Sfx } from '../systems/Audio.js';
+import { cheer, oops } from './FxScene.js';
 import { speak, stop as stopSpeech, rateFor, canSpeak } from '../systems/Speech.js';
 import { safeArea } from '../systems/Layout.js';
 import { Rng } from '../systems/Rng.js';
@@ -284,7 +285,7 @@ export class SpellingGameScene extends BaseScene {
       this.time.delayedCall(500, () => { if (s.idx === idx && s.phase === 'result') this.next(); });
       return;
     }
-    if (right) { Sfx.correct(); this.say(false); } else { Sfx.wrong(); this.cameras.main.shake(120, 0.004); }
+    if (right) { Sfx.correct(); cheer(this); this.say(false); } else { Sfx.wrong(); oops(this); this.cameras.main.shake(120, 0.004); }
     this.rebuild();
     if (right) this.celebrate(bonus);
     if (!right && this.wordTiles) shake(this, this.wordTiles[0], 4);
@@ -334,12 +335,12 @@ export class SpellingGameScene extends BaseScene {
     const s = this.state, r = this.round;
     if (s.phase !== 'fix' || !s.typed || s.fixed === 'right') return;
     if (s.typed === r.word) {
-      s.fixed = 'right'; Sfx.correct();
+      s.fixed = 'right'; Sfx.correct(); cheer(this);
       Store.updateProfile((p) => recordTaught(p, r.word));
       this.rebuild();
       const idx = s.idx;
       this.time.delayedCall(900, () => { if (s.idx === idx && s.phase === 'fix') this.next(); });
-    } else { s.fixed = 'wrong'; Sfx.wrong(); this.rebuild(); if (this.wordTiles && this.wordTiles[0]) shake(this, this.wordTiles[0], 4); }
+    } else { s.fixed = 'wrong'; Sfx.wrong(); oops(this); this.rebuild(); if (this.wordTiles && this.wordTiles[0]) shake(this, this.wordTiles[0], 4); }
   }
 
   /** A right answer: the picture pops, a bee carries honey to the pot, and a run of three pays out. */

@@ -7,6 +7,7 @@ import { Sfx } from '../../systems/Audio.js';
 import { stop as stopSpeech, rateFor } from '../../systems/Speech.js';
 import * as Store from '../../systems/Store.js';
 import { explainQuestion, explainSteps } from '../../data/explanations.js';
+import { storyFor } from '../../ui/StoryAnim.js';
 import { isNewSkill, markIntroduced, prioritiseWeak, weakSkills } from '../../systems/Practice.js';
 import { rampTargets, rampFor, rampOrder } from '../../systems/Ramp.js';
 import { dueReviews, recordReview } from '../../systems/Review.js';
@@ -189,7 +190,7 @@ export class MinigameScene extends BaseScene {
    */
   explanationPanel(area, q, onNext) {
     const key = this.explainKey(q);
-    if (!this.explainIt || this.explainIt.key !== key) this.explainIt = explainState(key, this.steps(q), q);
+    if (!this.explainIt || this.explainIt.key !== key) { this.explainIt = explainState(key, this.steps(q), q); this.explainIt.story = storyFor(q); }
     explainPanel(this, area, this.explainIt, this.lessonTheme, {
       next: () => { this.explainIt = null; onNext(); },
       solved: () => this.rebuild()   // the board can show the right answer now

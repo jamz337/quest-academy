@@ -160,7 +160,7 @@ export function explainSteps(q, subject = null) {
   if (math) return math;
   const base = BY_SKILL[q.skill];
   const out = base ? base.map((s) => s.replace('{a}', String(q.answer))) : [`The answer is ${q.answer}.`];
-  if (q.ref) out.push(`You can read it in ${q.ref}.`);
+  if (q.ref) out.push(`\u{1F4D6} ${q.ref}`);
   return out;
 }
 

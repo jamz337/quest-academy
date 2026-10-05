@@ -16,7 +16,7 @@ import { viewport, dpr } from '../systems/Layout.js';
 import { Sfx } from '../systems/Audio.js';
 import { toast } from '../ui/Toast.js';
 import { resolveLook } from '../data/avatars.js';
-import { lookSpriteTexture, CHAR_WORLD_SCALE, IDLE_FRAMES } from '../systems/Textures.js';
+import { lookSpriteTexture, CHAR_WORLD_SCALE, IDLE_FRAMES, TILE_RES, TILE_PAD, FLOWER_TILES, MEADOW_TILES } from '../systems/Textures.js';
 import { gameGrade, gradeUps, nextHouseLevel, HOUSE_LEVELS } from '../systems/Progression.js';
 import { errandLine } from '../data/world/errands.js';
 import { ensureExplored, reveal } from '../data/world/explore.js';
@@ -52,17 +52,28 @@ export class WorldScene extends Phaser.Scene {
 
     this.map = buildMap();
     // Ground layer (trees replaced by the local ground) plus a transparent tree layer drawn above the decor.
-    const ground = this.map.data.map((row, ty) => row.map((id, tx) => (id === TID.tree ? groundUnder(this.map, tx, ty) : id)));
-    const tilemap = this.make.tilemap({ data: ground, tileWidth: TILE, tileHeight: TILE });
-    const tileset = tilemap.addTilesetImage('tiles', 'tiles', TILE, TILE, 0, 0);
-    this.layer = tilemap.createLayer(0, tileset, 0, 0);
+    // Flower and daisy squares each take one of several looks (chosen from the square's place, so it never changes).
+    const vary = (id, tx, ty) => {
+      const set = id === TID.flower ? FLOWER_TILES : id === TID.meadow ? MEADOW_TILES : null;
+      if (!set) return id;
+      let h = Math.imul(tx + 1, 374761393) ^ Math.imul(ty + 1, 668265263);
+      h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16;
+      return set[(h >>> 0) % set.length];
+    };
+    const ground = this.map.data.map((row, ty) => row.map((id, tx) => vary(id === TID.tree ? groundUnder(this.map, tx, ty) : id, tx, ty)));
+    // The tileset is painted at TILE_RES times the tile size (smooth shapes); the layers scale it back to TILE.
+    const res = TILE * TILE_RES, mapW = this.map.width * TILE, mapH = this.map.height * TILE;
+    const tilemap = this.make.tilemap({ data: ground, tileWidth: res, tileHeight: res });
+    const tileset = tilemap.addTilesetImage('tiles', 'tiles', res, res, TILE_PAD, TILE_PAD * 2);
+    this.layer = tilemap.createLayer(0, tileset, 0, 0).setScale(1 / TILE_RES);
     this.layer.setCollision(SOLID.filter((id) => id !== TID.tree));   // trees collide on their own layer
     Decor.drawDecor(this);
-    this.treeLayer = tilemap.createBlankLayer('trees', tileset, 0, 0).setDepth(2);
+    this.treeLayer = tilemap.createBlankLayer('trees', tileset, 0, 0).setDepth(2).setScale(1 / TILE_RES);
     this.map.data.forEach((row, ty) => row.forEach((id, tx) => { if (id === TID.tree) this.treeLayer.putTileAt(TID.tree, tx, ty); }));
     this.treeLayer.setCollision([TID.tree]);
     this.tilemap = tilemap;
-    this.physics.world.setBounds(0, 0, tilemap.widthInPixels, tilemap.heightInPixels);
+    this.mapW = mapW; this.mapH = mapH;
+    this.physics.world.setBounds(0, 0, mapW, mapH);
 
     this.createPlayer(profile);
     this.createNpcs();
@@ -82,7 +93,7 @@ export class WorldScene extends Phaser.Scene {
     this.bubble = this.add.image(0, 0, 'bubble').setScale(0.75).setDepth(20).setVisible(false);
 
     const cam = this.cameras.main;
-    cam.setBounds(0, 0, tilemap.widthInPixels, tilemap.heightInPixels);
+    cam.setBounds(0, 0, this.mapW, this.mapH);
     cam.startFollow(this.player, true, 0.12, 0.12);
     this.applyZoom();
 

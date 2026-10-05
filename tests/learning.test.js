@@ -39,7 +39,7 @@ describe('explanations', () => {
     expect(patternExplanation({ terms: [1, 2, 4, 8], missingIndex: 2, answer: '4', skill: 'doubling' })).toContain('double');
     expect(explainSteps({ prompt: 'I saw ___ owl.', answer: 'an', skill: 'article' })).toEqual(['Use "an" before a vowel sound: an apple.', 'Use "a" before other sounds: a bike.', 'Here it is "an".']);
     expect(explainQuestion({ prompt: 'I saw ___ owl.', answer: 'an', skill: 'article' })).toContain('vowel sound');
-    expect(explainQuestion({ prompt: 'Who built the ark?', answer: 'Noah', skill: 'stories', ref: 'Genesis 6' })).toBe('Think back to the story. The answer is Noah. You can read it in Genesis 6.');
+    expect(explainQuestion({ prompt: 'Who built the ark?', answer: 'Noah', skill: 'stories', ref: 'Genesis 6' })).toBe('Think back to the story. The answer is Noah. \u{1F4D6} Genesis 6');
     expect(explainQuestion({ prompt: '6 × 7', answer: '42', skill: 'mult' }, 'math')).toContain('groups of 6');
     expect(explainQuestion({ prompt: 'x', answer: 'y', skill: 'nope' })).toBe('The answer is y.');
     expect(skillTip('mult')).toContain('Skip-count');

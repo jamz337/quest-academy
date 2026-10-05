@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
 import { SCENES } from '../constants.js';
 import { THEME, hex } from '../ui/theme.js';
-import { fitCamera, viewport, uiScale } from '../systems/Layout.js';
+import { fitCamera, viewport, uiScale, pointerPos } from '../systems/Layout.js';
+import { Sfx } from '../systems/Audio.js';
 import { FONT, WEIGHT } from '../ui/TextStyles.js';
 
 const CONFETTI = [0xff5c6c, 0xffc531, 0x2ec46a, 0x3d8bff, 0x9b5cf6, 0xff6fae];
@@ -81,3 +82,32 @@ export function fxLayer(scene) {
   mgr.bringToTop(SCENES.Fx);
   return fx.sys && fx.sys.isActive() && typeof fx.starBurst === 'function' ? fx : null;
 }
+
+/**
+ * A right answer on any screen (Spelling Bee, house rooms, church lessons): stars fly from where the child tapped
+ * to `to` (default: the top-right corner), and a streak of 3, 5, 10, 15 and so on brings the banner, confetti and a
+ * fanfare. The streak is kept on the scene. Mini-games use MinigameScene.correctFeedback, which adds Mango.
+ */
+export function cheer(scene, to = null) {
+  scene.cheerRun = (scene.cheerRun || 0) + 1;
+  const run = scene.cheerRun, wow = run === 3 || (run >= 5 && run % 5 === 0);
+  const show = (retry) => {
+    const fx = fxLayer(scene);
+    if (!fx) { if (retry && scene.time) scene.time.delayedCall(80, () => show(false)); return; }   // the layer starts on first use
+    const { w, h } = viewport(scene);
+    const p = scene.input && scene.input.activePointer ? pointerPos(scene, scene.input.activePointer) : null;
+    const from = p && (p.x || p.y) ? p : { x: w / 2, y: h / 2 };
+    const target = to || { x: w - 40, y: 34 };
+    fx.starBurst(from.x, from.y, target.x, target.y, wow ? 8 : 5);
+    if (wow) {
+      if (scene.time) scene.time.delayedCall(250, () => Sfx.fanfare());
+      fx.banner(run >= 5 ? `WOW! ${run} in a row! \u{1F525}` : `${run} in a row! \u{1F525}`, run >= 10 ? THEME.brand : THEME.warning);
+      fx.confetti(run >= 10 ? 90 : 60);
+    }
+  };
+  show(true);
+  return run;
+}
+
+/** A miss on any screen: the streak starts again. */
+export function oops(scene) { scene.cheerRun = 0; }

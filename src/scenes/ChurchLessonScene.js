@@ -9,6 +9,7 @@ import { StarRow } from '../ui/StarRow.js';
 import { enter, shake } from '../ui/motion.js';
 import { fireworks } from '../ui/Fireworks.js';
 import { Sfx } from '../systems/Audio.js';
+import { cheer, oops } from './FxScene.js';
 import { rateFor, stop as stopSpeech } from '../systems/Speech.js';
 import { safeArea, grid } from '../systems/Layout.js';
 import { Rng } from '../systems/Rng.js';
@@ -264,7 +265,7 @@ export class ChurchLessonScene extends BaseScene {
     if (!q || this.solved || s.picks.includes(i)) return;
     s.picks.push(i);
     const right = q.choices[i] === q.answer;
-    if (right) { Sfx.correct(); if (s.picks.length === 1) s.firstTry += 1; } else Sfx.wrong();
+    if (right) { Sfx.correct(); cheer(this); if (s.picks.length === 1) s.firstTry += 1; } else { Sfx.wrong(); oops(this); }
     this.rebuild();
     if (this.solved) this.time.delayedCall(right ? 700 : 1600, () => this.nextQuestion());
   }

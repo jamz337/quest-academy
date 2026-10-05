@@ -16,6 +16,7 @@ import { ProgressBar } from '../ui/ProgressBar.js';
 import { enter, shake } from '../ui/motion.js';
 import { fireworks } from '../ui/Fireworks.js';
 import { Sfx } from '../systems/Audio.js';
+import { cheer, oops } from './FxScene.js';
 import { rateFor, stop as stopSpeech } from '../systems/Speech.js';
 import { safeArea } from '../systems/Layout.js';
 import { Rng } from '../systems/Rng.js';
@@ -210,7 +211,7 @@ export class HouseRoomScene extends BaseScene {
     const s = this.state, q = this.question;
     if (!q || s.picked !== null) return;
     s.picked = i; s.right = q.choices[i] === q.answer;
-    if (s.right) { s.correct += 1; Sfx.correct(); } else { Sfx.wrong(); this.cameras.main.shake(120, 0.004); }
+    if (s.right) { s.correct += 1; Sfx.correct(); cheer(this); } else { Sfx.wrong(); oops(this); this.cameras.main.shake(120, 0.004); }
     s.log.push({ skill: SOCIAL_SKILL, right: s.right, ms: Date.now() - this.qStartAt, prompt: q.q.slice(0, 120), answer: q.answer.slice(0, 40), choices: q.choices.slice(0, 4), explain: q.why.slice(0, 200) });
     stopSpeech();
     this.rebuild();
