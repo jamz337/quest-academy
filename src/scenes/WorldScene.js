@@ -181,7 +181,7 @@ export class WorldScene extends Phaser.Scene {
     this.map.coins.forEach((c, i) => {
       if (taken.has(i)) return;
       const img = this.coinGroup.create((c.tx + 0.5) * TILE, (c.ty + 0.5) * TILE, 'coin');
-      img.setScale(0.35).setDepth(3).refreshBody();   // coin texture is generated at 2x
+      img.setDisplaySize(17, 17).setDepth(3).refreshBody();   // the coin texture is painted large, to stay sharp
       img.body.setSize(18, 18);
       img.setData('idx', i);
       this.tweens.add({ targets: img, y: img.y - 3, duration: 500 + (i % 4) * 90, yoyo: true, repeat: -1, ease: 'Sine.InOut' });

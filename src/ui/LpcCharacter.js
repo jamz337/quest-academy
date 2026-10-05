@@ -6,6 +6,7 @@
 // A look: { sex: 'boy'|'girl', skin, hairStyle, hair, topStyle, top, bottomStyle, bottom, shoes, eyes } where the
 // colour fields are palette variant names (see SKIN_TONES, HAIR_COLOURS, CLOTH_COLOURS, EYE_COLOURS).
 
+import { smoothPixels } from './Smooth.js';
 import BODY_PALETTE from '../data/lpc/body.json';
 import HAIR_PALETTE from '../data/lpc/hair.json';
 import CLOTH_PALETTE from '../data/lpc/cloth.json';
@@ -137,10 +138,19 @@ export function composeSheet(ctx, look, images, scratch) {
 export const frameAt = (pose, col) => ({ row: LPC_ROWS[pose === 'side' ? 'left' : pose] ?? LPC_ROWS.down, col });
 
 /** Draw the head and shoulders of a composed sheet (its standing, facing-down frame) into a badge. */
-export function drawBustFromSheet(ctx, sheet, cx, cy, size) {
+export function drawBustFromSheet(ctx, sheet, cx, cy, size, smooth = false) {
   // The standing frame faces down at column 0, row 2; the head sits around y 6..30 of the 64 px cell.
   const sx = 0, sy = LPC_ROWS.down * LPC_FRAME;
   const s = size / 34;
+  if (smooth && typeof sheet.getContext === 'function') {
+    // For the round badges: the pixel edges are rounded off (ui/Smooth.js) before the bust is enlarged.
+    const img = smoothPixels(sheet.getContext('2d').getImageData(sx + 14, sy + 4, 36, 34), 2);
+    const big = document.createElement('canvas'); big.width = img.width; big.height = img.height;
+    big.getContext('2d').putImageData(new ImageData(img.data, img.width, img.height), 0, 0);
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(big, cx - 18 * s, cy - 17 * s, 36 * s, 34 * s);
+    return;
+  }
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(sheet, sx + 14, sy + 4, 36, 34, cx - 18 * s, cy - 17 * s, 36 * s, 34 * s);
 }

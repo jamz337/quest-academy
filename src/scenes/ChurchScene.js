@@ -15,6 +15,7 @@ import { effectiveGrade } from '../systems/Progression.js';
 import { getModule } from '../data/bible/lessons.js';
 import { CHURCH_W, CHURCH_H, EXIT, SPAWN, ALTAR, LECTERN, PEWS, STATIONS, isWall, onExit } from '../data/bible/church.js';
 import { moduleProgress, churchProgress } from '../systems/Church.js';
+import { bakeSharp } from '../ui/Bake.js';
 
 const SPEED = 110;
 const USE_DIST = 26;
@@ -115,8 +116,7 @@ export class ChurchScene extends Phaser.Scene {
     // The door mat.
     g.fillStyle(0x7c5cff, 1); g.fillRoundedRect(EXIT.tx * T + 3, EXIT.ty * T + 6, T - 6, T - 12, 4);
     g.fillStyle(0xfff1e8, 0.6); g.fillRect(EXIT.tx * T + 7, EXIT.ty * T + 11, T - 14, 2);
-    const rt = this.add.renderTexture(0, 0, W, H).setOrigin(0).setDepth(0);
-    rt.draw(g);
+    bakeSharp(this, g, W, H, 0);
     g.destroy();
     // Candle flames flicker; the module names hang under their windows.
     for (const fx of [ax + 10, ax + ALTAR.w * T - 10]) {

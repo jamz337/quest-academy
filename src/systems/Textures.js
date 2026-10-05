@@ -2,11 +2,12 @@
 // To swap in real art later, load spritesheets with the same keys and frame layout and skip the generator.
 import Phaser from 'phaser';
 import { TILE, AVATAR_COUNT } from '../constants.js';
-import { THEME } from '../ui/theme.js';
+import { THEME, hex } from '../ui/theme.js';
 import { mulberry32 } from './Rng.js';
 import { OUTLINE, MOUTH, BOOTS, CHARACTER_STYLES, NPC_STYLES, lookId } from '../data/avatars.js';
 export { CHARACTER_STYLES, NPC_STYLES };
-import { FRAME, PIXEL_FRAME, drawMonkey, pixelate, MONKEY_FRAMES } from '../ui/FlatCharacter.js';
+import { MONKEY_FRAMES } from '../ui/FlatCharacter.js';
+import { MANGO_CELL, MANGO_FACE, drawMango, drawMangoFace } from '../ui/Mango.js';
 import { LPC_FRAME, LPC_COLS, allLayerPaths, composeSheet, drawOutfitBack, drawOutfitFront, drawBustFromSheet, walkRange } from '../ui/LpcCharacter.js';
 export { WORLD_SCALE as CHAR_WORLD_SCALE, IDLE_FRAMES } from '../ui/LpcCharacter.js';
 
@@ -432,20 +433,20 @@ export function tilesTexture(scene) {
   tex.refresh();
 }
 
-const BADGE = 80;   // badge frames are drawn at 2x and shown at ~40
+const BADGE = 240;   // badge frames are drawn large (shown at 40 to 60) so they stay sharp on a phone
 
 /** One round badge: coloured disc with a darker rim and the character's head and shoulders, clipped to the disc. */
 function paintBadge(scene, ctx, x0, look, outfit = null, outfitKey = '') {
   const bg = look.bg || '#3d8bff', S = BADGE;
   ctx.fillStyle = shade(bg, 0.82); ctx.beginPath(); ctx.arc(x0 + S / 2, S / 2, S / 2, 0, Math.PI * 2); ctx.fill();
   ctx.save();
-  ctx.beginPath(); ctx.arc(x0 + S / 2, S / 2, S / 2 - 3, 0, Math.PI * 2); ctx.clip();
+  ctx.beginPath(); ctx.arc(x0 + S / 2, S / 2, S / 2 - S * 0.04, 0, Math.PI * 2); ctx.clip();
   ctx.fillStyle = bg; ctx.fillRect(x0, 0, S, S);
-  drawBustFromSheet(ctx, composeLookCanvas(scene, look, outfit, outfitKey), x0 + S / 2, S * 0.52, 62);
+  drawBustFromSheet(ctx, composeLookCanvas(scene, look, outfit, outfitKey), x0 + S / 2, S * 0.52, S * 0.775, true);
   ctx.restore();
 }
 
-/** Round avatar badges for the preset picker: 'avatar' sheet with AVATAR_COUNT frames of 80x80. */
+/** Round avatar badges for the preset picker: 'avatar' sheet with AVATAR_COUNT frames of BADGE x BADGE. */
 export function avatarTexture(scene) {
   if (scene.textures.exists('avatar')) return;
   const tex = scene.textures.createCanvas('avatar', BADGE * AVATAR_COUNT, BADGE);
@@ -489,6 +490,9 @@ function star(g, cx, cy, r, color) {
   g.closePath(); g.fillPath();
 }
 
+/** Side of the 'coin' and 'sparkle' textures. They also sit in the world, where the camera enlarges them a lot. */
+export const COIN_SIZE = 192;
+
 /** Icons used by the UI, generated at 2x so they stay smooth when scaled. Callers size them with setDisplaySize. */
 export function uiTextures(scene) {
   const g = scene.make.graphics({ add: false });
@@ -499,12 +503,16 @@ export function uiTextures(scene) {
   }
   if (!scene.textures.exists('star-off')) { star(g, 48, 48, 44, THEME.starOff); g.generateTexture('star-off', 96, 96); g.clear(); }
   if (!scene.textures.exists('coin')) {
-    g.fillStyle(THEME.warningDark, 1); g.fillCircle(24, 24, 24);
-    g.fillStyle(THEME.gold, 1); g.fillCircle(24, 22, 21);
-    g.fillStyle(0xffe08a, 1); g.fillCircle(24, 22, 15);
-    g.fillStyle(THEME.warningDark, 1); g.fillRoundedRect(20, 12, 8, 20, 3);
-    g.fillStyle(0xffffff, 0.7); g.fillCircle(15, 14, 4);
-    g.generateTexture('coin', 48, 48); g.clear();
+    // A glossy gold coin, painted large (COIN_SIZE) so it stays sharp when the world camera zooms in on it.
+    const S = COIN_SIZE, tex = scene.textures.createCanvas('coin', S, S), c = tex.getContext(), u = S / 48;
+    const disc = (x, y, r, fill) => { c.fillStyle = fill; c.beginPath(); c.arc(x * u, y * u, r * u, 0, Math.PI * 2); c.fill(); };
+    const grad = (y0, y1, a, b) => { const gr = c.createLinearGradient(0, y0 * u, 0, y1 * u); gr.addColorStop(0, a); gr.addColorStop(1, b); return gr; };
+    disc(24, 25, 23, hex(THEME.warningDark));                       // the rim's shadow side
+    disc(24, 23, 23, grad(0, 46, '#ffe27a', hex(THEME.gold)));      // the rim
+    disc(24, 23, 17.5, grad(6, 40, hex(THEME.gold), '#ffd75e'));    // the sunken face
+    c.fillStyle = hex(THEME.warningDark); c.beginPath(); c.roundRect(20.5 * u, 13 * u, 7 * u, 20 * u, 3.5 * u); c.fill();
+    c.fillStyle = 'rgba(255,255,255,0.75)'; c.beginPath(); c.ellipse(15 * u, 13 * u, 5.5 * u, 3 * u, -0.7, 0, Math.PI * 2); c.fill();
+    tex.refresh();
   }
   if (!scene.textures.exists('joy-base')) {
     g.fillStyle(THEME.ink, 0.12); g.fillCircle(120, 120, 116); g.lineStyle(6, 0xffffff, 0.75); g.strokeCircle(120, 120, 116);
@@ -516,10 +524,15 @@ export function uiTextures(scene) {
   }
   if (!scene.textures.exists('sparkle')) {
     // Four-point glint: white with a gold core, drawn at 2x.
-    const pts = (r, q) => [[24, 24 - r], [24 + q, 24 - q], [24 + r, 24], [24 + q, 24 + q], [24, 24 + r], [24 - q, 24 + q], [24 - r, 24], [24 - q, 24 - q]];
-    const poly = (list, color) => { g.fillStyle(color, 1); g.beginPath(); list.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.closePath(); g.fillPath(); };
-    poly(pts(24, 5), 0xffffff); poly(pts(14, 3), THEME.gold);
-    g.generateTexture('sparkle', 48, 48); g.clear();
+    // Painted large (COIN_SIZE), with curved-in sides, so it stays sharp in the zoomed-in world.
+    const S = COIN_SIZE, tex = scene.textures.createCanvas('sparkle', S, S), c = tex.getContext(), m = S / 2;
+    const glint = (r, color) => {
+      c.fillStyle = color; c.beginPath(); c.moveTo(m, m - r);
+      [[m + r, m], [m, m + r], [m - r, m], [m, m - r]].forEach(([x, y]) => c.quadraticCurveTo(m, m, x, y));
+      c.fill();
+    };
+    glint(m, '#ffffff'); glint(m * 0.6, hex(THEME.gold));
+    tex.refresh();
   }
   if (!scene.textures.exists('bobber')) {
     // Fishing float: red top, white bottom, drawn at 2x.
@@ -547,26 +560,15 @@ export function generateAllTextures(scene) {
   pixelTexture(scene, 'robot', [ROBOT, ROBOT2]);
   pixelTexture(scene, 'sheep', [SHEEP, SHEEP2]);
   pixelTexture(scene, 'bunny', [BUNNY, BUNNY2]);
-  if (!scene.textures.exists('monkey') && scene.textures.exists('mango-front') && scene.textures.exists('mango-side')) {   // Mango from the reference art
-    const P = PIXEL_FRAME, tex = scene.textures.createCanvas('monkey', P * 4, P), ctx = tex.getContext();
-    const front = scene.textures.get('mango-front').getSourceImage(), side = scene.textures.get('mango-side').getSourceImage();
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(front, P * MONKEY_FRAMES.stand, 0); ctx.drawImage(front, P * MONKEY_FRAMES.hop, -3); ctx.drawImage(front, P * MONKEY_FRAMES.cheer, -1); ctx.drawImage(side, P * MONKEY_FRAMES.side, 0);
-    for (let i = 0; i < 4; i++) tex.add(i, 0, P * i, 0, P, P);
+  if (!scene.textures.exists('monkey')) {   // Mango, painted smooth (ui/Mango.js): one large cell per pose
+    const C = MANGO_CELL, tex = scene.textures.createCanvas('monkey', C * 4, C), ctx = tex.getContext();
+    for (const [pose, i] of Object.entries(MONKEY_FRAMES)) { drawMango(ctx, C * i, 0, C, pose); tex.add(i, 0, C * i, 0, C, C); }
     tex.refresh();
-    tex.setFilter(Phaser.Textures.FilterMode.NEAREST);
-    scene.textures.get('mango-face').setFilter(Phaser.Textures.FilterMode.NEAREST);
   }
-  if (!scene.textures.exists('monkey')) {   // fallback: Mango drawn with shapes, then pixelated to match the LPC people
-    const src = document.createElement('canvas'); src.width = FRAME * 2; src.height = FRAME;
-    const sctx = src.getContext('2d');
-    drawMonkey(sctx, 0, 0, { step: 0, shadow: false }); drawMonkey(sctx, FRAME, 0, { step: 1, shadow: false });
-    const P = PIXEL_FRAME, tex = scene.textures.createCanvas('monkey', P * 2, P), ctx = tex.getContext();
-    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
-    ctx.drawImage(src, 0, 0, FRAME * 2, FRAME, 0, 0, P * 2, P);
-    pixelate(ctx, P * 2, P);
-    tex.add(0, 0, 0, 0, P, P); tex.add(1, 0, P, 0, P, P); tex.add(2, 0, 0, 0, P, P); tex.add(3, 0, P, 0, P, P); tex.refresh();
-    tex.setFilter(Phaser.Textures.FilterMode.NEAREST);
+  if (!scene.textures.exists('mango-face')) {
+    const tex = scene.textures.createCanvas('mango-face', MANGO_FACE, MANGO_FACE);
+    drawMangoFace(tex.getContext(), 0, 0, MANGO_FACE);
+    tex.refresh();
   }
   for (const [key, rate] of [['sheep', 5], ['bunny', 8], ['monkey', 5]]) {
     if (!scene.anims.exists(`${key}-walk`)) scene.anims.create({ key: `${key}-walk`, frames: scene.anims.generateFrameNumbers(key, { start: 0, end: 1 }), frameRate: rate, repeat: -1 });

@@ -19,10 +19,10 @@ export function createSparkles(w, profile) {
   sparkleSpots(w.map, daySeed(profile.id, day)).forEach((s, i) => {
     if (found.includes(i)) return;
     const img = w.sparkleGroup.create((s.tx + 0.5) * TILE, (s.ty + 0.5) * TILE, 'sparkle');
-    img.setScale(0.45).setDepth(3).refreshBody();
+    img.setDisplaySize(22, 22).setDepth(3).refreshBody();
     img.body.setSize(14, 14);
     img.setData('idx', i);
-    w.tweens.add({ targets: img, alpha: 0.35, scale: 0.3, duration: 600 + (i % 3) * 120, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+    w.tweens.add({ targets: img, alpha: 0.35, scale: img.scale * 0.67, duration: 600 + (i % 3) * 120, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
     w.tweens.add({ targets: img, angle: 360, duration: 6000, repeat: -1 });
   });
   w.physics.add.overlap(w.player, w.sparkleGroup, (_p, sp) => onSparkle(w, sp));

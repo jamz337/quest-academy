@@ -12,7 +12,7 @@ export const WORLD_SCALE = 32 / PIXEL_FRAME;
  * fallback when those files are missing.
  */
 export const MANGO_BASE = 'mango/';
-export const MANGO_IMAGES = ['mango-front', 'mango-side', 'mango-face'];
+export const MANGO_IMAGES = [];   // none now: Mango is painted smooth in code (ui/Mango.js), the pixel pictures are retired
 /** Frames of the 'monkey' texture: waving, a hop mid-wave, a cheer, and the side view for duels (faces right). */
 export const MONKEY_FRAMES = { stand: 0, hop: 1, cheer: 2, side: 3 };
 

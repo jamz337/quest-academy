@@ -9,6 +9,7 @@ import { houseStars, effectiveGrade } from '../../systems/Progression.js';
 import { bandFor } from '../../data/grades.js';
 import { moduleProgress, churchProgress } from '../../systems/Church.js';
 import { bellPieces, CHAPTERS } from '../../data/world/story.js';
+import { bakeSharp } from '../../ui/Bake.js';
 
 /**
  * One-off overlay baked into a RenderTexture: foam along shorelines, a soft inset edge around paths and
@@ -41,8 +42,7 @@ export function drawDecor(w) {
       if (!BUILDING.has(at(x, y + 1)) && !DOOR_TILES.includes(id)) g.fillRect(px + 4, py + TILE, TILE, 4);
     }
   }
-  const rt = w.add.renderTexture(0, 0, W * TILE, H * TILE).setOrigin(0).setDepth(1);
-  rt.draw(g);
+  bakeSharp(w, g, W * TILE, H * TILE, 1);
   g.destroy();
 }
 

@@ -15,6 +15,7 @@ import { TV_FACTS, FRIDGE_FACTS, BOOK_FACTS, pickFact } from '../data/social/fac
 import { roomRecord } from '../systems/Social.js';
 import { outfitOf, outfitId, roomDecor } from '../systems/Market.js';
 import { drawFurniture, drawExhibit } from './house/furniture.js';
+import { bakeSharp } from '../ui/Bake.js';
 
 const SPEED = 110;
 const USE_DIST = 26;          // px from the centre of the tile you stand on to use something
@@ -96,8 +97,7 @@ export class HouseScene extends Phaser.Scene {
     this.drawMat(g);
     for (const f of FURNITURE) drawFurniture(g, f.kind, f.x * TILE, f.y * TILE, f.w * TILE, f.h * TILE, this.roomColour(HOUSE_ROOMS.find((r) => r.id === f.room)));
     for (const ex of EXHIBITS) drawExhibit(g, ex.id, ex.tx * TILE, ex.ty * TILE);
-    const rt = this.add.renderTexture(0, 0, W, H).setOrigin(0).setDepth(0);
-    rt.draw(g);
+    bakeSharp(this, g, W, H, 0);
     g.destroy();
     // Room name signs: a dark pill on the back wall, right of centre, clear of the exhibit and the windows.
     for (const s of SIGNS) {
