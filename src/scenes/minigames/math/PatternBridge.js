@@ -8,6 +8,12 @@ import { card, plank } from '../../../ui/Card.js';
 import { enter } from '../../../ui/motion.js';
 import { readable } from '../../../ui/ReadableText.js';
 import { speak } from '../../../systems/Speech.js';
+import { draggable } from '../../../ui/Drag.js';
+import { Sfx } from '../../../systems/Audio.js';
+import { lookSpriteTexture } from '../../../systems/Textures.js';
+import { outfitOf, outfitId } from '../../../systems/Market.js';
+import { IDLE_FRAMES } from '../../../ui/LpcCharacter.js';
+import { resolveLook } from '../../../data/avatars.js';
 
 const PAR_MS = 90000;
 const WOOD = 0xf0b36b, POST = 0xc99a6b;
@@ -64,14 +70,18 @@ const bridgeIntroTheme = {
   }
 };
 
-/** Pattern Bridge: a row of numbered planks over water with one missing; pick the plank that fits. 8 bridges. */
+/**
+ * Pattern Bridge: a row of numbered planks over water with one missing. The spare planks lie below: drag the one
+ * that fits into the gap (a tap works too). The right plank mends the bridge and the player walks across; a wrong
+ * one splashes into the water and the child tries another. 8 bridges.
+ */
 export class PatternBridge extends MinigameScene {
   constructor() { super('MG_PatternBridge'); }
 
   initState() {
     const grade = this.payload.grade;
     const rounds = this.rampedRounds((k) => generateRounds(grade, this.rng, k), 8, roundDifficulty, () => generateRounds(grade, this.rng, 10));
-    return { rounds, idx: 0, correct: 0, locked: false, picked: null, missed: {}, introduced: {} };
+    return { rounds, idx: 0, correct: 0, locked: false, picked: null, struck: [], missed: {}, introduced: {} };
   }
 
   /** A solved bridge of a pattern skill the player has never met, and a second bridge for the child to try. */
@@ -103,7 +113,7 @@ export class PatternBridge extends MinigameScene {
     if (this.skillIntroFor(area, r.skill, (k) => this.exampleFor(k), bridgeIntroTheme)) return;
     const promptH = 56 * ui;
     const prompt = card(this, area.x + area.w / 2, area.y + promptH / 2, area.w, promptH);
-    text(this, area.x + area.w / 2, area.y + promptH / 2, r.rule || 'Which number is missing from the bridge?',
+    text(this, area.x + area.w / 2, area.y + promptH / 2, r.rule || (s.picked !== null && r.choices[s.picked] === r.answer ? 'The bridge is mended!' : s.struck.length ? 'Splash! Try another plank.' : 'Drag the missing plank into the bridge'),
       T.at(this, 20, THEME.ink, { wordWrap: { width: area.w - 20 } }));
     enter(this, prompt, { from: 'up', distance: 12 });
 
@@ -119,15 +129,28 @@ export class PatternBridge extends MinigameScene {
     const gridTop = sceneRect.y + sceneH + gap;
     const gridH = Math.min(area.y + area.h - gridTop, 300 * ui);
     const cells = grid({ x: area.x, y: gridTop, w: area.w, h: gridH }, this.portrait ? 2 : 4, this.portrait ? 2 : 1, gap);
+    // The spare planks: wooden, to be dragged up into the gap (or tapped).
+    const slot = this.slot;
     const made = r.choices.map((choice, i) => {
-      const c = cells[i];
-      let variant = 'secondary', faded = false;
-      if (s.picked !== null) { if (choice === r.answer && this.reveal) variant = 'success'; else if (i === s.picked) variant = 'danger'; else faded = this.reveal; }
-      const b = button(this, c.x, c.y, c.w, Math.max(56 * ui, Math.min(c.h, 110 * ui)), choice, { variant, fontSize: isPicture(r.choices) ? 44 : 28, onClick: () => this.pick(i) });
-      if (faded) b.setAlpha(0.45);
-      return b;
+      const c = cells[i], struck = s.struck.includes(i);
+      let color = WOOD, faded = false;
+      if (s.picked !== null) { if (choice === r.answer && this.reveal) color = THEME.success; else if (i === s.picked) color = THEME.danger; else faded = this.reveal; }
+      const pw = Math.min(c.w, 150 * ui), ph = Math.max(52 * ui, Math.min(c.h, 84 * ui));
+      const k = plank(this, c.x, c.y, pw, ph, choice, { color, textColor: color === WOOD ? THEME.ink : THEME.onAccent, fontSize: (isPicture(r.choices) ? 40 : 28) * ui, radius: 12 });
+      if (struck) { k.setAlpha(0.3); k.setAngle(i % 2 ? 5 : -5); }   // it fell in the water
+      else if (faded) k.setAlpha(0.45);
+      else if (!s.locked) {
+        draggable(this, k, {
+          onTap: () => this.pick(i),
+          onMove: (x, y) => { if (slot && slot.obj && slot.obj.active) slot.obj.setScale(Math.hypot(x - slot.x, y - slot.y) < slot.reach ? 1.1 : 1); },
+          onDrop: (x, y) => { if (!slot || Math.hypot(x - slot.x, y - slot.y) >= slot.reach) return false; this.pick(i); return true; },
+          onCancel: () => { if (slot && slot.obj && slot.obj.active) slot.obj.setScale(1); }
+        });
+      }
+      return k;
     });
     enter(this, made, { from: 'up', delay: 200, stagger: 40 });
+    this.walkAcross();
     if (s.picked !== null && r.choices[s.picked] !== r.answer) this.explanationPanel(area, asked, () => this.next());
   }
 
@@ -154,10 +177,14 @@ export class PatternBridge extends MinigameScene {
 
     // Picture patterns (Pre-K and K) draw the pictures as big as the plank allows.
     const fontSize = isPicture(r.terms) ? Math.round(Math.min(plankW, plankH) * 0.6) : Math.round((n > 5 && plankW < 60 * ui ? 16 : 22) * ui);
+    this.span = { x0: x0 - 26 * ui, x1: x0 + rowW + 26 * ui, y: py + 2 * ui, size: Math.min(64 * ui, rect.h * 0.42) };   // where the player walks across
+    this.slot = null;
     return r.terms.map((t, i) => {
       const x = x0 + i * (plankW + gap) + plankW / 2, y = py + plankH / 2;
       if (i === r.missingIndex && s.picked === null) {
-        return plank(this, x, y, plankW, plankH, '?', { empty: true, stroke: THEME.warning, textColor: THEME.warningDark, fontSize });
+        const hole = plank(this, x, y, plankW, plankH, '?', { empty: true, stroke: THEME.warning, textColor: THEME.warningDark, fontSize });
+        this.slot = { x, y, reach: Math.max(plankW, plankH) * 1.1, obj: hole };   // where a dragged plank can be dropped
+        return hole;
       }
       const isMissing = i === r.missingIndex;
       const right = isMissing && r.choices[s.picked] === r.answer;
@@ -174,14 +201,25 @@ export class PatternBridge extends MinigameScene {
     const right = r.choices[i] === r.answer;
     const asked = { skill: r.skill, prompt: (r.rule ? r.rule + '\n' : '') + r.terms.map((t, j) => (j === r.missingIndex ? '?' : t)).join(', '), answer: r.answer, choices: r.choices };
     // The first miss gets a second try; the explanation waits for a second miss.
-    if (!right && this.secondChance(asked)) { s.missed[r.skill] = (s.missed[r.skill] || 0) + 1; this.rebuild(); return; }
+    if (!right && this.secondChance(asked)) { s.missed[r.skill] = (s.missed[r.skill] || 0) + 1; s.struck = [...s.struck, i]; Sfx.pop(); this.rebuild(); return; }
     const second = this.onSecondTry(asked);
     s.locked = true; s.picked = i;
     if (!second) this.logQuestion(asked, right);
     if (right) { s.correct += 1; this.noteRight(asked); this.correctFeedback(); }
     else { if (!second) s.missed[r.skill] = (s.missed[r.skill] || 0) + 1; this.wrongFeedback(); }
     this.rebuild();
-    if (right) this.time.delayedCall(600, () => this.next());   // wrong answers wait for "Next" after the explanation
+    if (right) this.time.delayedCall(1000, () => this.next());   // time to walk across; wrong answers wait for "Next" after the explanation
+  }
+
+  /** The bridge is mended: the player strolls across it. */
+  walkAcross() {
+    const s = this.state, r = this.round, sp = this.span;
+    if (!sp || s.picked === null || r.choices[s.picked] !== r.answer || !this.textures || !this.add.sprite) return;
+    const key = lookSpriteTexture(this, resolveLook(this.profile), outfitOf(this.profile), outfitId(this.profile));
+    if (!this.textures.exists(key)) return;
+    const walker = this.add.sprite(sp.x0, sp.y, key, IDLE_FRAMES.side).setOrigin(0.5, 1).setDisplaySize(sp.size, sp.size).setFlipX(true).setDepth(6);
+    if (walker.play && this.anims && this.anims.exists(`${key}-side`)) walker.play(`${key}-side`, true);
+    if (this.tweens) this.tweens.add({ targets: walker, x: sp.x1, duration: 850, ease: 'Sine.InOut' });
   }
 
   next() {
@@ -192,7 +230,7 @@ export class PatternBridge extends MinigameScene {
       const missedSkills = Object.entries(s.missed).sort((a, b) => b[1] - a[1]).map(([k]) => k);
       return this.finish({ correct: s.correct, total: s.rounds.length, parTimeMs: PAR_MS, missedSkills });
     }
-    s.locked = false; s.picked = null;
+    s.locked = false; s.picked = null; s.struck = [];
     this.rebuild();
   }
 }
