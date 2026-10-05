@@ -9,6 +9,8 @@ import { ZONE_NAMES } from '../../data/world/map.js';
 import { getGame } from '../../data/minigames.js';
 import { dailyGoal, GOAL_BONUS } from '../../systems/Goals.js';
 import { landStars, nextGame } from './guide.js';
+import { openRequests } from '../../data/world/requests.js';
+import { NPCS } from '../../data/world/npcs.js';
 
 // Each land's jewel sits on the side of the fountain that faces its land.
 const JEWELS = [{ zone: 'math', a: Math.PI }, { zone: 'words', a: -Math.PI / 2 }, { zone: 'bible', a: 0 }, { zone: 'code', a: Math.PI / 2 }];
@@ -116,7 +118,9 @@ export function boardFacts(profile, map) {
   return {
     goal: goal && game ? { title: game.title, stars: goal.stars, done: !!goal.done, bonus: GOAL_BONUS } : null,
     lands: ['math', 'words', 'code', 'bible'].map((zone) => ({ zone, name: ZONE_NAMES[zone], ...landStars(profile, zone) })),
-    next: next ? { title: next.title, land: ZONE_NAMES[next.subject], zone: next.subject } : null
+    next: next ? { title: next.title, land: ZONE_NAMES[next.subject], zone: next.subject } : null,
+    // Villagers with an order still open today (see data/world/requests.js).
+    orders: openRequests(profile).map((r) => ({ emoji: r.emoji, name: (NPCS.find((n) => n.id === r.npc) || {}).name || 'A villager' }))
   };
 }
 

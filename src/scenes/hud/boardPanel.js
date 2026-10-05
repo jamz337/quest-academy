@@ -11,7 +11,8 @@ export function buildBoard(hud, b) {
   const { w, h, ui } = hud;
   const D = 603;
   // Everything is sized from one factor, so the whole page shrinks to fit a short (landscape) screen.
-  const rows = b.lands.length, need = (86 + (b.goal ? 86 : 0) + 26 + rows * 40 + 10 + 62 + 66) * ui;
+  const orders = b.orders || [];
+  const rows = b.lands.length, need = (86 + (b.goal ? 86 : 0) + 26 + rows * 40 + 10 + (orders.length ? 44 : 0) + 62 + 66) * ui;
   const f = ui * Math.min(1, (h - 24) / need);
   const mw = Math.min(w - 24, 470 * f), mh = need * (f / ui);
   const m = modal(hud, { w: mw, h: mh, accent: THEME.gold, depth: 600, dimAlpha: 0.45 });
@@ -60,6 +61,13 @@ export function buildBoard(hud, b) {
     y += 40 * f;
   }
   y += 10 * f;
+
+  // Villagers with an order today.
+  if (orders.length) {
+    put(left, y + 6 * f, "TODAY'S ORDERS", font(11.5, THEME.ink2));
+    put(left, y + 26 * f, orders.map((o) => `${o.emoji} ${o.name}`).join('   '), { ...font(13, THEME.ink, WEIGHT.bold), wordWrap: { width: inner } });
+    y += 44 * f;
+  }
 
   // Where the footprints lead.
   const nh = 50 * f, nc = b.next ? THEME.subjects[b.next.zone] : { accent: THEME.gold, dark: THEME.warningDark, soft: THEME.warningSoft };

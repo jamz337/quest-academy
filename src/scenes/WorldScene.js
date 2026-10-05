@@ -34,6 +34,7 @@ import { getBadge } from '../data/badges.js';
 import { drinkUp } from './world/drink.js';
 import { createTrail, trailTick } from './world/trail.js';
 import * as Hub from './world/hub.js';
+import { refreshRequestBubbles, requestLine, requestAfterGame } from './world/requests.js';
 import { createLamps, refreshLamps } from './world/lamps.js';
 import { createGateways, refreshGateways, createGuide, retargetGuide, guideTick } from './world/guide.js';
 
@@ -135,6 +136,7 @@ export class WorldScene extends Phaser.Scene {
     this.events.on('pause', this.onPauseBound);
     this.onGameDone = (e) => this.afterGame(e.payload, e.result);
     this.events.on('minigame:done', this.onGameDone);
+    refreshRequestBubbles(this);   // today's orders float over the villagers who have one
     this.onMarketDone = (d) => { this.refreshOutfit(); drinkUp(this, d); };
     this.events.on('market:done', this.onMarketDone);
     this.events.once('shutdown', () => this.cleanup());
@@ -400,6 +402,8 @@ export class WorldScene extends Phaser.Scene {
     if (npc.market) prompt = 'Come and see what is for sale?';
     else if (duel && !duelWon(profile, npc.id)) lines = [...lines, duel.challenge];
     if (!npc.market) lines = [...guideLines({ ...profile, world: { ...profile.world, npcsTalked: (profile.world.npcsTalked || []).filter((id) => id !== npc.id || !firstTalk) } }, npc.id), ...npc.lines];
+    const order = requestLine(npc.id);   // a villager with an order today opens with it
+    if (order) lines = [order, ...lines];
     hud.showDialog({
       name: npc.name, voice: npc.voice, pitch: npc.pitch, rate: npc.rate, speaker: npc.id, lines, prompt, playLabel: npc.market ? 'Shop' : undefined,
       onPlay: npc.market ? () => this.openMarket() : npc.gameId ? () => this.playGame(npc) : null, onLater,
@@ -604,6 +608,7 @@ export class WorldScene extends Phaser.Scene {
   afterGame(payload, result) {
     if (!result || result.aborted) return;
     const hud = this.hud();
+    requestAfterGame(this, payload, result);
     if (payload.boss && result.won) {
       const s = this.npcs.find((x) => x.boss && x.boss.id === payload.boss.id);
       if (s) this.poseDefeated(s);
