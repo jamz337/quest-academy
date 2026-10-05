@@ -247,14 +247,14 @@ export class ProfileScene extends BaseScene {
     // Compress the rows to what fits: the available height shared out over every row.
     const styleLines = STYLE_ROWS.reduce((n, r) => n + Math.ceil(r.options.length / r.perRow), 0);
     const units = STYLE_ROWS.length * 0.5 + styleLines + SWATCHES.length * 1.5;   // labels are half a unit, swatch rows one and a half
-    const unit = Math.max(12, Math.min(30 * ui, (rowsBottom - y) / units));   // rows shrink to fit short screens
+    const unit = Math.max(12, Math.min(38 * ui, (rowsBottom - y) / units));   // rows shrink to fit short screens
     for (const row of STYLE_ROWS) {
       text(this, left, y + unit * 0.25, row.title, T.caption(this)).setOrigin(0, 0.5); y += unit * 0.5;
       const lines = Math.ceil(row.options.length / row.perRow);
       const cells = grid({ x: left, y, w: rowW, h: lines * unit - 3 }, row.perRow, lines, 3);
       row.options.forEach((v, i) => {
         const c = cells[i];
-        button(this, c.x, c.y, c.w, c.h, row.label(v), { variant: 'secondary', selected: look[row.key] === v, fontSize: Math.max(9, Math.min(13, c.h * 0.42)), radius: THEME.radius.xs, onClick: () => { Sfx.pop(); d.look = { ...(d.look || {}), [row.key]: v }; this.rebuild(); } });
+        button(this, c.x, c.y, c.w, c.h, row.label(v), { variant: 'secondary', compact: true, selected: look[row.key] === v, fontSize: Math.max(8, Math.min(13, c.h * 0.42, (c.w - 6) / ui / (row.label(v).length * 0.56))), radius: THEME.radius.xs, onClick: () => { Sfx.pop(); d.look = { ...(d.look || {}), [row.key]: v }; this.rebuild(); } });
       });
       y += lines * unit;
     }

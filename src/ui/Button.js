@@ -40,9 +40,10 @@ export class Button extends Phaser.GameObjects.Container {
     const {
       variant = opts.color !== undefined ? 'custom' : 'primary', color, textColor, onClick = null, fontSize = 17,
       radius = THEME.radius.md, icon = null, emoji = null, sub = null, disabled = false, wrap = false,
-      selected = false, selectedAccent = THEME.primary, shadow
+      selected = false, selectedAccent = THEME.primary, shadow, compact = false
     } = opts;
-    h = Math.max(h, 40 * uiScale(scene));   // never shorter than a child's fingertip needs
+    // Never shorter than a child's fingertip needs, except in a `compact` grid whose rows are sized to fit the screen.
+    if (!compact) h = Math.max(h, 40 * uiScale(scene));
     this.w = w; this.h = h; this.radius = Math.min(radius, Math.min(w, h) / 2);
     this.disabledState = disabled; this.onClick = onClick; this.selected = selected; this.selectedAccent = selectedAccent;
     const look = variant === 'custom'
