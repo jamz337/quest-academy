@@ -7,6 +7,7 @@ import { FONT, WEIGHT } from '../../../ui/TextStyles.js';
 import { speakButton } from '../../../ui/Button.js';
 import { readable } from '../../../ui/ReadableText.js';
 import { enter, shake } from '../../../ui/motion.js';
+import { draggable } from '../../../ui/Drag.js';
 import { CASTLE, drawCourtyard, gatehouse, noticeBoard, plank, shieldRow, castleIntroTheme } from './CastleScenery.js';
 
 const PAR_MS = 90000;
@@ -83,9 +84,10 @@ export class GrammarGate extends MinigameScene {
     let y = baseY + 14 * f;
     const boardW = this.portrait ? area.w - 20 * ui : Math.min(area.w * 0.8, 720 * ui);
     const boardH = Math.min(150 * f, Math.max(104 * f, area.h * 0.2));
-    const board = noticeBoard(this, cx, y + boardH / 2, boardW, boardH, f);
+    const boardY = y + boardH / 2;
+    const board = noticeBoard(this, cx, boardY, boardW, boardH, f);
     const inner = board.inner;
-    const label = this.add.text(inner.x + 4 * f, inner.y + 2 * f, `Which word fits?  (${skillLabel(r.skill)})`, { fontFamily: FONT, fontSize: Math.round(15 * f) + 'px', color: hex(darken(CASTLE.ink, 1.6)), fontStyle: WEIGHT.bold });
+    const label = this.add.text(inner.x + 4 * f, inner.y + 2 * f, `Drag the word that fits up here  (${skillLabel(r.skill)})`, { fontFamily: FONT, fontSize: Math.round(15 * f) + 'px', color: hex(darken(CASTLE.ink, 1.6)), fontStyle: WEIGHT.bold });
     const shown = reveal ? fillBlank(r.sentence, r.options[r.answer]) : fillBlank(r.sentence);
     const textTop = inner.y + (label.height || 16 * f) + 2 * f, textH = inner.y + inner.h - textTop;
     let sentence = null;
@@ -109,8 +111,18 @@ export class GrammarGate extends MinigameScene {
     const made = r.options.map((opt, i) => {
       const c = cells[i];
       const state = !answered ? 'idle' : i === s.picked && !rightNow ? 'wrong' : !reveal ? 'idle' : i === r.answer ? 'right' : 'dim';
-      const p = plank(this, c.x, c.y, c.w, plankH, opt, { state, seed: i + s.idx, ui: f, fontSize: opt.length <= 2 ? 44 : opt.length > 10 ? 22 : 28, onTap: s.locked || this.struckChoice() === i ? null : () => this.pick(i) });
+      const p = plank(this, c.x, c.y, c.w, plankH, opt, { state, seed: i + s.idx, ui: f, fontSize: opt.length <= 2 ? 44 : opt.length > 10 ? 22 : 28 });
       if (this.struckChoice() === i && s.picked === null) p.setAlpha(0.35);   // ruled out on the first try
+      else if (!s.locked) {
+        // Drag the word up onto the notice board (it drops into the blank), or just tap it.
+        const over = (x, y) => Math.abs(x - cx) < boardW / 2 + 10 * f && Math.abs(y - boardY) < boardH / 2 + 16 * f;
+        draggable(this, p, {
+          onTap: () => this.pick(i),
+          onMove: (x, y) => { if (board.g && board.g.active) board.g.setAlpha(over(x, y) ? 0.82 : 1); },
+          onDrop: (x, y) => { if (!over(x, y)) return false; this.pick(i); return true; },
+          onCancel: () => { if (board.g && board.g.active) board.g.setAlpha(1); }
+        });
+      }
       this.answerSpeaker(p, c.w, plankH, opt);
       return p;
     });
