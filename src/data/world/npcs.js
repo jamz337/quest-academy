@@ -7,7 +7,7 @@ import { nextUnsolvedLevel } from '../coding/levels.js';
 // `pickContext(profile, band)` may add extra launch context (e.g. a coding level id).
 export const NPCS = [
   {
-    id: 'signpost', pitch: 1, rate: 1, voice: 'male', name: 'Signpost Sam', sprite: 'npc8', gameId: null, zone: 'hub',
+    id: 'signpost', pitch: 1, rate: 1, voice: 'male', name: 'Signpost Sam', sprite: 'npc8', art: 'sam', gameId: null, zone: 'hub',
     lines: [
       'Welcome to Quest Academy! Walk around and talk to friends to play games.',
       'Math Meadow is to the west. Word Woods is up in the north-east, Code Cove is down south by the sea, and Bible Village is over to the east.',
@@ -19,13 +19,13 @@ export const NPCS = [
   },
   {
     // The mentor of the Academy Bell story: her lines come from data/world/story.js (see WorldScene.talk).
-    id: 'hope', pitch: 1.0, rate: 0.95, voice: 'female', name: 'Headmistress Hope', sprite: 'npc17', gameId: null, zone: 'hub', story: 'mentor',
+    id: 'hope', pitch: 1.0, rate: 0.95, voice: 'female', name: 'Headmistress Hope', sprite: 'npc17', art: 'hope', gameId: null, zone: 'hub', story: 'mentor',
     lines: ['Come and see me whenever you want to know where the story stands.'],
     playPrompt: null
   },
   {
     // The market vendor: talking to her opens the Cheapside market (see WorldScene.talk).
-    id: 'vendor', pitch: 1.08, rate: 1.02, voice: 'female', name: 'Auntie Vee', sprite: 'npc18', gameId: null, zone: 'hub', market: true,
+    id: 'vendor', pitch: 1.08, rate: 1.02, voice: 'female', name: 'Auntie Vee', sprite: 'npc18', art: 'vee', gameId: null, zone: 'hub', market: true,
     lines: ['Mangoes, coconuts, and something for you! Every coin you earn can buy a treat here.', 'Hats and glasses to wear, paint for your house, and cards that teach you about Barbados.'],
     playPrompt: null
   },

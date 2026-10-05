@@ -34,6 +34,7 @@ import { getBadge } from '../data/badges.js';
 import { drinkUp } from './world/drink.js';
 import { createTrail, trailTick } from './world/trail.js';
 import * as Hub from './world/hub.js';
+import { villagerKey, VILLAGER_CELL, VILLAGER_WORLD_HEIGHT } from '../ui/Villagers.js';
 import { refreshRequestBubbles, requestLine, requestAfterGame } from './world/requests.js';
 import { createLamps, refreshLamps } from './world/lamps.js';
 import { createGateways, refreshGateways, createGuide, retargetGuide, guideTick } from './world/guide.js';
@@ -167,9 +168,11 @@ export class WorldScene extends Phaser.Scene {
     for (const def of NPCS) {
       const spot = this.map.npcSpots[def.id];
       if (!spot) continue;
-      const key = this.textures.exists(def.sprite) ? def.sprite : 'npc0';
-      const s = this.npcGroup.create((spot.tx + 0.5) * TILE, (spot.ty + 0.5) * TILE, key, IDLE_FRAME.down);
-      s.setScale(CHAR_SCALE).setDepth(5).refreshBody();
+      // The hub's hosts have smooth drawings of their own (ui/Villagers.js); everyone else is a pixel sheet.
+      const drawn = def.art && this.textures.exists(villagerKey(def.art)) ? villagerKey(def.art) : null;
+      const key = drawn || (this.textures.exists(def.sprite) ? def.sprite : 'npc0');
+      const s = this.npcGroup.create((spot.tx + 0.5) * TILE, (spot.ty + 0.5) * TILE - (drawn ? 4 : 0), key, IDLE_FRAME.down);
+      s.setScale(drawn ? VILLAGER_WORLD_HEIGHT / VILLAGER_CELL : CHAR_SCALE).setDepth(5).refreshBody();
       s.body.setSize(22, 22);
       s.npc = def;
       this.npcs.push(s);

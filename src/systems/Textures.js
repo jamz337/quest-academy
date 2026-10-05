@@ -9,6 +9,7 @@ export { CHARACTER_STYLES, NPC_STYLES };
 import { MONKEY_FRAMES } from '../ui/FlatCharacter.js';
 import { MANGO_CELL, MANGO_FACE, drawMango, drawMangoFace } from '../ui/Mango.js';
 import { CRITTER_CELL, CRITTER_KEYS, drawCritter } from '../ui/Critters.js';
+import { VILLAGERS, villagerTexture } from '../ui/Villagers.js';
 import { LPC_FRAME, LPC_COLS, allLayerPaths, composeSheet, drawOutfitBack, drawOutfitFront, drawBustFromSheet, walkRange } from '../ui/LpcCharacter.js';
 export { WORLD_SCALE as CHAR_WORLD_SCALE, IDLE_FRAMES } from '../ui/LpcCharacter.js';
 
@@ -550,7 +551,9 @@ export function generateAllTextures(scene) {
   for (const [key, rate] of [['sheep', 5], ['bunny', 8], ['monkey', 5]]) {
     if (!scene.anims.exists(`${key}-walk`)) scene.anims.create({ key: `${key}-walk`, frames: scene.anims.generateFrameNumbers(key, { start: 0, end: 1 }), frameRate: rate, repeat: -1 });
   }
-  const sheets = [...CHARACTER_STYLES.map((_, i) => `char${i}`), ...NPC_STYLES.map((_, i) => `npc${i}`)];
+  // The hub's three hosts are drawn smooth (ui/Villagers.js); their sheets use the same frame numbers as the pixel people.
+  const hosts = VILLAGERS.map((who) => villagerTexture(scene, who));
+  const sheets = [...CHARACTER_STYLES.map((_, i) => `char${i}`), ...NPC_STYLES.map((_, i) => `npc${i}`), ...hosts];
   sheets.forEach((key) => walkAnims(scene, key));
   if (!scene.anims.exists('robot-walk')) scene.anims.create({ key: 'robot-walk', frames: scene.anims.generateFrameNumbers('robot', { start: 0, end: 1 }), frameRate: 8, repeat: -1 });
 }
