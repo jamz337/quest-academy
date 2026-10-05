@@ -143,7 +143,7 @@ export class FractionPizza extends MinigameScene {
     const s = this.state, r = this.round;
     if (s.locked) return;
     const count = s.shaded.filter(Boolean).length;
-    this.resolve(count === r.num, r);
+    if (!this.resolve(count === r.num, r)) { this.rebuild(); return; }   // a second try: the slices stay as the child left them
     s.shaded = s.shaded.map((_, i) => i < r.num); // show the correct shading either way
     this.rebuild();
   }
@@ -159,12 +159,17 @@ export class FractionPizza extends MinigameScene {
 
   resolve(right, r) {
     const s = this.state;
-    s.locked = true; s.result = right ? 'right' : 'wrong';
     const answer = r.kind === 'compare' ? r.labels[r.answer] : r.answer;
-    this.logQuestion({ skill: r.skill, prompt: r.prompt, answer, choices: r.choices || (r.kind === 'compare' ? r.labels : undefined) }, right);
-    if (right) { s.correct += 1; this.correctFeedback(); }
-    else { s.missed[r.skill] = (s.missed[r.skill] || 0) + 1; this.wrongFeedback(); }
+    const asked = { skill: r.skill, prompt: r.prompt, answer, choices: r.choices || (r.kind === 'compare' ? r.labels : undefined) };
+    // The first miss gets a second try. Returns false then (the round is still open), true once it is settled.
+    if (!right && this.secondChance(asked)) { s.missed[r.skill] = (s.missed[r.skill] || 0) + 1; s.picked = null; s.again = true; return false; }
+    const second = this.onSecondTry(asked);
+    s.locked = true; s.result = right ? 'right' : 'wrong';
+    if (!second) this.logQuestion(asked, right);
+    if (right) { s.correct += 1; this.noteRight(asked); this.correctFeedback(); }
+    else { if (!second) s.missed[r.skill] = (s.missed[r.skill] || 0) + 1; this.wrongFeedback(); }
     this.time.delayedCall(right ? 600 : 1300, () => this.next());
+    return true;
   }
 
   next() {
@@ -174,7 +179,7 @@ export class FractionPizza extends MinigameScene {
       const missedSkills = Object.entries(s.missed).sort((a, b) => b[1] - a[1]).map(([k]) => k);
       return this.finish({ correct: s.correct, total: s.rounds.length, parTimeMs: PAR_MS, missedSkills });
     }
-    s.locked = false; s.picked = null; s.result = null; s.shaded = this.freshShade(this.round);
+    s.locked = false; s.picked = null; s.result = null; s.again = false; s.shaded = this.freshShade(this.round);
     this.rebuild();
   }
 }

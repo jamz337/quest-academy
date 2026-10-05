@@ -103,6 +103,10 @@ describe('Balloon Pop (headless)', () => {
     i = s.state.balloons.findIndex((b) => String(b.choice) !== String(q().answer));
     s.balloonSprites[i].emit('pointerdown');
     expect(s.state.balloons[i].state).toBe('sad');
+    expect(s.state.locked).toBe(false);   // the first miss is a second try: only that balloon deflates
+    i = s.state.balloons.findIndex((b) => String(b.choice) !== String(q().answer) && !b.flat);
+    s.balloonSprites[i].emit('pointerdown');
+    expect(s.state.balloons[i].state).toBe('sad');
     expect(s.state.balloons.find((b) => String(b.choice) === String(q().answer)).state).toBe('glow');
     walkExplanation();
     expect(s.state.idx).toBe(2);
@@ -178,6 +182,10 @@ describe('Frog Hop (headless)', () => {
     flushTimers(s);
     expect(s.state.idx).toBe(1);
     i = q().choices.findIndex((c) => c !== q().answer);
+    s.padSprites[i].emit('pointerdown');
+    flushTimers(s);   // the first miss: the pad sinks and the frog is back on the log for another hop
+    expect(s.state.sunk).toEqual([i]); expect(s.state.locked).toBe(false);
+    i = q().choices.findIndex((c, k) => c !== q().answer && k !== i);
     s.padSprites[i].emit('pointerdown');
     expect(s.state.right).toBe(false);
     flushTimers(s);   // splash, then the rebuild that shows the explanation

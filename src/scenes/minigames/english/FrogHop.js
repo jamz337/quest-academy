@@ -104,7 +104,8 @@ export class FrogHop extends MinigameScene {
     const c = this.add.container(p.x, p.y);
     const g = this.add.graphics();
     const isAnswer = String(choice) === String(q.answer);
-    const sunk = s.picked !== null && s.picked === i && !s.right;
+    const gone = (s.sunk || []).includes(i);   // went under on the first try
+    const sunk = gone || (s.picked !== null && s.picked === i && !s.right);
     const held = s.picked !== null && s.picked === i && s.right;
     g.fillStyle(THEME.ink, 0.12); g.fillEllipse(3, 6, p.w, p.h);
     g.fillStyle(held ? THEME.success : PAD_RIM, 1); g.fillEllipse(0, 0, p.w, p.h);
@@ -118,7 +119,7 @@ export class FrogHop extends MinigameScene {
     c.add([g, label]);
     c.setSize(p.w, p.h);
     if (sunk) { c.setAlpha(0.35); c.y += 8 * ui; }
-    if (!s.locked) { c.setInteractive({ useHandCursor: true }); c.on('pointerdown', () => this.pick(i)); }
+    if (!s.locked && !gone) { c.setInteractive({ useHandCursor: true }); c.on('pointerdown', () => this.pick(i)); }
     this.answerSpeaker(c, p.w + 12 * ui, p.h + 40 * ui, str);   // floats just above the pad's top-right edge
     return c;
   }
@@ -146,15 +147,19 @@ export class FrogHop extends MinigameScene {
   pick(i) {
     const s = this.state, q = this.round;
     if (s.locked) return;
+    if ((s.sunk || []).includes(i)) return;
     const right = String(q.choices[i]) === String(q.answer);
+    // The first miss gets a second try: the pad sinks, the frog swims back to the log and hops again.
+    const again = !right && this.secondChance(q), second = !again && this.onSecondTry(q);
     s.locked = true; s.picked = i; s.right = right;
-    this.logQuestion(q, right);
-    if (right) s.correct += 1; else s.missed[q.skill] = (s.missed[q.skill] || 0) + 1;
+    if (!again && !second) this.logQuestion(q, right);
+    if (right) { s.correct += 1; this.noteRight(q); } else if (!second) s.missed[q.skill] = (s.missed[q.skill] || 0) + 1;
     Sfx.pop();
     const frog = this.frog, pad = this.padSprites[i], p = this.padCentre(i);
     const idx = s.idx;
     // Time events survive a rebuild, so the round always moves on even if the hop is interrupted by a resize.
     if (right) this.time.delayedCall(1150, () => { if (s.idx === idx && s.locked) this.next(); });
+    else if (again) this.time.delayedCall(1000, () => { if (s.idx !== idx || s.picked !== i) return; s.sunk = [...(s.sunk || []), i]; s.locked = false; s.picked = null; s.right = null; this.rebuild(); });
     else this.time.delayedCall(1000, () => { if (s.idx === idx && s.picked === i && this.frog) this.rebuild(); });
     if (!frog || !frog.active) return;
     this.tweens.add({ targets: frog, x: p.x, y: p.y - 10 * this.ui, duration: 520, ease: 'Sine.InOut' });
@@ -166,7 +171,7 @@ export class FrogHop extends MinigameScene {
         if (pad && pad.active) this.tweens.add({ targets: pad, y: pad.y + 4, duration: 120, yoyo: true });
         return;
       }
-      this.wrongFeedback();
+      if (!again) this.wrongFeedback();   // a second try has had its "try again" already
       this.splash(p.x, p.y);
       if (pad && pad.active) this.tweens.add({ targets: pad, y: pad.y + 12, alpha: 0.3, duration: 320 });
       this.tweens.add({ targets: frog, y: frog.y + 30, alpha: 0, angle: 25, duration: 380, delay: 80 });
@@ -191,7 +196,7 @@ export class FrogHop extends MinigameScene {
       const missedSkills = Object.entries(s.missed).sort((a, b) => b[1] - a[1]).map(([k]) => k);
       return this.finish({ correct: s.correct, total: s.rounds.length, parTimeMs: PAR_MS, missedSkills });
     }
-    s.locked = false; s.picked = null; s.right = null;
+    s.locked = false; s.picked = null; s.right = null; s.sunk = [];
     this.rebuild();
   }
 }

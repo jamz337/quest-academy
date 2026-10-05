@@ -168,18 +168,22 @@ export class BalloonPop extends MinigameScene {
     const s = this.state;
     if (s.locked) return;
     const q = s.questions[s.idx], b = s.balloons[i];
+    if (b.flat) return;   // already deflated on the first try
     const right = String(b.choice) === String(q.answer);
+    // The first miss gets a second try: that balloon deflates and the others keep floating.
+    if (!right && this.secondChance(q)) { s.missed[q.skill] = (s.missed[q.skill] || 0) + 1; b.state = 'sad'; b.flat = true; this.rebuild(); return; }
+    const second = this.onSecondTry(q);
     s.locked = true; s.picked = i; s.right = right;
-    this.logQuestion(q, right);
+    if (!second) this.logQuestion(q, right);
     if (right) {
-      s.correct += 1;
+      s.correct += 1; this.noteRight(q);
       b.state = 'popped';
       this.pop(this.balloonSprites[i], b.colour);
       this.correctFeedback();
       this.time.delayedCall(700, () => this.next());
       return;
     }
-    s.missed[q.skill] = (s.missed[q.skill] || 0) + 1;
+    if (!second) s.missed[q.skill] = (s.missed[q.skill] || 0) + 1;
     this.settle(i);
     this.wrongFeedback();
     this.rebuild();
