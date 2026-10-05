@@ -19,6 +19,7 @@ import { Minimap, paintMinimap } from '../ui/Minimap.js';
 import { ensureExplored } from '../data/world/explore.js';
 import { buildHome } from './hud/homePanel.js';
 import * as FishingPanel from './hud/fishingPanel.js';
+import { buildBoard } from './hud/boardPanel.js';
 import * as CookingPanel from './hud/cookingPanel.js';
 import { buildEncounter } from './hud/encounterPanel.js';
 import { buildMenu } from './hud/menuPanel.js';
@@ -32,7 +33,7 @@ export class HudScene extends BaseScene {
   constructor() { super(SCENES.Hud); }
 
   create(data) {
-    this.state = { coins: 0, zone: '', zoneId: null, carry: null, dialog: null, encounter: null, home: false, fishing: null, cooking: null, hint: null, menuOpen: false, menuPage: 'menu' };
+    this.state = { coins: 0, zone: '', zoneId: null, carry: null, dialog: null, encounter: null, board: null, home: false, fishing: null, cooking: null, hint: null, menuOpen: false, menuPage: 'menu' };
     this.actionFlag = false;
     this.lastMinimap = null;
     super.create(data);
@@ -63,13 +64,13 @@ export class HudScene extends BaseScene {
   /** Dialog and menu animate in when they open; everything else redraws quietly. */
   enterKey() {
     const s = this.state;
-    return (s.dialog ? 'd' + s.dialog.idx : '') + (s.menuOpen ? 'm' + s.menuPage : '') + (s.encounter ? 'e' + s.encounter.kind + (s.encounter.picked ?? '') : '') + (s.home ? 'h' : '') + (s.fishing ? 'f' + s.fishing.phase : '') + (s.cooking ? 'c' + s.cooking.phase + s.cooking.step : '');
+    return (s.dialog ? 'd' + s.dialog.idx : '') + (s.menuOpen ? 'm' + s.menuPage : '') + (s.encounter ? 'e' + s.encounter.kind + (s.encounter.picked ?? '') : '') + (s.home ? 'h' : '') + (s.board ? 'b' : '') + (s.fishing ? 'f' + s.fishing.phase : '') + (s.cooking ? 'c' + s.cooking.phase + s.cooking.step : '');
   }
 
   get dialogOpen() { return !!this.state.dialog; }
   get menuOpen() { return this.state.menuOpen; }
   /** True while the world should stand still. */
-  get blocking() { return this.dialogOpen || this.menuOpen || !!this.state.encounter || this.state.home || !!this.state.fishing || !!this.state.cooking; }
+  get blocking() { return this.dialogOpen || this.menuOpen || !!this.state.encounter || !!this.state.board || this.state.home || !!this.state.fishing || !!this.state.cooking; }
 
   /** Returns true once per press of the action button (or a tap on the dialog). */
   takeAction() { const a = this.actionFlag; this.actionFlag = false; return a; }
@@ -104,6 +105,7 @@ export class HudScene extends BaseScene {
 
     if (s.dialog) this.buildDialog(s.dialog);
     if (s.encounter) buildEncounter(this, s.encounter);
+    if (s.board) buildBoard(this, s.board);
     if (s.home) buildHome(this);
     if (s.fishing) FishingPanel.buildFishing(this, s.fishing);
     if (s.cooking) CookingPanel.buildCooking(this, s.cooking);
@@ -159,6 +161,10 @@ export class HudScene extends BaseScene {
   /** The kitchen stove (see hud/cookingPanel.js). */
   showCooking() { CookingPanel.showCooking(this); }
   closeCooking() { CookingPanel.closeCooking(this); }
+
+  /** The quest board's page (see hud/boardPanel.js for the shape of `b`). */
+  showBoard(b) { this.state.board = b; this.actionFlag = false; if (this.joystick) this.joystick.release(); this.rebuild(); }
+  closeBoard() { this.state.board = null; this.rebuild(); }
 
   /** { kind: 'quiz'|'chest'|'gift', q?, coins?, gift?, subject?, onAnswer?(right), onClose? } */
   showEncounter(e) {

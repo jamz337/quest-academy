@@ -277,7 +277,7 @@ export class WorldScene extends Phaser.Scene {
     this.nearNpc = near;
     const board = !near && Hub.boardNear(this) ? this.questBoard : null;   // the quest board can be read like a villager
     if (near) this.bubble.setVisible(true).setPosition(near.x, near.y - 26 + Math.sin(time / 150) * 2);
-    else if (board) this.bubble.setVisible(true).setPosition(board.x, board.y - 38 + Math.sin(time / 150) * 2);
+    else if (board) this.bubble.setVisible(true).setPosition(board.x, board.top - 12 + Math.sin(time / 150) * 2);
     else this.bubble.setVisible(false);
 
     if (inp.actionJustPressed && !skipAction) {

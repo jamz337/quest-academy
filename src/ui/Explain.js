@@ -143,9 +143,9 @@ function render(scene, area, it, theme, on) {
   const style = { variant: 'go' };   // the same green step-forward button in every game
   if (it.phase === 'steps') {
     const label = it.shown < it.steps.length ? EXPLAIN_LABELS.more : it.choices ? EXPLAIN_LABELS.turn : null;
-    if (label) button(scene, R.x + R.w - bw / 2, fy, bw, 42 * f, label, { ...style, fontSize: 16 * (f / ui), onClick: () => { Sfx.click(); moreStep(it); on.redraw(); } });
+    if (label) button(scene, R.x + R.w - bw / 2, fy, bw, 42 * f, label, { ...style, compact: true, fontSize: 16 * (f / ui), onClick: () => { Sfx.click(); moreStep(it); on.redraw(); } });
   }
   const done = it.phase === 'done' || (it.phase === 'steps' && it.shown >= it.steps.length && !it.choices);
-  if (done) button(scene, R.x + R.w - bw / 2, fy, bw, 42 * f, EXPLAIN_LABELS.next, { ...style, fontSize: 17 * (f / ui), onClick: () => { Sfx.click(); on.next(); } });
-  else button(scene, R.x + 40 * f, fy, 84 * f, 36 * f, EXPLAIN_LABELS.next, { variant: 'ghost', ...(theme.ink2 !== undefined ? { textColor: theme.ink2 } : {}), fontSize: 14 * (f / ui), onClick: () => { Sfx.click(); on.next(); } });   // readable on dark themes too
+  if (done) button(scene, R.x + R.w - bw / 2, fy, bw, 42 * f, EXPLAIN_LABELS.next, { ...style, compact: true, fontSize: 17 * (f / ui), onClick: () => { Sfx.click(); on.next(); } });
+  else button(scene, R.x + 40 * f, fy, 84 * f, 36 * f, EXPLAIN_LABELS.next, { variant: 'ghost', compact: true, ...(theme.ink2 !== undefined ? { textColor: theme.ink2 } : {}), fontSize: 14 * (f / ui), onClick: () => { Sfx.click(); on.next(); } });   // readable on dark themes too
 }

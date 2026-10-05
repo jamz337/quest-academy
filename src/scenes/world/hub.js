@@ -81,19 +81,27 @@ export function refreshFountain(w) {
 export function createQuestBoard(w) {
   const b = w.map.questBoard;
   if (!b) return;
-  const { x, y } = centreOf(b), g = w.add.graphics().setDepth(3);
-  g.fillStyle(0x000000, 0.16); g.fillEllipse(x, y + 13, 30, 6);
-  g.fillStyle(0x6e4a28, 1); g.fillRect(x - 12, y - 4, 3, 17); g.fillRect(x + 9, y - 4, 3, 17);          // legs
-  g.fillStyle(0x6e4a28, 1); g.fillRoundedRect(x - 16, y - 22, 32, 24, 3);                                // frame
-  g.fillStyle(0xc99a62, 1); g.fillRoundedRect(x - 14, y - 20, 28, 20, 2);                                // cork
-  g.fillStyle(0x8f6238, 1); g.fillTriangle(x - 18, y - 21, x, y - 30, x + 18, y - 21);                   // little roof
-  g.fillStyle(0xffffff, 1); g.fillRect(x - 11, y - 17, 9, 11); g.fillRect(x + 1, y - 18, 10, 8);         // notices
-  g.fillStyle(0xffe08a, 1); g.fillRect(x + 2, y - 8, 8, 6);
-  g.fillStyle(0x9aa0b4, 1); for (let i = 0; i < 3; i++) g.fillRect(x - 9.5, y - 14.5 + i * 3, 6, 1);
-  g.fillStyle(0x4c8df6, 1); g.fillRect(x + 2.5, y - 16, 7, 1); g.fillStyle(0xe8623f, 1); g.fillRect(x + 2.5, y - 13.5, 5, 1);
-  g.fillStyle(0xe8623f, 1); g.fillCircle(x - 6.5, y - 17, 1.2); g.fillStyle(0x249762, 1); g.fillCircle(x + 6, y - 18, 1.2);   // pins
-  w.add.image(x + 6, y - 5, 'star').setDisplaySize(5, 5).setDepth(3.1);
-  w.questBoard = { x, y };
+  const { x } = centreOf(b), y = centreOf(b).y, g = w.add.graphics().setDepth(3);
+  const top = y - 46, bw = 50, bh = 42;   // a tall glossy board on two posts, with a gold star on top
+  g.fillStyle(0x000000, 0.18); g.fillEllipse(x, y + 13, 46, 7);
+  g.fillStyle(0x3b3550, 1); g.fillRoundedRect(x - 19, y - 8, 4, 21, 2); g.fillRoundedRect(x + 15, y - 8, 4, 21, 2);          // posts
+  g.fillStyle(0x12103a, 1); g.fillRoundedRect(x - bw / 2, top + 2, bw, bh, 7);                                              // the board's shadow edge
+  g.fillStyle(0x1e1b4b, 1); g.fillRoundedRect(x - bw / 2, top, bw, bh, 7);
+  g.fillStyle(0xfffaf2, 1); g.fillRoundedRect(x - bw / 2 + 3, top + 3, bw - 6, bh - 6, 5);                                   // the page
+  g.fillStyle(0xffc531, 1); g.fillRoundedRect(x - bw / 2 + 3, top + 3, bw - 6, 9, { tl: 5, tr: 5, bl: 0, br: 0 });           // gold header
+  g.fillStyle(0xffffff, 0.5); g.fillRoundedRect(x - bw / 2 + 6, top + 4.5, bw - 12, 1.5, 0.7);
+  // Four little progress bars in the lands' colours.
+  ['math', 'words', 'code', 'bible'].forEach((zone, i) => {
+    const col = THEME.subjects[zone], by = top + 16 + i * 5.6;
+    g.fillStyle(col.soft, 1); g.fillRoundedRect(x - 18, by, 36, 3.6, 1.8);
+    g.fillStyle(col.accent, 1); g.fillRoundedRect(x - 18, by, 14 + ((i * 7) % 4) * 6, 3.6, 1.8);
+  });
+  g.fillStyle(0xcf8a00, 1); g.fillCircle(x, top - 1, 8.5);
+  g.fillStyle(0xffc531, 1); g.fillCircle(x, top - 2.5, 8.5);
+  w.add.image(x, top - 2.5, 'star').setDisplaySize(11, 11).setDepth(3.1);
+  const tag = w.add.text(x, y + 19, 'Quest board', { fontFamily: FONT, fontSize: '6px', color: '#1e1b4b', fontStyle: '700', backgroundColor: '#ffffff', padding: { x: 3, y: 1 } }).setOrigin(0.5).setDepth(3.1).setResolution(6);
+  void tag;
+  w.questBoard = { x, y, top: top - 14 };
 }
 
 /** Is the player close enough to read the board? */
@@ -102,18 +110,14 @@ export function boardNear(w, dist = 46) {
   return !!b && !!w.player && Math.hypot(w.player.x - b.x, w.player.y - (b.y + 8)) < dist;
 }
 
-/** What the board says today: the goal, the stars in each land, and where the footprints lead. */
-export function boardLines(profile, map) {
-  const goal = profile.goal, game = goal ? getGame(goal.gameId) : null;
-  const lines = [];
-  if (goal && game) {
-    lines.push(goal.done ? `🎯 Today's goal is done: ${'★'.repeat(goal.stars)} in ${game.title}. Well played!`
-      : `🎯 Today's goal: earn ${'★'.repeat(goal.stars)} in ${game.title}. It pays ${GOAL_BONUS} coins!`);
-  }
-  lines.push('Stars so far:\n' + JEWELS.map((j) => { const s = landStars(profile, j.zone); return `${ZONE_NAMES[j.zone]}  ★ ${s.stars}/${s.total}`; }).join('\n'));
-  const next = nextGame(profile, map);
-  lines.push(next ? `👣 Next: follow the footprints to ${next.title} in ${ZONE_NAMES[next.subject]}.` : '🏆 Every star is yours. The whole Academy is proud of you!');
-  return lines;
+/** What the board shows today: the goal, the stars in each land, and where the footprints lead. */
+export function boardFacts(profile, map) {
+  const goal = profile.goal, game = goal ? getGame(goal.gameId) : null, next = nextGame(profile, map);
+  return {
+    goal: goal && game ? { title: game.title, stars: goal.stars, done: !!goal.done, bonus: GOAL_BONUS } : null,
+    lands: ['math', 'words', 'code', 'bible'].map((zone) => ({ zone, name: ZONE_NAMES[zone], ...landStars(profile, zone) })),
+    next: next ? { title: next.title, land: ZONE_NAMES[next.subject], zone: next.subject } : null
+  };
 }
 
 export function readBoard(w) {
@@ -121,5 +125,5 @@ export function readBoard(w) {
   if (!hud || hud.blocking) return;
   if (!Store.getProfile().goal) Store.updateProfile((p) => { dailyGoal(p); });
   w.stopPlayer();
-  hud.showDialog({ name: 'Quest board', lines: boardLines(Store.getProfile(), w.map) });
+  hud.showBoard(boardFacts(Store.getProfile(), w.map));
 }

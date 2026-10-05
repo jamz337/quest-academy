@@ -156,9 +156,9 @@ export function skillIntro(scene, area, it, theme, on) {
       else if (action === INTRO_LABELS.turn) { startTry(it); on.change(); }
       else on.done();
     };
-    const b = button(scene, R.x + R.w - bw / 2 - 6 * f, fy, bw, 46 * f, action, { variant: 'go', fontSize: 18 * (f / ui), onClick });
+    const b = button(scene, R.x + R.w - bw / 2 - 6 * f, fy, bw, 46 * f, action, { variant: 'go', compact: true, fontSize: 18 * (f / ui), onClick });
     if (action === INTRO_LABELS.done && it.solved) enter(scene, b, { from: 'pop' });
   }
-  if (!canFinish(it)) button(scene, R.x + 44 * f, fy, 76 * f, 38 * f, INTRO_LABELS.skip, { variant: 'ghost', ...(theme.ink2 !== undefined ? { textColor: theme.ink2 } : {}), fontSize: 15 * (f / ui), onClick: () => { Sfx.click(); on.done(); } });
+  if (!canFinish(it)) button(scene, R.x + 44 * f, fy, 76 * f, 38 * f, INTRO_LABELS.skip, { variant: 'ghost', compact: true, ...(theme.ink2 !== undefined ? { textColor: theme.ink2 } : {}), fontSize: 15 * (f / ui), onClick: () => { Sfx.click(); on.done(); } });
   return made;
 }

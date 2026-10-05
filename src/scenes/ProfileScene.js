@@ -116,6 +116,8 @@ export class ProfileScene extends BaseScene {
     const { w, h } = this;
     const d = this.state.draft;
     const editing = !!this.state.editing;
+    // (Its buttons are `compact`: this form shrinks its own spacing to fit short screens, and the usual minimum
+    // button height would make them overlap the rows above and below.)
     const pw = Math.min(w - 24, 520 * this.ui);
     const aCols = this.portrait && pw < 400 ? 4 : AVATAR_COUNT;
     const aRows = Math.ceil(AVATAR_COUNT / aCols);
@@ -164,7 +166,7 @@ export class ProfileScene extends BaseScene {
     y += aRows * (aSize + 12) + 10 * ui;
 
     // The look (boy or girl, hair, clothes, colours) has a page of its own with a big preview.
-    button(this, w / 2, y + 22 * ui, Math.min(m.w - 48, 300 * ui), 44 * ui, '🎨 Change the look', { variant: 'secondary', fontSize: 15, onClick: () => { Sfx.click(); this.state.page = 'look'; this.rebuild(); } });
+    button(this, w / 2, y + 22 * ui, Math.min(m.w - 48, 300 * ui), 44 * ui, '🎨 Change the look', { compact: true, variant: 'secondary', fontSize: 15, onClick: () => { Sfx.click(); this.state.page = 'look'; this.rebuild(); } });
     y += 60 * ui;
 
     // Grade picker
@@ -174,7 +176,7 @@ export class ProfileScene extends BaseScene {
     GRADES.forEach((g, i) => {
       const c = gcells[i];
       button(this, c.x, c.y, c.w, c.h, gradeLabel(g, true), {
-        variant: 'secondary', selected: g === d.grade, fontSize: g < 0 ? 15 : 17, radius: THEME.radius.sm,
+        compact: true, variant: 'secondary', selected: g === d.grade, fontSize: g < 0 ? 15 : 17, radius: THEME.radius.sm,
         onClick: () => { d.grade = g; this.rebuild(); }
       });
     });
@@ -185,7 +187,7 @@ export class ProfileScene extends BaseScene {
     const rcells = grid({ x: m.x + 24, y, w: m.w - 48, h: 44 * ui }, 2, 1, 6);
     [['tap', 'Tap 🔊 to hear it'], ['auto', 'Read everything to me']].forEach(([v, lbl], i) => {
       const c = rcells[i];
-      button(this, c.x, c.y, c.w, c.h, lbl, { variant: 'secondary', selected: d.readAloud === v, fontSize: 15, radius: THEME.radius.sm, onClick: () => { d.readAloud = v; this.rebuild(); } });
+      button(this, c.x, c.y, c.w, c.h, lbl, { compact: true, variant: 'secondary', selected: d.readAloud === v, fontSize: 15, radius: THEME.radius.sm, onClick: () => { d.readAloud = v; this.rebuild(); } });
     });
     y += 44 * ui + 28 * ui;
 
@@ -194,7 +196,7 @@ export class ProfileScene extends BaseScene {
     const acells = grid({ x: m.x + 24, y, w: m.w - 48, h: 44 * ui }, 2, 1, 6);
     [['on', '🔊 On every answer'], ['off', 'Off']].forEach(([v, lbl], i) => {
       const c = acells[i];
-      button(this, c.x, c.y, c.w, c.h, lbl, { variant: 'secondary', selected: (d.readAnswers || 'on') === v, fontSize: 15, radius: THEME.radius.sm, onClick: () => { d.readAnswers = v; this.rebuild(); } });
+      button(this, c.x, c.y, c.w, c.h, lbl, { compact: true, variant: 'secondary', selected: (d.readAnswers || 'on') === v, fontSize: 15, radius: THEME.radius.sm, onClick: () => { d.readAnswers = v; this.rebuild(); } });
     });
     y += 44 * ui + 28 * ui;
 
@@ -203,14 +205,14 @@ export class ProfileScene extends BaseScene {
     const tcells = grid({ x: m.x + 24, y, w: m.w - 48, h: 44 * ui }, 2, 1, 6);
     [['on', 'On'], ['off', 'Off  (no rush)']].forEach(([v, lbl], i) => {
       const c = tcells[i];
-      button(this, c.x, c.y, c.w, c.h, lbl, { variant: 'secondary', selected: (d.timers || 'on') === v, fontSize: 15, radius: THEME.radius.sm, onClick: () => { d.timers = v; this.rebuild(); } });
+      button(this, c.x, c.y, c.w, c.h, lbl, { compact: true, variant: 'secondary', selected: (d.timers || 'on') === v, fontSize: 15, radius: THEME.radius.sm, onClick: () => { d.timers = v; this.rebuild(); } });
     });
     y += 44 * ui + 28 * ui;
 
     // Actions
     const bw = Math.min(200 * ui, (m.w - 72) / 2), bh = 48 * ui;
-    button(this, w / 2 - bw / 2 - 8, y + bh / 2, bw, bh, 'Cancel', { variant: 'ghost', onClick: () => { this.state.mode = 'list'; this.state.page = 'details'; this.buildCount = 0; this.rebuild(); } });
-    button(this, w / 2 + bw / 2 + 8, y + bh / 2, bw, bh, 'Save', { variant: 'primary', onClick: () => this.saveForm() });
+    button(this, w / 2 - bw / 2 - 8, y + bh / 2, bw, bh, 'Cancel', { compact: true, variant: 'ghost', onClick: () => { this.state.mode = 'list'; this.state.page = 'details'; this.buildCount = 0; this.rebuild(); } });
+    button(this, w / 2 + bw / 2 + 8, y + bh / 2, bw, bh, 'Save', { compact: true, variant: 'primary', onClick: () => this.saveForm() });
 
     if (editing) {
       y += bh + 22 * ui;
@@ -220,7 +222,7 @@ export class ProfileScene extends BaseScene {
       } else {
         text(this, w / 2, y, 'Delete all progress for ' + this.state.editing.name + '?', T.small(this, THEME.danger));
         button(this, w / 2, y + 36 * ui, bw, 40 * ui, 'Yes, delete', {
-          variant: 'danger', fontSize: 15, onClick: () => { Store.deleteProfile(this.state.editing.id); this.state.mode = 'list'; this.rebuild(); }
+          compact: true, variant: 'danger', fontSize: 15, onClick: () => { Store.deleteProfile(this.state.editing.id); this.state.mode = 'list'; this.rebuild(); }
         });
       }
     }
