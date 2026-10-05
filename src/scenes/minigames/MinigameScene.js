@@ -50,7 +50,7 @@ export class MinigameScene extends BaseScene {
     // Spaced review: a few questions missed in earlier games of this subject come back before this one starts.
     this.review = payload.boss || payload.duel || payload.noReview ? [] : dueReviews(this.profile, payload.subject, Date.now(), undefined, payload.gameId);
     this.reviewIdx = 0; this.reviewPicked = null; this.reviewRight = 0;
-    this.chanceKey = null; this.rescues = 0;   // second tries (see secondChance)
+    this.chanceKey = null; this.chanceIdx = null; this.chanceChoice = null; this.rescues = 0;   // second tries (see secondChance)
     // Scenes are reused between launches, so the wrapper always goes around the class's own enterKey.
     delete this.enterKey;
     if (this.review.length) {
@@ -338,15 +338,17 @@ export class MinigameScene extends BaseScene {
    * so), and the miss is logged once so the skill still comes back for review. Returns true when the game should
    * keep the question open; false on the second miss (or when the question has already had its second try).
    */
-  secondChance(q) {
+  secondChance(q, choice = null) {
     const key = this.explainKey(q);
     if (this.chanceKey === key) return false;
-    this.chanceKey = key;
+    this.chanceKey = key; this.chanceIdx = this.state ? this.state.idx : null; this.chanceChoice = choice;
     this.logQuestion(q, false);
     Sfx.wrong(); this.cameras.main.shake(90, 0.003); this.streakRun = 0;
     setMood(this.buddyMood || (this.buddyMood = newBuddyMood()), 'oops', 'Try again!');
     return true;
   }
+  /** The answer (its index) that was tried and ruled out on this question's first go, or null: games cross it out. */
+  struckChoice() { return !this.inReview && this.state && this.chanceIdx === this.state.idx && this.chanceKey ? this.chanceChoice : null; }
   /** Is this question on its second try (so it has been logged already)? */
   onSecondTry(q) { return this.chanceKey === this.explainKey(q); }
   /** Call when a question is answered right: one rescued on its second try is counted, and is worth half at the end. */

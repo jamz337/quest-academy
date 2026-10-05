@@ -125,7 +125,8 @@ export class BibleQuiz extends MinigameScene {
         else if (i === s.picked) state = 'wrong';
         else if (reveal) state = 'dim';
       }
-      const card = answerCard(this, c.x, c.y, c.w, c.h, choice, { state, letter: LETTERS[i], f, onTap: s.locked ? null : () => this.pick(i) });
+      const card = answerCard(this, c.x, c.y, c.w, c.h, choice, { state, letter: LETTERS[i], f, onTap: s.locked || this.struckChoice() === i ? null : () => this.pick(i) });
+      if (this.struckChoice() === i && s.picked === null) card.setAlpha(0.35);   // ruled out on the first try
       this.answerSpeaker(card, c.w, c.h, choice);
       if (state === 'right' && s.right) this.add.text(c.x, c.y + c.h / 2 + 14 * f, 'Correct!', { fontFamily: FONT, fontSize: Math.round(17 * f) + 'px', color: hex(VILLAGE.ok), fontStyle: WEIGHT.heavy }).setOrigin(0.5);
       return card;
@@ -212,7 +213,7 @@ export class BibleQuiz extends MinigameScene {
   answer(q, right, picked) {
     const s = this.state;
     // The first miss gets a second try (not when the clock ran out); the explanation waits for a second miss.
-    if (!right && picked >= 0 && this.secondChance(q)) { s.streak = 0; s.missed[q.skill] = (s.missed[q.skill] || 0) + 1; if ('qStart' in s) s.qStart = Date.now(); this.rebuild(); return; }
+    if (!right && picked >= 0 && this.secondChance(q, picked)) { s.streak = 0; s.missed[q.skill] = (s.missed[q.skill] || 0) + 1; if ('qStart' in s) s.qStart = Date.now(); this.rebuild(); return; }
     const second = this.onSecondTry(q);
     s.locked = true; s.picked = picked; s.right = right;
     s.streak = right ? s.streak + 1 : 0;

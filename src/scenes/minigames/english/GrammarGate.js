@@ -109,7 +109,8 @@ export class GrammarGate extends MinigameScene {
     const made = r.options.map((opt, i) => {
       const c = cells[i];
       const state = !answered ? 'idle' : i === s.picked && !rightNow ? 'wrong' : !reveal ? 'idle' : i === r.answer ? 'right' : 'dim';
-      const p = plank(this, c.x, c.y, c.w, plankH, opt, { state, seed: i + s.idx, ui: f, fontSize: opt.length <= 2 ? 44 : opt.length > 10 ? 22 : 28, onTap: s.locked ? null : () => this.pick(i) });
+      const p = plank(this, c.x, c.y, c.w, plankH, opt, { state, seed: i + s.idx, ui: f, fontSize: opt.length <= 2 ? 44 : opt.length > 10 ? 22 : 28, onTap: s.locked || this.struckChoice() === i ? null : () => this.pick(i) });
+      if (this.struckChoice() === i && s.picked === null) p.setAlpha(0.35);   // ruled out on the first try
       this.answerSpeaker(p, c.w, plankH, opt);
       return p;
     });
@@ -123,7 +124,7 @@ export class GrammarGate extends MinigameScene {
     const right = i === r.answer;
     const asked = { skill: r.skill, prompt: fillBlank(r.sentence), answer: r.options[r.answer], choices: r.options };
     // The first miss gets a second try; the explanation waits for a second miss.
-    if (!right && this.secondChance(asked)) { s.missed[r.skill] = (s.missed[r.skill] || 0) + 1; this.rebuild(); return; }
+    if (!right && this.secondChance(asked, i)) { s.missed[r.skill] = (s.missed[r.skill] || 0) + 1; this.rebuild(); return; }
     const second = this.onSecondTry(asked);
     s.locked = true; s.picked = i;
     if (!second) this.logQuestion(asked, right);

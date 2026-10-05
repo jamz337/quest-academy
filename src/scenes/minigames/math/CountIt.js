@@ -89,7 +89,7 @@ export class CountIt extends MinigameScene {
       const bh = Math.max(64 * ui, Math.min(c.h, 104 * ui));
       const pic = /\p{Extended_Pictographic}/u.test(choice) && !/\d/.test(choice);
       const size = pic ? Math.min(40, 220 / Math.max(1, [...choice].length)) : 40;
-      const b = button(this, c.x, c.y, c.w, bh, choice, { variant, fontSize: size, wrap: true, onClick: () => this.pick(i) });
+      const b = button(this, c.x, c.y, c.w, bh, choice, { variant, fontSize: size, wrap: true, disabled: this.struckChoice() === i && s.picked === null, onClick: () => this.pick(i) });
       this.answerSpeaker(b, c.w, bh, choice);
       if (reveal && choice !== q.answer && i !== s.picked) b.setAlpha(0.45);
       return b;
@@ -163,7 +163,7 @@ export class CountIt extends MinigameScene {
     if (s.locked) return;
     const right = q.choices[i] === q.answer;
     // The first miss gets a second try; the explanation waits for a second miss.
-    if (!right && this.secondChance(q)) { s.missed[q.skill] = (s.missed[q.skill] || 0) + 1; this.rebuild(); return; }
+    if (!right && this.secondChance(q, i)) { s.missed[q.skill] = (s.missed[q.skill] || 0) + 1; this.rebuild(); return; }
     const second = this.onSecondTry(q);
     s.locked = true; s.picked = i;
     s.right = right;
