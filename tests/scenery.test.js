@@ -70,7 +70,7 @@ describe('older games with scenery (headless)', () => {
     const y1 = s.gate.bars.y;
     expect(y1).toBeGreaterThan(y0);
     expect(s.state.marks).toEqual([true]);
-    s.pick((s.round.answer + 1) % s.round.options.length);
+    for (let k = 0; k < 2; k++) s.pick((s.round.answer + 1) % s.round.options.length); /* twice: the first miss is a second try */
     click(findButton(s, 'Next ▶')); gotIt();
     expect(s.gate.bars.y).toBeCloseTo(y1);
     expect(s.state.marks).toEqual([true, false]);
@@ -82,7 +82,7 @@ describe('older games with scenery (headless)', () => {
     const r = () => s.round;
     s.pick(r().answer); flushTimers(s); skip(s);
     expect(s.state.correct).toBe(1);
-    s.pick((r().answer + 1) % 3);
+    for (let k = 0; k < 2; k++) s.pick((r().answer + 1) % 3); /* twice: the first miss is a second try */
     click(findButton(s, 'Next ▶'));
     expect(s.state.idx).toBe(2);
   });
@@ -149,7 +149,7 @@ describe('older games with scenery (headless)', () => {
       s.pick(q().choices.indexOf(q().answer)); flushTimers(s);
       expect(s.state.correct).toBe(1);
       const wrong = q().kind === 'order' ? null : q().choices.findIndex((c) => c !== q().answer);
-      if (wrong !== null) { s.pick(wrong); expect(findButton(s, 'Next ▶')).toBeTruthy(); }
+      if (wrong !== null) { s.pick(wrong); s.pick(wrong); expect(findButton(s, 'Next ▶')).toBeTruthy(); }
     }
   });
 

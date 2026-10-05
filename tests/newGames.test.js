@@ -224,6 +224,8 @@ describe('All Aboard the Ark (headless)', () => {
     expect(s.state.boarded).toBe(1);
     expect(s.state.idx).toBe(1);
     click(findButton(s, q().choices.find((c) => c !== q().answer)));
+    expect(s.state.right).toBe(null);   // the first miss is a second try
+    click(findButton(s, q().choices.find((c) => c !== q().answer)));
     expect(s.state.right).toBe(false);
     click(findButton(s, 'Next ▶'));
     expect(s.state.boarded).toBe(1);

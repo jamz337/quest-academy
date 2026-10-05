@@ -61,10 +61,11 @@ function makeScene(Cls, payload) {
 
 describe('each game walks it in place', () => {
   const wrong = {
-    'Grammar Gate': (s) => s.pick((s.round.answer + 1) % s.round.options.length),
+    // The first miss is a second try; the explanation comes after the second.
+    'Grammar Gate': (s) => { for (let k = 0; k < 2; k++) s.pick((s.round.answer + 1) % s.round.options.length); },
     // Number Dash gives a second try first: the explanation comes after the second miss.
     'Number Dash': (s) => { const x = s.state.questions[s.state.idx]; const bad = x.choices.map((c, i) => (c !== x.answer ? i : -1)).filter((i) => i >= 0); s.pick(bad[0]); s.pick(bad[1]); },
-    'Pattern Bridge': (s) => s.pick(s.round.choices.findIndex((c) => c !== s.round.answer)),
+    'Pattern Bridge': (s) => { for (let k = 0; k < 2; k++) s.pick(s.round.choices.findIndex((c) => c !== s.round.answer)); },
     'Frog Hop': (s) => s.pick(s.round.choices.findIndex((c) => String(c) !== String(s.round.answer)))
   };
   for (const [name, Cls, payload] of [['Grammar Gate', GrammarGate, { gameId: 'eng-grammar' }], ['Number Dash', NumberDash, { gameId: 'math-dash', subject: 'math' }], ['Pattern Bridge', PatternBridge, { gameId: 'math-bridge', subject: 'math' }], ['Frog Hop', FrogHop, { gameId: 'eng-frog' }]]) {

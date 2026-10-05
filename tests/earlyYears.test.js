@@ -202,7 +202,7 @@ describe('the two new games', () => {
     expect(s.state.correct).toBe(1);
     flushTimers(s);
     expect(s.state.idx).toBe(1);
-    s.pick(s.round.choices.findIndex((c) => c !== s.round.answer));
+    for (let k = 0; k < 2; k++) s.pick(s.round.choices.findIndex((c) => c !== s.round.answer)); /* twice: the first miss is a second try */
     expect(s.explainIt).toBeTruthy();                        // "Let's see why"
     click(findButton(s, 'Next ▶'));
     while (s.state.idx < 8 && !s.finish.mock.calls.length) { s.pick(s.round.choices.indexOf(s.round.answer)); flushTimers(s); }

@@ -211,11 +211,15 @@ export class BibleQuiz extends MinigameScene {
 
   answer(q, right, picked) {
     const s = this.state;
+    // The first miss gets a second try (not when the clock ran out); the explanation waits for a second miss.
+    if (!right && picked >= 0 && this.secondChance(q)) { s.streak = 0; s.missed[q.skill] = (s.missed[q.skill] || 0) + 1; if ('qStart' in s) s.qStart = Date.now(); this.rebuild(); return; }
+    const second = this.onSecondTry(q);
     s.locked = true; s.picked = picked; s.right = right;
     s.streak = right ? s.streak + 1 : 0;
-    this.logQuestion(q, right);
+    if (!second) this.logQuestion(q, right);
+    if (right) this.noteRight(q);
     if (right) { s.correct += 1; this.correctFeedback(); }
-    else { s.missed[q.skill] = (s.missed[q.skill] || 0) + 1; this.wrongFeedback(); }
+    else { if (!second) s.missed[q.skill] = (s.missed[q.skill] || 0) + 1; this.wrongFeedback(); }
     this.rebuild();
     if (right) this.time.delayedCall(1100, () => this.next());   // long enough to read the reference
   }

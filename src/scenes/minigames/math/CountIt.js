@@ -161,12 +161,15 @@ export class CountIt extends MinigameScene {
   pick(i) {
     const s = this.state, q = this.round;
     if (s.locked) return;
-    s.locked = true; s.picked = i;
     const right = q.choices[i] === q.answer;
+    // The first miss gets a second try; the explanation waits for a second miss.
+    if (!right && this.secondChance(q)) { s.missed[q.skill] = (s.missed[q.skill] || 0) + 1; this.rebuild(); return; }
+    const second = this.onSecondTry(q);
+    s.locked = true; s.picked = i;
     s.right = right;
-    this.logQuestion(q, right);
-    if (right) { s.correct += 1; this.correctFeedback(); }
-    else { s.missed[q.skill] = (s.missed[q.skill] || 0) + 1; this.wrongFeedback(); }
+    if (!second) this.logQuestion(q, right);
+    if (right) { s.correct += 1; this.noteRight(q); this.correctFeedback(); }
+    else { if (!second) s.missed[q.skill] = (s.missed[q.skill] || 0) + 1; this.wrongFeedback(); }
     this.rebuild();
     if (right) this.time.delayedCall(900, () => this.next());
   }

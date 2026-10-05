@@ -171,11 +171,15 @@ export class PatternBridge extends MinigameScene {
   pick(i) {
     const s = this.state, r = this.round;
     if (s.locked) return;
-    s.locked = true; s.picked = i;
     const right = r.choices[i] === r.answer;
-    this.logQuestion({ skill: r.skill, prompt: (r.rule ? r.rule + '\n' : '') + r.terms.map((t, j) => (j === r.missingIndex ? '?' : t)).join(', '), answer: r.answer, choices: r.choices }, right);
-    if (right) { s.correct += 1; this.correctFeedback(); }
-    else { s.missed[r.skill] = (s.missed[r.skill] || 0) + 1; this.wrongFeedback(); }
+    const asked = { skill: r.skill, prompt: (r.rule ? r.rule + '\n' : '') + r.terms.map((t, j) => (j === r.missingIndex ? '?' : t)).join(', '), answer: r.answer, choices: r.choices };
+    // The first miss gets a second try; the explanation waits for a second miss.
+    if (!right && this.secondChance(asked)) { s.missed[r.skill] = (s.missed[r.skill] || 0) + 1; this.rebuild(); return; }
+    const second = this.onSecondTry(asked);
+    s.locked = true; s.picked = i;
+    if (!second) this.logQuestion(asked, right);
+    if (right) { s.correct += 1; this.noteRight(asked); this.correctFeedback(); }
+    else { if (!second) s.missed[r.skill] = (s.missed[r.skill] || 0) + 1; this.wrongFeedback(); }
     this.rebuild();
     if (right) this.time.delayedCall(600, () => this.next());   // wrong answers wait for "Next" after the explanation
   }

@@ -50,6 +50,7 @@ export class MinigameScene extends BaseScene {
     // Spaced review: a few questions missed in earlier games of this subject come back before this one starts.
     this.review = payload.boss || payload.duel || payload.noReview ? [] : dueReviews(this.profile, payload.subject, Date.now(), undefined, payload.gameId);
     this.reviewIdx = 0; this.reviewPicked = null; this.reviewRight = 0;
+    this.chanceKey = null; this.rescues = 0;   // second tries (see secondChance)
     // Scenes are reused between launches, so the wrapper always goes around the class's own enterKey.
     delete this.enterKey;
     if (this.review.length) {
@@ -284,6 +285,8 @@ export class MinigameScene extends BaseScene {
     this.finished = true;
     stopSpeech();
     const questions = this.qlog.map(({ skill, right, ms, explained }) => ({ skill, right, ms, explained }));
+    // Two answers rescued on a second try count as one right answer.
+    if (this.rescues && Number.isFinite(raw.correct)) raw = { ...raw, correct: Math.max(0, raw.correct - Math.ceil(this.rescues / 2)) };
     const out = {
       timeMs: this.elapsedMs(), questions, seenSkills: [...new Set(this.qlog.map((l) => l.skill).filter(Boolean))],
       missedQuestions: this.qlog.filter((l) => !l.right && l.prompt).map(({ prompt, answer, skill, choices, explain }) => (choices ? { prompt, answer, skill, choices, ...(explain ? { explain } : {}) } : { prompt, answer, skill })),
@@ -346,6 +349,8 @@ export class MinigameScene extends BaseScene {
   }
   /** Is this question on its second try (so it has been logged already)? */
   onSecondTry(q) { return this.chanceKey === this.explainKey(q); }
+  /** Call when a question is answered right: one rescued on its second try is counted, and is worth half at the end. */
+  noteRight(q) { if (this.onSecondTry(q)) this.rescues = (this.rescues || 0) + 1; }
 
   wrongFeedback() {
     Sfx.wrong(); this.flash(THEME.danger, 0.14); this.cameras.main.shake(120, 0.004);

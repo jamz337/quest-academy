@@ -120,12 +120,16 @@ export class GrammarGate extends MinigameScene {
   pick(i) {
     const s = this.state, r = this.round;
     if (s.locked) return;
-    s.locked = true; s.picked = i;
     const right = i === r.answer;
-    this.logQuestion({ skill: r.skill, prompt: fillBlank(r.sentence), answer: r.options[r.answer], choices: r.options }, right);
+    const asked = { skill: r.skill, prompt: fillBlank(r.sentence), answer: r.options[r.answer], choices: r.options };
+    // The first miss gets a second try; the explanation waits for a second miss.
+    if (!right && this.secondChance(asked)) { s.missed[r.skill] = (s.missed[r.skill] || 0) + 1; this.rebuild(); return; }
+    const second = this.onSecondTry(asked);
+    s.locked = true; s.picked = i;
+    if (!second) this.logQuestion(asked, right);
     s.marks[s.idx] = right;
-    if (right) { s.correct += 1; this.correctFeedback(); }
-    else { s.missed[r.skill] = (s.missed[r.skill] || 0) + 1; this.wrongFeedback(); }
+    if (right) { s.correct += 1; this.noteRight(asked); this.correctFeedback(); }
+    else { if (!second) s.missed[r.skill] = (s.missed[r.skill] || 0) + 1; this.wrongFeedback(); }
     this.rebuild();
     if (right) this.time.delayedCall(600, () => this.next());   // wrong answers wait for "Next" after the explanation
   }
