@@ -7,7 +7,8 @@ from the picture itself (the gaps between figures), so 6- or 8-column sheets bot
 down / right; column 0 standing, columns 1-8 the walk cycle), transparent, every frame scaled the same with its
 feet on one line. When the third source row faces left like the second, the left row is mirrored for the right.
 
-Usage: python tools/make-player-sheet.py <source image> <name> [cell px]
+Usage: python tools/make-player-sheet.py <source image> <name> [cell px] [facings]
+       facings: the two side rows' facings when the guess is wrong, e.g. 192 left,left
        e.g. python tools/make-player-sheet.py sheet.webp player   -> public/sprites/player.png
 """
 import sys
@@ -96,13 +97,22 @@ figures = {(c, r): figure_at(c, r) for r in range(ROWS) for c in range(COLS)}
 tallest = max(f.height for f in figures.values() if f)
 scale = (CELL * 0.92) / tallest
 
-# Does the third row face right (its own drawing) or left again (then the left row is mirrored for right)?
-def silhouette(c, r, mirror=False):
-    fig = figures[(c, r)].getchannel('A').resize((64, 128))
-    return fig.transpose(Image.FLIP_LEFT_RIGHT) if mirror else fig
-def diff(a, b): return sum(ImageChops.difference(a, b).getdata())
-third_faces_right = diff(silhouette(STAND, 2), silhouette(STAND, 1, True)) < diff(silhouette(STAND, 2), silhouette(STAND, 1))
-OUT_ROWS = [('up', 3, False), ('left', 1, False), ('down', 0, False), ('right', 2, False) if third_faces_right else ('right', 1, True)]
+# Which way do the two side rows face? Toes point forward: the feet's centre sits ahead of the torso's. The
+# generator is not consistent (both side rows may face the same way), so each row is judged on its own and a
+# missing facing is made by mirroring the other.
+def facing(r):
+    fig = figures[(STAND, r)]   # the first standing pose: props and arms vary in the others
+    a = fig.getchannel('A'); w, h = a.size
+    def centre(y0, y1):
+        xs = [x for y in range(max(0, y0), min(h, y1)) for x in range(w) if a.getpixel((x, y)) > 40]
+        return sum(xs) / len(xs) if xs else w / 2
+    return 'right' if centre(h - int(h * 0.07), h) > centre(int(h * 0.4), int(h * 0.6)) else 'left'
+sides = { 1: facing(1), 2: facing(2) }
+if len(sys.argv) > 4: sides = { 1: sys.argv[4].split(',')[0], 2: sys.argv[4].split(',')[1] }   # e.g. left,left to overrule the guess
+left_src = next((r for r in (1, 2) if sides[r] == 'left'), None)
+right_src = next((r for r in (1, 2) if sides[r] == 'right'), None)
+OUT_ROWS = [('up', 3, False), ('left', left_src, False) if left_src is not None else ('left', right_src, True),
+            ('down', 0, False), ('right', right_src, False) if right_src is not None else ('right', left_src, True)]
 
 out = Image.new('RGBA', (CELL * OUT_COLS, CELL * ROWS), (0, 0, 0, 0))
 def place(fig, mirror, oc, orow):
@@ -122,4 +132,4 @@ for orow, (facing, srow, mirror) in enumerate(OUT_ROWS):
 path = f'public/sprites/{name}.png'
 out.save(path)
 print('wrote', path, out.size, 'columns', COLS, 'walk', WALK_FACING, 'side', WALK_SIDE, 'scale', round(scale, 3), 'tallest', tallest,
-      'right row:', 'own drawing' if third_faces_right else 'mirrored left')
+      'side rows face', sides)
