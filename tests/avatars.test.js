@@ -19,9 +19,13 @@ describe('avatar looks', () => {
   });
 
   it('resolves a preset with overrides on top and drops anything invalid', () => {
-    expect(resolveLook({ avatar: 2 })).toEqual(CHARACTER_STYLES[2]);
-    expect(resolveLook({})).toEqual(CHARACTER_STYLES[0]);
-    expect(resolveLook({ avatar: 99 })).toEqual(CHARACTER_STYLES[7]);
+    expect(resolveLook({ avatar: 2 })).toEqual({ art: 'hero', ...CHARACTER_STYLES[2] });
+    expect(resolveLook({})).toEqual({ art: 'hero', ...CHARACTER_STYLES[0] });
+    expect(resolveLook({ avatar: 99 })).toEqual({ art: 'hero', ...CHARACTER_STYLES[7] });
+    // Players are the drawn hero unless they chose to build a pixel character; a bad choice is dropped.
+    expect(resolveLook({ avatar: 1, look: { art: 'pixel' } })).toEqual({ art: 'pixel', ...CHARACTER_STYLES[1] });
+    expect(sanitizeLook({ art: 'pixel' })).toEqual({ art: 'pixel' });
+    expect(sanitizeLook({ art: 'smooth' })).toBeNull();
     const look = resolveLook({ avatar: 1, look: { hair: 'blonde', topStyle: 'polo', bg: '#2D2A4A', skin: 'lime', hairStyle: 'mullet', top: '#ff0000' } });
     expect(look).toMatchObject({ sex: 'girl', hair: 'blonde', topStyle: 'polo', bg: '#2d2a4a', skin: CHARACTER_STYLES[1].skin, hairStyle: CHARACTER_STYLES[1].hairStyle, top: CHARACTER_STYLES[1].top });
     expect(sanitizeLook(null)).toBeNull();

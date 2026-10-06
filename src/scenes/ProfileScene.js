@@ -12,7 +12,8 @@ import { modal } from '../ui/Modal.js';
 import { textInput } from '../ui/Input.js';
 import { enter } from '../ui/motion.js';
 import { Sfx } from '../systems/Audio.js';
-import { resolveLook, sanitizeLook, BG_COLORS, SEXES, HAIR_STYLES, TOPS, BOTTOMS, SKIN_TONES, HAIR_COLOURS, CLOTH_COLOURS, EYE_COLOURS } from '../data/avatars.js';
+import { resolveLook, sanitizeLook, BG_COLORS, SEXES, ARTS, HAIR_STYLES, TOPS, BOTTOMS, SKIN_TONES, HAIR_COLOURS, CLOTH_COLOURS, EYE_COLOURS } from '../data/avatars.js';
+import { isHero } from '../ui/Hero.js';
 import { lookSpriteTexture, IDLE_FRAMES } from '../systems/Textures.js';
 import { swatch, HAIR_STYLES as LPC_HAIR, TOP_STYLES, BOTTOM_STYLES } from '../ui/LpcCharacter.js';
 import { badgeTexture } from '../systems/Textures.js';
@@ -29,6 +30,8 @@ const SWATCHES = [
   { key: 'eyes', title: 'EYES', material: 'eye', options: EYE_COLOURS },
   { key: 'bg', title: 'BACKGROUND', colors: BG_COLORS }
 ];
+// The first choice: the hand-drawn hero, or a character built from the pixel layers (the rows below).
+const ART_ROW = { key: 'art', title: 'CHARACTER', options: ARTS, label: (v) => (v === 'hero' ? '✨ Hero (drawn)' : '🎨 Build your own'), perRow: 2 };
 // Style rows: buttons rather than swatches.
 const STYLE_ROWS = [
   { key: 'sex', title: 'BOY OR GIRL', options: SEXES, label: (v) => (v === 'boy' ? '👦 Boy' : '👧 Girl'), perRow: 2 },
@@ -160,7 +163,7 @@ export class ProfileScene extends BaseScene {
       const sel = i === d.avatar;
       this.add.circle(c.x, c.y, aSize / 2 + 5, sel ? THEME.gold : THEME.sunken);
       const img = this.add.image(c.x, c.y, 'avatar', i).setDisplaySize(aSize, aSize).setInteractive({ useHandCursor: true });
-      img.on('pointerup', () => { Sfx.pop(); d.avatar = i; d.look = null; this.rebuild(); });
+      img.on('pointerup', () => { Sfx.pop(); d.avatar = i; d.look = { art: 'pixel' }; this.rebuild(); });   // a preset is a built character
       if (!sel) img.setAlpha(0.8);
     }
     y += aRows * (aSize + 12) + 10 * ui;
@@ -238,20 +241,25 @@ export class ProfileScene extends BaseScene {
     const label = (str, y) => text(this, m.x + 24, y, str, T.caption(this)).setOrigin(0, 0.5);
     // Preview: the standing sprite, big and crisp.
     const key = lookSpriteTexture(this, look);
-    const wide = pw >= 520 * ui, pv = wide ? 150 * ui : 96 * ui;
+    // Side by side when the modal is wide, and on any landscape screen (there the rows need the height more).
+    const wide = pw >= 520 * ui || w > h * 1.05, pv = wide ? Math.min(150 * ui, pw * 0.3) : 96 * ui;
     const px = wide ? m.x + 24 + pv / 2 : m.x + m.w / 2, py = m.contentTop + 6 * ui + pv / 2;
     this.add.circle(px, py, pv / 2, parseInt((look.bg || '#3d8bff').slice(1), 16), 1);
-    const img = this.add.image(px, py + pv * 0.06, key, IDLE_FRAMES.down).setDisplaySize(pv * 0.95, pv * 0.95);
-    img.texture.setFilter(1);   // nearest: keep the pixels crisp
+    const hero = isHero(look), fill = hero ? 0.8 : 0.95;   // the hero fills its cell, so it is shown a little smaller
+    const img = this.add.image(px, py + pv * (hero ? 0.03 : 0.06), key, IDLE_FRAMES.down).setDisplaySize(pv * fill, pv * fill);
+    if (!hero) img.texture.setFilter(1);   // nearest: keep the pixels crisp (the hero is smooth and stays so)
     const left = wide ? m.x + 24 + pv + 20 : m.x + 24, rowW = wide ? m.w - 48 - pv - 20 : m.w - 48;
     let y = wide ? m.contentTop + 4 * ui : py + pv / 2 + 12 * ui;
     const rowsBottom = m.y + m.h - 60 * ui;
     // Compress the rows to what fits: the available height shared out over every row.
-    const styleLines = STYLE_ROWS.reduce((n, r) => n + Math.ceil(r.options.length / r.perRow), 0);
-    const units = STYLE_ROWS.length * 0.5 + styleLines + SWATCHES.length * 1.5;   // labels are half a unit, swatch rows one and a half
+    // The hero has no hair, clothes or colours to pick, only the badge background.
+    const styleRows = [ART_ROW, ...(hero ? [] : STYLE_ROWS)], swatches = hero ? SWATCHES.filter((s) => s.key === 'bg') : SWATCHES;
+    const styleLines = styleRows.reduce((n, r) => n + Math.ceil(r.options.length / r.perRow), 0);
+    const units = styleRows.length * 0.5 + styleLines + swatches.length * 1.5 + (hero ? 1 : 0);   // labels are half a unit, swatch rows one and a half
     const unit = Math.max(12, Math.min(38 * ui, (rowsBottom - y) / units));   // rows shrink to fit short screens
-    for (const row of STYLE_ROWS) {
-      text(this, left, y + unit * 0.25, row.title, T.caption(this)).setOrigin(0, 0.5); y += unit * 0.5;
+    const rowTitle = { ...T.caption(this), fontSize: Math.min(13 * ui, unit * 0.5) + 'px' };   // titles shrink with the rows
+    for (const row of styleRows) {
+      text(this, left, y + unit * 0.25, row.title, rowTitle).setOrigin(0, 0.5); y += unit * 0.5;
       const lines = Math.ceil(row.options.length / row.perRow);
       const cells = grid({ x: left, y, w: rowW, h: lines * unit - 3 }, row.perRow, lines, 3);
       row.options.forEach((v, i) => {
@@ -260,9 +268,10 @@ export class ProfileScene extends BaseScene {
       });
       y += lines * unit;
     }
-    for (const { key: k, title, colors, material, options } of SWATCHES) {
+    if (hero) { text(this, left, y + unit * 0.45, 'The hero is drawn by hand. Pick Build your own to choose hair, clothes and colours.', { ...rowTitle, wordWrap: { width: rowW } }).setOrigin(0, 0.5); y += unit; }
+    for (const { key: k, title, colors, material, options } of swatches) {
       const values = colors || options;
-      text(this, left, y + unit * 0.3, title, T.caption(this)).setOrigin(0, 0.5); y += unit * 0.5;
+      text(this, left, y + unit * 0.3, title, rowTitle).setOrigin(0, 0.5); y += unit * 0.5;
       const cy = y + unit * 0.5, step = rowW / values.length, size = Math.min(unit * 0.8, step - 4);
       values.forEach((v, i) => {
         const cx = left + step * i + step / 2, colour = colors ? v : swatch(material, v), sel = look[k] === v;

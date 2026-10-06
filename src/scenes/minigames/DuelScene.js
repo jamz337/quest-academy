@@ -5,7 +5,7 @@ import { duelQuestions, bossDuelQuestions } from '../../generators/duel.js';
 import { drawMiniMaze, drawProgram } from '../../ui/CodeView.js';
 import { tuningFor } from '../../data/grades.js';
 import { DUEL } from '../../data/world/duels.js';
-import { badgeTexture, lookSpriteTexture } from '../../systems/Textures.js';
+import { badgeTexture, lookSpriteTexture, charScale } from '../../systems/Textures.js';
 import { IDLE_FRAMES, LPC_FRAME } from '../../ui/LpcCharacter.js';
 import { MONKEY_FRAMES } from '../../ui/FlatCharacter.js';
 import { MANGO_CELL } from '../../ui/Mango.js';
@@ -96,7 +96,8 @@ export class DuelScene extends MinigameScene {
     // The party: the player faces right with a prop, Mango beside them.
     const profile = this.profile;
     const pKey = lookSpriteTexture(this, resolveLook(profile), outfitOf(profile), outfitId(profile));
-    const player = this.add.sprite(px, gy, pKey, IDLE_FRAMES.side).setFlipX(true).setScale(sc).setOrigin(0.5, 1);
+    const player = this.add.sprite(px, gy, pKey, IDLE_FRAMES.side).setFlipX(true).setOrigin(0.5, 1);
+    player.setScale(charScale(player, sc));
     const pProp = this.add.text(px + 15 * sc, gy - 24 * sc, DUEL.playerProp, { fontSize: Math.round(9 * sc) + 'px' }).setOrigin(0.5);
     const mango = this.add.sprite(px - 30 * sc, gy, 'monkey', s.defeated ? MONKEY_FRAMES.cheer : MONKEY_FRAMES.side).setScale(sc * 58 / MANGO_CELL).setOrigin(0.5, 1);   // the side view faces right, towards the foe
     if (s.party[1].max > 0 && s.party[1].hp <= 0) mango.setTint(0x9a9a9a);

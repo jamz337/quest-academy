@@ -13,6 +13,7 @@ import { Sfx } from '../../../systems/Audio.js';
 import { lookSpriteTexture } from '../../../systems/Textures.js';
 import { outfitOf, outfitId } from '../../../systems/Market.js';
 import { IDLE_FRAMES } from '../../../ui/LpcCharacter.js';
+import { figureFix } from '../../../ui/Hero.js';
 import { resolveLook } from '../../../data/avatars.js';
 
 const PAR_MS = 90000;
@@ -217,7 +218,8 @@ export class PatternBridge extends MinigameScene {
     if (!sp || s.picked === null || r.choices[s.picked] !== r.answer || !this.textures || !this.add.sprite) return;
     const key = lookSpriteTexture(this, resolveLook(this.profile), outfitOf(this.profile), outfitId(this.profile));
     if (!this.textures.exists(key)) return;
-    const walker = this.add.sprite(sp.x0, sp.y, key, IDLE_FRAMES.side).setOrigin(0.5, 1).setDisplaySize(sp.size, sp.size).setFlipX(true).setDepth(6);
+    const size = sp.size * figureFix(key);
+    const walker = this.add.sprite(sp.x0, sp.y, key, IDLE_FRAMES.side).setOrigin(0.5, 1).setDisplaySize(size, size).setFlipX(true).setDepth(6);
     if (walker.play && this.anims && this.anims.exists(`${key}-side`)) walker.play(`${key}-side`, true);
     if (this.tweens) this.tweens.add({ targets: walker, x: sp.x1, duration: 850, ease: 'Sine.InOut' });
   }

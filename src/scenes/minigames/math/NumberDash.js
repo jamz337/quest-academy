@@ -18,6 +18,7 @@ import { shake } from '../../../ui/motion.js';
 import { lookSpriteTexture } from '../../../systems/Textures.js';
 import { outfitOf, outfitId } from '../../../systems/Market.js';
 import { IDLE_FRAMES } from '../../../ui/LpcCharacter.js';
+import { figureFix } from '../../../ui/Hero.js';
 import { resolveLook } from '../../../data/avatars.js';
 
 const KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', '−', '0', '.'];
@@ -180,7 +181,7 @@ export class NumberDash extends MinigameScene {
     enter(this, stones, { from: 'up', delay: 60, stagger: 40 });
     // The runner: on the start pad, or on the stone they chose.
     const key = lookSpriteTexture(this, resolveLook(this.profile), outfitOf(this.profile), outfitId(this.profile));
-    const size = Math.min(72 * ui, h * 0.4), startX = area.x + padW / 2 + 2 * ui;
+    const size = Math.min(72 * ui, h * 0.4) * figureFix(key), startX = area.x + padW / 2 + 2 * ui;
     const on = s.picked !== null && s.picked >= 0 && xs[s.picked] !== undefined ? xs[s.picked] : startX;
     const runner = this.add.sprite(on, surface + 4 * ui, key, IDLE_FRAMES.side).setOrigin(0.5, 1).setDisplaySize(size, size).setFlipX(true).setDepth(5);
     this.jump = { runner, xs, startX, surface: surface + 4 * ui, hop: size * 0.9 };

@@ -8,6 +8,7 @@ import { getList } from '../data/spelling/lists.js';
 import { roomFromGameId } from '../data/social/barbados.js';
 import { resolveLook } from '../data/avatars.js';
 import { layersFor, composeSheet, drawBustFromSheet, LPC_BASE } from '../ui/LpcCharacter.js';
+import { HERO_FILE, isHero, drawHeroBust } from '../ui/Hero.js';
 import { cssVars } from '../ui/theme.js';
 
 // The page's CSS variables come from the same tokens as the game so the two never drift.
@@ -182,6 +183,14 @@ async function drawAvatar(canvas) {
   const l = resolveLook({ avatar: Number(canvas.dataset.avatar) || 0, look });
   const ctx = canvas.getContext('2d');
   ctx.fillStyle = l.bg || '#3d8bff'; ctx.beginPath(); ctx.arc(24, 24, 24, 0, Math.PI * 2); ctx.fill();
+  if (isHero(l)) {   // the hand-drawn hero: its head from the walking sheet
+    const img = await new Promise((resolve) => { const i = new Image(); i.onload = () => resolve(i); i.onerror = () => resolve(null); i.src = HERO_FILE; });
+    if (!img) return;
+    ctx.save(); ctx.beginPath(); ctx.arc(24, 24, 22, 0, Math.PI * 2); ctx.clip();
+    drawHeroBust(ctx, img, 24, 27, 41);
+    ctx.restore();
+    return;
+  }
   const layers = layersFor(l);
   await Promise.all(layers.map((x) => loadImage(x.path)));
   const sheet = document.createElement('canvas'); sheet.width = 576; sheet.height = 256;

@@ -11,6 +11,8 @@ export const SEXES = ['boy', 'girl'];
 export const HAIR_STYLES = Object.keys(LPC_HAIR);
 export const TOPS = Object.keys(TOP_STYLES);
 export const BOTTOMS = Object.keys(BOTTOM_STYLES);
+/** How the player is drawn: the hand-drawn hero sheet, or a character built from the pixel layers. */
+export const ARTS = ['hero', 'pixel'];
 export { SKIN_TONES, HAIR_COLOURS, CLOTH_COLOURS, EYE_COLOURS, SKIN_VARIANTS, HAIR_VARIANTS, CLOTH_VARIANTS, EYE_VARIANTS };
 
 /** The eight presets on the profile screen: four boys and four girls. */
@@ -54,7 +56,7 @@ export const BG_COLORS = ['#3d8bff', '#ff6fae', '#2ec46a', '#ff8f3f', '#8b7fd6',
 const HEX = /^#[0-9a-f]{6}$/i;
 const ALLOWED = {
   sex: SEXES, skin: SKIN_VARIANTS, hairStyle: HAIR_STYLES, hair: HAIR_VARIANTS, topStyle: TOPS, top: CLOTH_VARIANTS,
-  bottomStyle: BOTTOMS, bottom: CLOTH_VARIANTS, shoes: CLOTH_VARIANTS, eyes: EYE_VARIANTS
+  bottomStyle: BOTTOMS, bottom: CLOTH_VARIANTS, shoes: CLOTH_VARIANTS, eyes: EYE_VARIANTS, art: ARTS
 };
 
 /** Keep only valid overrides from a stored look; anything else (including old colour codes) is dropped. */
@@ -66,10 +68,14 @@ export function sanitizeLook(look) {
   return Object.keys(out).length ? out : null;
 }
 
-/** The look a profile is drawn with: its preset (`avatar` index) with any `look` overrides on top. */
+/**
+ * The look a profile is drawn with: its preset (`avatar` index) with any `look` overrides on top. Players are the
+ * hand-drawn hero unless their look says `art: 'pixel'`; villagers and bosses (which never pass through here) are
+ * always built from the pixel layers.
+ */
 export function resolveLook(profile) {
   const idx = Math.max(0, Math.min(CHARACTER_STYLES.length - 1, Number(profile?.avatar) || 0));
-  return { ...CHARACTER_STYLES[idx], ...(sanitizeLook(profile?.look) || {}) };
+  return { art: 'hero', ...CHARACTER_STYLES[idx], ...(sanitizeLook(profile?.look) || {}) };
 }
 
 /** Stable id for a resolved look, used as a texture key suffix. */

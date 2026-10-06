@@ -8,7 +8,7 @@ import { viewport, dpr } from '../systems/Layout.js';
 import { Sfx } from '../systems/Audio.js';
 import { toast } from '../ui/Toast.js';
 import { resolveLook } from '../data/avatars.js';
-import { lookSpriteTexture, CHAR_WORLD_SCALE, IDLE_FRAMES } from '../systems/Textures.js';
+import { lookSpriteTexture, fitPlayer, IDLE_FRAMES } from '../systems/Textures.js';
 import { outfitOf, outfitId } from '../systems/Market.js';
 import { bandFor } from '../data/grades.js';
 import { effectiveGrade } from '../systems/Progression.js';
@@ -177,8 +177,7 @@ export class ChurchScene extends Phaser.Scene {
 
   createPlayer(profile) {
     const key = lookSpriteTexture(this, resolveLook(profile), outfitOf(profile), outfitId(profile));
-    this.player = this.physics.add.sprite(SPAWN.tx * TILE, SPAWN.ty * TILE, key, IDLE_FRAMES.up).setScale(CHAR_WORLD_SCALE).setDepth(10);
-    this.player.body.setSize(28, 16).setOffset(18, 46);
+    this.player = fitPlayer(this.physics.add.sprite(SPAWN.tx * TILE, SPAWN.ty * TILE, key, IDLE_FRAMES.up)).setDepth(10);
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.solids);
   }

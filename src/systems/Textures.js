@@ -12,6 +12,8 @@ import { CRITTER_CELL, CRITTER_KEYS, drawCritter } from '../ui/Critters.js';
 import { VILLAGERS, villagerTexture } from '../ui/Villagers.js';
 import { LPC_FRAME, LPC_COLS, allLayerPaths, composeSheet, drawOutfitBack, drawOutfitFront, drawBustFromSheet, walkRange } from '../ui/LpcCharacter.js';
 export { WORLD_SCALE as CHAR_WORLD_SCALE, IDLE_FRAMES } from '../ui/LpcCharacter.js';
+import { WORLD_SCALE } from '../ui/LpcCharacter.js';
+import { HERO_KEY, HERO_WORLD_CELL, isHero, figureScale, drawHeroBust } from '../ui/Hero.js';
 
 const SHADOW = 'rgba(0,0,0,0.22)';
 const PAL = {
@@ -432,6 +434,7 @@ export function avatarTexture(scene) {
 
 /** Badge for a resolved look (see data/avatars.js resolveLook): built on first use and cached. Returns the texture key. */
 export function badgeTexture(scene, look, outfit = null, outfitKey = '') {
+  if (isHero(look) && scene.textures.exists(HERO_KEY)) return heroBadge(scene, look);
   const key = 'badge:' + lookId(look) + (outfitKey ? ':' + outfitKey : '');
   if (!scene.textures.exists(key)) {
     const tex = scene.textures.createCanvas(key, BADGE, BADGE);
@@ -441,8 +444,24 @@ export function badgeTexture(scene, look, outfit = null, outfitKey = '') {
   return key;
 }
 
+/** The hero's badge: the disc in the look's background colour with the head and shoulders from the hero sheet. */
+function heroBadge(scene, look) {
+  const bg = look.bg || '#3d8bff', key = 'badge:hero:' + bg, S = BADGE;
+  if (scene.textures.exists(key)) return key;
+  const tex = scene.textures.createCanvas(key, S, S), ctx = tex.getContext();
+  ctx.fillStyle = shade(bg, 0.82); ctx.beginPath(); ctx.arc(S / 2, S / 2, S / 2, 0, Math.PI * 2); ctx.fill();
+  ctx.save();
+  ctx.beginPath(); ctx.arc(S / 2, S / 2, S / 2 - S * 0.04, 0, Math.PI * 2); ctx.clip();
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, S, S);
+  drawHeroBust(ctx, scene.textures.get(HERO_KEY).getSourceImage(), S / 2, S * 0.56, S * 0.86);
+  ctx.restore();
+  tex.refresh();
+  return key;
+}
+
 /** Walking sheet plus -down/-up/-side animations for a resolved look. Returns the texture key. */
 export function lookSpriteTexture(scene, look, outfit = null, outfitKey = '') {
+  if (isHero(look) && scene.textures.exists(HERO_KEY)) { walkAnims(scene, HERO_KEY); return HERO_KEY; }   // the drawn hero wears no pixel outfits
   const key = 'look:' + lookId(look) + (outfitKey ? ':' + outfitKey : '');
   if (!scene.textures.exists(key)) {
     characterTexture(scene, key, look, 1, outfit ? { outfit, outfitKey } : null);
@@ -454,6 +473,25 @@ export function lookSpriteTexture(scene, look, outfit = null, outfitKey = '') {
 function walkAnims(scene, key) {
   if (scene.anims.exists(`${key}-down`)) return;
   for (const pose of ['down', 'up', 'side']) scene.anims.create({ key: `${key}-${pose}`, frames: scene.anims.generateFrameNumbers(key, walkRange(pose)), frameRate: 12, repeat: -1 });
+}
+
+/**
+ * The scale that shows a character sprite's figure as tall as a pixel figure at `pixelScale` would be, whichever
+ * sheet it uses (the hero's cells are bigger and fuller than the 64 px pixel cells).
+ */
+export function charScale(sprite, pixelScale) {
+  return figureScale(sprite.frame ? sprite.frame.height : 64, sprite.texture && sprite.texture.key === HERO_KEY, pixelScale);
+}
+
+/**
+ * Size a walking player for the world: the hero a little under a villager tall, a pixel character one tile tall,
+ * with a feet-sized physics box (so doors and gaps feel fair) measured in the sprite's own frame units.
+ */
+export function fitPlayer(sprite) {
+  const f = sprite.frame || { width: 64, height: 64 }, hero = sprite.texture && sprite.texture.key === HERO_KEY;
+  sprite.setScale(hero ? HERO_WORLD_CELL / f.height : WORLD_SCALE);
+  if (sprite.body) sprite.body.setSize(Math.round(f.width * 0.44), Math.round(f.height * 0.25)).setOffset(Math.round(f.width * 0.28), Math.round(f.height * 0.72));
+  return sprite;
 }
 
 function star(g, cx, cy, r, color) {

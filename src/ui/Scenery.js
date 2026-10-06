@@ -3,6 +3,7 @@
 // same picture, and returns handles the game can animate right after a rebuild.
 import { THEME, hex } from './theme.js';
 import { FONT, WEIGHT } from './TextStyles.js';
+import { figureFix } from './Hero.js';
 
 const band = (scene, r, color, radius = 16) => { const g = scene.add.graphics(); g.fillStyle(color, 1); g.fillRoundedRect(r.x, r.y, r.w, r.h, radius); return g; };
 const cloud = (g, x, y, s) => { g.fillEllipse(x, y, 46 * s, 16 * s); g.fillEllipse(x - 14 * s, y + 3 * s, 26 * s, 12 * s); g.fillEllipse(x + 15 * s, y + 4 * s, 28 * s, 13 * s); };
@@ -26,7 +27,8 @@ export function raceTrack(scene, r, { progress = 0, total = 10, spriteKey = null
   g.fillStyle(THEME.success, 1); g.fillRect(x0 - 12 * ui, ty - 22 * ui, 2, 22 * ui); g.fillTriangle(x0 - 10 * ui, ty - 22 * ui, x0 + 2 * ui, ty - 17 * ui, x0 - 10 * ui, ty - 12 * ui);
   let runner = null;
   if (spriteKey && scene.textures.exists(spriteKey)) {
-    runner = scene.add.sprite(xFor(progress), ty + th / 2 - 8 * ui, spriteKey, 9).setDisplaySize(28 * ui, 28 * ui).setFlipX(true);   // frame 9: standing, facing left
+    const size = 28 * ui * figureFix(spriteKey);
+    runner = scene.add.sprite(xFor(progress), ty + th / 2 - 8 * ui, spriteKey, 9).setDisplaySize(size, size).setFlipX(true);   // frame 9: standing, facing left
   }
   return { runner, xFor, trackY: ty + th / 2 - 8 * ui };
 }
