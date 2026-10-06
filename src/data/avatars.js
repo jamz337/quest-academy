@@ -11,8 +11,8 @@ export const SEXES = ['boy', 'girl'];
 export const HAIR_STYLES = Object.keys(LPC_HAIR);
 export const TOPS = Object.keys(TOP_STYLES);
 export const BOTTOMS = Object.keys(BOTTOM_STYLES);
-/** How the player is drawn: the hand-drawn hero sheet, or a character built from the pixel layers. */
-export const ARTS = ['hero', 'pixel'];
+/** How the player is drawn: one of the hand-drawn hero sheets (boy or girl), or a character built from the pixel layers. */
+export const ARTS = ['hero', 'hero-girl', 'pixel'];
 export { SKIN_TONES, HAIR_COLOURS, CLOTH_COLOURS, EYE_COLOURS, SKIN_VARIANTS, HAIR_VARIANTS, CLOTH_VARIANTS, EYE_VARIANTS };
 
 /** The eight presets on the profile screen: four boys and four girls. */
@@ -69,13 +69,14 @@ export function sanitizeLook(look) {
 }
 
 /**
- * The look a profile is drawn with: its preset (`avatar` index) with any `look` overrides on top. Players are the
- * hand-drawn hero unless their look says `art: 'pixel'`; villagers and bosses (which never pass through here) are
- * always built from the pixel layers.
+ * The look a profile is drawn with: its preset (`avatar` index) with any `look` overrides on top. Players are a
+ * hand-drawn hero (the boy or the girl, after the preset's sex) unless their look says `art: 'pixel'`; villagers
+ * and bosses (which never pass through here) are always built from the pixel layers.
  */
 export function resolveLook(profile) {
   const idx = Math.max(0, Math.min(CHARACTER_STYLES.length - 1, Number(profile?.avatar) || 0));
-  return { art: 'hero', ...CHARACTER_STYLES[idx], ...(sanitizeLook(profile?.look) || {}) };
+  const preset = CHARACTER_STYLES[idx];
+  return { art: preset.sex === 'girl' ? 'hero-girl' : 'hero', ...preset, ...(sanitizeLook(profile?.look) || {}) };
 }
 
 /** Stable id for a resolved look, used as a texture key suffix. */

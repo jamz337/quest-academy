@@ -64,14 +64,18 @@ def bands(values, min_gap):
     return out
 row_ink = [any(alpha.getpixel((x, y)) for x in range(0, W, 2)) for y in range(H)]
 row_bands = bands(row_ink, 12)
-assert len(row_bands) == ROWS, f'expected {ROWS} rows of figures, found {len(row_bands)}'
+if len(row_bands) != ROWS:   # rows touching (long hair over the feet below): the generator's grid is regular, so split evenly
+    row_bands = [(r * H // ROWS, (r + 1) * H // ROWS) for r in range(ROWS)]
 grid = []   # grid[row] = list of (left, top, right, bottom) figure boxes
 for (y0, y1) in row_bands:
     strip = alpha.crop((0, y0, W, y1))
     col_ink = [any(strip.getpixel((x, y)) for y in range(0, y1 - y0, 2)) for x in range(W)]
     grid.append([(x0, y0, x1, y1) for (x0, x1) in bands(col_ink, 10)])
-COLS = min(len(r) for r in grid)
-assert COLS >= 4, f'too few figures per row: {[len(r) for r in grid]}'
+counts = [len(r) for r in grid]
+COLS = max(set(counts), key=counts.count)   # the usual count; a row where figures touch is split evenly instead
+assert COLS >= 4, f'too few figures per row: {counts}'
+for r, (y0, y1) in enumerate(row_bands):
+    if len(grid[r]) != COLS: grid[r] = [(c * W // COLS, y0, (c + 1) * W // COLS, y1) for c in range(COLS)]
 half = COLS // 2
 STAND = 0
 walk_cols = list(range(COLS - half, COLS))

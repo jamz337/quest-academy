@@ -5,7 +5,7 @@ import * as Store from '../systems/Store.js';
 import * as Cloud from '../systems/Cloud.js';
 import { allLayerPaths, LPC_BASE } from '../ui/LpcCharacter.js';
 import { MANGO_IMAGES, MANGO_BASE } from '../ui/FlatCharacter.js';
-import { HERO_KEY, HERO_FILE, HERO_CELL } from '../ui/Hero.js';
+import { HERO_SHEETS, HERO_CELL } from '../ui/Hero.js';
 import { VILLAGER_SHEETS, VILLAGER_CELL, villagerKey } from '../ui/Villagers.js';
 
 const FONT_WAIT_MS = 1500;
@@ -17,7 +17,7 @@ export class BootScene extends Phaser.Scene {
   preload() {
     for (const p of allLayerPaths()) this.load.image('lpc:' + p, LPC_BASE + p);
     for (const k of MANGO_IMAGES) this.load.image(k, `${MANGO_BASE}${k}.png`);   // Mango's sprite cells and badge
-    this.load.spritesheet(HERO_KEY, HERO_FILE, { frameWidth: HERO_CELL, frameHeight: HERO_CELL });   // the player's hand-drawn hero
+    for (const [key, file] of Object.entries(HERO_SHEETS)) this.load.spritesheet(key, file, { frameWidth: HERO_CELL, frameHeight: HERO_CELL });   // the players' hand-drawn heroes
     for (const [who, file] of Object.entries(VILLAGER_SHEETS)) this.load.spritesheet(villagerKey(who), file, { frameWidth: VILLAGER_CELL, frameHeight: VILLAGER_CELL });
   }
 

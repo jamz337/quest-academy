@@ -31,7 +31,8 @@ const SWATCHES = [
   { key: 'bg', title: 'BACKGROUND', colors: BG_COLORS }
 ];
 // The first choice: the hand-drawn hero, or a character built from the pixel layers (the rows below).
-const ART_ROW = { key: 'art', title: 'CHARACTER', options: ARTS, label: (v) => (v === 'hero' ? '✨ Hero (drawn)' : '🎨 Build your own'), perRow: 2 };
+const ART_LABELS = { hero: '✨ Hero (boy)', 'hero-girl': '✨ Hero (girl)', pixel: '🎨 Build your own' };
+const ART_ROW = { key: 'art', title: 'CHARACTER', options: ARTS, label: (v) => ART_LABELS[v] || v, perRow: 3 };
 // Style rows: buttons rather than swatches.
 const STYLE_ROWS = [
   { key: 'sex', title: 'BOY OR GIRL', options: SEXES, label: (v) => (v === 'boy' ? '👦 Boy' : '👧 Girl'), perRow: 2 },
@@ -268,7 +269,7 @@ export class ProfileScene extends BaseScene {
       });
       y += lines * unit;
     }
-    if (hero) { text(this, left, y + unit * 0.45, 'The hero is drawn by hand. Pick Build your own to choose hair, clothes and colours.', { ...rowTitle, wordWrap: { width: rowW } }).setOrigin(0, 0.5); y += unit; }
+    if (hero) { text(this, left, y + unit * 0.45, 'The heroes are drawn by hand. Pick Build your own to choose hair, clothes and colours.', { ...rowTitle, wordWrap: { width: rowW } }).setOrigin(0, 0.5); y += unit; }
     for (const { key: k, title, colors, material, options } of swatches) {
       const values = colors || options;
       text(this, left, y + unit * 0.3, title, rowTitle).setOrigin(0, 0.5); y += unit * 0.5;

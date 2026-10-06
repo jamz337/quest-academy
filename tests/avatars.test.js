@@ -22,7 +22,9 @@ describe('avatar looks', () => {
     expect(resolveLook({ avatar: 2 })).toEqual({ art: 'hero', ...CHARACTER_STYLES[2] });
     expect(resolveLook({})).toEqual({ art: 'hero', ...CHARACTER_STYLES[0] });
     expect(resolveLook({ avatar: 99 })).toEqual({ art: 'hero', ...CHARACTER_STYLES[7] });
-    // Players are the drawn hero unless they chose to build a pixel character; a bad choice is dropped.
+    // Players are a drawn hero (the girl for a girl preset) unless they chose to build a pixel character; a bad choice is dropped.
+    expect(resolveLook({ avatar: 1 })).toEqual({ art: 'hero-girl', ...CHARACTER_STYLES[1] });
+    expect(resolveLook({ avatar: 1, look: { art: 'hero' } }).art).toBe('hero');
     expect(resolveLook({ avatar: 1, look: { art: 'pixel' } })).toEqual({ art: 'pixel', ...CHARACTER_STYLES[1] });
     expect(sanitizeLook({ art: 'pixel' })).toEqual({ art: 'pixel' });
     expect(sanitizeLook({ art: 'smooth' })).toBeNull();
