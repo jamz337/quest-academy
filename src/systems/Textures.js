@@ -10,6 +10,7 @@ import { MONKEY_FRAMES } from '../ui/FlatCharacter.js';
 import { MANGO_CELL, MANGO_FACE, drawMango, drawMangoFace } from '../ui/Mango.js';
 import { CRITTER_CELL, CRITTER_KEYS, drawCritter } from '../ui/Critters.js';
 import { VILLAGERS, villagerTexture } from '../ui/Villagers.js';
+import { avatarTexture as avatarSheet, drawAvatarBadge, AVATAR_WORLD_HEIGHT } from '../ui/Avatar.js';
 import { LPC_FRAME, LPC_COLS, allLayerPaths, composeSheet, drawOutfitBack, drawOutfitFront, drawBustFromSheet, walkRange } from '../ui/LpcCharacter.js';
 export { WORLD_SCALE as CHAR_WORLD_SCALE, IDLE_FRAMES } from '../ui/LpcCharacter.js';
 
@@ -426,7 +427,7 @@ export function avatarTexture(scene) {
   if (scene.textures.exists('avatar')) return;
   const tex = scene.textures.createCanvas('avatar', BADGE * AVATAR_COUNT, BADGE);
   const ctx = tex.getContext();
-  CHARACTER_STYLES.forEach((st, i) => { paintBadge(scene, ctx, i * BADGE, st); tex.add(i, 0, i * BADGE, 0, BADGE, BADGE); });
+  CHARACTER_STYLES.forEach((st, i) => { drawAvatarBadge(ctx, st, null, i * BADGE, 0, BADGE); tex.add(i, 0, i * BADGE, 0, BADGE, BADGE); });
   tex.refresh();
 }
 
@@ -435,7 +436,7 @@ export function badgeTexture(scene, look, outfit = null, outfitKey = '') {
   const key = 'badge:' + lookId(look) + (outfitKey ? ':' + outfitKey : '');
   if (!scene.textures.exists(key)) {
     const tex = scene.textures.createCanvas(key, BADGE, BADGE);
-    paintBadge(scene, tex.getContext(), 0, look, outfit, outfitKey);
+    drawAvatarBadge(tex.getContext(), look, outfit, 0, 0, BADGE);   // the smooth drawing (ui/Avatar.js)
     tex.refresh();
   }
   return key;
@@ -445,11 +446,14 @@ export function badgeTexture(scene, look, outfit = null, outfitKey = '') {
 export function lookSpriteTexture(scene, look, outfit = null, outfitKey = '') {
   const key = 'look:' + lookId(look) + (outfitKey ? ':' + outfitKey : '');
   if (!scene.textures.exists(key)) {
-    characterTexture(scene, key, look, 1, outfit ? { outfit, outfitKey } : null);
+    avatarSheet(scene, key, look, outfit);   // painted smooth (ui/Avatar.js), numbered like the pixel sheets
     walkAnims(scene, key);
   }
   return key;
 }
+
+/** Scale that stands a look's sprite at its world height (smooth sheets have bigger cells than the pixel ones). */
+export function lookScale(sprite, height = AVATAR_WORLD_HEIGHT) { const fh = (sprite.frame && sprite.frame.height) || LPC_FRAME; return height / fh; }
 
 function walkAnims(scene, key) {
   if (scene.anims.exists(`${key}-down`)) return;

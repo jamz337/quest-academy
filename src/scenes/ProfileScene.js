@@ -242,7 +242,6 @@ export class ProfileScene extends BaseScene {
     const px = wide ? m.x + 24 + pv / 2 : m.x + m.w / 2, py = m.contentTop + 6 * ui + pv / 2;
     this.add.circle(px, py, pv / 2, parseInt((look.bg || '#3d8bff').slice(1), 16), 1);
     const img = this.add.image(px, py + pv * 0.06, key, IDLE_FRAMES.down).setDisplaySize(pv * 0.95, pv * 0.95);
-    img.texture.setFilter(1);   // nearest: keep the pixels crisp
     const left = wide ? m.x + 24 + pv + 20 : m.x + 24, rowW = wide ? m.w - 48 - pv - 20 : m.w - 48;
     let y = wide ? m.contentTop + 4 * ui : py + pv / 2 + 12 * ui;
     const rowsBottom = m.y + m.h - 60 * ui;

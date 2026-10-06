@@ -16,7 +16,7 @@ import { viewport, dpr } from '../systems/Layout.js';
 import { Sfx } from '../systems/Audio.js';
 import { toast } from '../ui/Toast.js';
 import { resolveLook } from '../data/avatars.js';
-import { lookSpriteTexture, CHAR_WORLD_SCALE, IDLE_FRAMES, TILE_RES, TILE_PAD, FLOWER_TILES, MEADOW_TILES } from '../systems/Textures.js';
+import { lookScale, lookSpriteTexture, CHAR_WORLD_SCALE, IDLE_FRAMES, TILE_RES, TILE_PAD, FLOWER_TILES, MEADOW_TILES } from '../systems/Textures.js';
 import { gameGrade, gradeUps, nextHouseLevel, HOUSE_LEVELS } from '../systems/Progression.js';
 import { errandLine } from '../data/world/errands.js';
 import { ensureExplored, reveal } from '../data/world/explore.js';
@@ -156,8 +156,10 @@ export class WorldScene extends Phaser.Scene {
       if (row && row[tx] !== undefined && isWalkable(row[tx])) { x = w.x; y = w.y; }
     }
     const key = lookSpriteTexture(this, resolveLook(profile), outfitOf(profile), outfitId(profile));
-    this.player = this.physics.add.sprite(x, y, key, IDLE_FRAME.down).setScale(CHAR_SCALE).setDepth(10);
-    this.player.body.setSize(28, 16).setOffset(18, 46);   // feet-sized box (frame units) so doors and gaps feel fair
+    this.player = this.physics.add.sprite(x, y, key, IDLE_FRAME.down).setDepth(10);
+    this.player.setScale(lookScale(this.player));
+    const fu = ((this.player.frame && this.player.frame.height) || 64) / 64;   // the sheet's cell, in pixel-sheet units
+    this.player.body.setSize(28 * fu, 16 * fu).setOffset(18 * fu, 46 * fu);   // feet-sized box (frame units) so doors and gaps feel fair
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.layer);
     this.physics.add.collider(this.player, this.treeLayer);

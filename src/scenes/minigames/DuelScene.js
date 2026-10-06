@@ -96,7 +96,8 @@ export class DuelScene extends MinigameScene {
     // The party: the player faces right with a prop, Mango beside them.
     const profile = this.profile;
     const pKey = lookSpriteTexture(this, resolveLook(profile), outfitOf(profile), outfitId(profile));
-    const player = this.add.sprite(px, gy, pKey, IDLE_FRAMES.side).setFlipX(true).setScale(sc).setOrigin(0.5, 1);
+    const player = this.add.sprite(px, gy, pKey, IDLE_FRAMES.side).setFlipX(true).setOrigin(0.5, 1);
+    player.setScale(sc * LPC_FRAME / ((player.frame && player.frame.height) || LPC_FRAME));
     const pProp = this.add.text(px + 15 * sc, gy - 24 * sc, DUEL.playerProp, { fontSize: Math.round(9 * sc) + 'px' }).setOrigin(0.5);
     const mango = this.add.sprite(px - 30 * sc, gy, 'monkey', s.defeated ? MONKEY_FRAMES.cheer : MONKEY_FRAMES.side).setScale(sc * 58 / MANGO_CELL).setOrigin(0.5, 1);   // the side view faces right, towards the foe
     if (s.party[1].max > 0 && s.party[1].hp <= 0) mango.setTint(0x9a9a9a);
@@ -104,7 +105,8 @@ export class DuelScene extends MinigameScene {
 
     // The opponent faces left with its prop; a name chip and health bar float above.
     const oKey = opp.kind === 'boss' ? lookSpriteTexture(this, opp.look) : opp.sprite;
-    const foe = this.add.sprite(ox, gy, oKey, IDLE_FRAMES.side).setScale(sc * opp.scale).setOrigin(0.5, 1);
+    const foe = this.add.sprite(ox, gy, oKey, IDLE_FRAMES.side).setOrigin(0.5, 1);
+    foe.setScale(sc * opp.scale * LPC_FRAME / ((foe.frame && foe.frame.height) || LPC_FRAME));
     const oProp = this.add.text(ox - 15 * sc * opp.scale, gy - 24 * sc * opp.scale, opp.prop, { fontSize: Math.round(9 * sc) + 'px' }).setOrigin(0.5);
     // A gentle breathing bob while nobody is being hit.
     if (!s.hit && !s.defeated && !s.lost && this.tweens) {
