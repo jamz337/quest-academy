@@ -12,6 +12,21 @@ export const owns = (profile, id) => !!profile?.inventory?.owned?.includes(id);
 export const equipped = (profile, kind) => profile?.inventory?.equipped?.[kind] || null;
 export const isStackable = (item) => !!item && STACKABLE_KINDS.includes(item.kind);
 export const SNACK_MAX = 9;
+/** How many of each snack the market has on its shelf per day; the shelf fills up again every morning. */
+export const STOCK_PER_DAY = 3;
+const todayKey = () => new Date().toISOString().slice(0, 10);
+/** How many of a snack are left on the shelf today. (Things bought once, like hats, are not stocked this way.) */
+export function stockLeft(profile, id, day = todayKey()) {
+  const item = getItem(id);
+  if (!item || !isStackable(item)) return Infinity;
+  const st = profile?.inventory?.stock;
+  return Math.max(0, STOCK_PER_DAY - ((st && st.day === day && st.sold[id]) | 0));
+}
+function takeFromShelf(profile, id, day = todayKey()) {
+  const inv = ensureInventory(profile);
+  if (!inv.stock || inv.stock.day !== day) inv.stock = { day, sold: {} };
+  inv.stock.sold[id] = (inv.stock.sold[id] | 0) + 1;
+}
 export const snackCount = (profile, id) => profile?.inventory?.snacks?.[id] | 0;
 /** The snacks a player carries: [{ item, count }] with count > 0, in catalogue order. */
 export const snacksOf = (profile) => itemsOfKind('snack').map((item) => ({ item, count: snackCount(profile, item.id) })).filter((s) => s.count > 0);
@@ -29,7 +44,7 @@ export function useSnack(profile, id) {
 export function buyBlock(profile, id) {
   const item = getItem(id);
   if (!item) return 'unknown';
-  if (isStackable(item)) return snackCount(profile, id) >= SNACK_MAX ? 'full' : (profile.coins || 0) < item.price ? 'coins' : null;
+  if (isStackable(item)) return snackCount(profile, id) >= SNACK_MAX ? 'full' : stockLeft(profile, id) <= 0 ? 'stock' : (profile.coins || 0) < item.price ? 'coins' : null;
   if (owns(profile, id)) return 'owned';
   if ((profile.coins || 0) < item.price) return 'coins';
   return null;
@@ -42,7 +57,7 @@ export function buy(profile, id) {
   if (block) return { ok: false, reason: block, item };
   const inv = ensureInventory(profile);
   profile.coins -= item.price;
-  if (isStackable(item)) inv.snacks[id] = snackCount(profile, id) + 1; else inv.owned.push(id);
+  if (isStackable(item)) { inv.snacks[id] = snackCount(profile, id) + 1; takeFromShelf(profile, id); } else inv.owned.push(id);
   inv.spent += item.price;
   if (LOOK_KINDS.includes(item.kind)) inv.equipped[item.kind] = id;
   return { ok: true, item };

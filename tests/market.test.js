@@ -194,3 +194,19 @@ describe('the market screen (headless)', () => {
     expect(caller.events.emit).toHaveBeenCalledWith('market:done', { bought: expect.any(Array) });
   });
 });
+
+describe('the shelf', () => {
+  it('holds a few of each snack a day, and fills up again next morning', async () => {
+    const { stockLeft, STOCK_PER_DAY } = await import('../src/systems/Market.js');
+    const p = newProfile({ name: 'A', grade: 3 });
+    p.coins = 500;
+    expect(stockLeft(p, 'snack-mango-juice')).toBe(STOCK_PER_DAY);
+    for (let i = 0; i < STOCK_PER_DAY; i++) expect(buy(p, 'snack-mango-juice').ok).toBe(true);
+    expect(stockLeft(p, 'snack-mango-juice')).toBe(0);
+    expect(buyBlock(p, 'snack-mango-juice')).toBe('stock');
+    expect(buy(p, 'snack-mango-juice')).toMatchObject({ ok: false, reason: 'stock' });
+    expect(buyBlock(p, 'snack-coconut')).toBeNull();                 // each snack has its own shelf
+    expect(stockLeft(p, 'snack-mango-juice', '2099-01-01')).toBe(STOCK_PER_DAY);   // a new day, a full shelf
+    expect(stockLeft(p, 'hat-cap')).toBe(Infinity);                 // hats are bought once, not stocked
+  });
+});

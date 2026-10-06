@@ -20,7 +20,7 @@ import { checkBadges } from '../systems/Progression.js';
 import { getBadge } from '../data/badges.js';
 import { TABS, getItem, itemsOfKind, LOOK_KINDS } from '../data/market/items.js';
 import { HOUSE_ROOMS } from '../data/social/house.js';
-import { ensureInventory, owns, equipped, buy, equip, applyDecor, roomDecor, outfitOf, outfitId, cardSets, isStackable, snackCount, buyBlock } from '../systems/Market.js';
+import { ensureInventory, owns, equipped, buy, equip, applyDecor, roomDecor, outfitOf, outfitId, cardSets, isStackable, snackCount, buyBlock, stockLeft } from '../systems/Market.js';
 
 /**
  * The Cheapside market: three tabs (looks, house, cards), a live preview of the player wearing what is chosen,
@@ -123,8 +123,13 @@ export class MarketScene extends BaseScene {
       if (count) k.add(chip(this, cw / 2 - 8, -ch / 2 + 20 * ui, { text: `×${count}`, originX: 1, color: THEME.warningSoft, textColor: THEME.warningDark, fontSize: 11, height: 20 * ui, shadow: 'none' }));
       const bw = cw - 24, bh = 30 * ui, by = ch / 2 - 22 * ui;
       if (!owned) {
-        const can = !buyBlock(p, it.id);
-        k.add(button(this, 0, by, bw, bh, `Buy · ${it.price} 🪙`, { variant: can ? 'warning' : 'ghost', fontSize: 13, disabled: !can, onClick: () => this.buyItem(it) }));
+        const block = buyBlock(p, it.id), can = !block;
+        // Snacks sit on a shelf that refills each morning: the card says how many are left today.
+        if (stack) {
+          const left = stockLeft(p, it.id);
+          k.add(this.add.text(-cw / 2 + 12, by - bh / 2 - 9 * ui, left > 0 ? `${left} on the shelf today` : 'Sold out · more tomorrow', T.at(this, 11, left > 0 ? THEME.ink2 : THEME.danger, { fontStyle: '600' })).setOrigin(0, 0.5));
+        }
+        k.add(button(this, 0, by, bw, bh, block === 'stock' ? 'Sold out' : `Buy · ${it.price} 🪙`, { variant: can ? 'warning' : 'ghost', fontSize: 13, disabled: !can, onClick: () => this.buyItem(it) }));
       } else if (LOOK_KINDS.includes(it.kind)) {
         k.add(button(this, 0, by, bw, bh, worn ? 'Take off' : 'Wear', { variant: worn ? 'secondary' : 'success', fontSize: 13, onClick: () => this.wear(it, !worn) }));
       } else if (it.kind === 'paint' || it.kind === 'floor') {
@@ -200,7 +205,7 @@ export class MarketScene extends BaseScene {
   buyItem(it) {
     let result = null, badges = [];
     Store.updateProfile((p) => { result = buy(p, it.id); if (result.ok) badges = checkBadges(p); });
-    if (!result || !result.ok) { Sfx.wrong(); toast(this, result && result.reason === 'coins' ? 'Not enough coins yet. Play a game to earn more!' : result && result.reason === 'full' ? 'Your bag is full of those!' : 'You already have that.', { accent: THEME.danger }); return; }
+    if (!result || !result.ok) { Sfx.wrong(); toast(this, result && result.reason === 'coins' ? 'Not enough coins yet. Play a game to earn more!' : result && result.reason === 'full' ? 'Your bag is full of those!' : result && result.reason === 'stock' ? 'Sold out for today. Auntie Vee restocks every morning!' : 'You already have that.', { accent: THEME.danger }); return; }
     Sfx.coin();
     this.state.selected = it.id;
     this.state.badges = badges;
