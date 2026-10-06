@@ -1,23 +1,24 @@
-"""Turn a generated 8 x 4 character sheet (rows down / left / right / up, cream background) into the game's
-player sheet: public/sprites/player.png, 9 columns x 4 rows of square cells in the pixel sheets' order
-(rows up / left / down / right; column 0 standing, columns 1-8 the walk cycle), transparent background,
-every frame scaled the same and its feet on one line.
+"""Turn a generated 8 x 4 character sheet into one of the game's walking sheets.
 
-Usage: python tools/make-player-sheet.py <source image> [cell px]
+The generator's sheets have four rows (front, left, right-or-left-again, back), eight columns (0-3 standing
+poses, 4-7 a walk cycle) and a flat background colour. The game's sheets (public/sprites/<name>.png) are
+9 columns x 4 rows of square cells in the pixel sheets' order (rows up / left / down / right; column 0 standing,
+columns 1-8 the walk cycle), transparent, every frame scaled the same with its feet on one line. When the third
+source row faces left like the second, the left row is mirrored for the right row.
+
+Usage: python tools/make-player-sheet.py <source image> <name> [cell px]
+       e.g. python tools/make-player-sheet.py sheet.webp player   -> public/sprites/player.png
 """
 import sys
 from collections import deque
-from PIL import Image
+from PIL import Image, ImageChops
 
 src_path = sys.argv[1]
-CELL = int(sys.argv[2]) if len(sys.argv) > 2 else 192
+name = sys.argv[2] if len(sys.argv) > 2 else 'player'
+CELL = int(sys.argv[3]) if len(sys.argv) > 3 else 192
 COLS, ROWS = 8, 4
 OUT_COLS = 9
-# Which source columns stand still and which walk (the first four are idle poses, the last four the walk).
 STAND, WALK = 0, [4, 5, 6, 7, 4, 5, 6, 7]
-# Output rows in the pixel sheets' order, from the source rows (the source's "right" row faces left too, so the
-# left row is mirrored for it).
-OUT_ROWS = [('up', 3, False), ('left', 1, False), ('down', 0, False), ('right', 1, True)]
 
 im = Image.open(src_path).convert('RGBA')
 W, H = im.size
@@ -49,11 +50,9 @@ for y in range(H):
             if any(px[nx, ny][3] == 0 for nx, ny in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)) if 0 <= nx < W and 0 <= ny < H):
                 px[x, y] = (r, g, b, 90)
 
-# Each frame's figure: its bounding box.
 def cell_box(c, r):
     cell = im.crop((c * cw, r * ch, (c + 1) * cw, (r + 1) * ch))
-    box = cell.getbbox()
-    return cell, box
+    return cell, cell.getbbox()
 
 boxes = {}
 tallest = 0
@@ -63,6 +62,15 @@ for r in range(ROWS):
         boxes[(c, r)] = (cell, box)
         if box: tallest = max(tallest, box[3] - box[1])
 scale = (CELL * 0.92) / tallest
+
+# Does the third row face right (its own drawing) or left again (then the left row is mirrored for right)?
+def figure(c, r, mirror=False):
+    cell, box = boxes[(c, r)]
+    fig = cell.crop(box).getchannel('A').resize((64, 128))
+    return fig.transpose(Image.FLIP_LEFT_RIGHT) if mirror else fig
+def diff(a, b): return sum(ImageChops.difference(a, b).getdata())
+third_faces_right = diff(figure(STAND, 2), figure(STAND, 1, True)) < diff(figure(STAND, 2), figure(STAND, 1))
+OUT_ROWS = [('up', 3, False), ('left', 1, False), ('down', 0, False), ('right', 2, False) if third_faces_right else ('right', 1, True)]
 
 out = Image.new('RGBA', (CELL * OUT_COLS, CELL * ROWS), (0, 0, 0, 0))
 def place(cell, box, mirror, oc, orow):
@@ -82,5 +90,6 @@ for orow, (_, srow, mirror) in enumerate(OUT_ROWS):
         cell, box = boxes[(sc, srow)]
         place(cell, box, mirror, 1 + i, orow)
 
-out.save('public/sprites/player.png')
-print('wrote public/sprites/player.png', out.size, 'scale', round(scale, 3), 'tallest', tallest)
+path = f'public/sprites/{name}.png'
+out.save(path)
+print('wrote', path, out.size, 'scale', round(scale, 3), 'tallest', tallest, 'right row:', 'own drawing' if third_faces_right else 'mirrored left')
