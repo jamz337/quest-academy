@@ -76,7 +76,11 @@ half = COLS // 2
 STAND = 0
 walk_cols = list(range(COLS - half, COLS))
 cycle = walk_cols if len(walk_cols) % 2 == 0 else walk_cols + walk_cols[-2:0:-1]   # an odd count swings back and forth
-WALK = [cycle[i % len(cycle)] for i in range(OUT_COLS - 1)]
+# Front and back: the generator alternates the forward foot, so the frames play in order. Side views: every one
+# of its frames is the same stride (one leg forward), so a stride and the standing pose (legs together) take turns,
+# which reads as stepping; the first two strides are used, as later ones sometimes drop a prop.
+WALK_FACING = [cycle[i % len(cycle)] for i in range(OUT_COLS - 1)]
+WALK_SIDE = [walk_cols[0], STAND, walk_cols[1], STAND] * 2
 
 def figure_at(c, r):
     box = grid[r][c]
@@ -106,12 +110,12 @@ def place(fig, mirror, oc, orow):
     y = orow * CELL + CELL - 6 - fh     # feet on one line, just above the cell's edge
     out.alpha_composite(fig, (x, y))
 
-for orow, (_, srow, mirror) in enumerate(OUT_ROWS):
+for orow, (facing, srow, mirror) in enumerate(OUT_ROWS):
     place(figures[(STAND, srow)], mirror, 0, orow)
-    for i, sc in enumerate(WALK):
+    for i, sc in enumerate(WALK_SIDE if facing in ('left', 'right') else WALK_FACING):
         place(figures[(sc, srow)], mirror, 1 + i, orow)
 
 path = f'public/sprites/{name}.png'
 out.save(path)
-print('wrote', path, out.size, 'columns', COLS, 'walk', WALK, 'scale', round(scale, 3), 'tallest', tallest,
+print('wrote', path, out.size, 'columns', COLS, 'walk', WALK_FACING, 'side', WALK_SIDE, 'scale', round(scale, 3), 'tallest', tallest,
       'right row:', 'own drawing' if third_faces_right else 'mirrored left')

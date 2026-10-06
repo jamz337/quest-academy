@@ -472,7 +472,9 @@ export function lookSpriteTexture(scene, look, outfit = null, outfitKey = '') {
 
 function walkAnims(scene, key) {
   if (scene.anims.exists(`${key}-down`)) return;
-  for (const pose of ['down', 'up', 'side']) scene.anims.create({ key: `${key}-${pose}`, frames: scene.anims.generateFrameNumbers(key, walkRange(pose)), frameRate: 12, repeat: -1 });
+  // The drawn sheets (hero, villagers) step with fewer distinct poses, so they play a little slower than the pixel people.
+  const rate = key === HERO_KEY || key.startsWith('villager-') ? 9 : 12;
+  for (const pose of ['down', 'up', 'side']) scene.anims.create({ key: `${key}-${pose}`, frames: scene.anims.generateFrameNumbers(key, walkRange(pose)), frameRate: rate, repeat: -1 });
 }
 
 /**
