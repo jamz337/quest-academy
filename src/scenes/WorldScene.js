@@ -284,6 +284,7 @@ export class WorldScene extends Phaser.Scene {
     }
     this.nearNpc = near;
     const board = !near && Hub.boardNear(this) ? this.questBoard : null;   // the quest board can be read like a villager
+    const rim = !near && !board && Hub.fountainNear(this);                    // at the fountain, the action tosses a coin
     if (near) this.bubble.setVisible(true).setPosition(near.x, near.y - 26 + Math.sin(time / 150) * 2);
     else if (board) this.bubble.setVisible(true).setPosition(board.x, board.top - 12 + Math.sin(time / 150) * 2);
     else this.bubble.setVisible(false);
@@ -291,6 +292,7 @@ export class WorldScene extends Phaser.Scene {
     if (inp.actionJustPressed && !skipAction) {
       if (near) this.talk(near);
       else if (board) Hub.readBoard(this);
+      else if (rim) Hub.tossCoin(this);
       else Fishing.tryFishing(this);
     }
   }
@@ -327,6 +329,7 @@ export class WorldScene extends Phaser.Scene {
     trailTick(this, tx, ty);
     Fishing.fishCueTick(this, tx, ty);
     guideTick(this, tx, ty);
+    Hub.fountainTick(this); Hub.fountainCueTick(this);
     this.lessonTick();
     if (hud && p) { const line = errandLine(p); if (hud.state.carry !== line) hud.setCarry(line); }
     if (this.errandItem && Phaser.Math.Distance.Between(this.player.x, this.player.y, this.errandItem.x, this.errandItem.y) < 22) Errands.pickUpItem(this);

@@ -7,7 +7,8 @@ import { FONT } from '../../ui/TextStyles.js';
 import * as Store from '../../systems/Store.js';
 import { ZONE_NAMES } from '../../data/world/map.js';
 import { getGame } from '../../data/minigames.js';
-import { dailyGoal, GOAL_BONUS } from '../../systems/Goals.js';
+import { dailyGoal, GOAL_BONUS, weekKey } from '../../systems/Goals.js';
+import { Sfx } from '../../systems/Audio.js';
 import { landStars, nextGame } from './guide.js';
 import { openRequests } from '../../data/world/requests.js';
 import { NPCS } from '../../data/world/npcs.js';
@@ -48,7 +49,10 @@ export function createFountain(w) {
   refreshFountain(w);
 }
 
-/** Redraw the jewels and jets from the stars earned in each land (after a game). */
+/**
+ * Redraw the jewels and jets from the stars earned in each land. Each jet is a column of water that rises with the
+ * land's stars; a land that just gained a star gets a tall burst in its colour once the fountain is in view.
+ */
 export function refreshFountain(w) {
   const ft = w.fountain, p = Store.getProfile();
   if (!ft || !p) return;
@@ -56,6 +60,7 @@ export function refreshFountain(w) {
   ft.drops.forEach((d) => { w.tweens.killTweensOf(d); d.destroy(); });
   ft.drops = [];
   g.clear();
+  ft.known ||= {};
   for (const j of JEWELS) {
     const col = THEME.subjects[j.zone], s = landStars(p, j.zone), share = s.total ? s.stars / s.total : 0;
     const jx = x + Math.cos(j.a) * 43, jy = y + Math.sin(j.a) * 43;
@@ -65,17 +70,120 @@ export function refreshFountain(w) {
     g.fillStyle(DULL, 1); g.fillCircle(jx, jy, 6);
     if (share > 0) { g.fillStyle(col.accent, 1); g.slice(jx, jy, 6, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, share), false); g.fillPath(); }
     g.fillStyle(0xffffff, 0.55); g.fillCircle(jx - 2, jy - 2, 1.6);
-    // Its jet of water reaches further across the pool the more stars there are.
-    const reach = 9 + 24 * share;
-    for (let i = 0; i < 3; i++) {
-      const d = w.add.circle(x, y, share > 0 ? 2 : 1.4, share > 0 ? col.accent : 0xffffff, 1).setDepth(3.3);
-      w.tweens.add({ targets: d, x: x + Math.cos(j.a) * reach, y: y + Math.sin(j.a) * reach, alpha: { from: 1, to: 0.15 }, scale: { from: 1, to: 0.6 }, duration: 900, delay: i * 300, repeat: -1, ease: 'Quad.Out' });
-      ft.drops.push(d);
-    }
+    // Its jet: a column of water in the pool beside the jewel, as tall as the land's stars (a bubble when none).
+    const bx = x + Math.cos(j.a) * 24, by = y + Math.sin(j.a) * 24, h = 6 + 44 * share;
+    const jet = makeJet(w, bx, by, h, share > 0 ? col.accent : 0xffffff);
+    ft.drops.push(jet);
+    ft.jets ||= {}; ft.jets[j.zone] = { jet, h, col: col.accent, x: bx, y: by };
+    // A star earned since the last look: the fountain cheers once it is on screen.
+    if (ft.known[j.zone] !== undefined && s.stars > ft.known[j.zone]) ft.pending = j.zone;
+    ft.known[j.zone] = s.stars;
   }
   const all = allStars(p);
   ft.star.setAlpha(all.stars >= all.total ? 1 : 0.45);
   ft.count.setText(`★ ${all.stars}/${all.total}`);
+}
+
+/** A column of water `h` tall rising from (x, y): a tapered spout with a white core and a splash crown, swaying. */
+function makeJet(w, x, y, h, colour) {
+  const c = w.add.container(x, y).setDepth(3.3), g = w.add.graphics();
+  g.fillStyle(colour, 0.55); g.fillTriangle(-3.5, 0, 3.5, 0, 0, -h);
+  g.fillStyle(0xffffff, 0.75); g.fillTriangle(-1.4, 0, 1.4, 0, 0, -h * 0.92);
+  g.fillStyle(0xffffff, 0.9); g.fillEllipse(0, -h, 6 + h * 0.08, 3);
+  for (let i = 0; i < 3; i++) { g.fillStyle(0xffffff, 0.8); g.fillCircle(-5 - i * 2 + (i % 2) * 12, -h + 3 + i * 4, 1.3); }
+  c.add(g);
+  w.tweens.add({ targets: c, scaleY: 1.08, scaleX: 0.92, duration: 520 + (h % 7) * 60, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+  return c;
+}
+
+/** Each tick: a cheer still owed (a star earned while away) plays once the fountain is on screen. */
+export function fountainTick(w) {
+  const ft = w.fountain;
+  if (!ft || !ft.pending || !w.cameras || !w.cameras.main.worldView.contains(ft.x, ft.y)) return;
+  const zone = ft.pending; ft.pending = null;
+  fountainCheer(w, zone);
+}
+
+/** A tall burst from one land's jet in its colour, with sparkles, for a star just earned there. */
+export function fountainCheer(w, zone) {
+  const ft = w.fountain, j = ft && ft.jets && ft.jets[zone];
+  if (!j || !j.jet.active) return;
+  Sfx.unlock();
+  w.tweens.add({ targets: j.jet, scaleY: 2.6, scaleX: 1.3, duration: 420, yoyo: true, hold: 900, ease: 'Quad.Out' });
+  for (let i = 0; i < 10; i++) {
+    const a = -Math.PI / 2 + (i - 4.5) * 0.22, d = 30 + (i % 3) * 10;
+    const s = w.add.image(j.x, j.y - j.h, 'sparkle').setDisplaySize(7, 7).setDepth(3.5).setTint(j.col);
+    w.tweens.add({ targets: s, x: j.x + Math.cos(a) * d, y: j.y - j.h - 40 + Math.sin(a) * d + 30, alpha: 0, angle: 180, duration: 900, delay: 300 + i * 40, ease: 'Cubic.Out', onComplete: () => s.destroy() });
+  }
+}
+
+// ---- Tossing a coin --------------------------------------------------------------------------------------
+
+export const TOSS_WISH_EVERY = 5, TOSS_WISH_COINS = 10;
+
+/** Is the player standing at the fountain's rim (close, but not in it)? */
+export function fountainNear(w) {
+  const ft = w.fountain;
+  return !!ft && !!w.player && Math.hypot(w.player.x - ft.x, w.player.y - ft.y) < 78;
+}
+
+/** Tosses so far this week: { week, tosses }. */
+const tossRecord = (p, week = weekKey()) => (p.world && p.world.fountain && p.world.fountain.week === week ? p.world.fountain : { week, tosses: 0 });
+
+/**
+ * Toss a coin into the fountain: it arcs from the player into the pool with a plink and a splash. Every fifth
+ * toss in a week is a wish: a rainbow over the water, a tall burst from every jet and a few coins back.
+ */
+export function tossCoin(w) {
+  const ft = w.fountain, hud = w.hud(), p = Store.getProfile();
+  if (!ft || !p || !w.player || w.tossing || (hud && hud.blocking)) return false;
+  if ((p.coins | 0) < 1) { w.say('🪙 You need a coin to toss. Play a game to earn some!', { accent: THEME.ink3 }); return false; }
+  let rec = null;
+  Store.updateProfile((q) => { q.coins -= 1; q.world ||= {}; rec = tossRecord(q); rec.tosses += 1; q.world.fountain = rec; });
+  if (hud) hud.setCoins(Store.getProfile().coins);
+  w.tossing = true;
+  w.stopPlayer();
+  const coin = w.add.image(w.player.x, w.player.y - 10, 'coin').setDisplaySize(9, 9).setDepth(12);
+  Sfx.lift();
+  w.tweens.add({ targets: coin, x: ft.x, duration: 520, ease: 'Sine.InOut' });
+  w.tweens.add({ targets: coin, y: Math.min(w.player.y, ft.y) - 46, duration: 260, yoyo: true, ease: 'Quad.Out' });
+  w.tweens.add({ targets: coin, angle: 540, duration: 520, onComplete: () => {
+    coin.destroy(); w.tossing = false;
+    Sfx.coin();
+    const splash = w.add.circle(ft.x, ft.y - 2, 4).setStrokeStyle(2, 0xffffff, 0.9).setDepth(3.35);
+    w.tweens.add({ targets: splash, scale: 5, alpha: 0, duration: 600, ease: 'Cubic.Out', onComplete: () => splash.destroy() });
+    for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2, d = w.add.circle(ft.x, ft.y - 2, 1.6, 0xffffff, 0.9).setDepth(3.35); w.tweens.add({ targets: d, x: ft.x + Math.cos(a) * 14, y: ft.y - 14 + Math.sin(a) * 8, alpha: 0, duration: 450, ease: 'Quad.Out', onComplete: () => d.destroy() }); }
+    if (rec && rec.tosses % TOSS_WISH_EVERY === 0) makeWish(w);
+  } });
+  return true;
+}
+
+/** A wish comes true: a rainbow arcs over the fountain, every jet bursts and a few coins come back. */
+function makeWish(w) {
+  const ft = w.fountain, hud = w.hud();
+  if (!ft) return;
+  Sfx.fanfare();
+  for (const zone of Object.keys(ft.jets || {})) w.time.delayedCall(Object.keys(ft.jets).indexOf(zone) * 120, () => fountainCheer(w, zone));
+  const bow = w.add.graphics().setDepth(3.6).setAlpha(0);
+  [0xff5c6c, 0xff9a3c, 0xffd75e, 0x2ec46a, 0x4c8df6, 0x8566ee].forEach((col, i) => { bow.lineStyle(3, col, 0.85); bow.beginPath(); bow.arc(ft.x, ft.y - 10, 56 - i * 3.2, Math.PI * 1.05, Math.PI * 1.95); bow.strokePath(); });
+  w.tweens.add({ targets: bow, alpha: 1, duration: 500 });
+  w.tweens.add({ targets: bow, alpha: 0, duration: 1200, delay: 4500, onComplete: () => bow.destroy() });
+  Store.updateProfile((p) => { p.coins += TOSS_WISH_COINS; });
+  if (hud) { hud.setCoins(Store.getProfile().coins); hud.awardCoins(TOSS_WISH_COINS); }
+  w.say(`🌈 A wish! The fountain gives you ${TOSS_WISH_COINS} coins back.`, { icon: 'star', accent: THEME.success });
+}
+
+/** A coin bobbing over the player's head while they stand at the rim with a coin to toss. */
+export function fountainCueTick(w) {
+  if (!w.fountain) return;
+  if (!w.tossCue) {
+    w.tossCue = w.add.image(0, 0, 'coin').setDisplaySize(9, 9).setDepth(20).setVisible(false);
+    const follow = () => { const c = w.tossCue; if (c && c.active && c.visible && w.player) c.setPosition(w.player.x + 9, w.player.y - 24 + Math.sin(w.time.now / 260) * 1.5); };
+    w.events.on('update', follow);
+    w.events.once('shutdown', () => { w.events.off('update', follow); w.tossCue = null; });
+  }
+  const hud = w.hud(), p = Store.getProfile();
+  w.tossCue.setVisible(fountainNear(w) && !w.nearNpc && !(hud && hud.blocking) && !!p && (p.coins | 0) > 0);
 }
 
 // ---- The quest board -------------------------------------------------------------------------------------
