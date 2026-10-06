@@ -33,6 +33,7 @@ export class MarketScene extends BaseScene {
   init(data) {
     this.returnTo = (data && data.returnTo) || null;
     this.state = { tab: (data && data.tab) || 'looks', selected: null, room: null, fact: null, badges: [] };
+    this.closing = false;   // scenes are reused: a visit that ended must not leave the next one unable to close
     this.bought = [];     // what was bought on this visit (the caller plays the drinking scene for drinks)
     this.cardPos = {};    // item id -> centre of its card, for the purchase animation
     Store.updateProfile((p) => { ensureInventory(p).visited = true; });
@@ -120,14 +121,14 @@ export class MarketScene extends BaseScene {
       // The name sits beside the icon; an owned item wears a small tick chip at the top right, and the name leaves room for it.
       k.add(this.add.text(-cw / 2 + 12 + 30 * ui, -ch / 2 + 22 * ui, it.name, { ...T.at(this, 13, THEME.ink, { fontStyle: '700' }), wordWrap: { width: cw - 30 * ui - 24 - (owned ? 30 * ui : 0) } }).setOrigin(0, 0.5));
       if (owned) k.add(chip(this, cw / 2 - 8, -ch / 2 + 20 * ui, { text: worn ? '✓ on' : '✓', originX: 1, color: THEME.successSoft, textColor: THEME.successDark, fontSize: 11, height: 20 * ui, shadow: 'none' }));
-      if (count) k.add(chip(this, cw / 2 - 8, -ch / 2 + 20 * ui, { text: `×${count}`, originX: 1, color: THEME.warningSoft, textColor: THEME.warningDark, fontSize: 11, height: 20 * ui, shadow: 'none' }));
+      if (count) k.add(chip(this, cw / 2 - 8, -ch / 2 + 20 * ui, { text: `${count} in bag`, originX: 1, color: THEME.warningSoft, textColor: THEME.warningDark, fontSize: 11, height: 20 * ui, shadow: 'none' }));
       const bw = cw - 24, bh = 30 * ui, by = ch / 2 - 22 * ui;
       if (!owned) {
         const block = buyBlock(p, it.id), can = !block;
         // Snacks sit on a shelf that refills each morning: the card says how many are left today.
         if (stack) {
           const left = stockLeft(p, it.id);
-          k.add(this.add.text(-cw / 2 + 12, by - bh / 2 - 9 * ui, left > 0 ? `${left} on the shelf today` : 'Sold out · more tomorrow', T.at(this, 11, left > 0 ? THEME.ink2 : THEME.danger, { fontStyle: '600' })).setOrigin(0, 0.5));
+          k.add(this.add.text(-cw / 2 + 12, by - bh / 2 - 9 * ui, left > 0 ? `${left} left to buy today` : 'Sold out · more tomorrow', T.at(this, 11, left > 0 ? THEME.ink2 : THEME.danger, { fontStyle: '600' })).setOrigin(0, 0.5));
         }
         k.add(button(this, 0, by, bw, bh, block === 'stock' ? 'Sold out' : `Buy · ${it.price} 🪙`, { variant: can ? 'warning' : 'ghost', fontSize: 13, disabled: !can, onClick: () => this.buyItem(it) }));
       } else if (LOOK_KINDS.includes(it.kind)) {
