@@ -13,13 +13,18 @@ import { errandLine } from '../../data/world/errands.js';
 import { ensureExplored, exploredStats } from '../../data/world/explore.js';
 import { Minimap, paintMinimap } from '../../ui/Minimap.js';
 import { creditLines } from '../../ui/Credits.js';
+import { card } from '../../ui/Card.js';
+import { snacksOf } from '../../systems/Market.js';
+import { heartsOf, HEARTS_MAX } from '../../systems/Hearts.js';
+import { drinkNow } from '../world/drink.js';
 
 export function buildMenu(hud) {
   if (hud.state.menuPage === 'quests') return buildQuests(hud);
   if (hud.state.menuPage === 'map') return buildMapPage(hud);
   if (hud.state.menuPage === 'credits') return buildCreditsPage(hud);
+  if (hud.state.menuPage === 'bag') return buildBag(hud);
   const { w, ui } = hud;
-  const m = modal(hud, { w: 320 * ui, h: 520 * ui, title: 'Paused', accent: THEME.primary, depth: 600, dimAlpha: 0.45 });
+  const m = modal(hud, { w: 320 * ui, h: 580 * ui, title: 'Paused', accent: THEME.primary, depth: 600, dimAlpha: 0.45 });
   const bw = m.w - 48, bh = 50 * ui;
   let y = m.contentTop + 12 * ui + bh / 2;
   const page = (p) => { Sfx.click(); hud.state.menuPage = p; hud.rebuild(); };
@@ -27,9 +32,43 @@ export function buildMenu(hud) {
   button(hud, w / 2, y, bw, bh, '🔔 Journal', { variant: 'warning', onClick: () => page('quests') }).setDepth(603); y += bh + 12;
   button(hud, w / 2, y, bw, bh, 'Map', { variant: 'success', onClick: () => page('map') }).setDepth(603); y += bh + 12;
   button(hud, w / 2, y, bw, bh, '🧺 Market', { variant: 'warning', onClick: () => { Sfx.click(); hud.openMarket(); } }).setDepth(603); y += bh + 12;
+  button(hud, w / 2, y, bw, bh, '🎒 My bag', { variant: 'secondary', onClick: () => page('bag') }).setDepth(603); y += bh + 12;
   button(hud, w / 2, y, bw, bh, 'Challenge Mode', { variant: 'subject', subject: 'code', onClick: () => hud.leaveTo(SCENES.ChallengeMenu) }).setDepth(603); y += bh + 12;
   button(hud, w / 2, y, bw, bh, 'Home', { variant: 'secondary', onClick: () => hud.leaveTo(SCENES.ModeSelect) }).setDepth(603); y += bh + 4;
   button(hud, w / 2, y + 6 * ui, bw, 30 * ui, 'Art credits', { variant: 'ghost', fontSize: 13, onClick: () => page('credits') }).setDepth(603);
+}
+
+/** The bag: the snacks the player carries (drinks can be drunk here), and what else they own. */
+export function buildBag(hud) {
+  const { w, h, ui } = hud;
+  const profile = Store.getProfile() || {};
+  const snacks = snacksOf(profile), hearts = heartsOf(profile);
+  const charms = Object.keys(profile.charms || {}).length, owned = (profile.inventory && profile.inventory.owned ? profile.inventory.owned.length : 0);
+  const rowH = 54 * ui, rows = Math.max(1, snacks.length);
+  const m = modal(hud, { w: Math.min(w - 16, 420 * ui), h: Math.min(h - 16, (158 + rows * 54) * ui), title: '🎒 My bag', accent: THEME.warning, depth: 600, dimAlpha: 0.5 });
+  let y = m.contentTop + 6 * ui;
+  text(hud, m.x + m.w / 2, y + 8 * ui, `♥ ${hearts}/${HEARTS_MAX} hearts  ·  ${profile.coins | 0} coins`, T.small(hud, THEME.ink2)).setDepth(603);
+  y += 28 * ui;
+  if (!snacks.length) {
+    text(hud, m.x + m.w / 2, y + rowH / 2, 'No snacks yet. ' + 'Auntie Vee sells them at the market by the fountain!', { ...T.body(hud, THEME.ink2), align: 'center', wordWrap: { width: m.w - 48 } }).setDepth(603);
+    y += rowH;
+  }
+  for (const { item, count } of snacks) {
+    const k = card(hud, m.x + m.w / 2, y + rowH / 2, m.w - 40, rowH - 6, { stroke: THEME.line, shadow: 'none' });
+    k.setDepth(602);
+    k.add(hud.add.text(-m.w / 2 + 32, -8 * ui, `${item.icon}  ${item.name}  ×${count}`, T.at(hud, 15, THEME.ink, { fontStyle: '700' })).setOrigin(0, 0.5));
+    k.add(hud.add.text(-m.w / 2 + 32, 10 * ui, item.desc, T.at(hud, 11, THEME.ink2)).setOrigin(0, 0.5));
+    if (item.drink) {
+      const full = hearts >= HEARTS_MAX;
+      const b = button(hud, m.w / 2 - 20 - 46 * ui, 0, 84 * ui, 34 * ui, full ? 'Full' : 'Drink', { variant: full ? 'ghost' : 'success', fontSize: 13, disabled: full, compact: true,
+        onClick: () => { const roam = hud.scene.get(hud.roamKey); hud.closeMenu(); if (roam) drinkNow(roam, item, 100); } });
+      k.add(b);
+    }
+    y += rowH;
+  }
+  y += 6 * ui;
+  text(hud, m.x + m.w / 2, y + 8 * ui, `${owned} thing${owned === 1 ? '' : 's'} bought at the market  ·  ${charms} charm${charms === 1 ? '' : 's'}`, T.small(hud, THEME.ink3)).setDepth(603);
+  button(hud, w / 2, m.y + m.h - 34 * ui, Math.min(m.w - 48, 200 * ui), 42 * ui, 'Back', { variant: 'secondary', onClick: () => { hud.state.menuPage = 'menu'; hud.rebuild(); } }).setDepth(603);
 }
 
 /** Who drew the characters (the pack's licences ask for this to be easy to find). */
