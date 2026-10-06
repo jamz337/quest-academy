@@ -45,7 +45,7 @@ export function buildBag(hud) {
   const snacks = snacksOf(profile), hearts = heartsOf(profile);
   const charms = Object.keys(profile.charms || {}).length, owned = (profile.inventory && profile.inventory.owned ? profile.inventory.owned.length : 0);
   const rowH = 54 * ui, rows = Math.max(1, snacks.length);
-  const m = modal(hud, { w: Math.min(w - 16, 420 * ui), h: Math.min(h - 16, (158 + rows * 54) * ui), title: '🎒 My bag', accent: THEME.warning, depth: 600, dimAlpha: 0.5 });
+  const m = modal(hud, { w: Math.min(w - 16, 420 * ui), h: Math.min(h - 16, (196 + rows * 54) * ui), title: '🎒 My bag', accent: THEME.warning, depth: 600, dimAlpha: 0.5 });
   let y = m.contentTop + 6 * ui;
   text(hud, m.x + m.w / 2, y + 8 * ui, `♥ ${hearts}/${HEARTS_MAX} hearts  ·  ${profile.coins | 0} coins`, T.small(hud, THEME.ink2)).setDepth(603);
   y += 28 * ui;
