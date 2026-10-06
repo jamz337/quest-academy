@@ -8,7 +8,7 @@ import { viewport, dpr } from '../systems/Layout.js';
 import { Sfx } from '../systems/Audio.js';
 import { toast } from '../ui/Toast.js';
 import { resolveLook } from '../data/avatars.js';
-import { lookScale, lookSpriteTexture, CHAR_WORLD_SCALE, IDLE_FRAMES } from '../systems/Textures.js';
+import { lookSpriteTexture, CHAR_WORLD_SCALE, IDLE_FRAMES } from '../systems/Textures.js';
 import { HOUSE_W, HOUSE_H, HOUSE_ROOMS, FURNITURE, EXHIBITS, SIGNS, WINDOWS, EXIT, SPAWN, wallTiles, roomAt, onExit } from '../data/social/house.js';
 import { getRoom } from '../data/social/barbados.js';
 import { TV_FACTS, FRIDGE_FACTS, BOOK_FACTS, pickFact } from '../data/social/facts.js';
@@ -199,10 +199,8 @@ export class HouseScene extends Phaser.Scene {
 
   createPlayer(profile) {
     const key = lookSpriteTexture(this, resolveLook(profile), outfitOf(profile), outfitId(profile));
-    this.player = this.physics.add.sprite(SPAWN.tx * TILE, SPAWN.ty * TILE, key, IDLE_FRAME.up).setDepth(10);
-    this.player.setScale(lookScale(this.player));
-    const fu = ((this.player.frame && this.player.frame.height) || 64) / 64;   // the sheet's cell, in pixel-sheet units
-    this.player.body.setSize(28 * fu, 16 * fu).setOffset(18 * fu, 46 * fu);
+    this.player = this.physics.add.sprite(SPAWN.tx * TILE, SPAWN.ty * TILE, key, IDLE_FRAME.up).setScale(CHAR_WORLD_SCALE).setDepth(10);
+    this.player.body.setSize(28, 16).setOffset(18, 46);
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.solids);
   }
