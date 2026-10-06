@@ -16,7 +16,7 @@ export const villagerKey = (who) => `villager-${who}`;
  * Villagers with a ready-made walking sheet in public/sprites (made by tools/make-player-sheet.py, laid out like
  * the hero's: 9 x 4 cells of VILLAGER_CELL px). Loaded at boot under their villagerKey, so they are not painted.
  */
-export const VILLAGER_SHEETS = { hope: 'sprites/hope.png' };
+export const VILLAGER_SHEETS = { hope: 'sprites/hope.png', sam: 'sprites/sam.png' };
 
 const INK = '#1e1b4b';
 
