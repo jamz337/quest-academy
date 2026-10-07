@@ -135,6 +135,9 @@ export function buildMap() {
   bossSpots.words = castle('words', 30, 8); hline(data, 30, 36, 12, TID.path);
   bossSpots.code = castle('code', 6, 29); fillRect(data, 6, 33, 5, 1, TID.path);
   bossSpots.bible = castle('bible', 48, 20); fillRect(data, 48, 24, 5, 2, TID.path);
+  // Room to walk around the Code Cove boss: nothing is locked, so the sand below him runs on over the water's edge
+  // (the other bosses already stand beside their forecourts rather than across the only way).
+  data[34][7] = data[34][8] = TID.cove;
 
   // Archways into Word Woods, Code Cove and Bible Village: always open, every village can be explored.
   const gates = [{ zone: 'words', tx: 36, ty: 13 }, { zone: 'code', tx: 24, ty: 28 }, { zone: 'bible', tx: 37, ty: 17 }];
