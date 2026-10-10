@@ -45,7 +45,15 @@ export const MINIGAMES = [
   { id: 'sci-float', subject: 'science', title: 'Sink or Float', sceneKey: 'MG_ScienceLab', playSceneKey: 'MG_SciencePlay', icon: '🛟', npc: 'captain-cork',
     description: 'Guess, then drop it in: which things sink, which float, and why.', playDescription: 'Touch something to drop it in the water.' },
   { id: 'sci-matter', subject: 'science', title: 'States of Matter', sceneKey: 'MG_ScienceLab', playSceneKey: 'MG_SciencePlay', icon: '🧊', npc: 'dr-misty',
-    description: 'Solids, liquids and gases, and how heat and cold change them.', playDescription: 'Touch ice, water and steam to find out what they are.' }
+    description: 'Solids, liquids and gases, and how heat and cold change them.', playDescription: 'Touch ice, water and steam to find out what they are.' },
+  { id: 'his-compass', subject: 'history', title: 'Compass Quest', sceneKey: 'MG_HistoryQuiz', playSceneKey: 'MG_HistoryPlay', icon: '🧭', npc: 'captain-compass',
+    description: 'North, south, east and west: reading maps and turning the right way.', playDescription: 'Touch the sunrise, the compass and the penguin to find their directions.' },
+  { id: 'his-helpers', subject: 'history', title: 'Community Helpers', sceneKey: 'MG_HistoryQuiz', playSceneKey: 'MG_HistoryPlay', icon: '🚒', npc: 'mayor-marigold',
+    description: 'Who helps in a town, what they use, and how a community runs.', playDescription: 'Touch a helper to hear what they do and where they work.' },
+  { id: 'his-flags', subject: 'history', title: 'Flag Finder', sceneKey: 'MG_HistoryQuiz', playSceneKey: 'MG_HistoryPlay', icon: '🏁', npc: 'flora',
+    description: 'Flags, capitals and continents, from Barbados to the whole world.', playDescription: 'Touch a flag to hear its country.' },
+  { id: 'his-time', subject: 'history', title: 'Past & Present', sceneKey: 'MG_HistoryQuiz', playSceneKey: 'MG_HistoryPlay', icon: '🕰️', npc: 'old-tom',
+    description: 'Then and now, what came first, and the story of Barbados.', playDescription: 'Touch something to find out if it is from long ago or today.' }
 ];
 
 /** Games only for the youngest players (Pre-K to Grade 1), shown first in their Challenge menu. */

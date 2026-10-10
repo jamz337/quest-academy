@@ -189,7 +189,14 @@ export const SKILL_TIPS = {
   'plant-needs': 'Grow a bean in a jar on the windowsill and give it water.', 'plant-parts': 'Pull up a weed and name its roots, stem, leaves and flower.', 'life-cycle': 'Cut open a fruit and find the seeds.',
   'seed-travel': 'Blow a dandelion clock and watch the seeds fly.', 'plant-science': 'Put a leaf in sunlight and a leaf in a cupboard for a week and compare.',
   'sink-float': 'Fill the sink and test ten things from the kitchen.', density: 'Float an egg in salty water and in plain water.',
-  states: 'Find a solid, a liquid and a gas in the kitchen.', 'changes-of-state': 'Watch an ice cube melt and a kettle steam.', 'matter-facts': 'Measure the temperature of ice water and boiling water together.'
+  states: 'Find a solid, a liquid and a gas in the kitchen.', 'changes-of-state': 'Watch an ice cube melt and a kettle steam.', 'matter-facts': 'Measure the temperature of ice water and boiling water together.',
+  directions: 'Find where the sun rises from your window, then point north, south, east and west.', 'map-reading': 'Draw a map of your street with north at the top.',
+  'compass-degrees': 'Open a phone compass and call out the bearing of the front door.', 'geography-lines': 'Find the equator and the poles on a globe.',
+  helpers: 'On a walk, spot the helpers: the bus driver, the postal worker, the police officer.', 'helper-tools': 'Play "whose tool is this?" with a spoon, a stethoscope and a hammer.',
+  community: 'Talk about what the town pays for together: roads, schools, the fire service.', flags: 'Spot flags on buildings and cars and name the countries.',
+  capitals: 'Pick a country at dinner and find its capital on a map.', continents: 'Name the seven continents with a song or a globe.', 'world-geography': 'Trace the Nile and the Amazon on a map.',
+  'then-now': 'Ask a grandparent what they used before phones and fridges.', timeline: 'Make a timeline of the family: who was born when.',
+  'history-words': 'Visit the museum and find an artefact.', 'history-facts': 'Read about Independence Day and Bussa together.'
 };
 
 export const skillTip = (id) => SKILL_TIPS[id] || `Practise ${skillLabel(id)} together for a few minutes.`;

@@ -42,12 +42,15 @@ export class ChallengeMenuScene extends BaseScene {
 
     const subjects = Object.values(SUBJECTS);
     const areaTop = bar.bottom + 6 * ui, areaH = h - areaTop - 12;
-    const sectionH = areaH / subjects.length;
+    // Six lands in one column would squash the cards: on a wide screen the panels sit two abreast.
+    const cols = subjects.length > 4 && w >= 900 ? 2 : 1, rowsN = Math.ceil(subjects.length / cols);
+    const sectionH = areaH / rowsN, colW = (w - 16) / cols;
     const labelH = Math.min(34 * ui, sectionH * 0.26);
     const cards = [];
     subjects.forEach((s, si) => {
       // One frosted panel per land, with a glossy header in the land's colour.
-      const sy = areaTop + si * sectionH, px = 8, pw = w - 16, ph = sectionH - 8;
+      const col = si % cols, row = Math.floor(si / cols);
+      const sy = areaTop + row * sectionH, px = 8 + col * colW, pw = colW - (cols > 1 ? 8 : 0), ph = sectionH - 8;
       panel(this, px, sy, pw, ph, { color: 0xffffff, alpha: 0.72, radius: 20, stroke: 0xffffff, strokeWidth: 1.5 });
       const hx = px + 8, hy = sy + 6, hw = pw - 16, hh = labelH, hr = Math.min(14, hh / 2);
       const head = this.add.graphics();
@@ -87,7 +90,7 @@ export class ChallengeMenuScene extends BaseScene {
       // Short and narrow (four games per subject on a phone): icon on top, a small title, stars underneath.
       const r = 13 * ui, iy = -h / 2 + r + 6 * ui;
       k.add([this.iconBlock(0, iy, r, subject), this.gameIcon(0, iy, r, g)]);
-      k.add(this.add.text(0, iy + r + 8 * ui, g.title, { ...T.at(this, c.w < 96 ? 10 : 12, THEME.ink), wordWrap: { width: c.w - 8 } }).setOrigin(0.5, 0));
+      k.add(this.add.text(0, iy + r + 8 * ui, g.title, { ...T.at(this, c.w < 96 || g.title.length > 14 ? 10 : 12, THEME.ink), wordWrap: { width: c.w - 8 } }).setOrigin(0.5, 0));
       k.add(new StarRow(this, 0, h / 2 - 10 * ui, rec ? rec.bestStars : 0, Math.min(12 * ui, (c.w - 12) / 3.6)));
       return k;
     }

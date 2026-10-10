@@ -17,7 +17,8 @@ export const SUBJECTS = {
   words: { id: 'words', title: 'English', ...THEME.subjects.words, color: THEME.subjects.words.accent, zone: 'Word Woods' },
   code: { id: 'code', title: 'Coding', ...THEME.subjects.code, color: THEME.subjects.code.accent, zone: 'Code Cove' },
   bible: { id: 'bible', title: 'Bible', ...THEME.subjects.bible, color: THEME.subjects.bible.accent, zone: 'Bible Village' },
-  science: { id: 'science', title: 'Science', ...THEME.subjects.science, color: THEME.subjects.science.accent, zone: 'Science Springs' }
+  science: { id: 'science', title: 'Science', ...THEME.subjects.science, color: THEME.subjects.science.accent, zone: 'Science Springs' },
+  history: { id: 'history', title: 'History', ...THEME.subjects.history, color: THEME.subjects.history.accent, zone: 'History Harbor' }
 };
 
 export const GRADES = [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8];   // -1 = Pre-K, 0 = Kindergarten (see data/grades.js)
@@ -32,4 +33,4 @@ export const SCENES = {
 
 export const SAVE_KEY = 'qa.save';
 export const SAVE_BACKUP_KEY = 'qa.save.bak';
-export const SAVE_VERSION = 2;
+export const SAVE_VERSION = 3;

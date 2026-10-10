@@ -5,6 +5,7 @@
 // (where does it stop), Bug Hunt (which line is wrong) and Robot Dance (which program made this path).
 // Bosses mix their whole subject (see boss.js; the code boss mixes the four coding kinds).
 import { scienceQuestion } from './science/questions.js';
+import { historyQuestion } from './history/questions.js';
 import { generateQuestion } from './math/arithmetic.js';
 import { gcd, frac } from './math/fractions.js';
 import { patternQuestion, grammarQuestion, matchQuestion, buildQuestion, wordsQuestion, bossQuestions } from './boss.js';
@@ -204,6 +205,8 @@ const bibleOf = (kind) => (grade, rng) => {
 };
 
 // A duel wants three or four answers to pick from, so Sink or Float's yes/no questions give way to its fuller kinds.
+// Flag Finder's 'which flag?' needs drawn flags, so duels (plain text) ask by description instead.
+const historyOf = (id) => (grade, rng) => { let q = historyQuestion(id, grade, rng, rng.float(), { drawn: false }); for (let i = 0; i < 40 && q.choices.length < 3; i++) q = historyQuestion(id, grade, rng, 1, { drawn: false }); return q; };
 const scienceOf = (id) => (grade, rng) => { let q = scienceQuestion(id, grade, rng, rng.float()); for (let i = 0; i < 40 && q.choices.length < 3; i++) q = scienceQuestion(id, grade, rng, 1); return q; };
 
 /** Generator per game id; anything unknown falls back to the subject mix. */
@@ -212,7 +215,8 @@ export const BY_GAME = {
   'eng-builder': buildQuestion, 'eng-grammar': grammarQuestion, 'eng-match': matchQuestion, 'eng-frog': wordsQuestion,
   'code-maze': mazeQuestion, 'code-predict': predictQuestion, 'code-bug': bugQuestion, 'code-dance': danceQuestion,
   'bible-quiz': bibleOf('quiz'), 'bible-verse': bibleOf('verse'), 'bible-match': bibleOf('who'), 'bible-ark': bibleQuestion,
-  'sci-habitat': scienceOf('sci-habitat'), 'sci-plants': scienceOf('sci-plants'), 'sci-float': scienceOf('sci-float'), 'sci-matter': scienceOf('sci-matter')
+  'sci-habitat': scienceOf('sci-habitat'), 'sci-plants': scienceOf('sci-plants'), 'sci-float': scienceOf('sci-float'), 'sci-matter': scienceOf('sci-matter'),
+  'his-compass': historyOf('his-compass'), 'his-helpers': historyOf('his-helpers'), 'his-flags': historyOf('his-flags'), 'his-time': historyOf('his-time')
 };
 
 export const duelQuestion = (gameId, grade, rng) => (BY_GAME[gameId] || generateQuestion)(gradeOf(grade), rng);

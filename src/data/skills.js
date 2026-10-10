@@ -16,6 +16,10 @@ export const SKILL_LABELS = {
   letters: 'letters', 'letter-case': 'big and small letters', 'first-sounds': 'first sounds', rhyming: 'rhyming words', 'sight-words': 'sight words', 'picture-words': 'reading short words',
   habitats: 'animal homes', adaptations: 'how animals survive', 'food-chains': 'food chains', 'ecology-words': 'nature words', biomes: 'biomes',
   'plant-needs': 'what plants need', 'plant-parts': 'parts of a plant', 'life-cycle': 'a plant\'s life cycle', 'seed-travel': 'how seeds travel', 'plant-science': 'how plants work',
-  'sink-float': 'sink or float', density: 'density and floating', states: 'solids, liquids and gases', 'changes-of-state': 'melting, freezing and more', 'matter-facts': 'matter facts'
+  'sink-float': 'sink or float', density: 'density and floating', states: 'solids, liquids and gases', 'changes-of-state': 'melting, freezing and more', 'matter-facts': 'matter facts',
+  directions: 'north, south, east and west', 'map-reading': 'reading a map', 'compass-degrees': 'compass bearings', 'geography-lines': 'map and globe words',
+  helpers: 'community helpers', 'helper-tools': 'the tools of the job', community: 'how a community works',
+  flags: 'flags of the world', capitals: 'capital cities', continents: 'continents', 'world-geography': 'world geography',
+  'then-now': 'then and now', timeline: 'timelines', 'history-words': 'history words', 'history-facts': 'history facts'
 };
 export const skillLabel = (id) => SKILL_LABELS[id] || String(id).replace(/[-_]/g, ' ');

@@ -1,7 +1,9 @@
 // Science Springs for Pre-K: touch-and-learn sets, one per game. Six things to touch; each is named and told
 // about, then floats to its home panel. When all are home come a few gentle asks, answered by touching a thing
-// in its panel. Pure data (see scenes/minigames/science/SciencePlay.js).
-import { capital } from '../early/animals.js';
+// in its panel. Pure data (see scenes/minigames/TouchPlay.js); the helpers every subject shares live in data/touchPlay.js.
+import { targetOf, makePlayAsks, playFoundLine, playOtherLine } from '../touchPlay.js';
+
+export { targetOf, makePlayAsks, playFoundLine, playOtherLine };
 
 export const PLAY_SETS = {
   'sci-habitat': {
@@ -70,11 +72,3 @@ export const PLAY_SETS = {
 };
 
 export const playSet = (gameId) => PLAY_SETS[gameId] || PLAY_SETS['sci-habitat'];
-export const targetOf = (set, item) => set.targets.find((t) => t.id === item.target);
-
-/** The gentle asks after everything is home: `n` of them, half by name and half by home, never the same thing twice. */
-export function makePlayAsks(set, rng, n = 3) {
-  return rng.shuffle(set.items).slice(0, n).map((item, i) => (i % 2 === 0 ? { item, kind: 'target', line: targetOf(set, item).ask } : { item, kind: 'find', line: `Can you find the ${item.name}?` }));
-}
-export const playFoundLine = (set, item) => `Yes! The ${item.name}. ${capital(targetOf(set, item).name)}!`;
-export const playOtherLine = (set, item, ask) => `That is the ${item.name}. ${ask.line}`;

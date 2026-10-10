@@ -33,7 +33,7 @@ export function speakable(text) {
     .replace(/_{2,}/g, ' blank ')
     .replace(/[“”"]/g, '')
     .replace(/▲/g, ' forward').replace(/◀/g, ' left').replace(/▶/g, ' right').replace(/▼/g, ' down')
-    .replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}\u{20E3}➕➖]/gu, ' ')   // pictures are seen, not said (picture answers have their own words)
+    .replace(/[\p{Extended_Pictographic}\p{Regional_Indicator}\u{FE0F}\u{200D}\u{20E3}➕➖]/gu, ' ')   // pictures are seen, not said (picture answers have their own words)
     .replace(/×/g, ' times ').replace(/÷/g, ' divided by ').replace(/−/g, ' minus ').replace(/²/g, ' squared')
     .replace(/\s+/g, ' ')
     .replace(/\s+([,.!?;:])/g, '$1')
