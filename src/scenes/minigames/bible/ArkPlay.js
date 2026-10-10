@@ -1,6 +1,6 @@
 import { MinigameScene } from '../MinigameScene.js';
 import { pickAnimals, makeAsks, nameLine, twoLine, askLine, foundLine, otherLine } from '../../../data/early/animals.js';
-import { drawSky, drawShore, drawFlood, drawRainbow, drawArk, drawNoah, speechBubble, animalPair, ARK } from './ArkScenery.js';
+import { drawBackdrop, drawWeather, drawFlood, drawRainbow, drawNoah, speechBubble, animalPair, ARK, ARK_SPOTS, ARK_DOOR, ARK_RAMP_BASE } from './ArkScenery.js';
 import { animalKey } from '../../../ui/AnimalArt.js';
 import { hex } from '../../../ui/theme.js';
 import { FONT, WEIGHT } from '../../../ui/TextStyles.js';
@@ -14,12 +14,12 @@ export const ARK_PLAY_COUNT = 8, ARK_PLAY_ASKS = 4;
 export const callKey = (key) => `call-${key}`;
 
 /**
- * All Aboard the Ark for Pre-K: a daylight picture book, no questions. Eight pairs of animals wait on the shore.
- * Touch a pair: it bounces, its real call plays, Noah names it, the two walk up the ramp while the voice counts
- * "one, two", and a window lights with its face. The sky clouds over as the ark fills. With everyone aboard come a
- * few gentle asks ("Can you find the lion?", "Which animal says Moo?") answered by touching a window: the right one
- * is cheered, any other is simply named and the ask repeated. Then the rain, the flood, the rainbow, and the windows
- * stay open for free play until Done. Everything is read aloud. Full stars every time.
+ * All Aboard the Ark for Pre-K: a daylight picture book, no questions. Eight pairs of animals wait on the sand
+ * below the ark. Touch a pair: it bounces, its real call plays, Noah names it, the two walk up the ramp while the
+ * voice counts "one, two", and its face appears at a window. The sky clouds over as the ark fills. With everyone
+ * aboard come a few gentle asks ("Can you find the lion?", "Which animal says Moo?") answered by touching a window:
+ * the right one is cheered, any other is simply named and the ask repeated. Then the rain, the flood, the rainbow,
+ * and the windows stay open for free play until Done. Everything is read aloud. Full stars every time.
  */
 export class ArkPlay extends MinigameScene {
   constructor() { super('MG_ArkPlay'); }
@@ -38,13 +38,13 @@ export class ArkPlay extends MinigameScene {
   enterKey() { const s = this.state; return `${s.phase}-${this.boarded}-${s.askI}-${s.found}-${s.finale}`; }
   update() {}
 
-  /** Noah's line: in the bubble and read aloud (Pre-K hears everything); his mouth moves while he talks. */
+  /** Noah's line: in the bubble and read aloud (Pre-K hears everything); he nods along while he talks. */
   say(line) {
     this.state.line = line;
     if (this.bubbleText && this.bubbleText.active) this.bubbleText.setText(line);
     stopSpeech();
     speak(line, { rate: this.speechRate });
-    if (this.noah && this.noah.mouth && this.tweens) this.tweens.add({ targets: this.noah.mouth, scaleY: 0.25, duration: 110, yoyo: true, repeat: Math.min(24, Math.ceil(line.length / 4)) });
+    if (this.noah && this.noah.active && this.tweens) { this.tweens.killTweensOf(this.noah); this.tweens.add({ targets: this.noah, scale: 1.05, angle: -2, duration: 160, yoyo: true, repeat: Math.min(16, Math.ceil(line.length / 6)) }); }
   }
 
   /** An animal's recorded call (or the code-made stand-in when the file is not there, as in tests). */
@@ -58,45 +58,43 @@ export class ArkPlay extends MinigameScene {
   buildGame(area) {
     const s = this.state, ui = this.ui;
     const f = ui * Math.min(1, Math.max(0.7, area.h / (640 * ui)));
-    const wide = area.w / ui >= 600;
-    // The whole play area is the picture: sky, hills, shore.
-    const r = { x: area.x - 14, y: area.y - 8, w: area.w + 28, h: area.h + 22 };
-    const mood = s.finale ? 0.15 : s.phase === 'ask' ? 1 : this.boarded / ARK_PLAY_COUNT;
+    // The picture fills the play area; the live parts sit on it.
+    const full = { x: area.x - 14, y: area.y - 8, w: area.w + 28, h: area.h + 22 };
+    const { map, scale, groundY } = drawBackdrop(this, full);
+    this.map = map; this.mapScale = scale;
+    const mood = s.finale ? 0 : s.phase === 'ask' ? 1 : this.boarded / ARK_PLAY_COUNT;
     const rain = s.finale ? 0 : s.phase === 'ask' ? 0.8 : this.boarded >= ARK_PLAY_COUNT - 1 ? 0.3 : 0;
-    drawSky(this, r, f, { mood, rain });
-    const groundY = drawShore(this, r, f);
-    if (s.finale) drawFlood(this, r, groundY, f, 1);
+    if (s.finale) drawFlood(this, full, groundY, f);
+    drawWeather(this, full, f, { mood, rain });
+
+    // Faces at the ark's windows, in boarding order; touchable for the asks and for free play.
+    this.windows = [];
+    s.aboard.forEach((key, i) => {
+      const [px, py] = ARK_SPOTS[i] || ARK_SPOTS[ARK_SPOTS.length - 1];
+      const p = map(px, py), size = 40 * scale;
+      const face = this.textures.exists(animalKey(key)) ? this.add.image(p.x, p.y, animalKey(key)).setDisplaySize(size, size) : this.add.circle(p.x, p.y, size / 2, 0xffffff);
+      const zone = this.add.zone(p.x, p.y, size + 14 * f, size + 14 * f).setInteractive({ useHandCursor: true });
+      zone.label = { text: `window ${key}` };
+      zone.on('pointerup', () => this.tapWindow(i));
+      this.windows[i] = { key, face, x: p.x, y: p.y };
+      if (s.phase === 'ask' && s.found === key && this.tweens) this.tweens.add({ targets: face, scale: face.scale * 1.3, duration: 160, yoyo: true, repeat: 2 });
+    });
 
     // Noah and his speech bubble along the top.
-    const top = area.y + 4 * f, bh = 92 * f, noahH = 104 * f;
-    this.noah = drawNoah(this, area.x + 34 * f, top + bh + 6 * f, noahH);
-    const bx = area.x + 74 * f, bw = area.w - 74 * f;
+    const top = area.y + 4 * f, bh = 90 * f, noahS = 84 * f;
+    this.noah = drawNoah(this, area.x + noahS / 2, top + bh / 2, noahS);
+    const bx = area.x + noahS + 16 * f, bw = area.w - noahS - 16 * f;
     const { text: said } = speechBubble(this, bx, top, bw, bh, s.line, f);
     this.bubbleText = said;
     speakButton(this, bx + bw - 26 * f, top + bh / 2, 40 * f, said, { rate: this.speechRate });
     if (!s.spoken) { s.spoken = true; this.say(s.line); }
 
-    // The ark, with a window per pair (lit as they board) and the ramp.
-    const arkRect = { x: area.x, y: top + bh + 10 * f, w: area.w, h: groundY - (top + bh + 10 * f) + 20 * f };
-    const built = drawArk(this, arkRect, groundY, f, { windows: ARK_PLAY_COUNT, lit: s.aboard, afloat: s.finale });
-    this.ark = built.ark; this.door = built.door; this.rampBase = built.rampBase; this.windows = built.windows;
-    if (s.finale && this.tweens) this.tweens.add({ targets: this.ark, y: -16 * f, angle: 1.5, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
-    // Windows are touchable once animals are aboard (the asks, and free play after the rainbow).
-    this.windows.forEach((w, i) => {
-      if (!w.key) return;
-      const zone = this.add.zone(w.x, w.y, w.w + 10 * f, w.w + 10 * f).setInteractive({ useHandCursor: true });
-      zone.label = { text: `window ${w.key}` };
-      zone.on('pointerup', () => this.tapWindow(i));
-      this.ark.add(zone);
-      if (s.phase === 'ask' && s.found === w.key && w.face) this.tweens.add({ targets: w.face, scale: w.face.scale * 1.3, duration: 160, yoyo: true, repeat: 2 });
-    });
-
-    // The animals waiting on the shore (those not yet aboard), in a loose crowd.
+    // The animals waiting on the sand (those not yet aboard), in a loose crowd.
     this.pairs = [];
     if (!s.finale) {
-      const cols = wide ? 4 : 4, rows = Math.ceil(ARK_PLAY_COUNT / cols);
-      const bandTop = groundY + 16 * f, bandH = area.y + area.h - bandTop - 4 * f;
-      const size = Math.max(30 * f, Math.min(52 * f, area.w / (cols * 2.3), bandH / (rows * 1.5)));
+      const cols = 4, rows = Math.ceil(ARK_PLAY_COUNT / cols);
+      const bandTop = groundY + 22 * f, bandH = area.y + area.h - bandTop - 4 * f;
+      const size = Math.max(28 * f, Math.min(50 * f, area.w / (cols * 2.3), bandH / (rows * 1.5)));
       const made = [];
       s.kinds.forEach((k, i) => {
         if (s.done[i]) return;
@@ -113,7 +111,7 @@ export class ArkPlay extends MinigameScene {
     }
 
     if (s.finale) {
-      const bow = drawRainbow(this, { x: area.x, y: area.y + bh, w: area.w, h: groundY - area.y - bh }, f);
+      const bow = drawRainbow(this, map, f);
       if (this.tweens) this.tweens.add({ targets: bow, alpha: 1, delay: 1200, duration: 900 });
       button(this, area.x + area.w / 2, area.y + area.h - 34 * f, Math.min(area.w - 40, 240 * f), 52 * f, 'Done ✓', { variant: 'success', fontSize: 20, onClick: () => this.endPlay() });
     }
@@ -127,14 +125,14 @@ export class ArkPlay extends MinigameScene {
     this.call(k);
     this.say(nameLine(k));
     const pair = this.pairs[i];
-    if (pair && pair.active && this.tweens) {
+    if (pair && pair.active && this.tweens && this.map) {
       this.tweens.killTweensOf(pair);
       this.tweens.add({ targets: pair, scale: 1.18, duration: 140, yoyo: true, repeat: 1 });
       this.bubbleOver(pair, k.noise ? `${k.noise}!` : '…', 1.2);
       // Up the ramp: to its foot, then to the door, shrinking as it goes; "one", "two" as each steps in.
-      const d = this.door, base = this.rampBase;
+      const d = this.map(ARK_DOOR.x, ARK_DOOR.y), base = this.map(ARK_RAMP_BASE.x, ARK_RAMP_BASE.y);
       this.tweens.add({ targets: pair, x: base.x, y: base.y - 10 * this.ui, duration: 600, delay: 900, ease: 'Sine.InOut' });
-      this.tweens.add({ targets: pair, x: d.x, y: d.y - 8 * this.ui, scale: 0.55, duration: 900, delay: 1500, ease: 'Sine.InOut' });
+      this.tweens.add({ targets: pair, x: d.x, y: d.y - 6 * this.ui, scale: 0.5, duration: 900, delay: 1500, ease: 'Sine.InOut' });
       this.tweens.add({ targets: pair, alpha: 0, duration: 200, delay: 2350 });
     }
     this.time.delayedCall(1500, () => this.countPop(pair, 1));
@@ -149,7 +147,8 @@ export class ArkPlay extends MinigameScene {
 
   /** "1", "2" popping up as the pair steps aboard, spoken too. */
   countPop(pair, n) {
-    const x = pair && pair.active ? pair.x : this.door.x, y = pair && pair.active ? pair.y : this.door.y;
+    const d = this.map ? this.map(ARK_DOOR.x, ARK_DOOR.y) : { x: 0, y: 0 };
+    const x = pair && pair.active ? pair.x : d.x, y = pair && pair.active ? pair.y : d.y;
     const t = this.add.text(x + (n === 1 ? -12 : 12) * this.ui, y - 20 * this.ui, String(n), { fontFamily: FONT, fontSize: Math.round(26 * this.ui) + 'px', color: hex(ARK.text), fontStyle: WEIGHT.heavy, stroke: '#ffffff', strokeThickness: 6 }).setOrigin(0.5).setDepth(30);
     Sfx.note(n === 1 ? 3 : 5);
     stopSpeech(); speak(n === 1 ? 'one' : 'two', { rate: this.speechRate });
@@ -163,7 +162,7 @@ export class ArkPlay extends MinigameScene {
     if (this.tweens) { this.tweens.add({ targets: t, alpha: 1, y: t.y - 8 * ui, duration: 180 }); this.tweens.add({ targets: t, alpha: 0, delay: seconds * 1000, duration: 250, onComplete: () => t.destroy() }); }
   }
 
-  /** A lit window was touched: in the asks it answers; after the rainbow it just plays the animal again. */
+  /** A window was touched: in the asks it answers; after the rainbow it just plays the animal again. */
   tapWindow(i) {
     const s = this.state, w = this.windows[i], k = w && s.kinds.find((a) => a.key === w.key);
     if (!k || s.locked) return;
@@ -185,7 +184,7 @@ export class ArkPlay extends MinigameScene {
     });
   }
 
-  /** Every ask answered: the rain stops, the flood lifts the ark, the rainbow comes, and the windows stay open to play. */
+  /** Every ask answered: the rain stops, the flood comes up to the ark, the rainbow appears, and the windows stay open to play. */
   flood() {
     const s = this.state;
     s.finale = true; s.phase = 'free';
@@ -202,5 +201,3 @@ export class ArkPlay extends MinigameScene {
     this.finish({ correct: s.asks.length, total: s.asks.length, delay: 0 });
   }
 }
-
-export { animalKey };

@@ -24,6 +24,8 @@ export class BootScene extends Phaser.Scene {
     // The Pre-K ark: animal faces (Kenney's pack) and their recorded calls.
     for (const k of ANIMAL_FILES) { this.load.image(animalKey(k), `${ANIMAL_BASE}${k}.png`); this.load.audio(`call-${k}`, `sounds/animals/${k}.mp3`); }
     this.load.audio('call-lion', 'sounds/animals/lion.mp3');
+    this.load.image('ark-backdrop', 'sprites/ark/backdrop.jpg');   // the Pre-K ark's painted shore
+    this.load.image('ark-noah', 'sprites/ark/noah.png');
   }
 
   create() {
