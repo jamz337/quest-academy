@@ -3,11 +3,13 @@
 //
 // The first four lands and the hub were laid out on a 56 x 40 grid. Science Springs was added later as a strip
 // of OY rows above them: the old world is still built exactly as it was (so every tree and flower stays where
-// players know it) and then pasted OY rows down, and its coordinates are shifted the same way.
+// players know it) and then pasted OY rows down, and its coordinates are shifted the same way. History Harbor
+// came next, as HS rows below the cove's sea, reached by a pier.
 import { mulberry32 } from '../../systems/Rng.js';
 
 export const OY = 14;                      // rows added above the original world
-export const W = 56, H0 = 40, H = H0 + OY;
+export const HS = 10;                      // rows added below it for History Harbor
+export const W = 56, H0 = 40, H1 = H0 + OY, H = H1 + HS;
 
 // Tile ids (mirrors TILE_IDS; duplicated here so the map module has no Phaser/texture dependency).
 export const TID = {
@@ -15,11 +17,12 @@ export const TID = {
   roofMath: 13, wallMath: 14, doorMath: 15, roofWords: 16, wallWords: 17, doorWords: 18, roofCode: 19, wallCode: 20, doorCode: 21,
   roofBible: 22, wallBible: 23, doorBible: 24, castleTop: 25, castleWall: 26, castleDoor: 27, village: 28,
   plinth: 41,   // paving that something stands on (the fountain, the quest board): looks like path, cannot be walked on
-  springs: 42, roofScience: 43, wallScience: 44, doorScience: 45   // Science Springs: its bright ground and glass-house buildings
+  springs: 42, roofScience: 43, wallScience: 44, doorScience: 45,  // Science Springs: its bright ground and glass-house buildings
+  quay: 46, roofHistory: 47, wallHistory: 48, doorHistory: 49      // History Harbor: its cobbled quay and harbour cottages
 };
-export const ROOF_TILES = [TID.roof, TID.roofMath, TID.roofWords, TID.roofCode, TID.roofBible, TID.castleTop, TID.roofScience];
-export const WALL_TILES = [TID.wall, TID.wallMath, TID.wallWords, TID.wallCode, TID.wallBible, TID.castleWall, TID.wallScience];
-export const DOOR_TILES = [TID.door, TID.doorMath, TID.doorWords, TID.doorCode, TID.doorBible, TID.castleDoor, TID.doorScience];
+export const ROOF_TILES = [TID.roof, TID.roofMath, TID.roofWords, TID.roofCode, TID.roofBible, TID.castleTop, TID.roofScience, TID.roofHistory];
+export const WALL_TILES = [TID.wall, TID.wallMath, TID.wallWords, TID.wallCode, TID.wallBible, TID.castleWall, TID.wallScience, TID.wallHistory];
+export const DOOR_TILES = [TID.door, TID.doorMath, TID.doorWords, TID.doorCode, TID.doorBible, TID.castleDoor, TID.doorScience, TID.doorHistory];
 export const SOLID = [TID.water, TID.tree, TID.gateLocked, TID.plinth, ...ROOF_TILES, ...WALL_TILES];
 export const isWalkable = (id) => !SOLID.includes(id);
 
@@ -30,12 +33,13 @@ export const BUILDING_STYLES = {
   code: { roof: TID.roofCode, wall: TID.wallCode, door: TID.doorCode },
   bible: { roof: TID.roofBible, wall: TID.wallBible, door: TID.doorBible },
   science: { roof: TID.roofScience, wall: TID.wallScience, door: TID.doorScience },
+  history: { roof: TID.roofHistory, wall: TID.wallHistory, door: TID.doorHistory },
   castle: { roof: TID.castleTop, wall: TID.castleWall, door: TID.castleDoor }
 };
 
-export const ZONE_NAMES = { hub: 'Academy Hub', math: 'Math Meadow', words: 'Word Woods', code: 'Code Cove', bible: 'Bible Village', science: 'Science Springs' };
+export const ZONE_NAMES = { hub: 'Academy Hub', math: 'Math Meadow', words: 'Word Woods', code: 'Code Cove', bible: 'Bible Village', science: 'Science Springs', history: 'History Harbor' };
 /** The ground tile of each land. */
-const GROUND_OF = { math: TID.meadow, words: TID.woods, code: TID.cove, bible: TID.village, science: TID.springs };
+const GROUND_OF = { math: TID.meadow, words: TID.woods, code: TID.cove, bible: TID.village, science: TID.springs, history: TID.quay };
 
 function fillRect(data, x, y, w, h, id) {
   for (let ty = y; ty < y + h; ty++) for (let tx = x; tx < x + w; tx++) {
@@ -284,6 +288,35 @@ export function buildMap() {
   vline(data, 22, OY + 1, OY + 16, TID.path);                 // the road from the archway down to the plaza
   clearBoxedTrees(data, scenery, walls, zones);
   coins.push({ tx: 10, ty: 9 }, { tx: 18, ty: 9 }, { tx: 22, ty: 11 });   // appended: saves keep coins by index
+
+  // ---- History Harbor: a cobbled quay along the bottom of the world, across the bay from Code Cove's beach ----
+  // A wooden pier runs south from the promenade over the sea, through the old bottom border, to the quay.
+  const hrnd = mulberry32(2027);
+  const har = { x: 1, y: H1, w: W - 2, h: HS - 1 };
+  zones.push({ id: 'history', name: ZONE_NAMES.history, rect: har });
+  const hscenery = new Set(), hwalls = new Set();
+  const hwallRect = (x, y, w, h) => { fillRect(data, x, y, w, h, TID.tree); for (let ty = y; ty < y + h; ty++) for (let tx = x; tx < x + w; tx++) hwalls.add(`${tx},${ty}`); };
+  fillRect(data, har.x, har.y, har.w, har.h, TID.quay);
+  fillRect(data, 1, H1, W - 2, 1, TID.water);                 // the bay: the sea laps the top of the quay
+  sprinkle(data, hrnd, { x: 1, y: H1 + 1, w: W - 2, h: HS - 2 }, TID.quay, TID.tree, 0.02, hscenery);   // a palm or two on the quay
+  hwallRect(0, H - 1, W, 1); hwallRect(0, H1, 1, HS); hwallRect(W - 1, H1, 1, HS);
+  vline(data, 24, OY + 34, H1 - 2, TID.path);                // the pier, from the beach out over the sea
+  data[H1 - 1][24] = TID.gateOpen; gates.push({ zone: 'history', tx: 24, ty: H1 - 1 });   // through the old bottom border
+  vline(data, 24, H1, H1 + 4, TID.path);                     // and on across the bay to the quay road
+  hline(data, 3, 44, H1 + 4, TID.path);                      // the quay road, with the cottages along it
+  bossSpots.history = (() => { const door = building(data, 46, H1 + 1, 5, 4, BUILDING_STYLES.castle); buildings.push({ zone: 'history', style: 'castle', x: 46, y: H1 + 1, w: 5, h: 4, door }); return { tx: door.tx, ty: door.ty + 1 }; })();
+  fillRect(data, 46, H1 + 5, 5, 2, TID.path);                // the castle's forecourt, at the east end of the quay
+  vline(data, 44, H1 + 4, H1 + 6, TID.path); hline(data, 44, 52, H1 + 6, TID.path);   // the road round to it
+  const hplace = (npcId, x, y) => {
+    const door = building(data, x, y, 3, 3, BUILDING_STYLES.history);
+    buildings.push({ zone: 'history', style: 'history', x, y, w: 3, h: 3, door });
+    const spot = { tx: door.tx, ty: door.ty + 1 };
+    data[spot.ty][spot.tx] = TID.path;
+    npcSpots[npcId] = spot;
+  };
+  hplace('captain-compass', 6, H1 + 1); hplace('mayor-marigold', 14, H1 + 1); hplace('flora', 30, H1 + 1); hplace('old-tom', 38, H1 + 1);
+  clearBoxedTrees(data, hscenery, hwalls, zones);
+  coins.push({ tx: 10, ty: H1 + 4 }, { tx: 34, ty: H1 + 4 }, { tx: 24, ty: H1 + 2 });
 
   return {
     width: W, height: H, data, spawn: down(old.spawn), zones, gates, npcSpots, bossSpots, buildings, coins,

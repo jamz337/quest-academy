@@ -131,7 +131,7 @@ describe('zone quests', () => {
 
   it('the Explorer badge needs a hello in every village', () => {
     const p = newProfile({ name: 'A', grade: 3 });
-    p.world.npcsTalked = ['prof-plus', 'botanist', 'owl-librarian', 'robo-mechanic', 'shepherd'];
+    p.world.npcsTalked = ['prof-plus', 'botanist', 'owl-librarian', 'robo-mechanic', 'captain-compass', 'shepherd'];
     applyResult(p, { gameId: 'math-dash', subject: 'math', band: 'A' }, { correct: 5, total: 10, timeMs: 1 });
     expect(p.badges).toContain('explorer');
   });

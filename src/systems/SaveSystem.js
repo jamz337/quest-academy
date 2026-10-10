@@ -1,9 +1,9 @@
 // localStorage persistence with a version number and forward migrations.
 import { SAVE_KEY, SAVE_BACKUP_KEY, SAVE_VERSION, TILE } from '../constants.js';
-import { OY, H0 } from '../data/world/map.js';
+import { OY, H0, H1, HS } from '../data/world/map.js';
 
 /** Every land, in story order (kept in step with data/world/quests.js ZONE_ORDER). */
-const ALL_ZONES = ['math', 'science', 'words', 'code', 'bible'];
+const ALL_ZONES = ['math', 'science', 'words', 'code', 'history', 'bible'];
 
 export function defaultSave() {
   return { version: SAVE_VERSION, activeProfileId: null, settings: { sound: true, lastMode: 'roam' }, profiles: {}, deleted: {} };
@@ -30,6 +30,14 @@ export const migrations = [
       if (!w) continue;
       if (Number.isFinite(w.y)) w.y += OY * TILE;
       if (Array.isArray(w.explored) && w.explored.length === H0) w.explored = [...Array.from({ length: OY }, () => [0, 0]), ...w.explored];
+    }
+    return d;
+  },
+  // 2 -> 3: History Harbor was added below the world (HS more rows), so explored grids grow at the bottom.
+  (d) => {
+    for (const p of Object.values(d.profiles || {})) {
+      const w = p.world;
+      if (w && Array.isArray(w.explored) && w.explored.length === H1) w.explored = [...w.explored, ...Array.from({ length: HS }, () => [0, 0])];
     }
     return d;
   }

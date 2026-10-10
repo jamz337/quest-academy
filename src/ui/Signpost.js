@@ -13,7 +13,8 @@ export const SIGN_BOARDS = [
   { id: 'words', label: 'Words', dir: 'right' },
   { id: 'math', label: 'Math', dir: 'left' },
   { id: 'bible', label: 'Bible', dir: 'right' },
-  { id: 'code', label: 'Code', dir: 'down' }
+  { id: 'code', label: 'Code', dir: 'down' },
+  { id: 'history', label: 'Harbor', dir: 'down' }
 ];
 
 /** Outline of a board whose centre line is at (0, cy). Left/right boards straddle the post; the down board is centred. */

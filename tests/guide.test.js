@@ -10,7 +10,7 @@ const fresh = () => ({ games: {}, world: {}, coding: {} });
 
 describe('the gateways out of the hub', () => {
   it('each stands on the road, with its land just beyond it', () => {
-    expect(GATEWAYS.map((g) => g.zone).sort()).toEqual(['bible', 'code', 'math', 'science', 'words']);
+    expect(GATEWAYS.map((g) => g.zone).sort()).toEqual(['bible', 'code', 'history', 'math', 'science', 'words']);
     for (const g of GATEWAYS) {
       expect([TID.path, TID.gateOpen], g.zone).toContain(map.data[g.ty][g.tx]);
       let inLand = false;

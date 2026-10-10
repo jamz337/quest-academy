@@ -31,7 +31,11 @@ export const REQUESTS = {
   botanist: { emoji: '🌱', ask: 'My seedlings are wilting! Play Plant Power for two stars and I will know just what they need.', thanks: 'Green and growing again. Thank you, young gardener!' },
   'ranger-rio': { emoji: '🦒', ask: 'The animals have wandered from their homes! Match the habitats for two stars and I can guide them back.', thanks: 'Every creature is home. Fine tracking!' },
   'captain-cork': { emoji: '⚓', ask: 'I am loading the boat and cannot tell what will float! Play Sink or Float for two stars and help me pack.', thanks: 'Nothing sank! The boat is packed and bobbing.' },
-  'dr-misty': { emoji: '🧊', ask: 'My ice is melting and my kettle is boiling! Sort the states of matter for two stars and help me keep up.', thanks: 'Solid, liquid, gas: all sorted. Brilliant!' }
+  'dr-misty': { emoji: '🧊', ask: 'My ice is melting and my kettle is boiling! Sort the states of matter for two stars and help me keep up.', thanks: 'Solid, liquid, gas: all sorted. Brilliant!' },
+  'captain-compass': { emoji: '🧭', ask: 'The fishing boats are lost in the fog! Play Compass Quest for two stars and I can call them home.', thanks: 'Every boat is back in the harbour. Steady bearings!' },
+  'mayor-marigold': { emoji: '🏛️', ask: 'The town fair needs every helper in the right place! Play Community Helpers for two stars and I can sort the stalls.', thanks: 'Doctor, firefighter, baker: all in place. What a fair!' },
+  flora: { emoji: '🏁', ask: 'A ship is coming in and I cannot tell whose flag it flies! Play Flag Finder for two stars and help me greet them.', thanks: 'Welcomed in their own language! Thank you, flag spotter.' },
+  'old-tom': { emoji: '🕰️', ask: 'The museum is opening and the exhibits are all muddled! Play Past & Present for two stars and help me put them in order.', thanks: 'Long ago on the left, today on the right. The museum is open!' }
 };
 
 /** The villagers with an order today (their ids), the same all day for this player. */

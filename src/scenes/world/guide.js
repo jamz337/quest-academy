@@ -8,7 +8,7 @@ import { TILE } from '../../constants.js';
 import { THEME, hex } from '../../ui/theme.js';
 import { FONT } from '../../ui/TextStyles.js';
 import * as Store from '../../systems/Store.js';
-import { TID, ZONE_NAMES, isWalkable, OY } from '../../data/world/map.js';
+import { TID, ZONE_NAMES, isWalkable, OY, H1 } from '../../data/world/map.js';
 import { MINIGAMES, gamesForSubject, getGame } from '../../data/minigames.js';
 import { houseStars, HOUSE_LEVELS } from '../../systems/Progression.js';
 import { dailyGoal } from '../../systems/Goals.js';
@@ -19,7 +19,8 @@ export const GATEWAYS = [
   { zone: 'science', tx: 22, ty: OY, dx: 0, dy: -1 },
   { zone: 'words', tx: 36, ty: 13 + OY, dx: 0, dy: -1 },
   { zone: 'code', tx: 24, ty: 28 + OY, dx: 0, dy: 1 },
-  { zone: 'bible', tx: 37, ty: 17 + OY, dx: 1, dy: 0 }
+  { zone: 'bible', tx: 37, ty: 17 + OY, dx: 1, dy: 0 },
+  { zone: 'history', tx: 24, ty: H1 - 1, dx: 0, dy: 1 }
 ];
 
 /** Stars earned in a land's games, and the most there are: { stars, total }. */

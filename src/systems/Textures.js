@@ -109,7 +109,8 @@ export const TILE_IDS = {
   flower2: 29, flower3: 30, flower4: 31, flower5: 32, flower6: 33,
   meadow2: 34, meadow3: 35, meadow4: 36, meadow5: 37, meadow6: 38, meadow7: 39, meadow8: 40,
   plinth: 41,
-  springs: 42, roofScience: 43, wallScience: 44, doorScience: 45
+  springs: 42, roofScience: 43, wallScience: 44, doorScience: 45,
+  quay: 46, roofHistory: 47, wallHistory: 48, doorHistory: 49
 };
 /** Flower and daisy patches come in several looks; the world picks one per map square so no two neighbours match. */
 export const FLOWER_TILES = [6, 29, 30, 31, 32, 33], MEADOW_TILES = [7, 34, 35, 36, 37, 38, 39, 40];
@@ -312,6 +313,37 @@ function labWall(ctx, x0, window = true) {
   }
 }
 
+/** History Harbor: a cobbled quay, and whitewashed cottages with blue shutters under slate-blue roofs. */
+function quayTile(ctx, x0, rnd) {
+  px(ctx, x0, 0, '#d8d3c8', TILE, TILE);
+  for (let i = 0; i < 9; i++) {
+    const x = x0 + 1 + rnd() * (TILE - 8), y = 1 + rnd() * (TILE - 6);
+    ctx.fillStyle = rnd() < 0.5 ? '#c5bfb2' : '#cfc9bc'; ctx.beginPath(); ctx.roundRect(x, y, 5 + rnd() * 2, 3.5, 1.2); ctx.fill();
+  }
+  for (let i = 0; i < 3; i++) disc(ctx, x0 + inside(rnd, 3), inside(rnd, 3), 0.6, '#b3ada0');
+}
+function harbourRoof(ctx, x0) {
+  px(ctx, x0, 0, '#3f6aa8', TILE, TILE);
+  for (let band = 0; band < 6; band++) {
+    const y = band * 5 + 4;
+    px(ctx, x0, y, '#30589c', TILE, 1);
+    for (let x = (band % 2) * 4; x < TILE; x += 8) px(ctx, x0 + x, y - 4, '#30589c', 1, 4);
+    px(ctx, x0 + (band % 2) * 4 + 1, y - 3, '#6f93c9', 2, 1);
+  }
+  px(ctx, x0, TILE - 2, '#ffffff', TILE, 2);   // white eaves
+}
+function harbourWall(ctx, x0, window = true) {
+  px(ctx, x0, 0, '#fbf7ef', TILE, TILE);
+  px(ctx, x0, 0, '#e6dfd2', 1, TILE); px(ctx, x0 + TILE - 1, 0, '#e6dfd2', 1, TILE);
+  px(ctx, x0, TILE - 3, '#c9c2b4', TILE, 3);
+  if (window) {
+    px(ctx, x0 + 10, 9, '#30589c', 12, 12); px(ctx, x0 + 11, 10, '#bfe3ff', 10, 10);   // a square window with blue shutters
+    px(ctx, x0 + 15, 10, '#30589c', 1, 10); px(ctx, x0 + 11, 15, '#30589c', 10, 1);
+    px(ctx, x0 + 6, 9, '#30589c', 3, 12); px(ctx, x0 + 23, 9, '#30589c', 3, 12);
+    px(ctx, x0 + 9, 21, '#d94a4a', 14, 2);   // a flower box
+  }
+}
+
 /** Castles: grey stone blocks, a crenellated top and a great iron-studded gate. */
 function castleWall(ctx, x0, slit = true) {
   px(ctx, x0, 0, '#9aa3ad', TILE, TILE);
@@ -430,6 +462,9 @@ export function tilesTexture(scene) {
   // Science Springs (after every older tile, so the shared random stream leaves them as they were).
   tile(T.springs, (c) => grassTile(c, 0, rnd, '#7fd9c7', '#58bda9', '#b5f0e3', 6));
   tile(T.roofScience, (c) => glassRoof(c, 0)); tile(T.wallScience, (c) => labWall(c, 0)); tile(T.doorScience, (c) => doorTile(c, 0, (cc, x) => labWall(cc, x, false)));
+  // History Harbor (newest, so again after the rest).
+  tile(T.quay, (c) => quayTile(c, 0, rnd));
+  tile(T.roofHistory, (c) => harbourRoof(c, 0)); tile(T.wallHistory, (c) => harbourWall(c, 0)); tile(T.doorHistory, (c) => doorTile(c, 0, (cc, x) => harbourWall(cc, x, false)));
   tex.refresh();
 }
 

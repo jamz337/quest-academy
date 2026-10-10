@@ -12,8 +12,8 @@ describe('world map', () => {
   const map = buildMap();
 
   it('has the expected size and a deterministic layout', () => {
-    expect(map.width).toBe(56); expect(map.height).toBe(54);
-    expect(map.data).toHaveLength(54);
+    expect(map.width).toBe(56); expect(map.height).toBe(64);
+    expect(map.data).toHaveLength(64);
     for (const row of map.data) expect(row).toHaveLength(56);
     expect(buildMap().data).toEqual(map.data);
   });
@@ -22,7 +22,7 @@ describe('world map', () => {
     expect(isWalkable(map.data[map.spawn.ty][map.spawn.tx])).toBe(true);
     for (const [id, s] of Object.entries(map.npcSpots)) expect(isWalkable(map.data[s.ty][s.tx]), id).toBe(true);
     for (const c of map.coins) expect(map.data[c.ty][c.tx]).toBe(TID.path);
-    expect(map.coins).toHaveLength(21);
+    expect(map.coins).toHaveLength(24);
   });
 
   it('every NPC in npcs.js has a spot in the zone it belongs to', () => {

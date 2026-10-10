@@ -4,7 +4,7 @@ A Math, English and Coding adventure game for grades 2 to 8, built for Android p
 
 Two ways to play:
 
-- **Explore the World**: walk around a top-down map, meet characters in Math Meadow, Word Woods and Code Cove, and play their games to earn coins, XP and stars. Zones unlock as you earn stars.
+- **Explore the World**: walk around a top-down map, meet characters in Math Meadow, Word Woods, Code Cove, Bible Village, Science Springs and History Harbor, and play their games to earn coins, XP and stars. Zones unlock as you earn stars.
 - **Challenge Mode**: pick any of the 9 games directly and chase 3-star ratings.
 
 Each player has a local profile (name, avatar, grade). The grade picks the difficulty band: grades 2-3, 4-5 or 6-8. Several kids can share one device. No account, no server, works offline.

@@ -133,6 +133,27 @@ export const NPCS = [
     id: 'dr-misty', duel: { prop: '🧊', challenge: 'Solid, liquid or gas: duel me if you dare!', win: 'Dr Misty is melted!', lose: 'Dr Misty wins this round. Cool off and try again!' }, pitch: 1.15, rate: 0.9, voice: 'female', name: 'Dr Misty', sprite: 'npc22', gameId: 'sci-matter', zone: 'science',
     lines: ['Ice, water, steam: the same stuff in three states!', 'Heat it, cool it, and watch it change. Shall we experiment?'],
     playPrompt: 'Want to play States of Matter?'
+  },
+  // History Harbor
+  {
+    id: 'captain-compass', duel: { prop: '🧭', challenge: 'North, south, east or west: duel me and find your bearings!', win: 'Captain Compass is off course!', lose: 'Captain Compass holds his course this round.' }, pitch: 0.75, rate: 1.0, voice: 'male', name: 'Captain Compass', sprite: 'npc23', gameId: 'his-compass', zone: 'history',
+    lines: ['Welcome to the harbour, sailor! A map is no use until you know which way is north.', 'The sun rises in the east and sets in the west. Learn that and you will never be lost.'],
+    playPrompt: 'Want to play Compass Quest?'
+  },
+  {
+    id: 'mayor-marigold', duel: { prop: '🏛️', challenge: 'Do you know who keeps this town running? Duel me!', win: 'Mayor Marigold is out-voted!', lose: 'Mayor Marigold wins this round. Town hall stands!' }, pitch: 0.95, rate: 1.0, voice: 'female', name: 'Mayor Marigold', sprite: 'npc24', gameId: 'his-helpers', zone: 'history',
+    lines: ['I am the mayor of this harbour town, and I could not run it alone.', 'Doctors, firefighters, teachers, the postal worker: every helper matters. Do you know what they all do?'],
+    playPrompt: 'Want to play Community Helpers?'
+  },
+  {
+    id: 'flora', duel: { prop: '🏁', challenge: 'Every flag in the world is on my boat. Duel me!', win: 'Flora lowers her flags!', lose: 'Flora keeps her flags flying this round.' }, pitch: 1.25, rate: 1.1, voice: 'female', name: 'Flora of the Flags', sprite: 'npc25', gameId: 'his-flags', zone: 'history',
+    lines: ['Ships from all over the world tie up here, and every one flies its flag.', 'Blue, gold and the trident: that is ours. Can you spot the others?'],
+    playPrompt: 'Want to play Flag Finder?'
+  },
+  {
+    id: 'old-tom', duel: { prop: '🕰️', challenge: 'I have seen a thing or two in my time. Duel me, young one!', win: 'Old Tom tips his cap to you!', lose: 'Old Tom wins this round. Long memory, see?' }, pitch: 0.7, rate: 0.85, voice: 'male', name: 'Old Tom the Lighthouse Keeper', sprite: 'npc26', gameId: 'his-time', zone: 'history',
+    lines: ['When I was a boy there were no cars on this quay, only horses and carts.', 'Long ago and today: things change, and that is what history is. Come and see.'],
+    playPrompt: 'Want to play Past & Present?'
   }
 ];
 

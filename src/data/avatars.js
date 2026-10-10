@@ -51,7 +51,11 @@ export const NPC_STYLES = [
   { sex: 'girl', skin: 'amber', hairStyle: 'high_ponytail', hair: 'chestnut', topStyle: 'polo', top: 'green', bottomStyle: 'skirt', bottom: 'brown', shoes: 'brown', eyes: 'green' },   // professor fern
   { sex: 'boy', skin: 'brown', hairStyle: 'buzzcut', hair: 'black', topStyle: 'tshirt', top: 'teal', bottomStyle: 'shorts', bottom: 'tan', shoes: 'brown', eyes: 'brown' },        // ranger rio
   { sex: 'boy', skin: 'light', hairStyle: 'curly_short', hair: 'ginger', topStyle: 'polo', top: 'navy', bottomStyle: 'pants', bottom: 'white', shoes: 'black', eyes: 'blue' },    // captain cork
-  { sex: 'girl', skin: 'olive', hairStyle: 'pixie', hair: 'blue', topStyle: 'tshirt', top: 'white', bottomStyle: 'pants', bottom: 'teal', shoes: 'white', eyes: 'gray' }         // dr misty
+  { sex: 'girl', skin: 'olive', hairStyle: 'pixie', hair: 'blue', topStyle: 'tshirt', top: 'white', bottomStyle: 'pants', bottom: 'teal', shoes: 'white', eyes: 'gray' },        // dr misty
+  { sex: 'boy', skin: 'brown', hairStyle: 'plain', hair: 'gray', topStyle: 'polo', top: 'navy', bottomStyle: 'pants', bottom: 'white', shoes: 'black', eyes: 'brown' },          // captain compass
+  { sex: 'girl', skin: 'black', hairStyle: 'bob', hair: 'black', topStyle: 'polo', top: 'yellow', bottomStyle: 'skirt', bottom: 'green', shoes: 'brown', eyes: 'brown' },        // mayor marigold
+  { sex: 'girl', skin: 'amber', hairStyle: 'braid', hair: 'redhead', topStyle: 'tshirt', top: 'red', bottomStyle: 'skirt', bottom: 'blue', shoes: 'white', eyes: 'green' },       // flora of the flags
+  { sex: 'boy', skin: 'light', hairStyle: 'plain', hair: 'white', topStyle: 'tshirt', top: 'blue', bottomStyle: 'pants', bottom: 'brown', shoes: 'brown', eyes: 'blue' }          // old tom
 ];
 
 // Badge backgrounds players can pick in the profile editor.

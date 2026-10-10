@@ -129,7 +129,7 @@ export function createLandmarks(w, profile) {
 
 /**
  * The bell tower at the top of the plaza: a wooden frame with a roof, and the Academy Bell hanging inside it,
- * drawn piece by piece (crown, left side, right side, clapper) as the bosses give them back. Missing pieces are
+ * drawn piece by piece (yoke, crown, left side, right side, rope, clapper) as the bosses give them back. Missing pieces are
  * shown as faint outlines so the goal is always in view. The base cannot be walked through.
  */
 export function createBellTower(w) {
@@ -164,6 +164,7 @@ export function refreshBell(w) {
   piece('left', () => { g.fillPoints([{ x: x - 4, y: by }, { x, y: by }, { x, y: by + 16 }, { x: x - 11, y: by + 16 }, { x: x - 11, y: by + 13 }, { x: x - 6, y: by + 8 }], true); });
   piece('right', () => { g.fillPoints([{ x, y: by }, { x: x + 4, y: by }, { x: x + 6, y: by + 8 }, { x: x + 11, y: by + 13 }, { x: x + 11, y: by + 16 }, { x, y: by + 16 }], true); });
   piece('clapper', () => { g.fillRect(x - 1, by + 12, 2, 6); g.fillCircle(x, by + 19, 2.5); });
+  piece('rope', () => { g.fillRect(x + 13, by - 5, 2, 26); g.fillCircle(x + 14, by + 22, 2.5); });   // the bell rope, hanging from the yoke
   if (have.size === CHAPTERS.length) { g.lineStyle(1, 0xffc531, 0.7); g.strokeCircle(x, by + 8, 16); g.strokeCircle(x, by + 8, 20); }
   t.label.setText(have.size === CHAPTERS.length ? 'The Academy Bell' : `Academy Bell  ${have.size}/${CHAPTERS.length}`);
 }

@@ -50,6 +50,16 @@ export const BOSSES = [
     taunts: ['Foggy thinking!', 'The mist thickens!', 'Hisss. Wrong!'],
     beaten: ['The fog... is lifting...', 'The Springs are yours. Come back for a rematch when the mist returns.'],
     win: 'The Fog Fiend is cleared!', lose: 'The Fog Fiend fogged you…', unlocks: null
+  },
+  {
+    id: 'boss-history', voice: 'male', pitch: 0.65, rate: 1.0, zone: 'history', subject: 'history', name: 'Admiral Amnesia', title: 'Forgetter of the Ages',
+    look: { sex: 'boy', skin: 'taupe', hairStyle: 'plain', hair: 'white', topStyle: 'polo', top: 'navy', bottomStyle: 'pants', bottom: 'white', shoes: 'black', eyes: 'blue', bg: '#1f3d75' },
+    hp: 8, hearts: 3, questionTimeMs: 18000,
+    intro: ['Avast! Who comes aboard my harbour uninvited?', 'I make everyone forget: where they are, who helps them, what came before. Answer wrong and a heart goes overboard.', 'Remember everything and the harbour is yours. All hands!'],
+    locked: ['Not yet, cabin kid. The harbour folk have tasks for you first.', 'Meet everyone, earn your stars, then come and test your memory against mine.'],
+    taunts: ['Forgotten already?', 'Lost at sea!', 'Ha! Wrong heading!'],
+    beaten: ['I… remember now. You beat me.', 'The harbour is yours. Come back when the tide turns for a rematch.'],
+    win: 'Admiral Amnesia is all at sea!', lose: 'Admiral Amnesia sent you overboard…', unlocks: null
   }
 ];
 

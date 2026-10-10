@@ -74,6 +74,20 @@ export const CHAPTERS = [
     }
   },
   {
+    zone: 'history', guide: 'captain-compass', piece: 'rope', pieceName: 'the rope of the bell', title: 'The Harbour Piece',
+    intro: ['Admiral Amnesia sailed off with the bell rope and moored his castle at History Harbor, down the pier past Code Cove.', 'Captain Compass keeps the harbour charts. Find him on the quay and he will set you on course.'],
+    lines: {
+      guide: 'Captain Compass says the Admiral makes folk forget everything. We will remember for them!',
+      meet: 'Everyone on the quay has met you. The whole harbour knows your name!',
+      stars: 'Every cottage in the harbour shines with stars. What a historian!',
+      duels: 'Nobody in the harbour can out-remember you now. The Admiral is sweating under his hat!',
+      errand: 'The Captain has his spyglass back. The harbour folk trust you now.',
+      coins: 'The last coin on the quay! The Admiral has nowhere left to hide.',
+      ready: 'The Admiral\'s castle gates are open. Go and remind him who he is!',
+      piece: 'The rope of the bell! Now there is something to ring it with.'
+    }
+  },
+  {
     zone: 'bible', guide: 'shepherd', piece: 'clapper', pieceName: 'the clapper of the bell', title: 'The Village Piece',
     intro: ['Only the clapper is missing now, and Goliath keeps it in his castle in Bible Village.', 'Shepherd Eli has faced giants before. Go and find him.'],
     lines: {
@@ -185,7 +199,7 @@ export function signpostLine(profile) {
   return st.next ? `Chapter ${st.chapter}, ${ZONE_NAMES[st.zone]}: ${st.next.title.toLowerCase()}. ${st.next.id === 'boss' ? ch.lines.ready : ''}`.trim() : `Head to ${ZONE_NAMES[st.zone]}.`;
 }
 
-const WAY = { math: 'to the west of the plaza', science: 'up north, through the archway at the top of the plaza', words: 'up in the north-east, through the archway', code: 'down south by the sea', bible: 'over to the east, past the archway' };
+const WAY = { math: 'to the west of the plaza', science: 'up north, through the archway at the top of the plaza', words: 'up in the north-east, through the archway', code: 'down south by the sea', history: 'down south, along the pier at the end of Code Cove', bible: 'over to the east, past the archway' };
 
 /** A clue for the next step of the story, for Mango's visits; null once the bell is whole. */
 export function clueFor(profile) {
