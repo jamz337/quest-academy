@@ -37,7 +37,7 @@ export const MINIGAMES = [
   { id: 'bible-match', subject: 'bible', title: 'Who Am I?', sceneKey: 'MG_WordMatch', icon: '🐑', npc: 'fisherman',
     description: 'Match each Bible person to their story.' },
   { id: 'bible-ark', subject: 'bible', title: 'All Aboard the Ark', sceneKey: 'MG_ArkAnimals', playSceneKey: 'MG_ArkPlay', icon: '🛶', npc: 'ark-builder',
-    description: 'Answer questions to bring the animals aboard two by two.', playDescription: 'Touch the animals, hear them, and bring them aboard two by two.' }
+    description: 'Answer questions to bring the animals aboard two by two.', playDescription: 'Touch the animals, hear their real calls, and bring them aboard two by two.' }
 ];
 
 /** Games only for the youngest players (Pre-K to Grade 1), shown first in their Challenge menu. */

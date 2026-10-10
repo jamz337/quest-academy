@@ -1,0 +1,24 @@
+Animal calls from Pixabay (https://pixabay.com/sound-effects/), Pixabay Content License: free for commercial use, no attribution required.
+Trimmed to 2.5 s and loudness-matched. The lion roar: PWLPL (Pixabay 444190).
+elephant: https://cdn.pixabay.com/audio/2026/03/02/audio_e771c70338.mp3
+giraffe: https://cdn.pixabay.com/audio/2024/06/27/audio_69e7029a19.mp3
+monkey: https://cdn.pixabay.com/audio/2022/12/06/audio_8b07d5599d.mp3
+cow: https://cdn.pixabay.com/audio/2022/10/09/audio_8eab15649f.mp3
+zebra: https://cdn.pixabay.com/audio/2022/03/10/audio_f2bd1afa9c.mp3
+owl: https://cdn.pixabay.com/audio/2024/07/10/audio_812a8f1c09.mp3
+penguin: https://cdn.pixabay.com/audio/2024/06/27/audio_6d4a49620b.mp3
+pig: https://cdn.pixabay.com/audio/2022/03/10/audio_1d0ef3b7be.mp3
+dog: https://cdn.pixabay.com/audio/2025/10/12/audio_c89bb7f7f9.mp3
+duck: https://cdn.pixabay.com/audio/2022/06/08/audio_98351be2c8.mp3
+frog: https://cdn.pixabay.com/audio/2022/03/15/audio_61aa9a785e.mp3
+horse: https://cdn.pixabay.com/audio/2026/04/06/audio_02a0161aad.mp3
+bear: https://cdn.pixabay.com/audio/2024/02/19/audio_5bae07231f.mp3
+chicken: https://cdn.pixabay.com/audio/2026/02/19/audio_c1684e9253.mp3
+goat: https://cdn.pixabay.com/audio/2024/02/23/audio_fb7f1f37a8.mp3
+snake: https://cdn.pixabay.com/audio/2021/08/04/audio_32feb21d00.mp3
+gorilla: https://cdn.pixabay.com/audio/2022/03/24/audio_70edf43a49.mp3
+hippo: https://cdn.pixabay.com/audio/2022/03/10/audio_0ab35c973d.mp3
+crocodile: https://cdn.pixabay.com/audio/2025/07/09/audio_b519d90fba.mp3
+parrot: https://cdn.pixabay.com/audio/2022/03/15/audio_1756fd1262.mp3
+rhino: https://cdn.pixabay.com/audio/2024/06/27/audio_52c6b89f20.mp3
+rabbit: https://cdn.pixabay.com/audio/2025/06/11/audio_bc80b3f483.mp3

@@ -7,6 +7,8 @@ import { allLayerPaths, LPC_BASE } from '../ui/LpcCharacter.js';
 import { MANGO_IMAGES, MANGO_BASE } from '../ui/FlatCharacter.js';
 import { HERO_SHEETS, HERO_CELL } from '../ui/Hero.js';
 import { VILLAGER_SHEETS, VILLAGER_CELL, villagerKey } from '../ui/Villagers.js';
+import { ANIMAL_FILES, ANIMAL_BASE, animalKey } from '../ui/AnimalArt.js';
+import { isMuted, onMuted } from '../systems/Audio.js';
 
 const FONT_WAIT_MS = 1500;
 
@@ -19,6 +21,9 @@ export class BootScene extends Phaser.Scene {
     for (const k of MANGO_IMAGES) this.load.image(k, `${MANGO_BASE}${k}.png`);   // Mango's sprite cells and badge
     for (const [key, file] of Object.entries(HERO_SHEETS)) this.load.spritesheet(key, file, { frameWidth: HERO_CELL, frameHeight: HERO_CELL });   // the players' hand-drawn heroes
     for (const [who, file] of Object.entries(VILLAGER_SHEETS)) this.load.spritesheet(villagerKey(who), file, { frameWidth: VILLAGER_CELL, frameHeight: VILLAGER_CELL });
+    // The Pre-K ark: animal faces (Kenney's pack) and their recorded calls.
+    for (const k of ANIMAL_FILES) { this.load.image(animalKey(k), `${ANIMAL_BASE}${k}.png`); this.load.audio(`call-${k}`, `sounds/animals/${k}.mp3`); }
+    this.load.audio('call-lion', 'sounds/animals/lion.mp3');
   }
 
   create() {
@@ -28,6 +33,8 @@ export class BootScene extends Phaser.Scene {
 
   launch() {
     generateAllTextures(this);
+    // Recorded sounds play through Phaser's sound manager, which follows the game's own mute switch.
+    if (this.sound) { this.sound.mute = isMuted(); onMuted((m) => { if (this.sound) this.sound.mute = m; }); }
     Store.init();
     Cloud.init();
     const p = Store.getProfile();
