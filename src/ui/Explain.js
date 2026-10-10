@@ -26,7 +26,7 @@ export function explainState(key, steps, q) {
   const all = (steps || []).filter(Boolean);
   const kept = all.filter((s) => !ANSWER_STEP.test(String(s).trim()));
   const choices = (q.choices || q.options || []).map(String), answer = String(q.answer);
-  const canPick = choices.length >= 2 && choices.length <= 4 && choices.includes(answer) && choices.every((c) => c.length <= 40 && !c.includes('\n'));
+  const canPick = choices.length >= 2 && choices.length <= 4 && choices.includes(answer) && choices.every((c) => c.length <= 60 && !c.includes('\n'));
   return {
     key, steps: kept.length ? kept : all.length ? all : [`The answer is ${answer}.`],
     shown: 1, phase: 'steps', choices: canPick ? choices : null, answer, picks: [], solved: false, read: 0, lastPick: null

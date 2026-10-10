@@ -1,5 +1,6 @@
 // Boss battle questions: one multiple-choice shape { prompt, choices, answer, skill } drawn from every
 // generator of a subject so a boss tests the whole zone, not one game.
+import { scienceMix } from './science/questions.js';
 import { generateQuestion } from './math/arithmetic.js';
 import { generateRound as patternRound } from './math/patterns.js';
 import { generateRounds as grammarRounds, fillBlank } from './english/grammar.js';
@@ -71,7 +72,7 @@ export function codeQuestion(grade, rng) {
   return { prompt: start + programText(r.program.main) + '\n\nWhich way does it face at the end?', choices: rng.shuffle(Object.values(DIR_WORD)), answer, skill: band === 'B' ? 'repeat' : 'sequence_code' };
 }
 
-const BY_SUBJECT = { math: mathQuestion, words: wordsQuestion, code: codeQuestion, bible: bibleQuestion };
+const BY_SUBJECT = { math: mathQuestion, words: wordsQuestion, code: codeQuestion, bible: bibleQuestion, science: scienceMix };
 
 /** n questions for a subject at a grade, with no repeated prompts. */
 export function bossQuestions(subject, grade, rng, n = 20) {

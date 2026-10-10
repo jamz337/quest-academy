@@ -127,11 +127,11 @@ export class MinigameScene extends BaseScene {
 
   /** Record an answered question for the log (skill, right, time, whether an explanation was shown). */
   logQuestion(q, right) {
-    const choices = Array.isArray(q.choices) && q.choices.length >= 2 ? q.choices.slice(0, 4).map((c) => String(c).slice(0, 40)) : undefined;
+    const choices = Array.isArray(q.choices) && q.choices.length >= 2 ? q.choices.slice(0, 4).map((c) => String(c).slice(0, 60)) : undefined;
     // A miss keeps its explanation so the quick review (days later, without the generator's round) can show the same working.
     let explain;
     if (!right && choices) { try { explain = String(this.explain(q) || '').slice(0, 200) || undefined; } catch { explain = undefined; } }
-    this.qlog.push({ skill: q.skill, right, ms: Date.now() - this.qStartAt, explained: !right, prompt: String(q.prompt || q.sentence || '').slice(0, 120), answer: String(q.answer ?? '').slice(0, 40), choices, explain });
+    this.qlog.push({ skill: q.skill, right, ms: Date.now() - this.qStartAt, explained: !right, prompt: String(q.prompt || q.sentence || '').slice(0, 120), answer: String(q.answer ?? '').slice(0, 60), choices, explain });
     this.qStartAt = Date.now();
   }
 

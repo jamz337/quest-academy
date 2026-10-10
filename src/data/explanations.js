@@ -183,7 +183,13 @@ export const SKILL_TIPS = {
   synonym: 'Play "say it another way".', antonym: 'Play the opposites game: hot… cold!', definition: 'Guess a word from its meaning.',
   sequence_code: 'Give each other step-by-step directions to the kitchen.', repeat: 'Say "clap three times" and count the claps.', conditional: 'Play "if it is raining, take an umbrella".',
   people: 'Tell a Bible story at bedtime and ask who was in it.', stories: 'Read one story a night and retell it in the morning.', places: 'Find the places on a Bible map.',
-  books: 'Sing a books-of-the-Bible song.', verses: 'Put the verse on the fridge and say it at breakfast.'
+  books: 'Sing a books-of-the-Bible song.', verses: 'Put the verse on the fridge and say it at breakfast.',
+  habitats: 'Watch a nature programme and ask where each animal lives.', adaptations: 'Spot one thing about a pet or bird that helps it live where it does.',
+  'food-chains': 'Ask what a cat eats, then what that eats, back to a plant.', 'ecology-words': 'Use the words on a walk: habitat, predator, camouflage.', biomes: 'Find a desert, a rainforest and the poles on a globe.',
+  'plant-needs': 'Grow a bean in a jar on the windowsill and give it water.', 'plant-parts': 'Pull up a weed and name its roots, stem, leaves and flower.', 'life-cycle': 'Cut open a fruit and find the seeds.',
+  'seed-travel': 'Blow a dandelion clock and watch the seeds fly.', 'plant-science': 'Put a leaf in sunlight and a leaf in a cupboard for a week and compare.',
+  'sink-float': 'Fill the sink and test ten things from the kitchen.', density: 'Float an egg in salty water and in plain water.',
+  states: 'Find a solid, a liquid and a gas in the kitchen.', 'changes-of-state': 'Watch an ice cube melt and a kettle steam.', 'matter-facts': 'Measure the temperature of ice water and boiling water together.'
 };
 
 export const skillTip = (id) => SKILL_TIPS[id] || `Practise ${skillLabel(id)} together for a few minutes.`;

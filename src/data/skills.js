@@ -13,6 +13,9 @@ export const SKILL_LABELS = {
   barbados: 'Barbados facts',
   counting: 'counting', numerals: 'finding numbers', 'more-less': 'more and fewer', shapes: 'shapes', 'add-pictures': 'adding with pictures',
   'take-away': 'taking away', 'number-order': 'what comes next', 'compare-numbers': 'bigger and smaller', 'picture-patterns': 'picture patterns',
-  letters: 'letters', 'letter-case': 'big and small letters', 'first-sounds': 'first sounds', rhyming: 'rhyming words', 'sight-words': 'sight words', 'picture-words': 'reading short words'
+  letters: 'letters', 'letter-case': 'big and small letters', 'first-sounds': 'first sounds', rhyming: 'rhyming words', 'sight-words': 'sight words', 'picture-words': 'reading short words',
+  habitats: 'animal homes', adaptations: 'how animals survive', 'food-chains': 'food chains', 'ecology-words': 'nature words', biomes: 'biomes',
+  'plant-needs': 'what plants need', 'plant-parts': 'parts of a plant', 'life-cycle': 'a plant\'s life cycle', 'seed-travel': 'how seeds travel', 'plant-science': 'how plants work',
+  'sink-float': 'sink or float', density: 'density and floating', states: 'solids, liquids and gases', 'changes-of-state': 'melting, freezing and more', 'matter-facts': 'matter facts'
 };
 export const skillLabel = (id) => SKILL_LABELS[id] || String(id).replace(/[-_]/g, ' ');
