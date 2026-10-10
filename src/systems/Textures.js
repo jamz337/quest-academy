@@ -108,7 +108,8 @@ export const TILE_IDS = {
   roofBible: 22, wallBible: 23, doorBible: 24, castleTop: 25, castleWall: 26, castleDoor: 27, village: 28,
   flower2: 29, flower3: 30, flower4: 31, flower5: 32, flower6: 33,
   meadow2: 34, meadow3: 35, meadow4: 36, meadow5: 37, meadow6: 38, meadow7: 39, meadow8: 40,
-  plinth: 41
+  plinth: 41,
+  springs: 42, roofScience: 43, wallScience: 44, doorScience: 45
 };
 /** Flower and daisy patches come in several looks; the world picks one per map square so no two neighbours match. */
 export const FLOWER_TILES = [6, 29, 30, 31, 32, 33], MEADOW_TILES = [7, 34, 35, 36, 37, 38, 39, 40];
@@ -292,6 +293,25 @@ function slateRoof(ctx, x0) {
   }
 }
 
+/** Science Springs: a greenhouse of glass panes in a pale frame, and bright lab walls with a porthole window. */
+function glassRoof(ctx, x0) {
+  px(ctx, x0, 0, '#bfeff3', TILE, TILE);
+  for (let x = 0; x < TILE; x += 8) px(ctx, x0 + x, 0, '#7fcfd8', 1, TILE);
+  for (let y = 0; y < TILE; y += 8) px(ctx, x0, y, '#7fcfd8', TILE, 1);
+  px(ctx, x0 + 2, 2, '#ffffff', 4, 1); px(ctx, x0 + 10, 10, '#ffffff', 5, 1); px(ctx, x0 + 19, 18, '#ffffff', 4, 1);
+  px(ctx, x0, TILE - 2, '#5fb9c4', TILE, 2);
+}
+function labWall(ctx, x0, window = true) {
+  px(ctx, x0, 0, '#f3fbfc', TILE, TILE);
+  px(ctx, x0, 0, '#cfe6ea', 1, TILE); px(ctx, x0 + TILE - 1, 0, '#cfe6ea', 1, TILE);
+  px(ctx, x0, TILE - 3, '#9fd1d8', TILE, 3);
+  if (window) {
+    ctx.fillStyle = '#7fcfd8'; ctx.beginPath(); ctx.arc(x0 + 16, 14, 8, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#d9f6f9'; ctx.beginPath(); ctx.arc(x0 + 16, 14, 6, 0, Math.PI * 2); ctx.fill();
+    px(ctx, x0 + 13, 11, '#ffffff', 2, 2);
+  }
+}
+
 /** Castles: grey stone blocks, a crenellated top and a great iron-studded gate. */
 function castleWall(ctx, x0, slit = true) {
   px(ctx, x0, 0, '#9aa3ad', TILE, TILE);
@@ -407,6 +427,9 @@ export function tilesTexture(scene) {
   tile(T.roofBible, (c) => slateRoof(c, 0)); tile(T.wallBible, (c) => stoneWall(c, 0)); tile(T.doorBible, (c) => doorTile(c, 0, (cc, x) => stoneWall(cc, x, false)));
   tile(T.castleTop, (c) => castleTop(c, 0)); tile(T.castleWall, (c) => castleWall(c, 0)); tile(T.castleDoor, (c) => castleDoor(c, 0));
   tile(T.village, (c) => villageTile(c, 0, rnd));
+  // Science Springs (after every older tile, so the shared random stream leaves them as they were).
+  tile(T.springs, (c) => grassTile(c, 0, rnd, '#7fd9c7', '#58bda9', '#b5f0e3', 6));
+  tile(T.roofScience, (c) => glassRoof(c, 0)); tile(T.wallScience, (c) => labWall(c, 0)); tile(T.doorScience, (c) => doorTile(c, 0, (cc, x) => labWall(cc, x, false)));
   tex.refresh();
 }
 

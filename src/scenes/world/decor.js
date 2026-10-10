@@ -159,6 +159,7 @@ export function refreshBell(w) {
   // The bell, piece by piece. Missing pieces: faint dotted ghosts.
   const piece = (id, draw) => { if (have.has(id)) { g.fillStyle(0xffc531, 1); draw(); g.fillStyle(0xe09a12, 0.5); } else { g.fillStyle(0xfff1e8, 0.25); draw(); } };
   const by = y - 40;   // top of the bell body
+  piece('yoke', () => { g.fillRect(x - 14, by - 10, 28, 3); g.fillRect(x - 14, by - 10, 3, 5); g.fillRect(x + 11, by - 10, 3, 5); });   // the beam the bell hangs from
   piece('crown', () => { g.fillRect(x - 3, by - 6, 6, 4); g.fillEllipse(x, by - 1, 12, 6); });
   piece('left', () => { g.fillPoints([{ x: x - 4, y: by }, { x, y: by }, { x, y: by + 16 }, { x: x - 11, y: by + 16 }, { x: x - 11, y: by + 13 }, { x: x - 6, y: by + 8 }], true); });
   piece('right', () => { g.fillPoints([{ x, y: by }, { x: x + 4, y: by }, { x: x + 6, y: by + 8 }, { x: x + 11, y: by + 13 }, { x: x + 11, y: by + 16 }, { x, y: by + 16 }], true); });

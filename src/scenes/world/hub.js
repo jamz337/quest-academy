@@ -12,14 +12,15 @@ import { Sfx } from '../../systems/Audio.js';
 import { landStars, nextGame } from './guide.js';
 import { openRequests } from '../../data/world/requests.js';
 import { NPCS } from '../../data/world/npcs.js';
+import { ZONE_ORDER } from '../../data/world/quests.js';
 
 // Each land's jewel sits on the side of the fountain that faces its land.
-const JEWELS = [{ zone: 'math', a: Math.PI }, { zone: 'words', a: -Math.PI / 2 }, { zone: 'bible', a: 0 }, { zone: 'code', a: Math.PI / 2 }];
+const JEWELS = [{ zone: 'math', a: Math.PI }, { zone: 'science', a: -Math.PI * 0.75 }, { zone: 'words', a: -Math.PI / 4 }, { zone: 'bible', a: 0 }, { zone: 'code', a: Math.PI / 2 }];
 const STONE = 0xb9b3c6, STONE_LIGHT = 0xe2deeb, STONE_DARK = 0x8f89a1, DULL = 0xa7a3b5;
 
 const centreOf = (r) => ({ x: (r.tx + (r.w || 1) / 2) * TILE, y: (r.ty + (r.h || 1) / 2) * TILE });
 
-/** Stars earned across all four lands: { stars, total }. */
+/** Stars earned across all the lands: { stars, total }. */
 export function allStars(profile) {
   return JEWELS.reduce((sum, j) => { const s = landStars(profile, j.zone); return { stars: sum.stars + s.stars, total: sum.total + s.total }; }, { stars: 0, total: 0 });
 }
@@ -200,11 +201,11 @@ export function createQuestBoard(w) {
   g.fillStyle(0xfffaf2, 1); g.fillRoundedRect(x - bw / 2 + 3, top + 3, bw - 6, bh - 6, 5);                                   // the page
   g.fillStyle(0xffc531, 1); g.fillRoundedRect(x - bw / 2 + 3, top + 3, bw - 6, 9, { tl: 5, tr: 5, bl: 0, br: 0 });           // gold header
   g.fillStyle(0xffffff, 0.5); g.fillRoundedRect(x - bw / 2 + 6, top + 4.5, bw - 12, 1.5, 0.7);
-  // Four little progress bars in the lands' colours.
-  ['math', 'words', 'code', 'bible'].forEach((zone, i) => {
-    const col = THEME.subjects[zone], by = top + 16 + i * 5.6;
-    g.fillStyle(col.soft, 1); g.fillRoundedRect(x - 18, by, 36, 3.6, 1.8);
-    g.fillStyle(col.accent, 1); g.fillRoundedRect(x - 18, by, 14 + ((i * 7) % 4) * 6, 3.6, 1.8);
+  // A little progress bar per land, in its colour.
+  ZONE_ORDER.forEach((zone, i) => {
+    const col = THEME.subjects[zone], by = top + 15 + i * 4.5;
+    g.fillStyle(col.soft, 1); g.fillRoundedRect(x - 18, by, 36, 3, 1.5);
+    g.fillStyle(col.accent, 1); g.fillRoundedRect(x - 18, by, 14 + ((i * 7) % 4) * 6, 3, 1.5);
   });
   g.fillStyle(0xcf8a00, 1); g.fillCircle(x, top - 1, 8.5);
   g.fillStyle(0xffc531, 1); g.fillCircle(x, top - 2.5, 8.5);
@@ -225,7 +226,7 @@ export function boardFacts(profile, map) {
   const goal = profile.goal, game = goal ? getGame(goal.gameId) : null, next = nextGame(profile, map);
   return {
     goal: goal && game ? { title: game.title, stars: goal.stars, done: !!goal.done, bonus: GOAL_BONUS } : null,
-    lands: ['math', 'words', 'code', 'bible'].map((zone) => ({ zone, name: ZONE_NAMES[zone], ...landStars(profile, zone) })),
+    lands: ZONE_ORDER.map((zone) => ({ zone, name: ZONE_NAMES[zone], ...landStars(profile, zone) })),
     next: next ? { title: next.title, land: ZONE_NAMES[next.subject], zone: next.subject } : null,
     // Villagers with an order still open today (see data/world/requests.js).
     orders: openRequests(profile).map((r) => ({ emoji: r.emoji, name: (NPCS.find((n) => n.id === r.npc) || {}).name || 'A villager' }))

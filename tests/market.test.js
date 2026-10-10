@@ -40,7 +40,7 @@ describe('the market catalogue', () => {
     expect(isWalkable(map.data[spot.ty][spot.tx])).toBe(true);
     expect(zoneAt(map, spot.tx, spot.ty)).toBe('hub');
     expect(reachableFrom(map).has(`${spot.tx},${spot.ty}`)).toBe(true);
-    expect(map.marketSpot).toEqual({ tx: 28, ty: 20, w: 2, h: 2 });
+    expect(map.marketSpot).toEqual({ tx: 28, ty: 34, w: 2, h: 2 });
   });
 });
 

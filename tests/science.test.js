@@ -10,7 +10,7 @@ const F = await import('../src/data/science/facts.js');
 const { PLAY_SETS, playSet, makePlayAsks, targetOf } = await import('../src/data/science/play.js');
 const { ScienceLab } = await import('../src/scenes/minigames/science/ScienceLab.js');
 const { SciencePlay } = await import('../src/scenes/minigames/science/SciencePlay.js');
-const { STUDY_GAMES, getGame, gamesForGrade, ALL_GAMES } = await import('../src/data/minigames.js');
+const { MINIGAMES, getGame, gamesForGrade, ALL_GAMES } = await import('../src/data/minigames.js');
 const { SUBJECTS } = await import('../src/constants.js');
 const { THEME } = await import('../src/ui/theme.js');
 const { SKILL_LABELS } = await import('../src/data/skills.js');
@@ -64,7 +64,7 @@ describe('Science Springs facts', () => {
   it('is a fifth subject with its own colours and four games in every grade of the Challenge menu', () => {
     expect(SUBJECTS.science).toMatchObject({ id: 'science', title: 'Science', zone: 'Science Springs' });
     expect(THEME.subjects.science.accent).toBeTruthy();
-    expect(STUDY_GAMES.map((g) => g.id)).toEqual(SCIENCE_GAMES);
+    expect(MINIGAMES.filter((g) => g.subject === 'science').map((g) => g.id)).toEqual(SCIENCE_GAMES);
     for (const g of [-1, 0, 3, 8]) expect(gamesForGrade('science', g).map((x) => x.id)).toEqual(SCIENCE_GAMES);
     for (const id of SCIENCE_GAMES) { expect(getGame(id)).toBeTruthy(); expect(ALL_GAMES.some((x) => x.id === id)).toBe(true); expect(getGame(id).playSceneKey).toBe('MG_SciencePlay'); }
   });

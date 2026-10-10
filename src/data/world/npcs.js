@@ -10,6 +10,7 @@ export const NPCS = [
     id: 'signpost', pitch: 1, rate: 1, voice: 'male', name: 'Signpost Sam', sprite: 'npc8', art: 'sam', gameId: null, zone: 'hub',
     lines: [
       'Welcome to Quest Academy! Walk around and talk to friends to play games.',
+      'Science Springs is up north: take the road at the top of the plaza, through the archway, and follow the stream.',
       'Math Meadow is to the west. Word Woods is up in the north-east, Code Cove is down south by the sea, and Bible Village is over to the east.',
       'Each land has quests: meet the villagers, earn a star in every game and find the hidden coins.',
       'Finish them all and the boss of that land will come out of its castle to fight you!',
@@ -111,6 +112,27 @@ export const NPCS = [
     id: 'ark-builder', duel: { prop: '🪚', challenge: 'Hammer and nails ready: duel me!', win: 'Japheth downs his tools!', lose: 'Japheth wins. Back to building!' }, pitch: 0.9, rate: 0.95, voice: 'male', name: 'Japheth the Builder', sprite: 'npc16', gameId: 'bible-ark', zone: 'bible',
     lines: ['Hammer and nails! Father Noah says the rain is coming.', 'Answer a question and another pair of animals climbs aboard. Fill the ark before the flood!'],
     playPrompt: 'Want to play All Aboard the Ark?'
+  },
+  // Science Springs
+  {
+    id: 'botanist', duel: { prop: '🌱', challenge: 'Think you know plants? Duel me and find out!', win: 'Professor Fern is out-grown!', lose: 'Professor Fern wins this round. Back to the greenhouse!' }, pitch: 1.05, rate: 0.95, voice: 'female', name: 'Professor Fern', sprite: 'npc19', gameId: 'sci-plants', zone: 'science',
+    lines: ['Welcome to the greenhouses! Everything green in here started as a tiny seed.', 'Sunlight, water, air and soil: give a plant those and watch it grow.'],
+    playPrompt: 'Want to play Plant Power?'
+  },
+  {
+    id: 'ranger-rio', duel: { prop: '🦁', challenge: 'I know every animal from here to the sea. Duel me!', win: 'Ranger Rio is out-tracked!', lose: 'Ranger Rio wins this round. Keep exploring!' }, pitch: 0.95, rate: 1.05, voice: 'male', name: 'Ranger Rio', sprite: 'npc20', gameId: 'sci-habitat', zone: 'science',
+    lines: ['Every animal has a home that fits it, from the icy poles to the deep blue sea.', 'Can you match each one to where it lives? Let us find out!'],
+    playPrompt: 'Want to play Habitat Match?'
+  },
+  {
+    id: 'captain-cork', duel: { prop: '⚓', challenge: 'Sink or swim, sailor: duel me!', win: 'Captain Cork is sunk!', lose: 'Captain Cork stays afloat this round.' }, pitch: 0.8, rate: 1.0, voice: 'male', name: 'Captain Cork', sprite: 'npc21', gameId: 'sci-float', zone: 'science',
+    lines: ['Ahoy! Some things float and some things sink, and it is not about how heavy they are.', 'Guess first, then drop it in the tub. The water never lies!'],
+    playPrompt: 'Want to play Sink or Float?'
+  },
+  {
+    id: 'dr-misty', duel: { prop: '🧊', challenge: 'Solid, liquid or gas: duel me if you dare!', win: 'Dr Misty is melted!', lose: 'Dr Misty wins this round. Cool off and try again!' }, pitch: 1.15, rate: 0.9, voice: 'female', name: 'Dr Misty', sprite: 'npc22', gameId: 'sci-matter', zone: 'science',
+    lines: ['Ice, water, steam: the same stuff in three states!', 'Heat it, cool it, and watch it change. Shall we experiment?'],
+    playPrompt: 'Want to play States of Matter?'
   }
 ];
 

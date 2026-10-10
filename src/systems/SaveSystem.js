@@ -1,5 +1,9 @@
 // localStorage persistence with a version number and forward migrations.
-import { SAVE_KEY, SAVE_BACKUP_KEY, SAVE_VERSION } from '../constants.js';
+import { SAVE_KEY, SAVE_BACKUP_KEY, SAVE_VERSION, TILE } from '../constants.js';
+import { OY, H0 } from '../data/world/map.js';
+
+/** Every land, in story order (kept in step with data/world/quests.js ZONE_ORDER). */
+const ALL_ZONES = ['math', 'science', 'words', 'code', 'bible'];
 
 export function defaultSave() {
   return { version: SAVE_VERSION, activeProfileId: null, settings: { sound: true, lastMode: 'roam' }, profiles: {}, deleted: {} };
@@ -12,12 +16,24 @@ export function newProfile({ name, avatar = 0, grade = 3, look = null, readAloud
     id, name: String(name || 'Player').slice(0, 14), avatar, look, grade, readAloud, readAnswers, timers,
     createdAt: now, updatedAt: now, coins: 0, xp: 0, badges: [], mastery: {}, charms: {}, skills: {}, recentMisses: [], goal: null, timers: 'on', spelling: { words: {}, lists: {}, sessions: 0 }, social: { rooms: {} }, story: { started: false, announced: [], finale: false }, inventory: { owned: [], equipped: {}, decor: {}, spent: 0, visited: false, snacks: {} },
     games: {}, coding: { levels: {} },
-    world: { x: null, y: null, unlockedZones: ['math', 'words', 'code', 'bible'], npcsTalked: [], coinsCollected: [], bosses: {}, duels: {} }
+    world: { x: null, y: null, unlockedZones: [...ALL_ZONES], npcsTalked: [], coinsCollected: [], bosses: {}, duels: {} }
   };
 }
 
-/** Each migration upgrades data from version i to i+1. Index 0 = 0->1 (none yet). */
-export const migrations = [];
+/** Each migration upgrades data from version i to i+1. Index 0 = 0->1 (none). */
+export const migrations = [
+  null,
+  // 1 -> 2: Science Springs was added above the original world, which moved down OY rows (see data/world/map.js).
+  (d) => {
+    for (const p of Object.values(d.profiles || {})) {
+      const w = p.world;
+      if (!w) continue;
+      if (Number.isFinite(w.y)) w.y += OY * TILE;
+      if (Array.isArray(w.explored) && w.explored.length === H0) w.explored = [...Array.from({ length: OY }, () => [0, 0]), ...w.explored];
+    }
+    return d;
+  }
+];
 
 export function migrate(data) {
   let d = data;
@@ -38,7 +54,7 @@ export function migrate(data) {
     if (!p.readAloudChosen) p.readAloud = 'auto';   // read everything aloud unless the player picked otherwise
     p.readAnswers ||= 'on';   // a 🔊 on every answer unless the player turned it off
     p.world ||= { x: null, y: null, npcsTalked: [], coinsCollected: [] };
-    p.world.unlockedZones = ['math', 'words', 'code', 'bible']; p.world.npcsTalked ||= []; p.world.coinsCollected ||= []; p.world.bosses ||= {}; p.world.duels ||= {};
+    p.world.unlockedZones = [...ALL_ZONES]; p.world.npcsTalked ||= []; p.world.coinsCollected ||= []; p.world.bosses ||= {}; p.world.duels ||= {};
   }
   d.profiles ||= {};
   d.settings ||= { sound: true, lastMode: 'roam' };

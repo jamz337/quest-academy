@@ -94,7 +94,7 @@ export function buildQuests(hud) {
   // The bell: one slot per piece, lit as the bosses give them back.
   const pieces = bellPieces(profile);
   CHAPTERS.forEach((c, i) => {
-    const cx = w / 2 + (i - 1.5) * 34 * ui, have = pieces.includes(c.piece);
+    const cx = w / 2 + (i - (CHAPTERS.length - 1) / 2) * 34 * ui, have = pieces.includes(c.piece);
     hud.add.circle(cx, y + 12 * ui, 13 * ui, have ? THEME.warningSoft : THEME.sunken, 1).setStrokeStyle(2, have ? THEME.warning : THEME.line).setDepth(603);
     text(hud, cx, y + 12 * ui, have ? '🔔' : String(i + 1), have ? { fontSize: Math.round(14 * ui) + 'px' } : T.small(hud, THEME.ink3)).setDepth(604);
   });

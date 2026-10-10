@@ -27,7 +27,11 @@ export const REQUESTS = {
   shepherd: { emoji: '🐑', ask: 'I am telling the stories by the fire tonight. Answer the Bible quiz for two stars and help me remember them.', thanks: 'Every story told true. The fire burns bright.' },
   scribe: { emoji: '📜', ask: 'Some words have faded from my scrolls. Fill in the verses for two stars and they will be whole again.', thanks: 'The ink is fresh and the verses are whole.' },
   fisherman: { emoji: '🎣', ask: 'Visitors keep asking who is who in the Bible. Play Who Am I? for two stars and I can tell them.', thanks: 'Now I know every name. Thank you, friend!' },
-  'ark-builder': { emoji: '🪚', ask: 'Rain clouds are coming! Bring the animals aboard for two stars before the first drops fall.', thanks: 'All aboard and dry! Just in time.' }
+  'ark-builder': { emoji: '🪚', ask: 'Rain clouds are coming! Bring the animals aboard for two stars before the first drops fall.', thanks: 'All aboard and dry! Just in time.' },
+  botanist: { emoji: '🌱', ask: 'My seedlings are wilting! Play Plant Power for two stars and I will know just what they need.', thanks: 'Green and growing again. Thank you, young gardener!' },
+  'ranger-rio': { emoji: '🦒', ask: 'The animals have wandered from their homes! Match the habitats for two stars and I can guide them back.', thanks: 'Every creature is home. Fine tracking!' },
+  'captain-cork': { emoji: '⚓', ask: 'I am loading the boat and cannot tell what will float! Play Sink or Float for two stars and help me pack.', thanks: 'Nothing sank! The boat is packed and bobbing.' },
+  'dr-misty': { emoji: '🧊', ask: 'My ice is melting and my kettle is boiling! Sort the states of matter for two stars and help me keep up.', thanks: 'Solid, liquid, gas: all sorted. Brilliant!' }
 };
 
 /** The villagers with an order today (their ids), the same all day for this player. */

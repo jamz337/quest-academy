@@ -122,7 +122,7 @@ describe('zone quests', () => {
     expect(bossDefeated(p, 'math')).toBe(true);
     expect(p.world.bosses.math.attempts).toBe(1);
     expect(p.badges).toContain('boss-1');
-    expect(activeZone(p)).toBe('words');
+    expect(activeZone(p)).toBe('science');   // the next land in story order
     const lost = applyResult(p, { gameId: 'boss-words', subject: 'words', band: 'A', boss: bossForZone('words') }, { won: false, heartsLeft: 0, hpLeft: 3, correct: 5, total: 8, timeMs: 1 });
     expect(lost.stars).toBe(0);
     expect(bossDefeated(p, 'words')).toBe(false);
@@ -131,7 +131,7 @@ describe('zone quests', () => {
 
   it('the Explorer badge needs a hello in every village', () => {
     const p = newProfile({ name: 'A', grade: 3 });
-    p.world.npcsTalked = ['prof-plus', 'owl-librarian', 'robo-mechanic', 'shepherd'];
+    p.world.npcsTalked = ['prof-plus', 'botanist', 'owl-librarian', 'robo-mechanic', 'shepherd'];
     applyResult(p, { gameId: 'math-dash', subject: 'math', band: 'A' }, { correct: 5, total: 10, timeMs: 1 });
     expect(p.badges).toContain('explorer');
   });

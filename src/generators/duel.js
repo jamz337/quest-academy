@@ -203,7 +203,8 @@ const bibleOf = (kind) => (grade, rng) => {
   return whoQuestion(p, others, rng);
 };
 
-const scienceOf = (id) => (grade, rng) => scienceQuestion(id, grade, rng, rng.float());
+// A duel wants three or four answers to pick from, so Sink or Float's yes/no questions give way to its fuller kinds.
+const scienceOf = (id) => (grade, rng) => { let q = scienceQuestion(id, grade, rng, rng.float()); for (let i = 0; i < 40 && q.choices.length < 3; i++) q = scienceQuestion(id, grade, rng, 1); return q; };
 
 /** Generator per game id; anything unknown falls back to the subject mix. */
 export const BY_GAME = {

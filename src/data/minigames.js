@@ -37,7 +37,15 @@ export const MINIGAMES = [
   { id: 'bible-match', subject: 'bible', title: 'Who Am I?', sceneKey: 'MG_WordMatch', icon: '🐑', npc: 'fisherman',
     description: 'Match each Bible person to their story.' },
   { id: 'bible-ark', subject: 'bible', title: 'All Aboard the Ark', sceneKey: 'MG_ArkAnimals', playSceneKey: 'MG_ArkPlay', icon: '🛶', npc: 'ark-builder',
-    description: 'Answer questions to bring the animals aboard two by two.', playDescription: 'Touch the animals, hear their real calls, and bring them aboard two by two.' }
+    description: 'Answer questions to bring the animals aboard two by two.', playDescription: 'Touch the animals, hear their real calls, and bring them aboard two by two.' },
+  { id: 'sci-habitat', subject: 'science', title: 'Habitat Match', sceneKey: 'MG_ScienceLab', playSceneKey: 'MG_SciencePlay', icon: '🌴', npc: 'ranger-rio',
+    description: 'Match each animal to the place it calls home, and learn what helps it live there.', playDescription: 'Touch an animal to hear where it lives.' },
+  { id: 'sci-plants', subject: 'science', title: 'Plant Power', sceneKey: 'MG_ScienceLab', playSceneKey: 'MG_SciencePlay', icon: '🌱', npc: 'botanist',
+    description: 'What a plant needs, its parts and its life, from seed to fruit.', playDescription: 'Touch the sun, the water and the leaves to learn about plants.' },
+  { id: 'sci-float', subject: 'science', title: 'Sink or Float', sceneKey: 'MG_ScienceLab', playSceneKey: 'MG_SciencePlay', icon: '🛟', npc: 'captain-cork',
+    description: 'Guess, then drop it in: which things sink, which float, and why.', playDescription: 'Touch something to drop it in the water.' },
+  { id: 'sci-matter', subject: 'science', title: 'States of Matter', sceneKey: 'MG_ScienceLab', playSceneKey: 'MG_SciencePlay', icon: '🧊', npc: 'dr-misty',
+    description: 'Solids, liquids and gases, and how heat and cold change them.', playDescription: 'Touch ice, water and steam to find out what they are.' }
 ];
 
 /** Games only for the youngest players (Pre-K to Grade 1), shown first in their Challenge menu. */
@@ -48,19 +56,7 @@ export const EARLY_GAMES = [
     description: 'Trace each letter with your finger and hear its sound.' }
 ];
 
-/** Games of a land still being built: in the Challenge menu for every grade, with no villager in the world yet. */
-export const STUDY_GAMES = [
-  { id: 'sci-habitat', subject: 'science', title: 'Habitat Match', sceneKey: 'MG_ScienceLab', playSceneKey: 'MG_SciencePlay', icon: '🌴',
-    description: 'Match each animal to the place it calls home, and learn what helps it live there.', playDescription: 'Touch an animal to hear where it lives.' },
-  { id: 'sci-plants', subject: 'science', title: 'Plant Power', sceneKey: 'MG_ScienceLab', playSceneKey: 'MG_SciencePlay', icon: '🌱',
-    description: 'What a plant needs, its parts and its life, from seed to fruit.', playDescription: 'Touch the sun, the water and the leaves to learn about plants.' },
-  { id: 'sci-float', subject: 'science', title: 'Sink or Float', sceneKey: 'MG_ScienceLab', playSceneKey: 'MG_SciencePlay', icon: '🛟',
-    description: 'Guess, then drop it in: which things sink, which float, and why.', playDescription: 'Touch something to drop it in the water.' },
-  { id: 'sci-matter', subject: 'science', title: 'States of Matter', sceneKey: 'MG_ScienceLab', playSceneKey: 'MG_SciencePlay', icon: '🧊',
-    description: 'Solids, liquids and gases, and how heat and cold change them.', playDescription: 'Touch ice, water and steam to find out what they are.' }
-];
-
-export const ALL_GAMES = [...MINIGAMES, ...EARLY_GAMES, ...STUDY_GAMES];
+export const ALL_GAMES = [...MINIGAMES, ...EARLY_GAMES];
 export const getGame = (id) => ALL_GAMES.find((g) => g.id === id);
 /** The world's games for a subject (quests, badges and grade-ups count these). */
 export const gamesForSubject = (subject) => MINIGAMES.filter((g) => g.subject === subject);
@@ -69,4 +65,4 @@ export const gamesForSubject = (subject) => MINIGAMES.filter((g) => g.subject ==
 export const playableAt = (game, grade) => { const g = gradeOf(grade); return g >= (game.minGrade ?? -Infinity) && g <= (game.maxGrade ?? Infinity); };
 
 /** The games a player of `grade` sees for a subject: the early-years games first, then the world's games they can play. */
-export const gamesForGrade = (subject, grade) => [...EARLY_GAMES, ...MINIGAMES, ...STUDY_GAMES].filter((g) => g.subject === subject && playableAt(g, grade));
+export const gamesForGrade = (subject, grade) => [...EARLY_GAMES, ...MINIGAMES].filter((g) => g.subject === subject && playableAt(g, grade));

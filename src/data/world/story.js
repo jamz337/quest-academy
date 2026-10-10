@@ -1,5 +1,5 @@
 // The Academy Bell: the main mission that ties Explore mode together. Long ago the Academy's great bell rang
-// every morning and kept the four lands friendly, until the four bosses each stole a piece of it. Headmistress
+// every morning and kept the lands friendly, until the bosses each stole a piece of it. Headmistress
 // Hope, who waits by the player's house, sets the task; Mango the green monkey tags along and cheers each
 // mini mission; each land is a chapter whose missions lead to the castle, and every beaten boss gives back a
 // piece of the bell. Pure data and functions over the profile (profile.story = { started, announced, finale }).
@@ -29,6 +29,20 @@ export const CHAPTERS = [
       coins: 'The last hidden coin! Count Chaos cannot hide from us now.',
       ready: 'The castle gates are creaking open. Count Chaos is waiting, friend!',
       piece: 'The crown of the bell! One piece is home. Headmistress Hope will be so proud.'
+    }
+  },
+  {
+    zone: 'science', guide: 'botanist', piece: 'yoke', pieceName: 'the yoke of the bell', title: 'The Springs Piece',
+    intro: ['The Fog Fiend crept down from the springs and took the yoke, the beam the bell hangs from.', 'Professor Fern tends the greenhouses up there, through the archway at the top of the plaza. She will know where he lurks.'],
+    lines: {
+      guide: 'Professor Fern says the Fiend fogs up every experiment. Let us clear the air!',
+      meet: 'All of Science Springs has met you. The springs are bubbling with the news!',
+      stars: 'Every greenhouse in the Springs is full of stars. What a scientist!',
+      duels: 'Everyone in the Springs has lost a duel to you. The Fog Fiend is getting misty-eyed!',
+      errand: 'The Professor has her seeds back. The Springs trust you now.',
+      coins: 'The last coin by the springs! The Fiend has nowhere left to hide.',
+      ready: 'The Fiend\'s castle doors are open. Go and clear the fog!',
+      piece: 'The yoke of the bell! Now there is something to hang it from.'
     }
   },
   {
@@ -74,6 +88,8 @@ export const CHAPTERS = [
     }
   }
 ];
+
+const COUNT = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven'];
 
 export const chapterFor = (zone) => CHAPTERS.find((c) => c.zone === zone) || null;
 export const chapterNumber = (zone) => CHAPTERS.findIndex((c) => c.zone === zone) + 1;
@@ -131,17 +147,17 @@ export function mentorLines(profile) {
   if (!st.started && gradeOf(profile?.grade, 4) <= 3) {
     return [
       'Hello! I am Headmistress Hope. I run Quest Academy.',
-      'Long ago our big bell rang every morning. Then four bosses stole it, one piece each.',
-      'Please find the four pieces and ring the bell again. The villagers in each land will help you.',
+      `Long ago our big bell rang every morning. Then ${COUNT[CHAPTERS.length]} bosses stole it, one piece each.`,
+      `Please find the ${COUNT[CHAPTERS.length]} pieces and ring the bell again. The villagers in each land will help you.`,
       'Mango the monkey will pop by to cheer you on. Start in Math Meadow, to the west!'
     ];
   }
   if (!st.started) {
     return [
       'Welcome, student! I am Headmistress Hope, head of Quest Academy. I have been waiting for someone like you.',
-      'Long ago the Academy Bell rang every morning from the tower on the plaza, and the four lands were friends.',
-      'Then the four bosses stole it, a piece each, and hid the pieces in their castles. Without the bell the lands have drifted apart.',
-      'Your mission: bring back all four pieces and ring the bell again. Each land is a chapter, and its villagers will show you the way to the castle once they trust you.',
+      'Long ago the Academy Bell rang every morning from the tower on the plaza, and all the lands were friends.',
+      `Then the ${COUNT[CHAPTERS.length]} bosses stole it, a piece each, and hid the pieces in their castles. Without the bell the lands have drifted apart.`,
+      `Your mission: bring back all ${COUNT[CHAPTERS.length]} pieces and ring the bell again. Each land is a chapter, and its villagers will show you the way to the castle once they trust you.`,
       'Mango, our green monkey, will pop by to cheer you on and drop clues. Open your journal from the menu any time to see your next step. Off you go, and start with Math Meadow!'
     ];
   }
@@ -169,7 +185,7 @@ export function signpostLine(profile) {
   return st.next ? `Chapter ${st.chapter}, ${ZONE_NAMES[st.zone]}: ${st.next.title.toLowerCase()}. ${st.next.id === 'boss' ? ch.lines.ready : ''}`.trim() : `Head to ${ZONE_NAMES[st.zone]}.`;
 }
 
-const WAY = { math: 'to the west of the plaza', words: 'up in the north-east, through the archway', code: 'down south by the sea', bible: 'over to the east, past the archway' };
+const WAY = { math: 'to the west of the plaza', science: 'up north, through the archway at the top of the plaza', words: 'up in the north-east, through the archway', code: 'down south by the sea', bible: 'over to the east, past the archway' };
 
 /** A clue for the next step of the story, for Mango's visits; null once the bell is whole. */
 export function clueFor(profile) {

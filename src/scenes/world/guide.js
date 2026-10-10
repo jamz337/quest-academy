@@ -8,17 +8,18 @@ import { TILE } from '../../constants.js';
 import { THEME, hex } from '../../ui/theme.js';
 import { FONT } from '../../ui/TextStyles.js';
 import * as Store from '../../systems/Store.js';
-import { TID, ZONE_NAMES, isWalkable } from '../../data/world/map.js';
+import { TID, ZONE_NAMES, isWalkable, OY } from '../../data/world/map.js';
 import { MINIGAMES, gamesForSubject, getGame } from '../../data/minigames.js';
 import { houseStars, HOUSE_LEVELS } from '../../systems/Progression.js';
 import { dailyGoal } from '../../systems/Goals.js';
 
 /** Where each land's gateway stands and which way the road leaves the hub through it. */
 export const GATEWAYS = [
-  { zone: 'math', tx: 16, ty: 20, dx: -1, dy: 0 },
-  { zone: 'words', tx: 36, ty: 13, dx: 0, dy: -1 },
-  { zone: 'code', tx: 24, ty: 28, dx: 0, dy: 1 },
-  { zone: 'bible', tx: 37, ty: 17, dx: 1, dy: 0 }
+  { zone: 'math', tx: 16, ty: 20 + OY, dx: -1, dy: 0 },
+  { zone: 'science', tx: 22, ty: OY, dx: 0, dy: -1 },
+  { zone: 'words', tx: 36, ty: 13 + OY, dx: 0, dy: -1 },
+  { zone: 'code', tx: 24, ty: 28 + OY, dx: 0, dy: 1 },
+  { zone: 'bible', tx: 37, ty: 17 + OY, dx: 1, dy: 0 }
 ];
 
 /** Stars earned in a land's games, and the most there are: { stars, total }. */

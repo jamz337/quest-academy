@@ -32,4 +32,4 @@ export const SCENES = {
 
 export const SAVE_KEY = 'qa.save';
 export const SAVE_BACKUP_KEY = 'qa.save.bak';
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 2;

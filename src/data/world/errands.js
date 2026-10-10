@@ -2,12 +2,13 @@
 // unlocks after level 1 of that villager's game is passed, and one errand is carried at a time.
 // States on profile.world.errands[id]: (none) locked → 'available' → 'active' (item placed) → 'carrying' → 'done'.
 import { NPCS } from './npcs.js';
-import { ZONE_NAMES } from './map.js';
+import { ZONE_NAMES, OY } from './map.js';
 
 export const ERRAND_REWARD = { coins: 25, xp: 40 };
 
-// pickup spots are grass/path tiles off the main roads in a different zone, so players have to explore.
-export const ERRANDS = [
+// pickup spots are grass/path tiles off the main roads in a different zone, so players have to explore. (Written in the
+// original world's rows; `OY` moves them down with the map, see map.js.)
+const RAW_ERRANDS = [
   { id: 'abacus', npc: 'prof-plus', item: 'abacus', emoji: '🧮', zone: 'words', tx: 45, ty: 10, ask: 'I lent my abacus to the Owl Librarian and never got it back. Could you fetch it from Word Woods?', thanks: 'My abacus! Now I can count twice as fast.' },
   { id: 'olives', npc: 'chef-fraction', item: 'basket of olives', emoji: '🫒', zone: 'bible', tx: 39, ty: 24, ask: 'My pizzas need olives, and the best ones grow by the pond in Bible Village. Would you bring me a basket?', thanks: 'Perfect olives! Tonight’s pizza is on me.' },
   { id: 'nails', npc: 'bridge-keeper', item: 'bag of nails', emoji: '🔩', zone: 'code', tx: 52, ty: 31, ask: 'The bridge needs new nails. The Robo Mechanic left a bag on the beach in Code Cove. Could you fetch it?', thanks: 'Sturdy nails! The bridge will hold for years.' },
@@ -23,8 +24,13 @@ export const ERRANDS = [
   { id: 'pump', npc: 'balloon-seller', item: 'balloon pump', emoji: '🫧', zone: 'code', tx: 50, ty: 30, ask: 'My balloon pump rolled all the way down to Code Cove, out east on the sand. Could you fetch it?', thanks: 'Pump it up! The balloons are back in business.' },
   { id: 'flute', npc: 'frog-friend', item: 'reed flute', emoji: '🎶', zone: 'bible', tx: 40, ty: 26, ask: 'I dropped my reed flute by the pond in Bible Village, on the south side. Would you find it?', thanks: 'Ribbit! Now the frogs can sing along.' },
   { id: 'record', npc: 'dj-bot', item: 'vinyl record', emoji: '💿', zone: 'math', tx: 13, ty: 10, ask: 'Bzzt! My favourite record spun off to Math Meadow, north of the lanes. Could you bring it back?', thanks: 'Drop the beat! Thank you.' },
-  { id: 'hammer', npc: 'ark-builder', item: 'hammer', emoji: '🔨', zone: 'words', tx: 37, ty: 10, ask: 'I lent my hammer to the Gate Guard and it never came back. It is in Word Woods, south of the lane. Could you fetch it?', thanks: 'Bang, bang! The ark will be done in no time.' }
+  { id: 'hammer', npc: 'ark-builder', item: 'hammer', emoji: '🔨', zone: 'words', tx: 37, ty: 10, ask: 'I lent my hammer to the Gate Guard and it never came back. It is in Word Woods, south of the lane. Could you fetch it?', thanks: 'Bang, bang! The ark will be done in no time.' },
+  { id: 'seeds', npc: 'botanist', item: 'packet of seeds', emoji: '🌾', zone: 'math', tx: 10, ty: 26, ask: 'I lent my best seed packet to Professor Plus and it ended up on the Number Trail in Math Meadow. Could you fetch it?', thanks: 'My seeds! The greenhouse will be green again.' },
+  { id: 'notebook', npc: 'ranger-rio', item: 'field notebook', emoji: '📓', zone: 'words', tx: 38, ty: 7, ask: 'I left my field notebook in Word Woods, on the lane past the Gate Guard. Would you bring it back?', thanks: 'My notes! Every animal I ever spotted is in here.' },
+  { id: 'snorkel', npc: 'captain-cork', item: 'snorkel', emoji: '🤿', zone: 'bible', tx: 48, ty: 17, ask: 'My snorkel is in Bible Village, up the high street near the castle. Could you fetch it for me?', thanks: 'Ahoy! Back to the deep end.' },
+  { id: 'thermometer', npc: 'dr-misty', item: 'thermometer', emoji: '🌡️', zone: 'code', tx: 12, ty: 33, ask: 'I dropped my thermometer on the promenade in Code Cove, down by the sea. Would you look for it?', thanks: 'Zero to one hundred degrees! Science can continue.' }
 ];
+export const ERRANDS = RAW_ERRANDS.map((e) => ({ ...e, ty: e.ty + OY }));
 
 export const getErrand = (id) => ERRANDS.find((e) => e.id === id) || null;
 export const errandFor = (npcId) => ERRANDS.find((e) => e.npc === npcId) || null;

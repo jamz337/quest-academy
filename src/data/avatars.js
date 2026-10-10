@@ -47,7 +47,11 @@ export const NPC_STYLES = [
   { sex: 'boy', skin: 'taupe', hairStyle: 'spiked', hair: 'blue', topStyle: 'tshirt', top: 'black', bottomStyle: 'pants', bottom: 'purple', shoes: 'white', eyes: 'blue' },       // dj bolt
   { sex: 'boy', skin: 'brown', hairStyle: 'afro', hair: 'black', topStyle: 'polo', top: 'brown', bottomStyle: 'pants', bottom: 'leather', shoes: 'brown', eyes: 'brown' },        // ark builder
   { sex: 'girl', skin: 'brown', hairStyle: 'bangs', hair: 'gray', topStyle: 'polo', top: 'navy', bottomStyle: 'skirt', bottom: 'navy', shoes: 'black', eyes: 'brown', body: 'headmistress' },   // headmistress hope
-  { sex: 'girl', skin: 'black', hairStyle: 'bob', hair: 'black', topStyle: 'tshirt', top: 'orange', bottomStyle: 'skirt', bottom: 'green', shoes: 'brown', eyes: 'brown', outfit: { hat: { shape: 'sun', colour: '#ffc531' } } }   // auntie vee
+  { sex: 'girl', skin: 'black', hairStyle: 'bob', hair: 'black', topStyle: 'tshirt', top: 'orange', bottomStyle: 'skirt', bottom: 'green', shoes: 'brown', eyes: 'brown', outfit: { hat: { shape: 'sun', colour: '#ffc531' } } },   // auntie vee
+  { sex: 'girl', skin: 'amber', hairStyle: 'high_ponytail', hair: 'chestnut', topStyle: 'polo', top: 'green', bottomStyle: 'skirt', bottom: 'brown', shoes: 'brown', eyes: 'green' },   // professor fern
+  { sex: 'boy', skin: 'brown', hairStyle: 'buzzcut', hair: 'black', topStyle: 'tshirt', top: 'teal', bottomStyle: 'shorts', bottom: 'tan', shoes: 'brown', eyes: 'brown' },        // ranger rio
+  { sex: 'boy', skin: 'light', hairStyle: 'curly_short', hair: 'ginger', topStyle: 'polo', top: 'navy', bottomStyle: 'pants', bottom: 'white', shoes: 'black', eyes: 'blue' },    // captain cork
+  { sex: 'girl', skin: 'olive', hairStyle: 'pixie', hair: 'blue', topStyle: 'tshirt', top: 'white', bottomStyle: 'pants', bottom: 'teal', shoes: 'white', eyes: 'gray' }         // dr misty
 ];
 
 // Badge backgrounds players can pick in the profile editor.

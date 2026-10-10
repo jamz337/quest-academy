@@ -22,8 +22,8 @@ describe('save system', () => {
   it('migrates old data and fills missing fields', () => {
     const old = { version: 0, profiles: { x: { id: 'x', name: 'Old', grade: 2, coins: 0, xp: 0 } } };
     const m = migrate(old);
-    expect(m.version).toBe(1);
-    expect(m.profiles.x.world.unlockedZones).toEqual(['math', 'words', 'code', 'bible']);
+    expect(m.version).toBe(2);
+    expect(m.profiles.x.world.unlockedZones).toEqual(['math', 'science', 'words', 'code', 'bible']);
     expect(m.profiles.x.world.duels).toEqual({});
     expect(m.profiles.x.inventory.snacks).toEqual({});
     expect(m.settings.sound).toBe(true);
@@ -54,7 +54,7 @@ describe('progression', () => {
     expect(r.xp).toBe(90 + 45 + 20);
     expect(p.games['math-dash'].bestStars).toBe(3);
     expect(r.newBadges).toContain('first-win');
-    expect(unlockedZones(p)).toEqual(['math', 'words', 'code', 'bible']);   // every village is open; bosses are gated by quests
+    expect(unlockedZones(p)).toEqual(['math', 'science', 'words', 'code', 'bible']);   // every village is open; bosses are gated by quests
     // Worse replay does not lower the best
     applyResult(p, payload, { correct: 2, total: 10, timeMs: 50000 });
     expect(p.games['math-dash'].bestStars).toBe(3);
@@ -66,5 +66,19 @@ describe('progression', () => {
     const r = applyResult(p, { gameId: 'code-maze', band: 'C' }, { stars: 2, levelId: 'C-01', solved: true, blocksUsed: 7, par: 6, timeMs: 1000 });
     expect(r.coins).toBe(20); expect(r.xp).toBe(80);
     expect(p.coding.levels['C-01']).toEqual({ stars: 2, bestBlocks: 7 });
+  });
+});
+
+describe('the Science Springs migration (save version 2)', () => {
+  it('moves saved positions and explored rows down to match the taller map', () => {
+    const old = { version: 1, profiles: { x: { id: 'x', name: 'Old', grade: 2, coins: 0, xp: 0, world: { x: 100, y: 200, explored: Array.from({ length: 40 }, () => [1, 2]), npcsTalked: [], coinsCollected: [] } } } };
+    const m = migrate(JSON.parse(JSON.stringify(old)));
+    expect(m.version).toBe(2);
+    expect(m.profiles.x.world.y).toBe(200 + 14 * 32);
+    expect(m.profiles.x.world.x).toBe(100);
+    expect(m.profiles.x.world.explored).toHaveLength(54);
+    expect(m.profiles.x.world.explored[0]).toEqual([0, 0]);
+    expect(m.profiles.x.world.explored[14]).toEqual([1, 2]);
+    expect(migrate(JSON.parse(JSON.stringify(m))).profiles.x.world.y).toBe(200 + 14 * 32);   // never applied twice
   });
 });

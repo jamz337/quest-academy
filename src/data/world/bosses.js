@@ -40,6 +40,16 @@ export const BOSSES = [
     taunts: ['Is that your best?', 'You do not know the stories!', 'Ha! Wrong!'],
     beaten: ['Beaten... by a child... again!', 'You are the champion of Quest Academy! Come back for a rematch whenever you like.'],
     win: 'Goliath is defeated!', lose: 'Goliath wins this round…', unlocks: null
+  },
+  {
+    id: 'boss-science', voice: 'male', pitch: 0.6, rate: 0.9, zone: 'science', subject: 'science', name: 'The Fog Fiend', title: 'Muddler of Matter',
+    look: { sex: 'boy', skin: 'green', hairStyle: 'plain', hair: 'white', topStyle: 'polo', top: 'teal', bottomStyle: 'pants', bottom: 'gray', shoes: 'black', eyes: 'gray', bg: '#0c7d88' },
+    hp: 8, hearts: 3, questionTimeMs: 18000,
+    intro: ['Hisss. A curious child in MY springs?', 'I fog up every fact. Answer wrong and the mist takes a heart.', 'Clear my fog and the Springs are yours. Begin!'],
+    locked: ['Not yet, little scientist. The Springs still have work for you.', 'Meet everyone, earn your stars, then come and clear my fog.'],
+    taunts: ['Foggy thinking!', 'The mist thickens!', 'Hisss. Wrong!'],
+    beaten: ['The fog... is lifting...', 'The Springs are yours. Come back for a rematch when the mist returns.'],
+    win: 'The Fog Fiend is cleared!', lose: 'The Fog Fiend fogged you…', unlocks: null
   }
 ];
 

@@ -527,7 +527,7 @@ export class WorldScene extends Phaser.Scene {
     hud.setCoins(Store.getProfile().coins);
     hud.showDialog({
       name: 'Headmistress Hope', voice: 'female', pitch: 1.0, rate: 0.95, speaker: MENTOR_ID,
-      lines: ['You did it! Every piece of the Academy Bell is home.', 'Listen... it rings again, and the four lands are friends once more.', 'Here are 100 coins, and a badge only a true hero of Quest Academy can wear.'],
+      lines: ['You did it! Every piece of the Academy Bell is home.', 'Listen... it rings again, and the lands are friends once more.', 'Here are 100 coins, and a badge only a true hero of Quest Academy can wear.'],
       onLater: () => {
         Sfx.fanfare();
         const sc = hud.scene.isActive() ? hud : this;

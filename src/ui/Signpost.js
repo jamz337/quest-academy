@@ -9,6 +9,7 @@ const WOOD = { fill: 0xa06a3c, dark: 0x5a3a22, light: 0xc98c55 };
 
 /** Which lands the hub signpost points to, top board first. `dir` is where the arrow tip goes. */
 export const SIGN_BOARDS = [
+  { id: 'science', label: 'Science', dir: 'up' },
   { id: 'words', label: 'Words', dir: 'right' },
   { id: 'math', label: 'Math', dir: 'left' },
   { id: 'bible', label: 'Bible', dir: 'right' },
@@ -21,6 +22,7 @@ function boardPoints(dir, cy) {
   if (dir === 'right') { const x0 = -9, x1 = 31; return [{ x: x0, y: t }, { x: x1 - TIP, y: t }, { x: x1, y: cy }, { x: x1 - TIP, y: b }, { x: x0, y: b }]; }
   if (dir === 'left') { const x0 = -31, x1 = 9; return [{ x: x0 + TIP, y: t }, { x: x1, y: t }, { x: x1, y: b }, { x: x0 + TIP, y: b }, { x: x0, y: cy }]; }
   const hw = 18;
+  if (dir === 'up') return [{ x: -hw, y: t }, { x: -TIP, y: t }, { x: 0, y: t - TIP }, { x: TIP, y: t }, { x: hw, y: t }, { x: hw, y: b }, { x: -hw, y: b }];
   return [{ x: -hw, y: t }, { x: hw, y: t }, { x: hw, y: b }, { x: TIP, y: b }, { x: 0, y: b + TIP }, { x: -TIP, y: b }, { x: -hw, y: b }];
 }
 

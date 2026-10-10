@@ -1,19 +1,25 @@
 // The overworld is generated in code from a handful of rectangles and paths so it stays tiny and
 // deterministic. Tile ids follow TILE_IDS in systems/Textures.js.
+//
+// The first four lands and the hub were laid out on a 56 x 40 grid. Science Springs was added later as a strip
+// of OY rows above them: the old world is still built exactly as it was (so every tree and flower stays where
+// players know it) and then pasted OY rows down, and its coordinates are shifted the same way.
 import { mulberry32 } from '../../systems/Rng.js';
 
-export const W = 56, H = 40;
+export const OY = 14;                      // rows added above the original world
+export const W = 56, H0 = 40, H = H0 + OY;
 
 // Tile ids (mirrors TILE_IDS; duplicated here so the map module has no Phaser/texture dependency).
 export const TID = {
   grass: 0, path: 1, water: 2, tree: 3, wall: 4, door: 5, flower: 6, meadow: 7, woods: 8, cove: 9, gateLocked: 10, gateOpen: 11, roof: 12,
   roofMath: 13, wallMath: 14, doorMath: 15, roofWords: 16, wallWords: 17, doorWords: 18, roofCode: 19, wallCode: 20, doorCode: 21,
   roofBible: 22, wallBible: 23, doorBible: 24, castleTop: 25, castleWall: 26, castleDoor: 27, village: 28,
-  plinth: 41   // paving that something stands on (the fountain, the quest board): looks like path, cannot be walked on
+  plinth: 41,   // paving that something stands on (the fountain, the quest board): looks like path, cannot be walked on
+  springs: 42, roofScience: 43, wallScience: 44, doorScience: 45   // Science Springs: its bright ground and glass-house buildings
 };
-export const ROOF_TILES = [TID.roof, TID.roofMath, TID.roofWords, TID.roofCode, TID.roofBible, TID.castleTop];
-export const WALL_TILES = [TID.wall, TID.wallMath, TID.wallWords, TID.wallCode, TID.wallBible, TID.castleWall];
-export const DOOR_TILES = [TID.door, TID.doorMath, TID.doorWords, TID.doorCode, TID.doorBible, TID.castleDoor];
+export const ROOF_TILES = [TID.roof, TID.roofMath, TID.roofWords, TID.roofCode, TID.roofBible, TID.castleTop, TID.roofScience];
+export const WALL_TILES = [TID.wall, TID.wallMath, TID.wallWords, TID.wallCode, TID.wallBible, TID.castleWall, TID.wallScience];
+export const DOOR_TILES = [TID.door, TID.doorMath, TID.doorWords, TID.doorCode, TID.doorBible, TID.castleDoor, TID.doorScience];
 export const SOLID = [TID.water, TID.tree, TID.gateLocked, TID.plinth, ...ROOF_TILES, ...WALL_TILES];
 export const isWalkable = (id) => !SOLID.includes(id);
 
@@ -23,14 +29,17 @@ export const BUILDING_STYLES = {
   words: { roof: TID.roofWords, wall: TID.wallWords, door: TID.doorWords },
   code: { roof: TID.roofCode, wall: TID.wallCode, door: TID.doorCode },
   bible: { roof: TID.roofBible, wall: TID.wallBible, door: TID.doorBible },
+  science: { roof: TID.roofScience, wall: TID.wallScience, door: TID.doorScience },
   castle: { roof: TID.castleTop, wall: TID.castleWall, door: TID.castleDoor }
 };
 
-export const ZONE_NAMES = { hub: 'Academy Hub', math: 'Math Meadow', words: 'Word Woods', code: 'Code Cove', bible: 'Bible Village' };
+export const ZONE_NAMES = { hub: 'Academy Hub', math: 'Math Meadow', words: 'Word Woods', code: 'Code Cove', bible: 'Bible Village', science: 'Science Springs' };
+/** The ground tile of each land. */
+const GROUND_OF = { math: TID.meadow, words: TID.woods, code: TID.cove, bible: TID.village, science: TID.springs };
 
 function fillRect(data, x, y, w, h, id) {
   for (let ty = y; ty < y + h; ty++) for (let tx = x; tx < x + w; tx++) {
-    if (ty >= 0 && ty < H && tx >= 0 && tx < W) data[ty][tx] = id;
+    if (ty >= 0 && ty < data.length && tx >= 0 && tx < data[ty].length) data[ty][tx] = id;
   }
 }
 const hline = (data, x0, x1, y, id) => fillRect(data, Math.min(x0, x1), y, Math.abs(x1 - x0) + 1, 1, id);
@@ -52,18 +61,35 @@ function building(data, x, y, w, h, style) {
   return door;
 }
 
-/**
- * Build the world. Everything is placed in a fixed order: ground, scenery (random), then paths,
- * buildings and NPC spots which overwrite scenery so the path network is always contiguous.
- */
-/** The Number Trail's stepping stones, 1 to 10, in walking order from the hub to the Number Fort. */
-export const TRAIL_STONES = [[14, 20], [13, 23], [11, 26], [8, 26], [4, 26], [3, 22], [3, 19], [5, 18], [7, 15], [7, 9]].map(([tx, ty], i) => ({ n: i + 1, tx, ty }));
-/** Where the trail crosses the river on a plank bridge (path tiles over the water). */
-export const TRAIL_BRIDGE = { tx: 7, ty: 11, h: 2 };
+const BUILT = new Set([TID.path, TID.gateOpen, ...ROOF_TILES, ...WALL_TILES, ...DOOR_TILES]);
+/** Clear scenery trees that ended up touching a road, doorway, building or villager, so nothing is boxed in. */
+function clearBoxedTrees(data, scenery, walls, zones) {
+  const groundAt = (tx, ty) => { const z = zones.find((zn) => tx >= zn.rect.x && tx < zn.rect.x + zn.rect.w && ty >= zn.rect.y && ty < zn.rect.y + zn.rect.h); return z ? GROUND_OF[z.id] ?? TID.grass : TID.grass; };
+  for (const k of scenery) {
+    const [tx, ty] = k.split(',').map(Number);
+    if (data[ty][tx] !== TID.tree || walls.has(k)) continue;
+    let touching = false;
+    for (let dy = -1; dy <= 1 && !touching; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const t = data[ty + dy]?.[tx + dx];
+      if (t !== undefined && BUILT.has(t) && !walls.has(`${tx + dx},${ty + dy}`)) { touching = true; break; }
+    }
+    if (touching) data[ty][tx] = groundAt(tx, ty);
+  }
+}
 
-export function buildMap() {
+/** The Number Trail's stepping stones, 1 to 10, in walking order from the hub to the Number Fort. */
+export const TRAIL_STONES = [[14, 20], [13, 23], [11, 26], [8, 26], [4, 26], [3, 22], [3, 19], [5, 18], [7, 15], [7, 9]].map(([tx, ty], i) => ({ n: i + 1, tx, ty: ty + OY }));
+/** Where the trail crosses the river on a plank bridge (path tiles over the water). */
+export const TRAIL_BRIDGE = { tx: 7, ty: 11 + OY, h: 2 };
+
+/**
+ * The original world (the hub and its four lands) on its own 56 x 40 grid, exactly as first laid out: ground,
+ * scenery (random), then paths, buildings and NPC spots which overwrite scenery so the path network is always
+ * contiguous. Coordinates here are in the old grid; buildMap() shifts them down by OY.
+ */
+function buildOldWorld() {
   const rnd = mulberry32(2024);
-  const data = Array.from({ length: H }, () => Array(W).fill(TID.grass));
+  const data = Array.from({ length: H0 }, () => Array(W).fill(TID.grass));
 
   const zones = [
     { id: 'hub', name: ZONE_NAMES.hub, rect: { x: 16, y: 14, w: 16, h: 14 } },
@@ -84,8 +110,8 @@ export function buildMap() {
   // Scenery: flowers on plain grass, a few trees in the meadow and grass, dense trees in the woods.
   // Scenery trees are remembered so the ones that land against roads or houses can be cleared at the end.
   const scenery = new Set();
-  sprinkle(data, rnd, { x: 0, y: 0, w: W, h: H }, TID.grass, TID.flower, 0.08);
-  sprinkle(data, rnd, { x: 0, y: 0, w: W, h: H }, TID.grass, TID.tree, 0.05, scenery);
+  sprinkle(data, rnd, { x: 0, y: 0, w: W, h: H0 }, TID.grass, TID.flower, 0.08);
+  sprinkle(data, rnd, { x: 0, y: 0, w: W, h: H0 }, TID.grass, TID.tree, 0.05, scenery);
   sprinkle(data, rnd, m, TID.meadow, TID.tree, 0.03, scenery);
   sprinkle(data, rnd, wd, TID.woods, TID.tree, 0.14, scenery);
   sprinkle(data, rnd, { x: cv.x, y: cv.y, w: cv.w, h: 4 }, TID.cove, TID.tree, 0.05, scenery);
@@ -95,13 +121,13 @@ export function buildMap() {
   fillRect(data, 1, 11, 14, 2, TID.water);     // the meadow's river, below the Number Fort (the trail bridges it)
   for (let tx = 1; tx < W - 1; tx++) {
     const top = 35 + (rnd() < 0.35 ? -1 : 0);
-    vline(data, tx, top, H - 2, TID.water);
+    vline(data, tx, top, H0 - 2, TID.water);
   }
 
   // Walls of trees that seal off each village (and the outer border). These are deliberate and never cleared.
   const walls = new Set();
   const wallRect = (x, y, w, h) => { fillRect(data, x, y, w, h, TID.tree); for (let ty = y; ty < y + h; ty++) for (let tx = x; tx < x + w; tx++) walls.add(`${tx},${ty}`); };
-  wallRect(0, 0, W, 1); wallRect(0, H - 1, W, 1); wallRect(0, 0, 1, H); wallRect(W - 1, 0, 1, H);
+  wallRect(0, 0, W, 1); wallRect(0, H0 - 1, W, 1); wallRect(0, 0, 1, H0); wallRect(W - 1, 0, 1, H0);
   wallRect(29, 1, 1, 13);                      // words: west wall
   wallRect(29, 13, W - 29, 1);                 // words and village: shared wall
   wallRect(47, 1, W - 48, 12);                 // deep forest east of the woods
@@ -193,19 +219,7 @@ export function buildMap() {
   hline(data, 50, churchDoor.tx, churchDoor.ty + 1, TID.path);
   const church = { door: churchDoor, front: { tx: churchDoor.tx, ty: churchDoor.ty + 1 }, x: 51, y: 14, w: 3, h: 3 };
 
-  // Clear scenery trees that ended up touching a road, doorway, building or villager, so nothing is boxed in.
-  const BUILT = new Set([TID.path, TID.gateOpen, ...ROOF_TILES, ...WALL_TILES, ...DOOR_TILES]);
-  const groundAt = (tx, ty) => { const z = zones.find((zn) => tx >= zn.rect.x && tx < zn.rect.x + zn.rect.w && ty >= zn.rect.y && ty < zn.rect.y + zn.rect.h); return z ? { math: TID.meadow, words: TID.woods, code: TID.cove, bible: TID.village }[z.id] ?? TID.grass : TID.grass; };
-  for (const k of scenery) {
-    const [tx, ty] = k.split(',').map(Number);
-    if (data[ty][tx] !== TID.tree || walls.has(k)) continue;
-    let touching = false;
-    for (let dy = -1; dy <= 1 && !touching; dy++) for (let dx = -1; dx <= 1; dx++) {
-      const t = data[ty + dy]?.[tx + dx];
-      if (t !== undefined && BUILT.has(t) && !walls.has(`${tx + dx},${ty + dy}`)) { touching = true; break; }
-    }
-    if (touching) data[ty][tx] = groundAt(tx, ty);
-  }
+  clearBoxedTrees(data, scenery, walls, zones);
 
   // The Star Fountain in the middle of the plaza and the quest board beside Signpost Sam (scenes/world/hub.js).
   const fountain = { tx: 23, ty: 20, w: 3, h: 3 }, questBoard = { tx: 26, ty: 17 };
@@ -223,13 +237,65 @@ export function buildMap() {
     { tx: 42, ty: 17 }, { tx: 45, ty: 22 }, { tx: 50, ty: 25 }
   ];
 
-  return { width: W, height: H, data, spawn, zones, gates, npcSpots, bossSpots, buildings, coins, signSpot, bellSpot, marketSpot, home, church, trail: TRAIL_STONES, bridge: TRAIL_BRIDGE, fishSign: { tx: 5, ty: 13 }, fountain, questBoard };
+  return { data, zones, gates, npcSpots, bossSpots, buildings, coins, signSpot, bellSpot, marketSpot, home, church, fountain, questBoard, spawn, fishSign: { tx: 5, ty: 13 } };
+}
+
+/** Build the world: the original lands shifted down, with Science Springs along the top. */
+export function buildMap() {
+  const old = buildOldWorld();
+  const down = (p) => ({ ...p, ty: p.ty + OY });
+  const downRect = (r) => ({ ...r, y: r.y + OY });
+  const data = Array.from({ length: H }, () => Array(W).fill(TID.grass));
+  for (let y = 0; y < H0; y++) data[y + OY] = old.data[y];
+
+  const zones = old.zones.map((z) => ({ ...z, rect: downRect(z.rect) }));
+  const gates = old.gates.map(down);
+  const npcSpots = Object.fromEntries(Object.entries(old.npcSpots).map(([k, s]) => [k, down(s)]));
+  const bossSpots = Object.fromEntries(Object.entries(old.bossSpots).map(([k, s]) => [k, down(s)]));
+  const buildings = old.buildings.map((b) => ({ ...b, y: b.y + OY, door: down(b.door) }));
+  const coins = old.coins.map(down);
+  const home = { ...old.home, y: old.home.y + OY, door: down(old.home.door), front: down(old.home.front) };
+  const church = { ...old.church, y: old.church.y + OY, door: down(old.church.door), front: down(old.church.front) };
+
+  // ---- Science Springs: a bright strip of springs, greenhouses and a water lab above Math Meadow -------------
+  const rnd = mulberry32(2026);   // its own random stream, so nothing in the old world moves
+  const sci = { x: 1, y: 1, w: 22, h: OY - 1 };
+  zones.push({ id: 'science', name: ZONE_NAMES.science, rect: sci });
+  const scenery = new Set(), walls = new Set();
+  const wallRect = (x, y, w, h) => { fillRect(data, x, y, w, h, TID.tree); for (let ty = y; ty < y + h; ty++) for (let tx = x; tx < x + w; tx++) walls.add(`${tx},${ty}`); };
+  fillRect(data, sci.x, sci.y, sci.w, sci.h, TID.springs);
+  sprinkle(data, rnd, sci, TID.springs, TID.tree, 0.04, scenery);
+  fillRect(data, 8, 1, 2, OY - 1, TID.water);                 // the spring's stream, running down the land (fishable)
+  wallRect(0, 0, W, 1); wallRect(0, 0, 1, OY); wallRect(W - 1, 0, 1, OY);
+  wallRect(23, 1, W - 24, OY - 1);                            // the pine forest east of the springs
+  hline(data, 2, 22, 9, TID.path); vline(data, 22, 9, OY - 1, TID.path);   // the high street, fording the stream, and the lane to the archway
+  bossSpots.science = (() => { const door = building(data, 2, 2, 5, 4, BUILDING_STYLES.castle); buildings.push({ zone: 'science', style: 'castle', x: 2, y: 2, w: 5, h: 4, door }); return { tx: door.tx, ty: door.ty + 1 }; })();
+  fillRect(data, 2, 6, 5, 3, TID.path);                       // the castle's forecourt, down to the street
+  const place = (npcId, x, y) => {
+    const door = building(data, x, y, 3, 3, BUILDING_STYLES.science);
+    buildings.push({ zone: 'science', style: 'science', x, y, w: 3, h: 3, door });
+    const spot = { tx: door.tx, ty: door.ty + 1 };
+    data[spot.ty][spot.tx] = TID.path;
+    npcSpots[npcId] = spot;
+  };
+  place('botanist', 11, 6); place('ranger-rio', 15, 6); place('captain-cork', 19, 6);   // three greenhouses along the street
+  place('dr-misty', 13, 10); vline(data, 16, 10, 13, TID.path); hline(data, 14, 16, 13, TID.path);   // the water lab, on a lane of its own
+  data[OY][22] = TID.gateOpen; gates.push({ zone: 'science', tx: 22, ty: OY });   // the archway, in the old top border
+  vline(data, 22, OY + 1, OY + 16, TID.path);                 // the road from the archway down to the plaza
+  clearBoxedTrees(data, scenery, walls, zones);
+  coins.push({ tx: 10, ty: 9 }, { tx: 18, ty: 9 }, { tx: 22, ty: 11 });   // appended: saves keep coins by index
+
+  return {
+    width: W, height: H, data, spawn: down(old.spawn), zones, gates, npcSpots, bossSpots, buildings, coins,
+    signSpot: down(old.signSpot), bellSpot: down(old.bellSpot), marketSpot: down(old.marketSpot), home, church,
+    trail: TRAIL_STONES, bridge: TRAIL_BRIDGE, fishSign: down(old.fishSign), fountain: down(old.fountain), questBoard: down(old.questBoard)
+  };
 }
 
 /** Ground tile shown beneath a tree (trees are drawn on an overlay layer so the local ground shows through). */
 export function groundUnder(map, tx, ty) {
   const z = zoneAt(map, tx, ty);
-  return z === 'math' ? TID.meadow : z === 'words' ? TID.woods : z === 'code' ? TID.cove : z === 'bible' ? TID.village : TID.grass;
+  return (z && GROUND_OF[z]) ?? TID.grass;
 }
 
 /** Zone id containing a tile, or null for unnamed grassland between zones. */
