@@ -24,7 +24,7 @@ const LETTERS = 'ABCD';
  * ark floats and a rainbow appears. Questions mix stories, verses and people from the Bible banks; A-D picks on a keyboard.
  */
 export class ArkAnimals extends MinigameScene {
-  constructor() { super('MG_ArkAnimals'); }
+  constructor(key = 'MG_ArkAnimals') { super(key); }
 
   initState() {
     const tune = tuningFor(this.payload);
@@ -179,7 +179,7 @@ export class ArkAnimals extends MinigameScene {
       rg.lineStyle(2 * f, TRIM, 0.8); rg.lineBetween(quad[0].x, quad[0].y, quad[3].x, quad[3].y); rg.lineBetween(quad[1].x, quad[1].y, quad[2].x, quad[2].y);
       this.rampBase = rampBase;
       const spacing = Math.min(64 * f, r.w * 0.14);
-      s.animals.slice(s.boarded, s.boarded + 3).forEach((a, i) => {
+      if (!this.noQueue) s.animals.slice(s.boarded, s.boarded + 3).forEach((a, i) => {   // the Pre-K version shows its animals on cards instead
         const c = this.add.container(rampBase.x - 30 * f - i * spacing, groundY - 12 * f);
         const size = Math.round((i === 0 ? 26 : 21) * f) + 'px';
         c.add([this.add.text(-11 * f, 0, a, { fontSize: size }).setOrigin(0.5), this.add.text(11 * f, 4 * f, a, { fontSize: size }).setOrigin(0.5)]);
@@ -227,11 +227,14 @@ export class ArkAnimals extends MinigameScene {
     const bx = rect.x + rect.w * 0.42, by = rect.y + rect.h * 0.62, br = Math.min(rect.w * 0.42, rect.h * 0.55);
     RAINBOW.forEach((col, i) => { bow.lineStyle(7 * f, col, 0.85); bow.beginPath(); bow.arc(bx, by, br - i * 7 * f, Math.PI, Math.PI * 2, false); bow.strokePath(); });
     this.tweens.add({ targets: bow, alpha: 1, delay: 1500, duration: 900 });
-    const msg = this.add.text(area.x + area.w / 2, rect.y + rect.h + 44 * f, `All aboard! ${s.correct} of ${ROUNDS} right.\nThe rain came, and then the rainbow.`, {
+    const msg = this.add.text(area.x + area.w / 2, rect.y + rect.h + 44 * f, this.finaleMessage(), {
       fontFamily: FONT, fontSize: Math.round(19 * f) + 'px', color: hex(VILLAGE.question), fontStyle: WEIGHT.heavy, align: 'center', wordWrap: { width: area.w - 24 }
     }).setOrigin(0.5);
     enter(this, msg, { from: 'up', delay: 1700 });
   }
+
+  /** The line under the finale's picture. */
+  finaleMessage() { const s = this.state; return `All aboard! ${s.correct} of ${ROUNDS} right.\nThe rain came, and then the rainbow.`; }
 
   pick(i) {
     const s = this.state;

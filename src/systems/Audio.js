@@ -48,6 +48,54 @@ function tone(freq, dur = 0.12, type = 'square', vol = 0.08, when = 0, slide = 0
   o.connect(g).connect(a.destination); o.start(t0); o.stop(t0 + dur + 0.02);
 }
 
+/**
+ * A creature's call: an oscillator sliding from `from` to `to` Hz over `dur` seconds through a low-pass filter, with
+ * optional vibrato (`vib` Hz deep at `vibRate`) and a breath of noise (`noise` 0..1). Cartoon noises, not recordings.
+ */
+function creature({ wave = 'sawtooth', from = 200, to = from, dur = 0.4, vol = 0.08, vib = 0, vibRate = 8, noise = 0, cutoff = 1200, when = 0 } = {}) {
+  const a = ac(); if (!a || muted) return;
+  const t0 = a.currentTime + when, t1 = t0 + dur;
+  const filt = a.createBiquadFilter(); filt.type = 'lowpass'; filt.frequency.setValueAtTime(cutoff, t0);
+  const g = a.createGain();
+  g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + Math.min(0.03, dur / 4)); g.gain.exponentialRampToValueAtTime(0.0001, t1);
+  filt.connect(g).connect(a.destination);
+  const o = a.createOscillator(); o.type = wave;
+  o.frequency.setValueAtTime(from, t0); o.frequency.exponentialRampToValueAtTime(Math.max(30, to), t1);
+  if (vib) { const l = a.createOscillator(), lg = a.createGain(); l.frequency.value = vibRate; lg.gain.value = vib; l.connect(lg).connect(o.frequency); l.start(t0); l.stop(t1 + 0.02); }
+  o.connect(filt); o.start(t0); o.stop(t1 + 0.02);
+  if (noise) {
+    const n = Math.max(1, Math.ceil(a.sampleRate * dur)), buf = a.createBuffer(1, n, a.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = (Math.random() * 2 - 1) * noise;
+    const src = a.createBufferSource(); src.buffer = buf; src.connect(filt); src.start(t0); src.stop(t1);
+  }
+}
+
+/** The ark's animals (data/early/animals.js name these by `sound`). */
+export const ANIMAL_SOUNDS = {
+  roar: () => creature({ from: 120, to: 70, dur: 0.9, vol: 0.12, vib: 6, vibRate: 9, noise: 0.5, cutoff: 700 }),
+  growl: () => creature({ from: 95, to: 70, dur: 0.8, vol: 0.11, vib: 5, vibRate: 7, noise: 0.4, cutoff: 500 }),
+  trumpet: () => creature({ from: 320, to: 720, dur: 0.6, vol: 0.09, vib: 24, vibRate: 12, cutoff: 2200 }),
+  moo: () => { creature({ wave: 'triangle', from: 170, to: 210, dur: 0.25, vol: 0.12, cutoff: 900 }); creature({ wave: 'triangle', from: 210, to: 130, dur: 0.65, vol: 0.12, vib: 6, vibRate: 6, cutoff: 900, when: 0.25 }); },
+  baa: () => creature({ wave: 'triangle', from: 330, to: 300, dur: 0.7, vol: 0.1, vib: 35, vibRate: 14, cutoff: 1500 }),
+  neigh: () => creature({ from: 760, to: 300, dur: 0.75, vol: 0.08, vib: 45, vibRate: 16, cutoff: 2000 }),
+  oink: () => [0, 0.2].forEach((t) => creature({ wave: 'square', from: 190, to: 120, dur: 0.13, vol: 0.09, noise: 0.5, cutoff: 900, when: t })),
+  quack: () => [0, 0.2].forEach((t) => creature({ wave: 'square', from: 430, to: 300, dur: 0.15, vol: 0.08, cutoff: 1600, when: t })),
+  hoot: () => [0, 0.3].forEach((t) => creature({ wave: 'sine', from: 440, to: 370, dur: 0.26, vol: 0.12, cutoff: 1000, when: t })),
+  meow: () => { creature({ wave: 'sine', from: 480, to: 820, dur: 0.22, vol: 0.1, cutoff: 1800 }); creature({ wave: 'sine', from: 820, to: 420, dur: 0.4, vol: 0.1, vib: 10, vibRate: 7, cutoff: 1800, when: 0.22 }); },
+  woof: () => creature({ from: 220, to: 120, dur: 0.2, vol: 0.12, noise: 0.5, cutoff: 900 }),
+  yip: () => [0, 0.16].forEach((t) => creature({ from: 900, to: 600, dur: 0.1, vol: 0.08, noise: 0.3, cutoff: 2400, when: t })),
+  ribbit: () => [0, 0.22].forEach((t) => creature({ wave: 'square', from: 140, to: 95, dur: 0.16, vol: 0.09, vib: 20, vibRate: 30, cutoff: 700, when: t })),
+  hiss: () => creature({ wave: 'sine', from: 60, to: 60, dur: 0.9, vol: 0.001, noise: 0.9, cutoff: 6000 }),
+  cluck: () => [0, 0.13, 0.26, 0.42].forEach((t) => creature({ wave: 'square', from: 900, to: 620, dur: 0.06, vol: 0.07, cutoff: 2200, when: t })),
+  chatter: () => [0, 0.12, 0.24, 0.36, 0.5].forEach((t, i) => creature({ wave: 'square', from: i % 2 ? 1150 : 820, to: i % 2 ? 900 : 1200, dur: 0.09, vol: 0.07, cutoff: 2600, when: t })),
+  squawk: () => creature({ from: 620, to: 900, dur: 0.32, vol: 0.08, noise: 0.4, cutoff: 2600 }),
+  thump: () => [0, 0.28].forEach((t) => creature({ wave: 'sine', from: 95, to: 50, dur: 0.2, vol: 0.14, cutoff: 400, when: t })),
+  hum: () => creature({ wave: 'sine', from: 180, to: 170, dur: 0.6, vol: 0.05, vib: 4, vibRate: 5, cutoff: 600 }),
+  sniff: () => [0, 0.12, 0.24].forEach((t) => creature({ wave: 'sine', from: 80, to: 80, dur: 0.05, vol: 0.001, noise: 0.5, cutoff: 3000, when: t })),
+  tick: () => [0, 0.5].forEach((t) => creature({ wave: 'triangle', from: 700, to: 500, dur: 0.05, vol: 0.05, cutoff: 1600, when: t }))
+};
+export const ANIMAL_SOUND_NAMES = Object.keys(ANIMAL_SOUNDS);
+
 // C major from middle C up to E an octave above: one note per stepping stone.
 const SCALE = [262, 294, 330, 349, 392, 440, 494, 523, 587, 659];
 
@@ -76,5 +124,7 @@ export const Sfx = {
   /** A church bell: two strikes, each a low note with a bright ringing overtone. */
   bell: () => [0, 0.7].forEach((t) => { tone(659, 1.2, 'sine', 0.09, t); tone(1318, 0.8, 'sine', 0.035, t); tone(1975, 0.4, 'sine', 0.015, t); }),
   /** Picking a stone or card up to drag it. */
-  lift: () => tone(520, 0.05, 'triangle', 0.05, 0, 120)
+  lift: () => tone(520, 0.05, 'triangle', 0.05, 0, 120),
+  /** An animal's call by name (see ANIMAL_SOUNDS); unknown names are silent. */
+  animal: (kind) => { const fn = ANIMAL_SOUNDS[kind]; if (fn) fn(); }
 };

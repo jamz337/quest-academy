@@ -1,5 +1,6 @@
 // Registry of every mini-game. Scenes are registered in scenes/index.js; ids are stable keys in the save file.
 // `minGrade` hides a game from younger players (Pre-K = -1, K = 0): it needs reading or typing they cannot do yet.
+// `playSceneKey` is the game's Pre-K version: learning and touching instead of questions (the launcher picks it).
 // MINIGAMES are the games of the world, its quests and badges; EARLY_GAMES are extra games for Pre-K to Grade 1
 // (`maxGrade`) that only the Challenge menu shows.
 import { gradeOf } from './grades.js';
@@ -35,8 +36,8 @@ export const MINIGAMES = [
     description: 'Fill in the missing word of the verse.' },
   { id: 'bible-match', subject: 'bible', title: 'Who Am I?', sceneKey: 'MG_WordMatch', icon: '🐑', npc: 'fisherman',
     description: 'Match each Bible person to their story.' },
-  { id: 'bible-ark', subject: 'bible', title: 'All Aboard the Ark', sceneKey: 'MG_ArkAnimals', icon: '🛶', npc: 'ark-builder',
-    description: 'Answer questions to bring the animals aboard two by two.' }
+  { id: 'bible-ark', subject: 'bible', title: 'All Aboard the Ark', sceneKey: 'MG_ArkAnimals', playSceneKey: 'MG_ArkPlay', icon: '🛶', npc: 'ark-builder',
+    description: 'Answer questions to bring the animals aboard two by two.', playDescription: 'Touch the animals, hear them, and bring them aboard two by two.' }
 ];
 
 /** Games only for the youngest players (Pre-K to Grade 1), shown first in their Challenge menu. */

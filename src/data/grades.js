@@ -23,6 +23,8 @@ export function bandFor(grade) {
 
 /** Pre-K and Kindergarten: listen and tap. */
 export const isEarly = (grade) => gradeOf(grade) <= 0;
+/** Pre-K only: the games are learning and touching, with no questions (see a game's `playSceneKey`). */
+export const isPreK = (grade) => gradeOf(grade) <= -1;
 
 /** "Pre-K", "Kindergarten" (or "K" when short), "Grade 3" (or "3"). */
 export function gradeLabel(grade, short = false) {
