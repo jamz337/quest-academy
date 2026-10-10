@@ -4,7 +4,7 @@
 // Positions on the ark are given in backdrop pixels (the picture is 1024 square) and mapped to the screen.
 import { hex } from '../../../ui/theme.js';
 import { FONT, WEIGHT } from '../../../ui/TextStyles.js';
-import { animalKey } from '../../../ui/AnimalArt.js';
+import { animalKey, fitImage } from '../../../ui/AnimalArt.js';
 import { capital } from '../../../data/early/animals.js';
 
 export const BACKDROP_KEY = 'ark-backdrop', NOAH_KEY = 'ark-noah', BACKDROP = 1024;
@@ -105,13 +105,26 @@ export function animalPair(scene, x, y, size, animal, f) {
   const c = scene.add.container(x, y);
   const key = animalKey(animal.key), has = scene.textures.exists(key);
   const faces = [-0.42, 0.42].map((dx, i) => {
-    const img = has ? scene.add.image(dx * size, i ? 4 * f : 0, key).setDisplaySize(size * 0.8, size * 0.8) : scene.add.text(dx * size, 0, animal.name[0].toUpperCase(), { fontSize: Math.round(size * 0.6) + 'px' }).setOrigin(0.5);
+    const img = has ? fitImage(scene.add.image(dx * size, i ? 3 * f : 0, key).setOrigin(0.5, 1), size * 0.95, size * 1.3) : scene.add.text(dx * size, 0, animal.name[0].toUpperCase(), { fontSize: Math.round(size * 0.6) + 'px' }).setOrigin(0.5);
     if (i === 0 && img.setFlipX) img.setFlipX(true);   // the pair looks at each other
     return img;
   });
-  const name = scene.add.text(0, size * 0.58, capital(animal.name), { fontFamily: FONT, fontSize: Math.round(13 * f) + 'px', color: hex(ARK.text), fontStyle: WEIGHT.heavy, backgroundColor: '#ffffffdd', padding: { x: 7 * f, y: 3 * f } }).setOrigin(0.5);
+  const name = scene.add.text(0, size * 0.3, capital(animal.name), { fontFamily: FONT, fontSize: Math.round(13 * f) + 'px', color: hex(ARK.text), fontStyle: WEIGHT.heavy, backgroundColor: '#ffffffdd', padding: { x: 7 * f, y: 3 * f } }).setOrigin(0.5);
   c.add([...faces, name]);
   c.faces = faces; c.name = name; c.label = name;   // tests know a pair by its name
-  c.setSize(size * 1.9, size * 1.3);
+  c.setSize(size * 1.9, size * 1.6);
   return c;
+}
+
+/** An animal's head and shoulders in a window: the top of its picture, `size` tall, centred at (x, y). */
+export function windowFace(scene, x, y, size, key) {
+  const tex = animalKey(key);
+  if (!scene.textures.exists(tex)) return scene.add.circle(x, y, size / 2, 0xffffff);
+  const img = scene.add.image(x, y, tex);
+  const fr = img.frame, fw = (fr && fr.width) || 10, fh = (fr && fr.height) || 10, part = 0.52;
+  if (img.setCrop) img.setCrop(0, 0, fw, fh * part);
+  img.setOrigin(0.5, part / 2);
+  const k = Math.min(size / (fh * part), size / fw);
+  img.setScale(k);
+  return img;
 }

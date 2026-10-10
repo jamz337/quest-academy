@@ -30,7 +30,8 @@ export function launch(fromScene, gameId, opts = {}) {
   // A duel asks questions at the grade the villager's own house has reached; a boss at the grade its whole subject has.
   const grade = boss ? effectiveGrade(profile, subject) : duel ? gameGrade(profile, duel.gameId) : gameGrade(profile, gameId);
   const payload = {
-    gameId, sceneKey: game ? (game.playSceneKey && isPreK(grade) ? game.playSceneKey : game.sceneKey) : DUEL_SCENE, title: game ? game.title : (duel || boss).name, subject, level: level || undefined,
+    // A Pre-K player always gets a game's play version, however many stars (and grade-ups) they have earned in it.
+    gameId, sceneKey: game ? (game.playSceneKey && isPreK(profile.grade) ? game.playSceneKey : game.sceneKey) : DUEL_SCENE, title: game ? game.title : (duel || boss).name, subject, level: level || undefined,
     grade, band: bandFor(grade), mastery: mastery(profile, subject).level, duel: duel || undefined, boss: boss || undefined, noReview: !!(duel || boss), timers: profile.timers !== 'off' && !isEarly(grade), early: isEarly(grade),
     source: opts.source || 'challenge', returnTo: fromScene.scene.key,
     context: opts.context || {}, seed: opts.seed

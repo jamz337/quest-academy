@@ -7,8 +7,8 @@ installPhaserMock();
 
 const { ArkPlay, ARK_PLAY_COUNT, ARK_PLAY_ASKS } = await import('../src/scenes/minigames/bible/ArkPlay.js');
 const { ArkAnimals } = await import('../src/scenes/minigames/bible/ArkAnimals.js');
-const { ARK_ANIMALS, pickAnimals, makeAsks, animalLine, nameLine, twoLine, askLine, otherLine, aAn } = await import('../src/data/early/animals.js');
-const { ANIMAL_FILES, drawLion } = await import('../src/ui/AnimalArt.js');
+const { ARK_ANIMALS, ARK_PICTURED, pickAnimals, makeAsks, animalLine, nameLine, twoLine, askLine, otherLine, aAn, pairsOf, GENESIS_REF } = await import('../src/data/early/animals.js');
+const { ANIMAL_FILES, CALL_FILES } = await import('../src/ui/AnimalArt.js');
 const { ANIMAL_SOUND_NAMES, Sfx } = await import('../src/systems/Audio.js');
 const { Rng } = await import('../src/systems/Rng.js');
 const { getGame } = await import('../src/data/minigames.js');
@@ -30,27 +30,35 @@ function makeScene(Cls, payload) {
 const Name = (a) => a.name.charAt(0).toUpperCase() + a.name.slice(1);
 
 describe('the ark animals', () => {
-  it('each has a picture file (the lion is drawn), a recorded call, a stand-in sound, and a noise word or a quiet line', () => {
+  it('each has a recorded call, a stand-in sound, a noise word or a quiet line, and its Genesis 7 count; the pictured ones have a picture file', () => {
     for (const a of ARK_ANIMALS) {
       expect(a.key && a.name && a.plural).toBeTruthy();
+      expect(CALL_FILES).toContain(a.key);
       expect(fs.existsSync(`public/sounds/animals/${a.key}.mp3`), a.key).toBe(true);
-      if (a.key !== 'lion') { expect(ANIMAL_FILES).toContain(a.key); expect(fs.existsSync(`public/sprites/animals/${a.key}.png`), a.key).toBe(true); }
       expect(ANIMAL_SOUND_NAMES).toContain(a.sound);
       expect(!!a.noise || !!a.quiet).toBe(true);
+      expect(typeof a.clean).toBe('boolean');
+      expect(pairsOf(a)).toBe(a.clean ? 7 : 1);
+      expect(twoLine(a)).toContain(a.clean ? 'seven pairs' : 'one pair');
       expect(animalLine(a)).toBe(`${nameLine(a)} ${twoLine(a)}`);
       expect(twoLine(a)).toContain(a.plural);
     }
+    expect(ARK_PICTURED.length).toBeGreaterThanOrEqual(8);
+    for (const a of ARK_PICTURED) { expect(ANIMAL_FILES).toContain(a.key); expect(fs.existsSync(`public/sprites/ark/animals/${a.key}.png`), a.key).toBe(true); }
+    expect(ARK_PICTURED.some((a) => a.clean) && ARK_PICTURED.some((a) => !a.clean)).toBe(true);   // both kinds, so the lesson shows
+    expect(fs.existsSync('public/sprites/ark/backdrop.jpg') && fs.existsSync('public/sprites/ark/noah.png')).toBe(true);
+    expect(GENESIS_REF).toBe('Genesis 7:2-3');
     expect(aAn('owl')).toBe('an owl'); expect(aAn('lion')).toBe('a lion');
     expect(() => Sfx.animal('roar')).not.toThrow();
-    expect(typeof drawLion).toBe('function');
     expect(fs.existsSync('public/sounds/animals/SOURCES.txt')).toBe(true);
   });
 
-  it('a game picks eight with the lion, no two sharing a noise word or a sound, and asks about four of them', () => {
+  it('a game picks eight pictured animals with the lion, no two sharing a noise word or a sound, and asks about four of them', () => {
     for (let seed = 1; seed < 30; seed++) {
       const rng = new Rng(seed), set = pickAnimals(rng, 8);
       expect(set).toHaveLength(8);
       expect(set.map((a) => a.key)).toContain('lion');
+      expect(set.every((a) => a.pic)).toBe(true);
       const noises = set.map((a) => a.noise).filter(Boolean), sounds = set.map((a) => a.sound);
       expect(new Set(noises).size).toBe(noises.length);
       expect(new Set(sounds).size).toBe(sounds.length);
@@ -72,9 +80,11 @@ describe('All Aboard the Ark for Pre-K (headless)', () => {
     const from = { scene: { key: 'ChallengeMenu', pause() {}, launch() {} } };
     expect(getGame('bible-ark').playSceneKey).toBe('MG_ArkPlay');
     expect(launch(from, 'bible-ark', {})).toMatchObject({ sceneKey: 'MG_ArkPlay', grade: -1, early: true, timers: false });
+    Store.updateProfile((p) => { p.games['bible-ark'] = { gradeUp: 2, bestStars: 3, plays: 2 }; });   // stars earned never move a Pre-K child into the question game
+    expect(launch(from, 'bible-ark', {}).sceneKey).toBe('MG_ArkPlay');
     Store.updateProfile((p) => { p.grade = 0; });
     expect(launch(from, 'bible-ark', {}).sceneKey).toBe('MG_ArkAnimals');
-    Store.updateProfile((p) => { p.grade = -1; });
+    Store.updateProfile((p) => { p.grade = -1; delete p.games['bible-ark']; });
     expect(new ArkAnimals().sys.settings.key).toBe('MG_ArkAnimals');
     expect(new ArkPlay().sys.settings.key).toBe('MG_ArkPlay');
   });

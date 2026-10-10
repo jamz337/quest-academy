@@ -14,7 +14,6 @@ import { LPC_FRAME, LPC_COLS, allLayerPaths, composeSheet, drawOutfitBack, drawO
 export { WORLD_SCALE as CHAR_WORLD_SCALE, IDLE_FRAMES } from '../ui/LpcCharacter.js';
 import { WORLD_SCALE } from '../ui/LpcCharacter.js';
 import { HERO_WORLD_CELL, isHero, heroKey, isHeroKey, figureScale, drawHeroBust } from '../ui/Hero.js';
-import { lionTexture } from '../ui/AnimalArt.js';
 
 const SHADOW = 'rgba(0,0,0,0.22)';
 const PAL = {
@@ -579,7 +578,6 @@ export function uiTextures(scene) {
 }
 
 export function generateAllTextures(scene) {
-  lionTexture(scene);   // the one ark animal not in the picture pack
   uiTextures(scene);
   avatarTexture(scene);
   tilesTexture(scene);

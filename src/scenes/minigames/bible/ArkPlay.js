@@ -1,7 +1,6 @@
 import { MinigameScene } from '../MinigameScene.js';
-import { pickAnimals, makeAsks, nameLine, twoLine, askLine, foundLine, otherLine } from '../../../data/early/animals.js';
-import { drawBackdrop, drawWeather, drawFlood, drawRainbow, drawNoah, speechBubble, animalPair, ARK, ARK_SPOTS, ARK_DOOR, ARK_RAMP_BASE } from './ArkScenery.js';
-import { animalKey } from '../../../ui/AnimalArt.js';
+import { pickAnimals, makeAsks, nameLine, twoLine, askLine, foundLine, otherLine, pairsOf, GENESIS_REF, GENESIS_LESSON } from '../../../data/early/animals.js';
+import { drawBackdrop, drawWeather, drawFlood, drawRainbow, drawNoah, speechBubble, animalPair, windowFace, ARK, ARK_SPOTS, ARK_DOOR, ARK_RAMP_BASE } from './ArkScenery.js';
 import { hex } from '../../../ui/theme.js';
 import { FONT, WEIGHT } from '../../../ui/TextStyles.js';
 import { button, speakButton } from '../../../ui/Button.js';
@@ -16,7 +15,8 @@ export const callKey = (key) => `call-${key}`;
 /**
  * All Aboard the Ark for Pre-K: a daylight picture book, no questions. Eight pairs of animals wait on the sand
  * below the ark. Touch a pair: it bounces, its real call plays, Noah names it, the two walk up the ramp while the
- * voice counts "one, two", and its face appears at a window. The sky clouds over as the ark fills. With everyone
+ * voice counts them in (one pair, or seven pairs for a clean animal, as Genesis 7:2-3 tells), and its face appears
+ * at a window. The sky clouds over as the ark fills. With everyone
  * aboard come a few gentle asks ("Can you find the lion?", "Which animal says Moo?") answered by touching a window:
  * the right one is cheered, any other is simply named and the ask repeated. Then the rain, the flood, the rainbow,
  * and the windows stay open for free play until Done. Everything is read aloud. Full stars every time.
@@ -72,7 +72,12 @@ export class ArkPlay extends MinigameScene {
     s.aboard.forEach((key, i) => {
       const [px, py] = ARK_SPOTS[i] || ARK_SPOTS[ARK_SPOTS.length - 1];
       const p = map(px, py), size = 40 * scale;
-      const face = this.textures.exists(animalKey(key)) ? this.add.image(p.x, p.y, animalKey(key)).setDisplaySize(size, size) : this.add.circle(p.x, p.y, size / 2, 0xffffff);
+      const face = windowFace(this, p.x, p.y, size, key);
+      const animal = s.kinds.find((a) => a.key === key);
+      if (animal && pairsOf(animal) > 1) {   // a clean animal: seven pairs went in
+        this.add.circle(p.x + size * 0.46, p.y - size * 0.42, 8 * f, 0xffffff).setStrokeStyle(1.5, 0x9cc7f2);
+        this.add.text(p.x + size * 0.46, p.y - size * 0.42, '7', { fontFamily: FONT, fontSize: Math.round(10 * f) + 'px', color: hex(ARK.text), fontStyle: WEIGHT.heavy }).setOrigin(0.5);
+      }
       const zone = this.add.zone(p.x, p.y, size + 14 * f, size + 14 * f).setInteractive({ useHandCursor: true });
       zone.label = { text: `window ${key}` };
       zone.on('pointerup', () => this.tapWindow(i));
@@ -87,6 +92,7 @@ export class ArkPlay extends MinigameScene {
     const { text: said } = speechBubble(this, bx, top, bw, bh, s.line, f);
     this.bubbleText = said;
     speakButton(this, bx + bw - 26 * f, top + bh / 2, 40 * f, said, { rate: this.speechRate });
+    this.add.text(bx + bw - 10 * f, top + bh + 3 * f, GENESIS_REF, { fontFamily: FONT, fontSize: Math.round(11 * f) + 'px', color: '#ffffff', fontStyle: WEIGHT.bold, stroke: '#1e1b4b', strokeThickness: 3 }).setOrigin(1, 0);
     if (!s.spoken) { s.spoken = true; this.say(s.line); }
 
     // The animals waiting on the sand (those not yet aboard), in a loose crowd.
@@ -117,27 +123,33 @@ export class ArkPlay extends MinigameScene {
     }
   }
 
-  /** A waiting pair was touched: its call, its name, the walk up the ramp with the count, then its window lights. */
+  /**
+   * A waiting pair was touched: its call, its name, the walk up the ramp with the count (one pair, or a procession
+   * of seven for a clean animal), then its window lights.
+   */
   tap(i) {
     const s = this.state, k = s.kinds[i];
     if (s.locked || s.finale || !k || s.done[i] || s.phase !== 'explore') return;
     s.locked = true;
     this.call(k);
     this.say(nameLine(k));
-    const pair = this.pairs[i];
+    const pair = this.pairs[i], pairs = pairsOf(k), step = pairs > 1 ? 380 : 600;
     if (pair && pair.active && this.tweens && this.map) {
       this.tweens.killTweensOf(pair);
       this.tweens.add({ targets: pair, scale: 1.18, duration: 140, yoyo: true, repeat: 1 });
       this.bubbleOver(pair, k.noise ? `${k.noise}!` : '…', 1.2);
-      // Up the ramp: to its foot, then to the door, shrinking as it goes; "one", "two" as each steps in.
+      // Up the ramp: to its foot, then to the door, shrinking as it goes. A clean animal's seven pairs follow one another.
       const d = this.map(ARK_DOOR.x, ARK_DOOR.y), base = this.map(ARK_RAMP_BASE.x, ARK_RAMP_BASE.y);
-      this.tweens.add({ targets: pair, x: base.x, y: base.y - 10 * this.ui, duration: 600, delay: 900, ease: 'Sine.InOut' });
-      this.tweens.add({ targets: pair, x: d.x, y: d.y - 6 * this.ui, scale: 0.5, duration: 900, delay: 1500, ease: 'Sine.InOut' });
-      this.tweens.add({ targets: pair, alpha: 0, duration: 200, delay: 2350 });
+      const walk = (t, delay) => {
+        this.tweens.add({ targets: t, x: base.x, y: base.y - 10 * this.ui, duration: 600, delay, ease: 'Sine.InOut' });
+        this.tweens.add({ targets: t, x: d.x, y: d.y - 6 * this.ui, scale: 0.5, duration: 900, delay: delay + 600, ease: 'Sine.InOut' });
+        this.tweens.add({ targets: t, alpha: 0, duration: 200, delay: delay + 1450, onComplete: () => { if (t !== pair) t.destroy(); } });
+      };
+      walk(pair, 900);
+      for (let n = 1; n < pairs; n++) { const ghost = animalPair(this, pair.x + (n % 2 ? 8 : -8) * this.ui, pair.y + 6 * this.ui, pair.width / 1.9 * 0.7, k, this.ui).setAlpha(0.95).setDepth(4 - n * 0.1); if (ghost.name) ghost.name.setVisible(false); walk(ghost, 900 + n * step); }
     }
-    this.time.delayedCall(1500, () => this.countPop(pair, 1));
-    this.time.delayedCall(2100, () => this.countPop(pair, 2));
-    this.time.delayedCall(2700, () => {
+    for (let n = 1; n <= pairs; n++) this.time.delayedCall(1500 + (n - 1) * step, () => this.countPop(pair, n, pairs));
+    this.time.delayedCall(1500 + pairs * step + 600, () => {
       s.done[i] = true; s.aboard.push(k.key); s.locked = false;
       Sfx.unlock();
       if (this.boarded >= ARK_PLAY_COUNT) { s.phase = 'ask'; this.state.line = `All the animals are aboard! ${askLine(s.asks[0])}`; this.rebuild(); this.say(this.state.line); }
@@ -145,13 +157,13 @@ export class ArkPlay extends MinigameScene {
     });
   }
 
-  /** "1", "2" popping up as the pair steps aboard, spoken too. */
-  countPop(pair, n) {
+  /** The count popping up as the pairs step aboard ("1", "2"; up to "7" for a clean animal), spoken too. */
+  countPop(pair, n, of = 1) {
     const d = this.map ? this.map(ARK_DOOR.x, ARK_DOOR.y) : { x: 0, y: 0 };
-    const x = pair && pair.active ? pair.x : d.x, y = pair && pair.active ? pair.y : d.y;
-    const t = this.add.text(x + (n === 1 ? -12 : 12) * this.ui, y - 20 * this.ui, String(n), { fontFamily: FONT, fontSize: Math.round(26 * this.ui) + 'px', color: hex(ARK.text), fontStyle: WEIGHT.heavy, stroke: '#ffffff', strokeThickness: 6 }).setOrigin(0.5).setDepth(30);
-    Sfx.note(n === 1 ? 3 : 5);
-    stopSpeech(); speak(n === 1 ? 'one' : 'two', { rate: this.speechRate });
+    const x = of > 1 ? d.x : pair && pair.active ? pair.x : d.x, y = of > 1 ? d.y : pair && pair.active ? pair.y : d.y;
+    const t = this.add.text(x + (n % 2 ? -12 : 12) * this.ui, y - 20 * this.ui, String(n), { fontFamily: FONT, fontSize: Math.round(26 * this.ui) + 'px', color: hex(ARK.text), fontStyle: WEIGHT.heavy, stroke: '#ffffff', strokeThickness: 6 }).setOrigin(0.5).setDepth(30);
+    Sfx.note(Math.min(10, 2 + n));
+    stopSpeech(); speak(['one', 'two', 'three', 'four', 'five', 'six', 'seven'][n - 1] || String(n), { rate: this.speechRate });
     if (this.tweens) this.tweens.add({ targets: t, y: t.y - 34 * this.ui, alpha: 0, duration: 800, ease: 'Quad.Out', onComplete: () => t.destroy() });
   }
 
@@ -188,7 +200,7 @@ export class ArkPlay extends MinigameScene {
   flood() {
     const s = this.state;
     s.finale = true; s.phase = 'free';
-    this.state.line = 'The rain came, the ark floated, and then the rainbow! Touch the windows to hear the animals again.';
+    this.state.line = `The rain came, the ark floated, and then the rainbow! ${GENESIS_LESSON} Touch the windows to play.`;
     this.rebuild();
     Sfx.fanfare();
     this.say(this.state.line);
