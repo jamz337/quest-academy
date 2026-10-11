@@ -95,6 +95,16 @@ about eight, big eyes, simple shapes, thick outline in a darker shade of each co
 The game then maps each marker to the chosen colour while keeping the shading, so a green shirt becomes any shirt
 colour, purple hair any hair colour, and the skin any of the editor's tones.
 
+## After cutting: no white edges
+
+Sprites cut from a white sheet keep a pale fringe and sometimes patches of the sheet inside them (between a tree's
+branches). Run both tools over every new sprite before it goes in:
+
+    python tools/unhole.py public/sprites/world/<land>/*.png
+    python tools/defringe.py public/sprites/world/<land>/*.png
+
+`unhole.py --dry` lists what it would open first; leave out anything with real white in it (daisies).
+
 ## Tips
 
 - Ask for the largest size your generator offers. I scale down; scaling up goes blurry.
