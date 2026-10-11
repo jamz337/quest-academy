@@ -7,7 +7,7 @@ import { ROAD_KINDS, VARIANTS, roadTile, waterTile, cornerMask } from '../../sys
 const ROADLIKE = new Set([TID.path, TID.plinth, TID.gateOpen, TID.gateLocked, ...DOOR_TILES]);
 const STRUCTURE = new Set([...ROOF_TILES, ...WALL_TILES, ...DOOR_TILES]);
 /** Squares whose own picture is replaced by the ground beneath them (the road, water, tree or building on top is drawn elsewhere). */
-const UNDER = new Set([...ROADLIKE, TID.water, TID.tree, ...ROOF_TILES, ...WALL_TILES]);
+const UNDER = new Set([...ROADLIKE, TID.water, TID.tree, TID.cliff, ...ROOF_TILES, ...WALL_TILES]);   // cliff: the summit's rock is in its picture; grass shows round it
 
 const KIND_OF_GROUND = {
   [TID.meadow]: 'meadow', [TID.woods]: 'woods', [TID.springs]: 'springs', [TID.cove]: 'cove', [TID.village]: 'village',
