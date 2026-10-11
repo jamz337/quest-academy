@@ -115,7 +115,7 @@ export const NPCS = [
   },
   {
     id: 'nurse', pitch: 1.15, rate: 1.0, voice: 'female', name: 'Nurse Nia', sprite: 'npc0', art: 'nurse', gameId: null, zone: 'hub',
-    lines: ['Hello there! I am Nurse Nia, and this is the Academy hospital. Nobody is poorly today, thank goodness.', 'Drink your water, wash your hands and get your sleep, and you will hardly ever need me!'],
+    lines: ['Hello there! I am Nurse Nia, and this is the Academy hospital. Go on in: the doctor, the chef, the pharmacist and the coach all have games for you.', 'Drink your water, wash your hands and get your sleep, and you will hardly ever need a bed in here!'],
     playPrompt: null
   },
   // Science Springs

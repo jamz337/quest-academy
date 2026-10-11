@@ -20,7 +20,8 @@ export const SUBJECTS = {
   science: { id: 'science', title: 'Science', ...THEME.subjects.science, color: THEME.subjects.science.accent, zone: 'Science Springs' },
   history: { id: 'history', title: 'History', ...THEME.subjects.history, color: THEME.subjects.history.accent, zone: 'History Harbor' },
   music: { id: 'music', title: 'Music', ...THEME.subjects.music, color: THEME.subjects.music.accent, zone: 'Melody Market' },
-  studio: { id: 'studio', title: 'Art', ...THEME.subjects.studio, color: THEME.subjects.studio.accent, zone: 'Studio Summit' }
+  studio: { id: 'studio', title: 'Art', ...THEME.subjects.studio, color: THEME.subjects.studio.accent, zone: 'Studio Summit' },
+  health: { id: 'health', title: 'Health', ...THEME.subjects.health, color: THEME.subjects.health.accent, zone: 'The Hospital' }
 };
 
 export const GRADES = [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8];   // -1 = Pre-K, 0 = Kindergarten (see data/grades.js)
@@ -30,7 +31,7 @@ export const SCENES = {
   Boot: 'Boot', Profile: 'Profile', ModeSelect: 'ModeSelect', World: 'World', Hud: 'Hud',
   ChallengeMenu: 'ChallengeMenu', LevelSelect: 'LevelSelect', Results: 'Results', Pause: 'Pause',
   Account: 'Account', Leaderboard: 'Leaderboard', Skills: 'Skills', Spelling: 'Spelling', SpellingLearn: 'SpellingLearn', SpellingGame: 'SpellingGame',
-  House: 'House', HouseRoom: 'HouseRoom', Church: 'Church', ChurchLesson: 'ChurchLesson', Fx: 'Fx', Market: 'Market', Credits: 'Credits'
+  House: 'House', HouseRoom: 'HouseRoom', Church: 'Church', Hospital: 'Hospital', ChurchLesson: 'ChurchLesson', Fx: 'Fx', Market: 'Market', Credits: 'Credits'
 };
 
 export const SAVE_KEY = 'qa.save';

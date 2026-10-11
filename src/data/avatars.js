@@ -63,7 +63,11 @@ export const NPC_STYLES = [
   { sex: 'boy', skin: 'brown', hairStyle: 'buzzcut', hair: 'black', topStyle: 'tshirt', top: 'orange', bottomStyle: 'pants', bottom: 'blue', shoes: 'brown', eyes: 'brown' },    // marlon the painter
   { sex: 'girl', skin: 'bronze', hairStyle: 'bob', hair: 'black', topStyle: 'tshirt', top: 'purple', bottomStyle: 'skirt', bottom: 'white', shoes: 'black', eyes: 'brown' },     // mirror mia
   { sex: 'boy', skin: 'light', hairStyle: 'plain', hair: 'gray', topStyle: 'polo', top: 'green', bottomStyle: 'pants', bottom: 'brown', shoes: 'brown', eyes: 'blue' },        // chisel charlie
-  { sex: 'girl', skin: 'black', hairStyle: 'long', hair: 'black', topStyle: 'polo', top: 'red', bottomStyle: 'skirt', bottom: 'navy', shoes: 'black', eyes: 'brown' }           // curator clara
+  { sex: 'girl', skin: 'black', hairStyle: 'long', hair: 'black', topStyle: 'polo', top: 'red', bottomStyle: 'skirt', bottom: 'navy', shoes: 'black', eyes: 'brown' },          // curator clara
+  { sex: 'girl', skin: 'brown', hairStyle: 'bob', hair: 'black', topStyle: 'polo', top: 'white', bottomStyle: 'pants', bottom: 'teal', shoes: 'white', eyes: 'brown' },        // dr dee
+  { sex: 'girl', skin: 'taupe', hairStyle: 'long', hair: 'chestnut', topStyle: 'tshirt', top: 'green', bottomStyle: 'skirt', bottom: 'white', shoes: 'black', eyes: 'green' },     // chef camille
+  { sex: 'boy', skin: 'light', hairStyle: 'plain', hair: 'gray', topStyle: 'polo', top: 'white', bottomStyle: 'pants', bottom: 'navy', shoes: 'black', eyes: 'blue' },          // pharmacist pat
+  { sex: 'girl', skin: 'black', hairStyle: 'buzzcut', hair: 'black', topStyle: 'tshirt', top: 'red', bottomStyle: 'pants', bottom: 'black', shoes: 'white', eyes: 'brown' }       // coach fay
 ];
 
 // Badge backgrounds players can pick in the profile editor.

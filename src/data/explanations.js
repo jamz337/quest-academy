@@ -205,7 +205,12 @@ export const SKILL_TIPS = {
   shapes: 'Hunt for circles, squares and triangles around the house.', colours: 'Go on a colour hunt: find five red things, then five blue.', mixing: 'Mix two paints or food colours and name what you get.', 'colour-words': 'Sort the crayons into warm and cool piles.',
   symmetry: 'Fold a paper heart in half and see the halves match.', reflection: 'Hold a mirror beside a drawing and look at the flipped picture.', 'symmetry-words': 'Spot symmetry on a butterfly, a face and a snowflake.',
   'solid-shapes': 'Count the faces and corners of a cereal box and a dice.', 'sculpture-words': 'Shape a pot from play dough and talk about the clay.', 'art-tools': 'Set out brushes, crayons and scissors and say what each does.',
-  'art-kinds': 'Draw a portrait of someone at home and a landscape out of the window.', 'art-words': 'Look at a picture and point to its foreground and background.', 'art-facts': 'Look up the Mona Lisa and a Bridgetown mural together.'
+  'art-kinds': 'Draw a portrait of someone at home and a landscape out of the window.', 'art-words': 'Look at a picture and point to its foreground and background.', 'art-facts': 'Look up the Mona Lisa and a Bridgetown mural together.',
+  'body-parts': 'Play Simon Says with body parts: touch your knees, wiggle your ears.', senses: 'Close your eyes and guess a food by smell and taste.', organs: 'Feel your heartbeat, then run on the spot and feel it again.',
+  'body-systems': 'Trace the path of a bite of food from mouth to stomach.', 'body-facts': 'Count the bones you can feel in one hand.',
+  'food-groups': 'Sort the shopping into fruit, veg, grains, protein and dairy.', 'balanced-plate': 'Plan tonight\'s plate: half veg, a quarter rice, a quarter fish.', 'healthy-eating': 'Read a drink label and count the spoons of sugar.', nutrients: 'Pick one nutrient and find three foods that have it.',
+  hygiene: 'Wash hands together while singing Happy Birthday twice.', 'health-helpers': 'Talk about who you would see for a toothache, a cough or sore eyes.', 'germs-and-first-aid': 'Find the first-aid box and name three things in it.',
+  feelings: 'At bedtime, each name one feeling from the day and why.', 'sleep-and-exercise': 'Set a screens-off time an hour before bed.', safety: 'Practise stop, look and listen at the kerb.'
 };
 
 export const skillTip = (id) => SKILL_TIPS[id] || `Practise ${skillLabel(id)} together for a few minutes.`;

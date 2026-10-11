@@ -126,6 +126,7 @@ export class WorldScene extends Phaser.Scene {
     // Loading while standing in the doorway should not open the house until the player steps out and back in.
     this.atHomeDoor = !!this.map.home && Math.floor(this.player.x / TILE) === this.map.home.door.tx && Math.floor(this.player.y / TILE) === this.map.home.door.ty;
     this.atChurchDoor = !!this.map.church && Math.floor(this.player.x / TILE) === this.map.church.door.tx && Math.floor(this.player.y / TILE) === this.map.church.door.ty;
+    this.atHospitalDoor = !!this.map.hospital && Math.floor(this.player.x / TILE) === this.map.hospital.door.tx && Math.floor(this.player.y / TILE) === this.map.hospital.door.ty;
     this.bubble = this.add.image(0, 0, 'bubble').setScale(0.75).setDepth(20).setVisible(false);
 
     const cam = this.cameras.main;
@@ -379,6 +380,18 @@ export class WorldScene extends Phaser.Scene {
     const atChurch = this.map.church && tx === this.map.church.door.tx && ty === this.map.church.door.ty;
     if (atChurch && !this.atChurchDoor && hud && !hud.blocking) this.enterChurch();
     this.atChurchDoor = atChurch;
+    const atHospital = this.map.hospital && tx === this.map.hospital.door.tx && ty === this.map.hospital.door.ty;
+    if (atHospital && !this.atHospitalDoor && hud && !hud.blocking) this.enterHospital();
+    this.atHospitalDoor = atHospital;
+  }
+
+  /** Into the hospital, where Health Heights lives: the world stops at its door and the hospital takes over. */
+  enterHospital() {
+    this.stopPlayer();
+    Sfx.click();
+    this.savePosition();
+    if (this.scene.isActive(SCENES.Hud) || this.scene.isSleeping(SCENES.Hud)) this.scene.stop(SCENES.Hud);
+    this.scene.start(SCENES.Hospital);
   }
 
   /** Into the Village Church, the same way as the house: the world stops at the door and the church takes over. */

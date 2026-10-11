@@ -86,9 +86,12 @@ export function refreshGateways(w) {
 
 // ---- The next-step trail ---------------------------------------------------------------------------------
 
+/** Where a game is played in the world: its villager's spot, or the hospital's front door for the games inside it. */
+export const gameSpot = (map, g) => (g && g.npc && map.npcSpots[g.npc]) || (g && g.subject === 'health' && map.hospital ? map.hospital.front : null);
+
 /** The game to suggest next: today's goal until it is done, then the game with the fewest stars. Null when all are full. */
 export function nextGame(profile, map) {
-  const here = (g) => g && g.npc && map.npcSpots[g.npc];
+  const here = (g) => gameSpot(map, g);
   const goal = profile.goal && !profile.goal.done ? getGame(profile.goal.gameId) : null;
   if (here(goal)) return goal;
   const open = MINIGAMES.filter((g) => here(g) && houseStars(profile, g.id) < HOUSE_LEVELS);
@@ -165,7 +168,7 @@ export function retargetGuide(w) {
   if (!p.goal) Store.updateProfile((q) => { dailyGoal(q); });
   const game = nextGame(Store.getProfile(), w.map);
   gd.game = game; gd.tile = null;
-  gd.target = game ? w.map.npcSpots[game.npc] : null;
+  gd.target = game ? gameSpot(w.map, game) : null;
   gd.field = gd.target ? routeField(w.map, gd.target) : null;
   const col = game ? THEME.subjects[game.subject] : null;
   if (col) { gd.prints.forEach((pr) => pr.setFillStyle(col.accent, 1)); gd.arrow.setFillStyle(col.accent, 1); gd.tag.setText(game.title); }

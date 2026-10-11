@@ -25,6 +25,10 @@ export const SKILL_LABELS = {
   'music-words': 'music words', 'music-facts': 'music facts', 'high-low': 'high and low sounds', pitch: 'pitch', voices: 'singing voices',
   instruments: 'instruments', 'instrument-families': 'instrument families', 'caribbean-music': 'Caribbean music',
   colours: 'colours', mixing: 'mixing colours', 'colour-words': 'colour words', symmetry: 'symmetry', reflection: 'reflections', 'symmetry-words': 'symmetry words',
-  'solid-shapes': 'solid shapes', 'sculpture-words': 'sculpture words', 'art-tools': 'the tools of art', 'art-kinds': 'kinds of art', 'art-words': 'art words', 'art-facts': 'art facts'
+  'solid-shapes': 'solid shapes', 'sculpture-words': 'sculpture words', 'art-tools': 'the tools of art', 'art-kinds': 'kinds of art', 'art-words': 'art words', 'art-facts': 'art facts',
+  'body-parts': 'parts of the body', senses: 'the five senses', organs: 'the organs', 'body-systems': 'body systems', 'body-facts': 'body facts',
+  'food-groups': 'food groups', 'balanced-plate': 'a balanced plate', 'healthy-eating': 'healthy eating', nutrients: 'nutrients',
+  hygiene: 'keeping clean', 'health-helpers': 'the people who help us stay well', 'germs-and-first-aid': 'germs and first aid',
+  feelings: 'feelings', 'sleep-and-exercise': 'sleep and exercise', safety: 'staying safe'
 };
 export const skillLabel = (id) => SKILL_LABELS[id] || String(id).replace(/[-_]/g, ' ');

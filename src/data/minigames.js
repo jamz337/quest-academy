@@ -69,7 +69,15 @@ export const MINIGAMES = [
   { id: 'art-shapes', subject: 'studio', title: 'Sculpting Shapes', sceneKey: 'MG_ArtQuiz', playSceneKey: 'MG_ArtPlay', icon: '🗿', npc: 'sculptor',
     description: 'Flat shapes and solid ones, sides, faces, edges and corners, and the words of the sculptor.', playDescription: 'Touch something to hear if it is round, pointy or square.' },
   { id: 'art-gallery', subject: 'studio', title: 'Gallery Guide', sceneKey: 'MG_ArtQuiz', playSceneKey: 'MG_ArtPlay', icon: '🖼️', npc: 'curator',
-    description: 'The tools of the studio, portraits and landscapes, art words, and famous art from Barbados and the world.', playDescription: 'Touch a tool to hear what artists do with it.' }
+    description: 'The tools of the studio, portraits and landscapes, art words, and famous art from Barbados and the world.', playDescription: 'Touch a tool to hear what artists do with it.' },
+  { id: 'hea-body', subject: 'health', title: 'Body Map', sceneKey: 'MG_HealthQuiz', playSceneKey: 'MG_HealthPlay', icon: '🫀', npc: 'doctor',
+    description: 'Body parts and the five senses, the organs and what they do, and the body\'s systems.', playDescription: 'Touch a part of the body to hear what it does.' },
+  { id: 'hea-plate', subject: 'health', title: 'Plate Planner', sceneKey: 'MG_HealthQuiz', playSceneKey: 'MG_HealthPlay', icon: '🥗', npc: 'dietitian',
+    description: 'Food groups, a balanced plate, water, sugar, and the nutrients in Bajan food.', playDescription: 'Touch a food to hear if it is an every-day food or a sometimes food.' },
+  { id: 'hea-germs', subject: 'health', title: 'Germ Zapper', sceneKey: 'MG_HealthQuiz', playSceneKey: 'MG_HealthPlay', icon: '🧼', npc: 'pharmacist',
+    description: 'Hand washing, teeth, sneezes and germs, the people who help, medicines and first aid.', playDescription: 'Touch something to hear if it zaps germs or spreads them.' },
+  { id: 'hea-feel', subject: 'health', title: 'Feel Good', sceneKey: 'MG_HealthQuiz', playSceneKey: 'MG_HealthPlay', icon: '😊', npc: 'physio',
+    description: 'Feelings and calming down, sleep, exercise, and staying safe in the sun, the sea and the road.', playDescription: 'Touch something to hear how it makes you feel.' }
 ];
 
 /** Games only for the youngest players (Pre-K to Grade 1), shown first in their Challenge menu. */

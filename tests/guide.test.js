@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('phaser', () => ({ default: {} }));
-const { GATEWAYS, landStars, nextGame, routeField, stepsFrom } = await import('../src/scenes/world/guide.js');
+const { GATEWAYS, landStars, nextGame, routeField, stepsFrom, gameSpot } = await import('../src/scenes/world/guide.js');
 const { buildMap, TID, isWalkable, zoneAt } = await import('../src/data/world/map.js');
 const { MINIGAMES } = await import('../src/data/minigames.js');
 
@@ -38,7 +38,7 @@ describe('the next-step trail', () => {
 
   it('finds a walkable way from the spawn to every game house, keeping to the roads', () => {
     for (const game of MINIGAMES) {
-      const target = map.npcSpots[game.npc];
+      const target = gameSpot(map, game);   // the hospital's games lead to its door
       const field = routeField(map, target);
       expect(field[map.spawn.ty * map.width + map.spawn.tx], game.id).toBeGreaterThan(0);
       let { tx, ty } = map.spawn, guard = 0, roads = 0, total = 0;
