@@ -1,3 +1,4 @@
+import { loadProps } from './world/props.js';
 import Phaser from 'phaser';
 import { SCENES } from '../constants.js';
 import { generateAllTextures } from '../systems/Textures.js';
@@ -28,6 +29,7 @@ export class BootScene extends Phaser.Scene {
     this.load.image('ark-noah', 'sprites/ark/noah.png');
     this.load.image('hub-house', 'sprites/world/hub/house.png');   // the player's house, drawn (see tools/clean-house.py)
     this.load.json('hub-house-note', 'sprites/world/hub/house.json');
+    loadProps(this);   // drawn trees, bushes and flowers for the lands that have them
   }
 
   create() {

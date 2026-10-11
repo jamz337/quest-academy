@@ -14,7 +14,15 @@ two sheets below, then drop the images into the chat. I cut them up with `tools/
 > Plain pure white background. No ground under the objects, no cast shadows on the background, no text, no
 > labels, no border.
 
-## Sheet 1: hub scenery (12 objects)
+## Sheet 1: hub scenery (done)
+
+In: `public/sprites/world/hub/` holds the trees, bushes, plants, flowers, grass tufts, rocks and mushrooms, cut with
+`tools/cut-sprites.py` and listed in `src/data/world/props.js`. Drawn trees stand on every tree square in and around the
+hub, and the rest is scattered over the hub's open grass by a place-fixed hash (`src/scenes/world/props.js`). To give
+another land the same treatment, generate its own sheet with the prompt below (swapping the plants for that land's), cut
+it into `public/sprites/world/<land>/` and add a set to `PROP_SETS`.
+
+### The prompt that made it
 
 > [shared style] A sprite sheet of 12 separate objects in 4 columns and 3 rows, each one whole, centred in its
 > own space with plenty of white space between them (nothing touching or overlapping):

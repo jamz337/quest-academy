@@ -36,6 +36,7 @@ import { getBadge } from '../data/badges.js';
 import { drinkUp } from './world/drink.js';
 import { createTrail, trailTick } from './world/trail.js';
 import * as Hub from './world/hub.js';
+import { createProps } from './world/props.js';
 import { heartsOf } from '../systems/Hearts.js';
 import { villagerKey, VILLAGER_CELL, VILLAGER_WORLD_HEIGHT } from '../ui/Villagers.js';
 import { refreshRequestBubbles, requestLine, requestAfterGame } from './world/requests.js';
@@ -114,6 +115,7 @@ export class WorldScene extends Phaser.Scene {
     Decor.createMarketStall(this);
     Decor.createChurch(this);
     Decor.createHarbour(this);
+    createProps(this);
     createGateways(this);
     Hub.createFountain(this);
     Hub.createQuestBoard(this);
