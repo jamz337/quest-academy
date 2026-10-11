@@ -6,7 +6,6 @@ import { FONT, WEIGHT } from './TextStyles.js';
 const BH = 11, TIP = 5, GAP = 2;
 const POST_W = 5, POST_TOP = 6;
 const WOOD = { fill: 0xa06a3c, dark: 0x5a3a22, light: 0xc98c55 };
-const INK = 0x2a2238;
 
 /** Which lands the hub signpost points to, top board first. `dir` is where the arrow tip goes. */
 export const SIGN_BOARDS = [
@@ -52,7 +51,7 @@ export function signpost(scene, x, y, opts = {}) {
   g.fillStyle(WOOD.dark, 1); g.fillRoundedRect(-POST_W / 2 - 1, top - 1, POST_W + 2, -top + 2, 2);
   g.fillStyle(WOOD.fill, 1); g.fillRoundedRect(-POST_W / 2, top, POST_W, -top, 1.5);
   g.fillStyle(WOOD.light, 1); g.fillRect(-POST_W / 2, top, 1.5, -top);
-  g.lineStyle(1.4, INK, 1); g.strokeRoundedRect(-POST_W / 2 - 1, top - 1, POST_W + 2, -top + 2, 2);
+  g.lineStyle(1.2, WOOD.dark, 1); g.strokeRoundedRect(-POST_W / 2 - 1, top - 1, POST_W + 2, -top + 2, 2);
 
   const labels = [];
   boards.forEach((b, i) => {
@@ -61,7 +60,7 @@ export function signpost(scene, x, y, opts = {}) {
     const pts = boardPoints(b.dir, cy);
     g.fillStyle(THEME.ink, 0.18); g.fillPoints(pts.map((p) => ({ x: p.x + 1, y: p.y + 1.5 })), true);
     g.fillStyle(sub.accent, 1); g.fillPoints(pts, true);
-    g.lineStyle(1.6, INK, 1); g.strokePoints(pts, true, true);
+    g.lineStyle(1.5, sub.dark, 1); g.strokePoints(pts, true, true);
     // A nail where the board meets the post.
     g.fillStyle(sub.dark, 1); g.fillCircle(0, cy - BH / 2 + 2.5, 1);
     const t = scene.add.text(labelX(b.dir), cy + 0.5, b.label, { fontFamily: FONT, fontSize: fontSize + 'px', fontStyle: WEIGHT.heavy, color: hex(THEME.onAccent) }).setOrigin(0.5);

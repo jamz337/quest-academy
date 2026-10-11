@@ -16,7 +16,7 @@ import { ZONE_ORDER } from '../../data/world/quests.js';
 
 // Each land's jewel sits on the side of the fountain that faces its land.
 const JEWELS = [{ zone: 'math', a: Math.PI }, { zone: 'science', a: -Math.PI * 0.75 }, { zone: 'words', a: -Math.PI / 4 }, { zone: 'bible', a: 0 }, { zone: 'code', a: Math.PI / 2 }, { zone: 'history', a: Math.PI * 0.75 }];
-const INK = 0x2a2238;   // the painted look's outline colour
+const WOOD_DARK = 0x4a3320;   // outlines are a dark shade of the thing's own colour (the mock-up's look)
 const STONE = 0xb9b3c6, STONE_LIGHT = 0xe2deeb, STONE_DARK = 0x8f89a1, DULL = 0xa7a3b5;
 
 const centreOf = (r) => ({ x: (r.tx + (r.w || 1) / 2) * TILE, y: (r.ty + (r.h || 1) / 2) * TILE });
@@ -43,8 +43,9 @@ export function createFountain(w) {
   g.fillStyle(STONE_DARK, 1); g.fillCircle(x, y + 1.5, 10);
   g.fillStyle(STONE_LIGHT, 1); g.fillCircle(x, y, 10);
   g.fillStyle(0x8cc6ff, 1); g.fillCircle(x, y, 6.5);
-  g.lineStyle(2.4, INK, 1); g.strokeCircle(x, y + 1, 45.8);              // ink: the stone rim, the pool, the pedestal
-  g.lineStyle(1.6, INK, 0.85); g.strokeCircle(x, y, 36.2); g.strokeCircle(x, y + 0.6, 10.4);
+  g.lineStyle(1.8, STONE_DARK, 1); g.strokeCircle(x, y + 1, 45.6);          // the marble's own grey edges the rim, the pool and the pedestal
+  g.lineStyle(1.2, 0x7f7892, 0.9); g.strokeCircle(x, y, 36.2); g.strokeCircle(x, y + 0.6, 10.4);
+  g.lineStyle(1.2, 0xffffff, 0.55); g.strokeCircle(x, y - 1.5, 42.5);          // light along the rim's top
   // The ripples breathe, so the water never looks still.
   const ring = w.add.circle(x, y, 18).setStrokeStyle(1.2, 0xffffff, 0.7).setDepth(3.1);
   w.tweens.add({ targets: ring, scale: 1.9, alpha: 0, duration: 2200, repeat: -1, ease: 'Sine.Out' });
@@ -75,7 +76,7 @@ export function refreshFountain(w) {
     g.fillStyle(DULL, 1); g.fillCircle(jx, jy, 6);
     if (share > 0) { g.fillStyle(col.accent, 1); g.slice(jx, jy, 6, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, share), false); g.fillPath(); }
     g.fillStyle(0xffffff, 0.55); g.fillCircle(jx - 2, jy - 2, 1.6);
-    g.lineStyle(1.3, INK, 1); g.strokeCircle(jx, jy, 7.6);
+    g.lineStyle(1.2, STONE_DARK, 1); g.strokeCircle(jx, jy, 7.6);
     // Its jet: a column of water in the pool beside the jewel, as tall as the land's stars (a bubble when none).
     const bx = x + Math.cos(j.a) * 24, by = y + Math.sin(j.a) * 24, h = 6 + 44 * share;
     const jet = makeJet(w, bx, by, h, share > 0 ? col.accent : 0xffffff);
@@ -219,10 +220,10 @@ export function createQuestBoard(w) {
     g.fillStyle(col.soft, 1); g.fillRoundedRect(x - 18, by, 36, 3, 1.5);
     g.fillStyle(col.accent, 1); g.fillRoundedRect(x - 18, by, 14 + ((i * 7) % 4) * 6, 3, 1.5);
   });
-  g.lineStyle(1.6, INK, 1); g.strokeRoundedRect(x - 19, y - 8, 4, 21, 2); g.strokeRoundedRect(x + 15, y - 8, 4, 21, 2); g.strokeRoundedRect(x - bw / 2, top, bw, bh + 2, 7);
+  g.lineStyle(1.4, WOOD_DARK, 1); g.strokeRoundedRect(x - 19, y - 8, 4, 21, 2); g.strokeRoundedRect(x + 15, y - 8, 4, 21, 2); g.lineStyle(1.4, 0x12103a, 1); g.strokeRoundedRect(x - bw / 2, top, bw, bh + 2, 7);
   g.fillStyle(0xcf8a00, 1); g.fillCircle(x, top - 1, 8.5);
   g.fillStyle(0xffc531, 1); g.fillCircle(x, top - 2.5, 8.5);
-  g.lineStyle(1.4, INK, 1); g.strokeCircle(x, top - 2, 9);
+  g.lineStyle(1.4, 0xb37400, 1); g.strokeCircle(x, top - 2, 9);
   w.add.image(x, top - 2.5, 'star').setDisplaySize(11, 11).setDepth(3.1);
   const tag = w.add.text(x, y + 19, 'Quest board', { fontFamily: FONT, fontSize: '6px', color: '#1e1b4b', fontStyle: '700', backgroundColor: '#ffffff', padding: { x: 3, y: 1 } }).setOrigin(0.5).setDepth(3.1).setResolution(6);
   void tag;

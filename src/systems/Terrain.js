@@ -119,12 +119,16 @@ function paintRoad(ctx, size, mask, kind, shape, rnd) {
   ctx.putImageData(img, 0, 0);
   // Pebbles and specks on the road only.
   ctx.globalCompositeOperation = 'source-atop';
-  for (let k = 0; k < 7; k++) {
+  for (let k = 0; k < 3; k++) {   // soft darker patches, as the mock-up's sand has
+    const x = (10 + rnd() * 108) * s, y = (10 + rnd() * 108) * s;
+    ctx.fillStyle = 'rgba(190,150,90,0.16)'; ctx.beginPath(); ctx.ellipse(x, y, (16 + rnd() * 14) * s, (9 + rnd() * 7) * s, rnd() * 3, 0, Math.PI * 2); ctx.fill();
+  }
+  for (let k = 0; k < 4; k++) {
     const x = (14 + rnd() * 100) * s, y = (14 + rnd() * 100) * s, r = (2.2 + rnd() * 2.6) * s;
     ctx.fillStyle = ROAD.dark; ctx.beginPath(); ctx.ellipse(x, y, r * 1.4, r, rnd() * 3, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = ROAD.light; ctx.beginPath(); ctx.ellipse(x - r * 0.3, y - r * 0.35, r * 0.7, r * 0.4, 0, 0, Math.PI * 2); ctx.fill();
   }
-  for (let k = 0; k < 10; k++) { ctx.fillStyle = rnd() < 0.5 ? ROAD.light : ROAD.dark; ctx.beginPath(); ctx.arc((8 + rnd() * 112) * s, (8 + rnd() * 112) * s, 1.2 * s, 0, Math.PI * 2); ctx.fill(); }
+  for (let k = 0; k < 4; k++) { ctx.fillStyle = rnd() < 0.5 ? ROAD.light : ROAD.dark; ctx.beginPath(); ctx.arc((8 + rnd() * 112) * s, (8 + rnd() * 112) * s, 1.2 * s, 0, Math.PI * 2); ctx.fill(); }
   ctx.globalCompositeOperation = 'source-over';
   // Grass leaning over the edge, in tufts of two or three blades.
   if (kind.fringe && mask !== 15) {

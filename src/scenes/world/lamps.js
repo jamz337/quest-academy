@@ -53,10 +53,10 @@ export function createLamps(w) {
     w.lamps[zone] = lampSpots(w.map, zone).map((s) => {
       const x = (s.tx + 0.5) * TILE, y = (s.ty + 0.5) * TILE;
       g.fillStyle(0x000000, 0.16); g.fillEllipse(x, y + 11, 10, 3);
-      g.fillStyle(0x2a2238, 1); g.fillRoundedRect(x - 2, y - 8.6, 4, 20.2, 1.6); g.fillRoundedRect(x - 3.8, y + 7.8, 7.6, 4, 1.5); g.fillRoundedRect(x - 4.8, y - 10.8, 9.6, 3.6, 1.5);
+      g.fillStyle(0x34304a, 1); g.fillRoundedRect(x - 1.9, y - 8.6, 3.8, 20.2, 1.6); g.fillRoundedRect(x - 3.7, y + 7.8, 7.4, 4, 1.5); g.fillRoundedRect(x - 4.7, y - 10.8, 9.4, 3.6, 1.5);
       g.fillStyle(0x5a5470, 1); g.fillRoundedRect(x - 1.1, y - 8, 2.2, 19, 1); g.fillRoundedRect(x - 3, y + 8.6, 6, 2.4, 1); g.fillRoundedRect(x - 4, y - 10, 8, 2, 1);
       const glow = w.add.circle(x, y - 13, 13, col.accent, 0.28).setDepth(3.05).setVisible(false);
-      const bulb = w.add.circle(x, y - 13, 4, 0x8f89a1, 1).setStrokeStyle(1.4, 0x2a2238, 1).setDepth(3.1);
+      const bulb = w.add.circle(x, y - 13, 4, 0x8f89a1, 1).setStrokeStyle(1.2, 0x34304a, 1).setDepth(3.1);
       w.tweens.add({ targets: glow, scale: 1.25, alpha: 0.12, duration: 1100 + ((s.tx * 7 + s.ty * 13) % 5) * 90, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
       return { bulb, glow, lit: false, col };
     });
@@ -75,7 +75,7 @@ export function refreshLamps(w, sparkle = true) {
       const on = i < lit;
       if (on === l.lit || !l.bulb.active) return;
       l.lit = on;
-      l.bulb.setFillStyle(on ? 0xfff1a6 : 0x8f89a1, 1).setStrokeStyle(1.4, on ? l.col.dark : 0x2a2238, 1);
+      l.bulb.setFillStyle(on ? 0xfff1a6 : 0x8f89a1, 1).setStrokeStyle(1.2, on ? l.col.dark : 0x34304a, 1);
       l.glow.setVisible(on);
       if (on && sparkle) {
         const ring = w.add.circle(l.bulb.x, l.bulb.y, 5).setStrokeStyle(2, 0xffc531, 1).setDepth(3.2);

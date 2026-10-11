@@ -695,7 +695,7 @@ export function uiTextures(scene) {
     const tex = scene.textures.createCanvas(key, 96, 96), c = tex.getContext();
     const shape = () => { c.beginPath(); c.moveTo(48, 84); c.bezierCurveTo(8, 56, 4, 30, 22, 18); c.bezierCurveTo(34, 10, 46, 16, 48, 28); c.bezierCurveTo(50, 16, 62, 10, 74, 18); c.bezierCurveTo(92, 30, 88, 56, 48, 84); c.closePath(); };
     c.save(); c.translate(0, 4); c.fillStyle = dark; shape(); c.fill(); c.restore();
-    c.lineWidth = 7; c.lineJoin = 'round'; c.strokeStyle = key === 'heart' ? '#7a1430' : '#8d88a0'; shape(); c.stroke();   // the ink outline
+    c.lineWidth = 5; c.lineJoin = 'round'; c.strokeStyle = key === 'heart' ? '#9c1f3c' : '#9d98ae'; shape(); c.stroke();   // the ink outline
     const gr = c.createLinearGradient(0, 12, 0, 84); gr.addColorStop(0, light); gr.addColorStop(1, dark);
     c.fillStyle = gr; shape(); c.fill();
     c.fillStyle = 'rgba(255,255,255,0.55)'; c.beginPath(); c.ellipse(30, 30, 9, 6, -0.6, 0, Math.PI * 2); c.fill();
