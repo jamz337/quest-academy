@@ -25,6 +25,7 @@ import { buildBoard } from './hud/boardPanel.js';
 import * as CookingPanel from './hud/cookingPanel.js';
 import { buildEncounter } from './hud/encounterPanel.js';
 import { buildMenu } from './hud/menuPanel.js';
+import { glassPill, landPill, scrollBanner, glassMenuButton, paintActionBubble } from '../ui/HudStyle.js';
 
 /**
  * Overlay on top of the World scene: joystick, action button, coin counter, zone label, minimap, menu and
@@ -84,27 +85,27 @@ export class HudScene extends BaseScene {
     this.joystick = new VirtualJoystick(this, { enabled: () => !this.blocking });
 
     // Top-left: coins and zone
-    const chipH = 34 * ui, top = 10 + sa.top, left = 10 + sa.left;
-    this.coinChip = chip(this, left, top + chipH / 2, { text: String(s.coins), icon: 'coin', height: chipH, textColor: THEME.warningDark, fontSize: 15 });
+    const chipH = 40 * ui, top = 10 + sa.top, left = 10 + sa.left;
+    this.coinChip = glassPill(this, left, top + chipH / 2, { text: String(s.coins), icon: 'coin', height: chipH, fontSize: 19 });
     // Hearts beside the coins: three of them, refilled by a drink from the market (tap them to drink one from the bag).
     this.heartIcons = [];
     if (this.textures.exists('heart')) {
-      const hs = 24 * ui, hx0 = left + (this.coinChip.w || 70) + 12 + hs / 2, have = heartsOf(Store.getProfile());
-      for (let i = 0; i < HEARTS_MAX; i++) this.heartIcons.push(this.add.image(hx0 + i * (hs + 3), top + chipH / 2, i < have ? 'heart' : 'heart-off').setDisplaySize(hs, hs));
+      const hs = 32 * ui, hx0 = left + (this.coinChip.w || 70) + 10 + hs / 2, have = heartsOf(Store.getProfile());
+      for (let i = 0; i < HEARTS_MAX; i++) this.heartIcons.push(this.add.image(hx0 + i * (hs + 2), top + chipH / 2, i < have ? 'heart' : 'heart-off').setDisplaySize(hs, hs));
       const zone = this.add.zone(hx0 + hs + 3, top + chipH / 2, hs * 3 + 18, chipH + 6).setInteractive({ useHandCursor: true });
       zone.on('pointerup', () => { const roam = this.scene.get(this.roamKey); if (roam && !this.blocking) drinkFromBag(roam); });
     }
-    this.zoneChip = chip(this, left, top + chipH + 8 + 13 * ui, { text: s.zone, height: 26 * ui, fontSize: 12, textColor: THEME.ink2, shadow: 'none', stroke: THEME.line });
+    this.zoneChip = landPill(this, left + 4, top + chipH + 8 + 15 * ui, { text: s.zone, height: 30 * ui, fontSize: 15 });
     this.zoneChip.setVisible(!!s.zone);
     // What the player is carrying for an errand
-    if (s.carry) chip(this, left, top + chipH + 8 + 26 * ui + 8 + 13 * ui, { text: s.carry, height: 26 * ui, fontSize: 12, color: THEME.warningSoft, textColor: THEME.warningDark, shadow: 'none' });
+    if (s.carry) scrollBanner(this, left, top + chipH + 8 + 30 * ui + 12 + 18 * ui, s.carry, { fontSize: 15, maxWidth: Math.min(460, (w - 2 * left) / ui - 150) });
 
     // Top-right: menu, with the minimap tucked underneath it
-    iconButton(this, w - 10 - sa.right - 22 * ui, top + chipH / 2, 44 * ui, '☰', { onClick: () => this.openMenu() });
+    glassMenuButton(this, w - 10 - sa.right - 24 * ui, top + chipH / 2, 48 * ui, () => this.openMenu());
     this.buildMinimap(w - 14 - sa.right, top + chipH + 14);
 
     // Bottom-right: round action button
-    if (!this.blocking) this.buildActionButton(w - 56 * ui - sa.right, h - 56 * ui - sa.bottom, 72 * ui);
+    if (!this.blocking) this.buildActionButton(w - 60 * ui - sa.right, h - 60 * ui - sa.bottom, 84 * ui);
     // The first-steps hint, pulsing above the joystick.
     if (s.hint && !this.blocking) {
       const c = chip(this, w / 2, h - 118 * ui - sa.bottom, { text: s.hint, color: THEME.warningSoft, textColor: THEME.warningDark, fontSize: 14, height: 34 * ui, stroke: THEME.warning });
@@ -204,14 +205,14 @@ export class HudScene extends BaseScene {
   buildActionButton(x, y, size) {
     const r = size / 2;
     const c = this.add.container(x, y).setDepth(300);
-    const shadow = this.add.circle(0, 5, r, THEME.shadow.color, 0.18);
-    const face = this.add.circle(0, 0, r, THEME.primary, 1).setStrokeStyle(4, 0xffffff, 0.9);
-    const label = text(this, 0, 0, 'A', { ...T.heading(this, THEME.onAccent), fontSize: Math.round(r * 0.9) + 'px', fontStyle: '700' });
-    c.add([shadow, face, label]);
+    const face = this.add.graphics();
+    paintActionBubble(this, face, r);
+    const label = text(this, 0, 0, 'A', { ...T.heading(this, 0xffffff), fontSize: Math.round(r * 1.0) + 'px', fontStyle: '900', stroke: '#1b4fa8', strokeThickness: Math.max(3, Math.round(r * 0.09)) });
+    c.add([face, label]);
     c.setSize(size, size);
     c.setInteractive();
-    c.on('pointerdown', () => { if (this.blocking) return; this.actionFlag = true; face.setFillStyle(THEME.primaryDark, 1); c.setScale(0.92); });
-    const up = () => { face.setFillStyle(THEME.primary, 1); c.setScale(1); };
+    c.on('pointerdown', () => { if (this.blocking) return; this.actionFlag = true; paintActionBubble(this, face, r, true); c.setScale(0.92); });
+    const up = () => { paintActionBubble(this, face, r); c.setScale(1); };
     c.on('pointerup', up); c.on('pointerout', up);
     this.actionButton = c;
   }

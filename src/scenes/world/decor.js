@@ -22,22 +22,11 @@ export function drawDecor(w) {
   const PATHY = new Set([TID.path, TID.plinth, ...DOOR_TILES, TID.gateLocked, TID.gateOpen]);
   const BUILDING = new Set([...WALL_TILES, ...ROOF_TILES, ...DOOR_TILES]);
   const g = w.make.graphics({ add: false });
+  // Shorelines and road edges are part of the painted terrain pieces now (systems/Terrain.js); only shadows remain.
+  void PATHY;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const id = at(x, y), px = x * TILE, py = y * TILE;
-    if (id === TID.water) {
-      g.fillStyle(0xe4f6ff, 0.6);
-      if (at(x, y - 1) !== TID.water) g.fillRect(px, py, TILE, 3);
-      if (at(x - 1, y) !== TID.water) g.fillRect(px, py, 3, TILE);
-      if (at(x + 1, y) !== TID.water) g.fillRect(px + TILE - 3, py, 3, TILE);
-      g.fillStyle(0x0b4f8a, 0.3);
-      if (at(x, y + 1) !== TID.water) g.fillRect(px, py + TILE - 3, TILE, 3);
-    } else if (PATHY.has(id)) {
-      g.fillStyle(0x000000, 0.13);
-      if (!PATHY.has(at(x, y - 1))) g.fillRect(px, py, TILE, 3);
-      if (!PATHY.has(at(x - 1, y))) g.fillRect(px, py, 2, TILE);
-      if (!PATHY.has(at(x + 1, y))) g.fillRect(px + TILE - 2, py, 2, TILE);
-      if (!PATHY.has(at(x, y + 1))) g.fillRect(px, py + TILE - 2, TILE, 2);
-    } else if (BUILDING.has(id)) {
+    if (BUILDING.has(id)) {
       g.fillStyle(0x000000, 0.22);
       if (!BUILDING.has(at(x + 1, y))) g.fillRect(px + TILE, py + 4, 4, TILE);
       if (!BUILDING.has(at(x, y + 1)) && !DOOR_TILES.includes(id)) g.fillRect(px + 4, py + TILE, TILE, 4);

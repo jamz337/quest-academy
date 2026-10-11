@@ -112,10 +112,11 @@ export const TILE_IDS = {
   springs: 42, roofScience: 43, wallScience: 44, doorScience: 45,
   quay: 46, roofHistory: 47, wallHistory: 48, doorHistory: 49, wallHistory2: 50, doorHistory2: 51, wallHistory3: 52, doorHistory3: 53,
   fortTop: 54, fortWall: 55, fortDoor: 56,
-  quayStone: 57   // quay paving something stands on (the lighthouse): looks like the quay, cannot be walked on
+  quayStone: 57,   // quay paving something stands on (the lighthouse): looks like the quay, cannot be walked on
+  grass2: 58, grass3: 59, grass4: 60   // more looks for plain grass (display only, like the flower looks)
 };
 /** Flower and daisy patches come in several looks; the world picks one per map square so no two neighbours match. */
-export const FLOWER_TILES = [6, 29, 30, 31, 32, 33], MEADOW_TILES = [7, 34, 35, 36, 37, 38, 39, 40];
+export const FLOWER_TILES = [6, 29, 30, 31, 32, 33], MEADOW_TILES = [7, 34, 35, 36, 37, 38, 39, 40], GRASS_TILES = [0, 58, 59, 60];
 
 const px = (ctx, x, y, col, w = 1, h = 1) => { ctx.fillStyle = col; ctx.fillRect(x, y, w, h); };
 // Smooth-shape helpers. Tiles are painted in a 32-unit space that the tileset scales up (see tilesTexture), so
@@ -169,6 +170,50 @@ function sandTile(ctx, x0, rnd) {
   // a tiny shell
   ctx.fillStyle = '#fff8e0'; ctx.beginPath(); ctx.moveTo(x0 + 23, 23); ctx.arc(x0 + 23, 23, 2.6, Math.PI * 1.1, Math.PI * 1.9); ctx.closePath(); ctx.fill();
   stroke(ctx, [x0 + 23, 23, x0 + 21.6, 21], '#dcc88e', 0.5); stroke(ctx, [x0 + 23, 23, x0 + 23, 20.5], '#dcc88e', 0.5); stroke(ctx, [x0 + 23, 23, x0 + 24.4, 21], '#dcc88e', 0.5);
+}
+
+// ---- The painted look (the hub first): soft patches, inked tufts, outlined flowers and trees ----------------
+const INK = '#24432a';
+/** Painted grass: a warm green with soft lighter and darker patches and little inked tufts of blades. */
+function paintedGrass(ctx, x0, rnd, tufts = 4) {
+  px(ctx, x0, 0, '#58b947', TILE, TILE);
+  for (let i = 0; i < 3; i++) oval(ctx, x0 + inside(rnd, 6), inside(rnd, 6), 6 + rnd() * 4, 3.5 + rnd() * 2, rnd() < 0.5 ? '#4aa63c' : '#69c654', 0.55, rnd() * 3);
+  for (let i = 0; i < tufts; i++) {
+    const x = x0 + inside(rnd, 6), y = inside(rnd, 7), h = 2.6 + rnd() * 1.6;
+    stroke(ctx, [x - 2, y, x - 2.9, y - h * 0.8], '#2f7d2c', 0.9); stroke(ctx, [x, y, x, y - h], '#2f7d2c', 0.9); stroke(ctx, [x + 2, y, x + 2.9, y - h * 0.8], '#2f7d2c', 0.9);
+    stroke(ctx, [x + 0.5, y - 0.4, x + 0.5, y - h + 1], '#8bd96c', 0.45);
+  }
+}
+const PAINTED_PETALS = ['#ff6fae', '#ffd23f', '#ffffff', '#ff7a59', '#9fc4ff', '#c58cff'];
+/** Flowers with an ink outline, on stems with a leaf: one to three per square. */
+function paintedFlowers(ctx, x0, rnd) {
+  const spots = [], count = 1 + Math.floor(rnd() * 3);
+  for (let tries = 0; spots.length < count && tries < 40; tries++) {
+    const fx = inside(rnd, 7), fy = 7 + rnd() * (TILE - 17);
+    if (spots.every(([sx, sy]) => Math.hypot(sx - fx, sy - fy) > 9)) spots.push([fx, fy]);
+  }
+  spots.sort((a, b) => a[1] - b[1]).forEach(([fx, fy]) => {
+    const col = PAINTED_PETALS[Math.floor(rnd() * PAINTED_PETALS.length)], size = 0.9 + rnd() * 0.45, turn = rnd() * 6, x = x0 + fx;
+    stroke(ctx, [x, fy + 1, x + 0.6, fy + 4, x, fy + 6.5], INK, 1.5); stroke(ctx, [x, fy + 1, x + 0.6, fy + 4, x, fy + 6.5], '#3f9a3a', 0.8);
+    oval(ctx, x + 1.6, fy + 4.6, 1.9, 0.95, INK, 1, 0.5); oval(ctx, x + 1.6, fy + 4.6, 1.4, 0.6, '#4fae44', 1, 0.5);
+    for (let i = 0; i < 5; i++) { const a = turn + (i / 5) * Math.PI * 2; disc(ctx, x + Math.cos(a) * 1.8 * size, fy + Math.sin(a) * 1.8 * size, 1.55 * size, INK); }
+    for (let i = 0; i < 5; i++) { const a = turn + (i / 5) * Math.PI * 2; disc(ctx, x + Math.cos(a) * 1.8 * size, fy + Math.sin(a) * 1.8 * size, 1.15 * size, col); }
+    disc(ctx, x, fy, 1.05 * size, INK); disc(ctx, x, fy, 0.75 * size, col === '#ffd23f' ? '#ff8f3f' : '#ffc531');
+  });
+}
+/** A tree in the painted look: a rounded canopy of leafy clumps with an ink outline, light from the top left. */
+function paintedTree(ctx, x0) {
+  oval(ctx, x0 + 16, 29.4, 9, 2.4, '#1e1b4b', 0.2);
+  ctx.fillStyle = INK; ctx.beginPath(); ctx.roundRect(x0 + 12.8, 18.5, 6.4, 11.6, 2); ctx.fill();
+  ctx.fillStyle = '#7a4a2a'; ctx.beginPath(); ctx.roundRect(x0 + 13.6, 19, 4.8, 10.6, 1.6); ctx.fill();
+  ctx.fillStyle = '#a06a3e'; ctx.beginPath(); ctx.roundRect(x0 + 13.6, 19, 1.8, 10.6, 1); ctx.fill();
+  const clumps = [[16, 11, 9.4], [8.6, 15, 6.4], [23.4, 15, 6.4], [12, 19, 6], [20, 19, 6], [16, 16, 7.5]];
+  clumps.forEach(([bx, by, r]) => disc(ctx, x0 + bx, by, r + 1.3, INK));
+  clumps.forEach(([bx, by, r]) => disc(ctx, x0 + bx, by, r, '#2f8f45'));
+  [[14.6, 9.6, 6.6], [8.2, 13.6, 4], [21.6, 13.4, 4.2], [11.4, 17.4, 3.6]].forEach(([bx, by, r]) => disc(ctx, x0 + bx, by, r, '#46ad55'));
+  [[13, 7.6, 3.2], [7.4, 12.4, 1.8], [19.8, 11.4, 2.2], [10.4, 16.2, 1.6]].forEach(([bx, by, r]) => disc(ctx, x0 + bx, by, r, '#7fd27a'));
+  ctx.strokeStyle = '#256f37'; ctx.lineWidth = 0.7; ctx.lineCap = 'round';   // a few leaf lines in the shade
+  [[18, 17], [22, 18.5], [14, 20]].forEach(([lx, ly]) => { ctx.beginPath(); ctx.arc(x0 + lx, ly, 2.2, 0.2, 2.2); ctx.stroke(); });
 }
 
 /** A round leafy tree with a short trunk and a soft shadow (transparent around it: it sits on the tree overlay layer). */
@@ -446,14 +491,15 @@ export function tilesTexture(scene) {
     tex.add(id, 0, x + TILE_PAD, y + TILE_PAD, size, size);
   };
   const T = TILE_IDS;
-  tile(T.grass, (c) => grassTile(c, 0, rnd, '#5cc45a', '#45a648', '#8fe07c'));
+  const prnd = mulberry32(77);   // the painted tiles' own random stream, so every other tile keeps its looks
+  GRASS_TILES.forEach((id, i) => tile(id, (c) => paintedGrass(c, 0, prnd, 2 + i)));
   tile(T.path, (c) => pathTile(c, 0, rnd));
   tile(T.plinth, (c) => pathTile(c, 0, rnd));   // paving under the fountain and the quest board
   tile(T.water, (c) => waterTile(c, 0, rnd));
-  tile(T.tree, (c) => treeTile(c, 0), { transparent: true });   // drawn on the tree overlay layer
+  tile(T.tree, (c) => paintedTree(c, 0), { transparent: true });   // drawn on the tree overlay layer
   tile(T.wall, (c) => wallTile(c, 0));
   tile(T.door, (c) => doorTile(c, 0));
-  FLOWER_TILES.forEach((id) => tile(id, (c) => { grassTile(c, 0, rnd, '#5cc45a', '#45a648', '#8fe07c', 3); flowersOn(c, 0, rnd); }));
+  FLOWER_TILES.forEach((id) => tile(id, (c) => { paintedGrass(c, 0, prnd, 2); paintedFlowers(c, 0, prnd); }));
   MEADOW_TILES.forEach((id) => tile(id, (c) => {
     grassTile(c, 0, rnd, '#bfe05c', '#96c240', '#ecf7a6', 5);   // sunny lime, clearly not the hub's green
     // Daisies: none to four of them, big and small, mostly white with the odd pink, yellow or lilac one.
@@ -649,6 +695,7 @@ export function uiTextures(scene) {
     const tex = scene.textures.createCanvas(key, 96, 96), c = tex.getContext();
     const shape = () => { c.beginPath(); c.moveTo(48, 84); c.bezierCurveTo(8, 56, 4, 30, 22, 18); c.bezierCurveTo(34, 10, 46, 16, 48, 28); c.bezierCurveTo(50, 16, 62, 10, 74, 18); c.bezierCurveTo(92, 30, 88, 56, 48, 84); c.closePath(); };
     c.save(); c.translate(0, 4); c.fillStyle = dark; shape(); c.fill(); c.restore();
+    c.lineWidth = 7; c.lineJoin = 'round'; c.strokeStyle = key === 'heart' ? '#7a1430' : '#8d88a0'; shape(); c.stroke();   // the ink outline
     const gr = c.createLinearGradient(0, 12, 0, 84); gr.addColorStop(0, light); gr.addColorStop(1, dark);
     c.fillStyle = gr; shape(); c.fill();
     c.fillStyle = 'rgba(255,255,255,0.55)'; c.beginPath(); c.ellipse(30, 30, 9, 6, -0.6, 0, Math.PI * 2); c.fill();

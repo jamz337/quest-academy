@@ -16,7 +16,9 @@ import { viewport, dpr } from '../systems/Layout.js';
 import { Sfx } from '../systems/Audio.js';
 import { toast } from '../ui/Toast.js';
 import { resolveLook } from '../data/avatars.js';
-import { lookSpriteTexture, fitPlayer, CHAR_WORLD_SCALE, IDLE_FRAMES, TILE_RES, TILE_PAD, FLOWER_TILES, MEADOW_TILES } from '../systems/Textures.js';
+import { lookSpriteTexture, fitPlayer, CHAR_WORLD_SCALE, IDLE_FRAMES, TILE_RES, TILE_PAD, FLOWER_TILES, MEADOW_TILES, GRASS_TILES } from '../systems/Textures.js';
+import { terrainTexture, TERRAIN_KEY } from '../systems/Terrain.js';
+import { terrainLayers } from '../data/world/terrainLayout.js';
 import { gameGrade, gradeUps, nextHouseLevel, HOUSE_LEVELS } from '../systems/Progression.js';
 import { errandLine } from '../data/world/errands.js';
 import { ensureExplored, reveal } from '../data/world/explore.js';
@@ -62,18 +64,32 @@ export class WorldScene extends Phaser.Scene {
     // Ground layer (trees replaced by the local ground) plus a transparent tree layer drawn above the decor.
     // Flower and daisy squares each take one of several looks (chosen from the square's place, so it never changes).
     const vary = (id, tx, ty) => {
-      const set = id === TID.flower ? FLOWER_TILES : id === TID.meadow ? MEADOW_TILES : null;
+      const set = id === TID.flower ? FLOWER_TILES : id === TID.meadow ? MEADOW_TILES : id === TID.grass ? GRASS_TILES : null;
       if (!set) return id;
       let h = Math.imul(tx + 1, 374761393) ^ Math.imul(ty + 1, 668265263);
       h = Math.imul(h ^ (h >>> 13), 1274126177); h ^= h >>> 16;
       return set[(h >>> 0) % set.length];
     };
-    const ground = this.map.data.map((row, ty) => row.map((id, tx) => vary(id === TID.tree ? groundUnder(this.map, tx, ty) : id, tx, ty)));
+    // Drawn in layers (data/world/terrainLayout.js): the ground; roads and water as painted dual-grid pieces with
+    // curved, outlined edges; then the buildings. The map's own squares, invisible, are what the player bumps into.
+    const layers = terrainLayers(this.map);
+    const ground = layers.base.map((row, ty) => row.map((id, tx) => vary(id, tx, ty)));
     // The tileset is painted at TILE_RES times the tile size (smooth shapes); the layers scale it back to TILE.
     const res = TILE * TILE_RES, mapW = this.map.width * TILE, mapH = this.map.height * TILE;
     const tilemap = this.make.tilemap({ data: ground, tileWidth: res, tileHeight: res });
     const tileset = tilemap.addTilesetImage('tiles', 'tiles', res, res, TILE_PAD, TILE_PAD * 2);
-    this.layer = tilemap.createLayer(0, tileset, 0, 0).setScale(1 / TILE_RES);
+    this.groundLayer = tilemap.createLayer(0, tileset, 0, 0).setScale(1 / TILE_RES);
+    terrainTexture(this, res, TILE_PAD);
+    const dual = this.make.tilemap({ width: this.map.width + 1, height: this.map.height + 1, tileWidth: res, tileHeight: res });
+    const terrainSet = dual.addTilesetImage(TERRAIN_KEY, TERRAIN_KEY, res, res, TILE_PAD, TILE_PAD * 2);
+    for (const [name, grid, depth] of [['road', layers.road, 0.2], ['water', layers.water, 0.3]]) {
+      const l = dual.createBlankLayer(name, terrainSet, -TILE / 2, -TILE / 2).setScale(1 / TILE_RES).setDepth(depth);
+      grid.forEach((row, j) => row.forEach((t, i) => { if (t >= 0) l.putTileAt(t, i, j); }));
+    }
+    this.structureLayer = tilemap.createBlankLayer('structures', tileset, 0, 0).setScale(1 / TILE_RES).setDepth(0.5);
+    layers.structures.forEach((row, ty) => row.forEach((id, tx) => { if (id >= 0) this.structureLayer.putTileAt(id, tx, ty); }));
+    const solid = this.make.tilemap({ data: this.map.data, tileWidth: res, tileHeight: res });
+    this.layer = solid.createLayer(0, solid.addTilesetImage('tiles', 'tiles', res, res, TILE_PAD, TILE_PAD * 2), 0, 0).setScale(1 / TILE_RES).setVisible(false);
     this.layer.setCollision(SOLID.filter((id) => id !== TID.tree));   // trees collide on their own layer
     Decor.drawDecor(this);
     Decor.createTrailNumbers(this);
