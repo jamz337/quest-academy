@@ -111,7 +111,8 @@ export const TILE_IDS = {
   plinth: 41,
   springs: 42, roofScience: 43, wallScience: 44, doorScience: 45,
   quay: 46, roofHistory: 47, wallHistory: 48, doorHistory: 49, wallHistory2: 50, doorHistory2: 51, wallHistory3: 52, doorHistory3: 53,
-  fortTop: 54, fortWall: 55, fortDoor: 56
+  fortTop: 54, fortWall: 55, fortDoor: 56,
+  quayStone: 57   // quay paving something stands on (the lighthouse): looks like the quay, cannot be walked on
 };
 /** Flower and daisy patches come in several looks; the world picks one per map square so no two neighbours match. */
 export const FLOWER_TILES = [6, 29, 30, 31, 32, 33], MEADOW_TILES = [7, 34, 35, 36, 37, 38, 39, 40];
@@ -491,6 +492,7 @@ export function tilesTexture(scene) {
   const chattel = (wall, door, [base, dark]) => { tile(wall, (c) => chattelWall(c, 0, base, dark)); tile(door, (c) => doorTile(c, 0, (cc, x) => chattelWall(cc, x, base, dark, false))); };
   chattel(T.wallHistory, T.doorHistory, CHATTEL.mint); chattel(T.wallHistory2, T.doorHistory2, CHATTEL.pink); chattel(T.wallHistory3, T.doorHistory3, CHATTEL.yellow);
   tile(T.fortTop, (c) => fortTop(c, 0)); tile(T.fortWall, (c) => fortWall(c, 0)); tile(T.fortDoor, (c) => fortDoor(c, 0));
+  tile(T.quayStone, (c) => quayTile(c, 0, rnd));
   tex.refresh();
 }
 

@@ -44,6 +44,12 @@ export function answerSpeaker(scene, host, w, h, words, { rate = 0.9, inset = 4 
   if (!sp) return null;
   sp.setAlpha(0.9);
   if (typeof host.add === 'function') host.add(sp);
+  // A long answer wraps short of the speaker and sits a little left, so no word runs under the 🔊.
+  const label = host.label, free = w - 24 - size - inset * 2;
+  if (label && typeof label.setWordWrapWidth === 'function' && (label.width || 0) > free) {
+    label.setWordWrapWidth(free);
+    label.x -= (size + inset) / 2;
+  }
   return sp;
 }
 

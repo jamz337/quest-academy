@@ -57,11 +57,33 @@ export function tipFor(it) {
 export const canFinish = (it) => it.phase === 'ready' || (it.phase === 'try' && it.solved);
 
 const defaultProblem = (scene, r, str, { solved, f, theme }) => {
-  // The example sits on a soft tinted panel, green once it is solved.
-  const g = scene.add.graphics(), pw = Math.min(r.w - 12 * f, 460 * f);
-  g.fillStyle(solved ? THEME.success : theme.ink, solved ? 0.12 : 0.07); g.fillRoundedRect(r.x + r.w / 2 - pw / 2, r.y + 3 * f, pw, r.h - 6 * f, 18 * f);
-  const style = { fontFamily: FONT, fontSize: Math.round(Math.min(34 * f, r.h * 0.5)) + 'px', color: hex(solved ? THEME.successDark : theme.ink), fontStyle: WEIGHT.heavy, align: 'center', wordWrap: { width: r.w - 16 } };
-  return readable(scene, r.x + r.w / 2, r.y + r.h / 2, str, style, { width: r.w - 16 });
+  // The example sits on a soft tinted panel, green once it is solved: the question on top and the answer on a line
+  // of its own in a pill beneath it, each shrunk until it fits, so no line breaks in the middle of the arrow.
+  const g = scene.add.graphics(), pw = Math.min(r.w - 12 * f, 460 * f), cx = r.x + r.w / 2;
+  g.fillStyle(solved ? THEME.success : theme.ink, solved ? 0.12 : 0.07); g.fillRoundedRect(cx - pw / 2, r.y + 3 * f, pw, r.h - 6 * f, 18 * f);
+  const colour = hex(solved ? THEME.successDark : theme.ink);
+  const m = /^([\s\S]*?)\s+→\s+([\s\S]+)$/.exec(String(str));
+  const question = m ? m[1].trim() : String(str), answer = m ? m[2].trim() : null;
+  const innerW = pw - 24 * f, innerH = r.h - 14 * f;
+  const fit = (words, sizes, room, width, weight) => {
+    let t = null;
+    for (const size of sizes) {
+      if (t) t.destroy();
+      t = readable(scene, cx, 0, words, { fontFamily: FONT, fontSize: Math.round(size * f) + 'px', color: colour, fontStyle: weight, align: 'center' }, { width });
+      if ((t.height || 0) <= room) break;
+    }
+    return t;
+  };
+  if (!answer) { const t = fit(question, [30, 26, 22, 19, 16], innerH, innerW, WEIGHT.heavy); t.setPosition(cx, r.y + r.h / 2); return t; }
+  const pill = fit(answer, [26, 22, 19], innerH * 0.5, innerW - 28 * f, WEIGHT.heavy);
+  const pillH = (pill.height || 24 * f) + 10 * f, pillW = (pill.width || 60) + 28 * f;
+  const q = fit(question, [24, 21, 18, 16, 14], innerH - pillH - 6 * f, innerW, WEIGHT.bold);
+  const qH = q.height || 20 * f, total = qH + 6 * f + pillH, top = r.y + r.h / 2 - total / 2;
+  q.setOrigin(0.5, 0).setPosition(cx, top);
+  const py = top + qH + 6 * f;
+  g.fillStyle(solved ? THEME.success : theme.title, solved ? 0.22 : 0.16); g.fillRoundedRect(cx - pillW / 2, py, pillW, pillH, pillH / 2);
+  pill.setOrigin(0.5, 0).setPosition(cx, py + 5 * f);
+  return q;
 };
 
 const defaultChoice = (scene, x, y, w, h, label, { state, onTap, f }) => {

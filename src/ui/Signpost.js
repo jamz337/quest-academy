@@ -40,7 +40,11 @@ export function signpost(scene, x, y, opts = {}) {
   const c = scene.add.container(x, y);
   const g = scene.add.graphics();
   const n = boards.length;
-  const top = -(POST_TOP + n * (BH + GAP) + 6);
+  // A down-pointing board that is not the lowest gets room below it, so its tip shows above the next board.
+  const extraBelow = (i) => (boards[i].dir === 'down' && i < n - 1 ? TIP : 0);
+  const offsets = []; let acc = 0;
+  for (let i = 0; i < n; i++) { offsets.push(acc); acc += BH + GAP + extraBelow(i); }
+  const top = -(POST_TOP + acc + 6);
 
   // Ground shadow and the post itself.
   g.fillStyle(THEME.ink, 0.16); g.fillEllipse(0, 0, 16, 5);
@@ -50,7 +54,7 @@ export function signpost(scene, x, y, opts = {}) {
 
   const labels = [];
   boards.forEach((b, i) => {
-    const cy = top + POST_TOP + i * (BH + GAP) + BH / 2;
+    const cy = top + POST_TOP + offsets[i] + BH / 2;
     const sub = THEME.subjects[b.id] || { accent: THEME.primary, dark: THEME.primaryDark };
     const pts = boardPoints(b.dir, cy);
     g.fillStyle(THEME.ink, 0.18); g.fillPoints(pts.map((p) => ({ x: p.x + 1, y: p.y + 1.5 })), true);

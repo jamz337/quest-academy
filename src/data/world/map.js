@@ -20,12 +20,13 @@ export const TID = {
   springs: 42, roofScience: 43, wallScience: 44, doorScience: 45,  // Science Springs: its bright ground and glass-house buildings
   // History Harbor: its cobbled quay, chattel houses in three colours, and the fort's coral stone
   quay: 46, roofHistory: 47, wallHistory: 48, doorHistory: 49, wallHistory2: 50, doorHistory2: 51, wallHistory3: 52, doorHistory3: 53,
-  fortTop: 54, fortWall: 55, fortDoor: 56
+  fortTop: 54, fortWall: 55, fortDoor: 56,
+  quayStone: 57   // quay paving something stands on (the lighthouse): looks like the quay, cannot be walked on
 };
 export const ROOF_TILES = [TID.roof, TID.roofMath, TID.roofWords, TID.roofCode, TID.roofBible, TID.castleTop, TID.roofScience, TID.roofHistory, TID.fortTop];
 export const WALL_TILES = [TID.wall, TID.wallMath, TID.wallWords, TID.wallCode, TID.wallBible, TID.castleWall, TID.wallScience, TID.wallHistory, TID.wallHistory2, TID.wallHistory3, TID.fortWall];
 export const DOOR_TILES = [TID.door, TID.doorMath, TID.doorWords, TID.doorCode, TID.doorBible, TID.castleDoor, TID.doorScience, TID.doorHistory, TID.doorHistory2, TID.doorHistory3, TID.fortDoor];
-export const SOLID = [TID.water, TID.tree, TID.gateLocked, TID.plinth, ...ROOF_TILES, ...WALL_TILES];
+export const SOLID = [TID.water, TID.tree, TID.gateLocked, TID.plinth, TID.quayStone, ...ROOF_TILES, ...WALL_TILES];
 export const isWalkable = (id) => !SOLID.includes(id);
 
 /** Each neighbourhood builds in its own style; bosses get a castle. */
@@ -320,7 +321,7 @@ export function buildMap() {
   hplace('captain-compass', 12, H1 + 2, BUILDING_STYLES.history); hplace('mayor-marigold', 18, H1 + 2, BUILDING_STYLES.history2);
   hplace('flora', 28, H1 + 2, BUILDING_STYLES.history3); hplace('old-tom', 34, H1 + 2, BUILDING_STYLES.history);
   const lighthouse = { tx: 38, ty: H1 + 3 };                 // on paving beside Old Tom's house (drawn in scenes/world/decor.js)
-  data[H1 + 2][lighthouse.tx] = data[H1 + 3][lighthouse.tx] = TID.plinth;
+  data[H1 + 2][lighthouse.tx] = data[H1 + 3][lighthouse.tx] = TID.quayStone;
   bossSpots.history = (() => { const door = building(data, 40, H1 + 1, 5, 4, BUILDING_STYLES.fort); buildings.push({ zone: 'history', style: 'fort', x: 40, y: H1 + 1, w: 5, h: 4, door }); return { tx: door.tx, ty: door.ty + 1 }; })();
   data[H1 + 7][16] = data[H1 + 7][31] = TID.tree;            // two palms on the south quay
   coins.push({ tx: 22, ty: H1 + 5 }, { tx: 32, ty: H1 + 5 }, { tx: pier.tx, ty: H1 + 2 });

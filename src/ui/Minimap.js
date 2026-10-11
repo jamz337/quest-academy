@@ -7,7 +7,7 @@ import { FONT, WEIGHT } from './TextStyles.js';
 // The map is painted as a little illustration: soft ground colours for each land, roads as rounded ribbons, water
 // with rounded banks, trees as round tufts and every building as a small house in its land's colour.
 const GROUND = {
-  [TID.grass]: '#63c765', [TID.flower]: '#63c765', [TID.meadow]: '#c3e266', [TID.woods]: '#3f9d4a', [TID.cove]: '#f0dfae', [TID.village]: '#a3d66f', [TID.springs]: '#9fe6d9', [TID.quay]: '#d8d3c8'
+  [TID.grass]: '#63c765', [TID.flower]: '#63c765', [TID.meadow]: '#c3e266', [TID.woods]: '#3f9d4a', [TID.cove]: '#f0dfae', [TID.village]: '#a3d66f', [TID.springs]: '#9fe6d9', [TID.quay]: '#d8d3c8', [TID.quayStone]: '#d8d3c8'
 };
 const ZONE_GROUND = { math: GROUND[TID.meadow], words: GROUND[TID.woods], code: GROUND[TID.cove], bible: GROUND[TID.village], science: GROUND[TID.springs], history: GROUND[TID.quay] };
 const ROOFS = { math: '#4c8df6', words: '#249762', code: '#e8623f', bible: '#8566ee', science: '#12a3b0', history: '#30589c', hub: '#ff6fae' };
