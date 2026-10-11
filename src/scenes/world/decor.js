@@ -1,5 +1,6 @@
 // Static dressing of the overworld: shoreline foam, path edges and building shadows baked into one texture,
 // the hub signpost, the player's house name plate and the star rows above villagers' houses.
+import { bakeGraphics } from '../../ui/Bake.js';
 import { TILE } from '../../constants.js';
 import * as Store from '../../systems/Store.js';
 import { signpost } from '../../ui/Signpost.js';
@@ -179,6 +180,7 @@ export function createMarketStall(w) {
   g.lineStyle(1.3, 0x4a3320, 1); g.strokeRect(x - 28, y - 42, 4, 42); g.strokeRect(x + 24, y - 42, 4, 42); g.strokeRoundedRect(x - 30, y - 22, 60, 22, 3);
   g.lineStyle(1.2, 0xa8323f, 1); g.strokeRect(x - 34, y - 54, 68, 12);
   for (let i = 0; i < 8; i++) g.strokeTriangle(x - 34 + i * 8.5, y - 42, x - 34 + (i + 1) * 8.5, y - 42, x - 34 + i * 8.5 + 4.25, y - 37);
+  bakeGraphics(w, g, x - 40, y - 62, 80, 80, 4);
   w.add.text(x, y - 60, 'Cheapside Market', { fontFamily: 'Fredoka, sans-serif', fontSize: '7px', color: '#2d2a4a', backgroundColor: '#fff8ef', padding: { x: 3, y: 1 } }).setOrigin(0.5).setDepth(4).setResolution(4);
   const post = w.add.rectangle(x, y - 12, 62, 24).setVisible(false);
   w.physics.add.existing(post, true);
@@ -336,6 +338,7 @@ export function createChurch(w) {
   };
   carve('VILLAGE CHURCH', y0 + 28);
   carve('LESSONS', y0 + 58);
+  bakeGraphics(w, g, x0 - 16, y0 - 64, W + 32, H + 84, 4);   // drawn once: a church this detailed is thousands of shapes
 
   // Warm light spilling out of the doorway, gently pulsing.
   const glow = w.add.ellipse(cx, bottom + 2, 26, 9, 0xffc86b, 0.35).setDepth(3);
@@ -424,6 +427,9 @@ export function createHarbour(w) {
     high.fillStyle(0x2d2a4a, 1); high.fillRect(fx - 1, fy - 22, 2, 26);
     high.fillStyle(0x1f3d75, 1); high.fillRect(fx + 1, fy - 22, 14, 9); high.fillStyle(0xffc531, 1); high.fillCircle(fx + 8, fy - 17.5, 2.2);
   }
+  // The island is wide, so its two layers are baked at twice life size rather than four.
+  bakeGraphics(w, low, x0 - 12, y0 - 12, x1 - x0 + 24, y1 - y0 + 24, 1.6, 2);
+  bakeGraphics(w, high, x0 - 12, y0 - 80, x1 - x0 + 24, y1 - y0 + 100, 4, 2);
 }
 
 /**
@@ -460,6 +466,8 @@ export function createMarket(w) {
     const nx = (sq.x + dx) * TILE, ny = (sq.y + dy) * TILE, c = cols[(i * 2 + 1) % cols.length];
     low.fillStyle(c, 0.55); low.fillEllipse(nx, ny, 9, 6.5); low.fillRect(nx + 3.2, ny - 13, 1.8, 13);
   });
+  bakeGraphics(w, g, x0 - 12, ly - 16, x1 - x0 + 24, (sq.y + sq.h) * TILE + 12 - (ly - 16), 4);
+  bakeGraphics(w, low, sq.x * TILE - 8, sq.y * TILE - 20, sq.w * TILE + 16, sq.h * TILE + 28, 1.6);
 }
 
 export function createHouseStars(w) {

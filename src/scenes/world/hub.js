@@ -1,6 +1,7 @@
 // What makes the Academy Hub the heart of the world: the Star Fountain in the middle of the plaza, which shows
 // how far the player has come in each land, and the quest board beside Signpost Sam, which says what to do next.
 // Functions take the WorldScene as `w`.
+import { bakeGraphics } from '../../ui/Bake.js';
 import { TILE } from '../../constants.js';
 import { THEME } from '../../ui/theme.js';
 import { FONT } from '../../ui/TextStyles.js';
@@ -46,6 +47,7 @@ export function createFountain(w) {
   g.lineStyle(1.8, STONE_DARK, 1); g.strokeCircle(x, y + 1, 45.6);          // the marble's own grey edges the rim, the pool and the pedestal
   g.lineStyle(1.2, 0x7f7892, 0.9); g.strokeCircle(x, y, 36.2); g.strokeCircle(x, y + 0.6, 10.4);
   g.lineStyle(1.2, 0xffffff, 0.55); g.strokeCircle(x, y - 1.5, 42.5);          // light along the rim's top
+  bakeGraphics(w, g, x - 52, y - 52, 104, 108, 3);
   // The ripples breathe, so the water never looks still.
   const ring = w.add.circle(x, y, 18).setStrokeStyle(1.2, 0xffffff, 0.7).setDepth(3.1);
   w.tweens.add({ targets: ring, scale: 1.9, alpha: 0, duration: 2200, repeat: -1, ease: 'Sine.Out' });
@@ -224,6 +226,7 @@ export function createQuestBoard(w) {
   g.fillStyle(0xcf8a00, 1); g.fillCircle(x, top - 1, 8.5);
   g.fillStyle(0xffc531, 1); g.fillCircle(x, top - 2.5, 8.5);
   g.lineStyle(1.4, 0xb37400, 1); g.strokeCircle(x, top - 2, 9);
+  bakeGraphics(w, g, x - 32, top - 14, 64, y + 20 - (top - 14), 3);
   w.add.image(x, top - 2.5, 'star').setDisplaySize(11, 11).setDepth(3.1);
   const tag = w.add.text(x, y + 19, 'Quest board', { fontFamily: FONT, fontSize: '6px', color: '#1e1b4b', fontStyle: '700', backgroundColor: '#ffffff', padding: { x: 3, y: 1 } }).setOrigin(0.5).setDepth(3.1).setResolution(6);
   void tag;

@@ -16,6 +16,15 @@ const MAX_SIDE = 4096;   // the largest texture every phone can hold
 export function bakeRegion(scene, draw, x0, y0, w, h, depth = 0, k = 4) {
   const g = scene.make.graphics({ add: false });
   draw(g);
+  return bakeGraphics(scene, g, x0, y0, w, h, depth, k);
+}
+
+/**
+ * Bake an already drawn Graphics object (world coordinates) into a picture of the box (x0, y0, w, h) at `depth`,
+ * `k` times larger than life (less if the texture limit says so), and throw the Graphics away.
+ */
+export function bakeGraphics(scene, g, x0, y0, w, h, depth = 0, k = 4) {
+  k = Math.max(1, Math.min(k, Math.floor(MAX_SIDE / Math.max(1, w, h))));
   g.setScale(k);
   const rt = scene.add.renderTexture(x0, y0, Math.ceil(w * k), Math.ceil(h * k)).setOrigin(0).setDepth(depth).setScale(1 / k);
   rt.draw(g, -x0 * k, -y0 * k);
