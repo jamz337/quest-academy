@@ -365,7 +365,7 @@ export function buildMap() {
   // the picture is see-through, 'c' a coin on the floor and 'g' the gate at the foot of the stairs, which lead down into
   // Word Woods. The stairs narrow to one square at the bottom so nobody walks through the gateway's posts. A path was
   // opened through the sculptor's stones (tools/erase-boxes.py) so his pergola and the potter's wheel can be reached, the
-  // easel in the middle of the forecourt was wiped the same way so the door can be reached either side of the boss,
+  // boss stands in the studio's doorway so the forecourt in front of him stays open,
   // and the little ledge under the big mosaic, with its stool and bunting, is reached from the woods below.
   const SUMMIT = {
     x: 40, y: 0, w: 15, h: 15,
@@ -377,8 +377,8 @@ export function buildMap() {
       'T###co#######TT',
       'T###oo#######TT',
       '#####o#########',
-      '#####o#########',
-      '###o#ooooo##o##',
+      '#####o#o#######',
+      '###o#o#ooo##o##',
       '##ooocooooooo##',
       '###oooooo######',
       '####ooooc######',
@@ -397,8 +397,8 @@ export function buildMap() {
   }));
   vline(data, 45, OY + 1, OY + 6, TID.path); hline(data, 43, 45, OY + 7, TID.path);   // down through Word Woods to its lane
   hline(data, 40, 44, OY + 1, TID.woods);                                               // open forest floor along the foot of the summit, to the ledge
-  npcSpots.painter = { tx: 43, ty: 8 }; npcSpots.sculptor = { tx: 52, ty: 9 }; npcSpots['mirror-mia'] = { tx: 41, ty: 12 }; npcSpots.curator = { tx: 46, ty: 11 };
-  bossSpots.studio = { tx: 47, ty: 8 };   // in front of the studio's door
+  npcSpots.painter = { tx: 43, ty: 8 }; npcSpots.sculptor = { tx: 51, ty: 9 }; npcSpots['mirror-mia'] = { tx: 41, ty: 12 }; npcSpots.curator = { tx: 46, ty: 11 };
+  bossSpots.studio = { tx: 47, ty: 7 };   // in the studio's doorway
   const summit = { x: SUMMIT.x, y: SUMMIT.y, w: SUMMIT.w, h: SUMMIT.h };
 
   // ---- The hospital: on the grass above the player's house, its path joining the road up to the springs -----------
