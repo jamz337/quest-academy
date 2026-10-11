@@ -364,7 +364,8 @@ export function buildMap() {
   // rock, building, easel or fence under the picture, 'T' forest in the picture's corners, 'w' open forest floor where
   // the picture is see-through, 'c' a coin on the floor and 'g' the gate at the foot of the stairs, which lead down into
   // Word Woods. The stairs narrow to one square at the bottom so nobody walks through the gateway's posts. A path was
-  // opened through the sculptor's stones (tools/erase-boxes.py) so his pergola and the potter's wheel can be reached,
+  // opened through the sculptor's stones (tools/erase-boxes.py) so his pergola and the potter's wheel can be reached, the
+  // easel in the middle of the forecourt was wiped the same way so the door can be reached either side of the boss,
   // and the little ledge under the big mosaic, with its stool and bunting, is reached from the woods below.
   const SUMMIT = {
     x: 40, y: 0, w: 15, h: 15,
@@ -377,9 +378,9 @@ export function buildMap() {
       'T###oo#######TT',
       '#####o#########',
       '#####o#########',
-      '###o#o#ooo##o##',
+      '###o#ooooo##o##',
       '##ooocooooooo##',
-      '####ooooo######',
+      '###oooooo######',
       '####ooooc######',
       'oo##oo#########',
       'wo###o########T',
