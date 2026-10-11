@@ -105,7 +105,7 @@ function buildOldWorld() {
   const data = Array.from({ length: H0 }, () => Array(W).fill(TID.grass));
 
   const zones = [
-    { id: 'hub', name: ZONE_NAMES.hub, rect: { x: 16, y: 14, w: 16, h: 14 } },
+    { id: 'hub', name: ZONE_NAMES.hub, rect: { x: 16, y: 8, w: 16, h: 20 } },   // reaches up over the grass above the player's house, where the hospital stands
     { id: 'math', name: ZONE_NAMES.math, rect: { x: 1, y: 3, w: 15, h: 25 } },
     { id: 'words', name: ZONE_NAMES.words, rect: { x: 30, y: 1, w: 17, h: 12 } },
     { id: 'code', name: ZONE_NAMES.code, rect: { x: 1, y: 29, w: W - 2, h: 10 } },
@@ -357,11 +357,18 @@ export function buildMap() {
   coins.push({ tx: 33, ty: 8 }, { tx: 28, ty: 10 }, { tx: 36, ty: 12 });
   const market = { square: { x: 29, y: 7, w: 7, h: 4 } };
 
+  // ---- The hospital: on the grass above the player's house, its path joining the road up to the springs -----------
+  const hospitalDoor = building(data, 16, 23, 5, 4, BUILDING_STYLES.hall);
+  buildings.push({ zone: 'hub', style: 'hospital', x: 16, y: 23, w: 5, h: 4, door: hospitalDoor });
+  const hospital = { door: hospitalDoor, front: { tx: hospitalDoor.tx, ty: hospitalDoor.ty + 1 }, x: 16, y: 23, w: 5, h: 4 };
+  hline(data, hospitalDoor.tx, 22, hospitalDoor.ty + 1, TID.path);         // from the door across to the springs road
+  npcSpots.nurse = { tx: hospitalDoor.tx + 1, ty: hospitalDoor.ty + 1 };  // the nurse waits beside the door
+
   return {
     width: W, height: H, data, spawn: down(old.spawn), zones, gates, npcSpots, bossSpots, buildings, coins,
     signSpot: down(old.signSpot), bellSpot: down(old.bellSpot), marketSpot: down(old.marketSpot), home, church,
     trail: TRAIL_STONES, bridge: TRAIL_BRIDGE, fishSign: down(old.fishSign), fountain: down(old.fountain), questBoard: down(old.questBoard),
-    island, pier, jetty, lighthouse, market
+    island, pier, jetty, lighthouse, market, hospital
   };
 }
 

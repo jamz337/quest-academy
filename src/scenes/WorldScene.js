@@ -233,14 +233,17 @@ export class WorldScene extends Phaser.Scene {
    * overhangs a little and the door stays where the map says. The footprint's own tiles come off the structure layer.
    */
   placeDrawnHouse() {
-    const home = this.map.home;
-    if (!home || !this.textures.exists('hub-house')) return;
-    for (let y = home.y; y < home.y + home.h; y++) for (let x = home.x; x < home.x + home.w; x++) this.structureLayer.removeTileAt(x, y);
-    const tex = this.textures.get('hub-house').getSourceImage();
-    const note = (this.cache.json && this.cache.json.get('hub-house-note')) || { wallLeft: 0, wallRight: tex.width, width: tex.width, height: tex.height };
-    const scale = (home.w * TILE) / Math.max(1, note.wallRight - note.wallLeft);
-    const cx = (home.x + home.w / 2) * TILE + (note.width / 2 - (note.wallLeft + note.wallRight) / 2) * scale;
-    this.drawnHouse = this.add.image(cx, (home.y + home.h) * TILE, 'hub-house').setOrigin(0.5, 1).setScale(scale).setDepth(1.1);
+    this.drawnBuildings = {};
+    for (const [key, b] of [['hub-house', this.map.home], ['hub-hospital', this.map.hospital]]) {
+      if (!b || !this.textures.exists(key)) continue;
+      for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) this.structureLayer.removeTileAt(x, y);
+      const tex = this.textures.get(key).getSourceImage();
+      const note = (this.cache.json && this.cache.json.get(`${key}-note`)) || { wallLeft: 0, wallRight: tex.width, width: tex.width, height: tex.height };
+      const scale = (b.w * TILE) / Math.max(1, note.wallRight - note.wallLeft);
+      const cx = (b.x + b.w / 2) * TILE + (note.width / 2 - (note.wallLeft + note.wallRight) / 2) * scale;
+      this.drawnBuildings[key] = this.add.image(cx, (b.y + b.h) * TILE, key).setOrigin(0.5, 1).setScale(scale).setDepth(1.1);
+    }
+    this.drawnHouse = this.drawnBuildings['hub-house'];
   }
 
   applyZoom() {

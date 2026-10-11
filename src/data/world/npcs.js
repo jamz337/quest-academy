@@ -113,6 +113,11 @@ export const NPCS = [
     lines: ['Hammer and nails! Father Noah says the rain is coming.', 'Answer a question and another pair of animals climbs aboard. Fill the ark before the flood!'],
     playPrompt: 'Want to play All Aboard the Ark?'
   },
+  {
+    id: 'nurse', pitch: 1.15, rate: 1.0, voice: 'female', name: 'Nurse Nia', sprite: 'npc0', art: 'nurse', gameId: null, zone: 'hub',
+    lines: ['Hello there! I am Nurse Nia, and this is the Academy hospital. Nobody is poorly today, thank goodness.', 'Drink your water, wash your hands and get your sleep, and you will hardly ever need me!'],
+    playPrompt: null
+  },
   // Science Springs
   {
     id: 'botanist', duel: { prop: '🌱', challenge: 'Think you know plants? Duel me and find out!', win: 'Professor Fern is out-grown!', lose: 'Professor Fern wins this round. Back to the greenhouse!' }, pitch: 1.05, rate: 0.95, voice: 'female', name: 'Professor Fern', sprite: 'npc19', gameId: 'sci-plants', zone: 'science',

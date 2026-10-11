@@ -29,6 +29,8 @@ export class BootScene extends Phaser.Scene {
     this.load.image('ark-noah', 'sprites/ark/noah.png');
     this.load.image('hub-house', 'sprites/world/hub/house.png');   // the player's house, drawn (see tools/clean-house.py)
     this.load.json('hub-house-note', 'sprites/world/hub/house.json');
+    this.load.image('hub-hospital', 'sprites/world/hub/hospital.png');   // the hospital above it (tools/cut-building.py)
+    this.load.json('hub-hospital-note', 'sprites/world/hub/hospital.json');
     loadProps(this);   // drawn trees, bushes and flowers for the lands that have them
   }
 
