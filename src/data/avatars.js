@@ -76,7 +76,9 @@ export const BG_COLORS = ['#3d8bff', '#ff6fae', '#2ec46a', '#ff8f3f', '#8b7fd6',
 const HEX = /^#[0-9a-f]{6}$/i;
 const ALLOWED = {
   sex: SEXES, skin: SKIN_VARIANTS, hairStyle: HAIR_STYLES, hair: HAIR_VARIANTS, topStyle: TOPS, top: CLOTH_VARIANTS,
-  bottomStyle: BOTTOMS, bottom: CLOTH_VARIANTS, shoes: CLOTH_VARIANTS, eyes: EYE_VARIANTS, art: ARTS
+  bottomStyle: BOTTOMS, bottom: CLOTH_VARIANTS, shoes: CLOTH_VARIANTS, eyes: EYE_VARIANTS, art: ARTS,
+  // The drawn heroes' own colour choices (ui/HeroRecolour.js): unset means "as drawn".
+  heroSkin: SKIN_VARIANTS, heroHair: HAIR_VARIANTS, heroTop: CLOTH_VARIANTS, heroBottom: CLOTH_VARIANTS, heroShoes: CLOTH_VARIANTS
 };
 
 /** Keep only valid overrides from a stored look; anything else (including old colour codes) is dropped. */
@@ -101,5 +103,5 @@ export function resolveLook(profile) {
 
 /** Stable id for a resolved look, used as a texture key suffix. */
 export function lookId(look) {
-  return ['sex', 'skin', 'hairStyle', 'hair', 'topStyle', 'top', 'bottomStyle', 'bottom', 'shoes', 'eyes', 'bg', 'body'].map((k) => String(look[k] || '')).join('|');
+  return ['sex', 'skin', 'hairStyle', 'hair', 'topStyle', 'top', 'bottomStyle', 'bottom', 'shoes', 'eyes', 'bg', 'body', 'heroSkin', 'heroHair', 'heroTop', 'heroBottom', 'heroShoes'].map((k) => String(look[k] || '')).join('|');
 }

@@ -30,6 +30,15 @@ const SWATCHES = [
   { key: 'eyes', title: 'EYES', material: 'eye', options: EYE_COLOURS },
   { key: 'bg', title: 'BACKGROUND', colors: BG_COLORS }
 ];
+// The drawn heroes' rows: colour swaps on the drawing (ui/HeroRecolour.js); each row starts with "as drawn".
+const HERO_SWATCHES = [
+  { key: 'heroSkin', title: 'SKIN', material: 'body', options: SKIN_TONES },
+  { key: 'heroHair', title: 'HAIR COLOUR', material: 'hair', options: HAIR_COLOURS, girlOnly: true },   // the boy's black hair has no colour to swap yet
+  { key: 'heroTop', title: 'TOP COLOUR', material: 'cloth', options: CLOTH_COLOURS },
+  { key: 'heroBottom', title: 'BOTTOM COLOUR', material: 'cloth', options: CLOTH_COLOURS },
+  { key: 'heroShoes', title: 'SHOES', material: 'cloth', options: CLOTH_COLOURS },
+  { key: 'bg', title: 'BACKGROUND', colors: BG_COLORS }
+];
 // The first choice: the hand-drawn hero, or a character built from the pixel layers (the rows below).
 const ART_LABELS = { hero: '✨ Hero (boy)', 'hero-girl': '✨ Hero (girl)', pixel: '🎨 Build your own' };
 const ART_ROW = { key: 'art', title: 'CHARACTER', options: ARTS, label: (v) => ART_LABELS[v] || v, perRow: 3 };
@@ -253,8 +262,8 @@ export class ProfileScene extends BaseScene {
     let y = wide ? m.contentTop + 4 * ui : py + pv / 2 + 12 * ui;
     const rowsBottom = m.y + m.h - 60 * ui;
     // Compress the rows to what fits: the available height shared out over every row.
-    // The hero has no hair, clothes or colours to pick, only the badge background.
-    const styleRows = [ART_ROW, ...(hero ? [] : STYLE_ROWS)], swatches = hero ? SWATCHES.filter((s) => s.key === 'bg') : SWATCHES;
+    // The hero's rows are colour swaps on the drawing (hair styles wait for the new drawings); the pixel character has every row.
+    const styleRows = [ART_ROW, ...(hero ? [] : STYLE_ROWS)], swatches = hero ? HERO_SWATCHES.filter((s) => !s.girlOnly || look.art === 'hero-girl') : SWATCHES;
     const styleLines = styleRows.reduce((n, r) => n + Math.ceil(r.options.length / r.perRow), 0);
     const units = styleRows.length * 0.5 + styleLines + swatches.length * 1.5 + (hero ? 1 : 0);   // labels are half a unit, swatch rows one and a half
     const unit = Math.max(12, Math.min(38 * ui, (rowsBottom - y) / units));   // rows shrink to fit short screens
@@ -269,16 +278,18 @@ export class ProfileScene extends BaseScene {
       });
       y += lines * unit;
     }
-    if (hero) { text(this, left, y + unit * 0.45, 'The heroes are drawn by hand. Pick Build your own to choose hair, clothes and colours.', { ...rowTitle, wordWrap: { width: rowW } }).setOrigin(0, 0.5); y += unit; }
+    if (hero) { text(this, left, y + unit * 0.45, 'Tap a colour to change the drawing; ✕ leaves it as drawn. More hair styles are coming.', { ...rowTitle, wordWrap: { width: rowW } }).setOrigin(0, 0.5); y += unit; }
     for (const { key: k, title, colors, material, options } of swatches) {
-      const values = colors || options;
+      const reset = hero && !colors;   // the drawn heroes' colour rows start with "as drawn"
+      const values = reset ? [null, ...options] : colors || options;
       text(this, left, y + unit * 0.3, title, rowTitle).setOrigin(0, 0.5); y += unit * 0.5;
       const cy = y + unit * 0.5, step = rowW / values.length, size = Math.min(unit * 0.8, step - 4);
       values.forEach((v, i) => {
-        const cx = left + step * i + step / 2, colour = colors ? v : swatch(material, v), sel = look[k] === v;
+        const cx = left + step * i + step / 2, colour = v === null ? '#ffffff' : colors ? v : swatch(material, v), sel = v === null ? !look[k] : look[k] === v;
         if (sel) this.add.circle(cx, cy, size / 2 + 3, THEME.gold);
         const dot = this.add.circle(cx, cy, size / 2, parseInt(colour.slice(1), 16)).setStrokeStyle(2, THEME.line, 0.6).setInteractive({ useHandCursor: true });
-        dot.on('pointerup', () => { Sfx.pop(); d.look = { ...(d.look || {}), [k]: v }; this.rebuild(); });
+        if (v === null) text(this, cx, cy, '✕', { ...rowTitle, fontSize: Math.max(8, size * 0.5) + 'px' }).setOrigin(0.5);
+        dot.on('pointerup', () => { Sfx.pop(); const next = { ...(d.look || {}) }; if (v === null) delete next[k]; else next[k] = v; d.look = next; this.rebuild(); });
       });
       y += unit;
     }

@@ -13,7 +13,8 @@ import { VILLAGERS, villagerTexture } from '../ui/Villagers.js';
 import { LPC_FRAME, LPC_COLS, allLayerPaths, composeSheet, drawOutfitBack, drawOutfitFront, drawBustFromSheet, walkRange } from '../ui/LpcCharacter.js';
 export { WORLD_SCALE as CHAR_WORLD_SCALE, IDLE_FRAMES } from '../ui/LpcCharacter.js';
 import { WORLD_SCALE } from '../ui/LpcCharacter.js';
-import { HERO_WORLD_CELL, isHero, heroKey, isHeroKey, figureScale, drawHeroBust } from '../ui/Hero.js';
+import { HERO_WORLD_CELL, HERO_CELL, HERO_COLS, isHero, heroKey, isHeroKey, figureScale, drawHeroBust } from '../ui/Hero.js';
+import { heroColourKey, recolourSheet } from '../ui/HeroRecolour.js';
 
 const SHADOW = 'rgba(0,0,0,0.22)';
 const PAL = {
@@ -608,9 +609,24 @@ export function avatarTexture(scene) {
   tex.refresh();
 }
 
+/**
+ * The hero sheet for a look: the drawn sheet itself, or a copy recoloured to the look's skin, hair and clothes
+ * (made once and cached under a key that names the choices). Null when the sheet is not loaded.
+ */
+export function heroSheetKey(scene, look) {
+  const base = heroKey(look);
+  if (!base || !scene.textures.exists(base)) return null;
+  const key = heroColourKey(base, look);
+  if (key !== base && !scene.textures.exists(key)) {
+    const canvas = recolourSheet(scene.textures.get(base).getSourceImage(), base, look, HERO_CELL, HERO_COLS, 4);
+    scene.textures.addSpriteSheet(key, canvas, { frameWidth: HERO_CELL, frameHeight: HERO_CELL });
+  }
+  return key;
+}
+
 /** Badge for a resolved look (see data/avatars.js resolveLook): built on first use and cached. Returns the texture key. */
 export function badgeTexture(scene, look, outfit = null, outfitKey = '') {
-  if (isHero(look) && scene.textures.exists(heroKey(look))) return heroBadge(scene, look);
+  if (isHero(look) && heroSheetKey(scene, look)) return heroBadge(scene, look);
   const key = 'badge:' + lookId(look) + (outfitKey ? ':' + outfitKey : '');
   if (!scene.textures.exists(key)) {
     const tex = scene.textures.createCanvas(key, BADGE, BADGE);
@@ -622,7 +638,7 @@ export function badgeTexture(scene, look, outfit = null, outfitKey = '') {
 
 /** The hero's badge: the disc in the look's background colour with the head and shoulders from the hero sheet. */
 function heroBadge(scene, look) {
-  const bg = look.bg || '#3d8bff', sheet = heroKey(look), key = 'badge:' + sheet + ':' + bg, S = BADGE;
+  const bg = look.bg || '#3d8bff', sheet = heroSheetKey(scene, look), key = 'badge:' + sheet + ':' + bg, S = BADGE;
   if (scene.textures.exists(key)) return key;
   const tex = scene.textures.createCanvas(key, S, S), ctx = tex.getContext();
   ctx.fillStyle = shade(bg, 0.82); ctx.beginPath(); ctx.arc(S / 2, S / 2, S / 2, 0, Math.PI * 2); ctx.fill();
@@ -637,7 +653,8 @@ function heroBadge(scene, look) {
 
 /** Walking sheet plus -down/-up/-side animations for a resolved look. Returns the texture key. */
 export function lookSpriteTexture(scene, look, outfit = null, outfitKey = '') {
-  if (isHero(look) && scene.textures.exists(heroKey(look))) { walkAnims(scene, heroKey(look)); return heroKey(look); }   // the drawn heroes wear no pixel outfits
+  const hero = isHero(look) ? heroSheetKey(scene, look) : null;
+  if (hero) { walkAnims(scene, hero); return hero; }   // the drawn heroes wear no pixel outfits; their colours are their own
   const key = 'look:' + lookId(look) + (outfitKey ? ':' + outfitKey : '');
   if (!scene.textures.exists(key)) {
     characterTexture(scene, key, look, 1, outfit ? { outfit, outfitKey } : null);

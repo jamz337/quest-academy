@@ -10,7 +10,7 @@ export const HERO_KEYS = Object.keys(HERO_SHEETS);
 export const HERO_KEY = 'hero';
 export const HERO_FILE = HERO_SHEETS[HERO_KEY];
 /** Is this texture key one of the hero sheets? */
-export const isHeroKey = (key) => HERO_KEYS.includes(key);
+export const isHeroKey = (key) => HERO_KEYS.some((k) => key === k || (typeof key === 'string' && key.startsWith(k + ':')));   // a recoloured copy counts (ui/HeroRecolour.js)
 export const HERO_CELL = 192;
 export const HERO_COLS = 9;
 export const HERO_ROWS = { up: 0, left: 1, down: 2, right: 3 };
