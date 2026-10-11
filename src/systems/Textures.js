@@ -110,7 +110,8 @@ export const TILE_IDS = {
   meadow2: 34, meadow3: 35, meadow4: 36, meadow5: 37, meadow6: 38, meadow7: 39, meadow8: 40,
   plinth: 41,
   springs: 42, roofScience: 43, wallScience: 44, doorScience: 45,
-  quay: 46, roofHistory: 47, wallHistory: 48, doorHistory: 49
+  quay: 46, roofHistory: 47, wallHistory: 48, doorHistory: 49, wallHistory2: 50, doorHistory2: 51, wallHistory3: 52, doorHistory3: 53,
+  fortTop: 54, fortWall: 55, fortDoor: 56
 };
 /** Flower and daisy patches come in several looks; the world picks one per map square so no two neighbours match. */
 export const FLOWER_TILES = [6, 29, 30, 31, 32, 33], MEADOW_TILES = [7, 34, 35, 36, 37, 38, 39, 40];
@@ -313,7 +314,10 @@ function labWall(ctx, x0, window = true) {
   }
 }
 
-/** History Harbor: a cobbled quay, and whitewashed cottages with blue shutters under slate-blue roofs. */
+/**
+ * History Harbor: a cobbled quay; chattel houses (pastel boards, open jalousie shutters, a corrugated roof with a
+ * white fretwork trim) in three colours; and the coral-stone fort with its gun ports.
+ */
 function quayTile(ctx, x0, rnd) {
   px(ctx, x0, 0, '#d8d3c8', TILE, TILE);
   for (let i = 0; i < 9; i++) {
@@ -322,26 +326,45 @@ function quayTile(ctx, x0, rnd) {
   }
   for (let i = 0; i < 3; i++) disc(ctx, x0 + inside(rnd, 3), inside(rnd, 3), 0.6, '#b3ada0');
 }
-function harbourRoof(ctx, x0) {
-  px(ctx, x0, 0, '#3f6aa8', TILE, TILE);
-  for (let band = 0; band < 6; band++) {
-    const y = band * 5 + 4;
-    px(ctx, x0, y, '#30589c', TILE, 1);
-    for (let x = (band % 2) * 4; x < TILE; x += 8) px(ctx, x0 + x, y - 4, '#30589c', 1, 4);
-    px(ctx, x0 + (band % 2) * 4 + 1, y - 3, '#6f93c9', 2, 1);
-  }
-  px(ctx, x0, TILE - 2, '#ffffff', TILE, 2);   // white eaves
+function chattelRoof(ctx, x0) {
+  px(ctx, x0, 0, '#cfd6dd', TILE, TILE);
+  for (let x = 0; x < TILE; x += 4) { px(ctx, x0 + x, 0, '#a7b1bd', 1, TILE - 5); px(ctx, x0 + x + 2, 0, '#eef2f5', 1, TILE - 5); }   // corrugated sheets
+  px(ctx, x0, TILE - 5, '#ffffff', TILE, 5);                                   // the fretwork trim along the eaves
+  for (let x = 2; x < TILE; x += 4) px(ctx, x0 + x, TILE - 3, '#a7b1bd', 2, 2);
 }
-function harbourWall(ctx, x0, window = true) {
-  px(ctx, x0, 0, '#fbf7ef', TILE, TILE);
-  px(ctx, x0, 0, '#e6dfd2', 1, TILE); px(ctx, x0 + TILE - 1, 0, '#e6dfd2', 1, TILE);
-  px(ctx, x0, TILE - 3, '#c9c2b4', TILE, 3);
+const CHATTEL = { mint: ['#bfe8d5', '#86c4a7'], pink: ['#f7c9d6', '#d98fa6'], yellow: ['#f8e4a4', '#d4b85e'] };
+function chattelWall(ctx, x0, base, dark, window = true) {
+  px(ctx, x0, 0, base, TILE, TILE);
+  for (let y = 4; y < TILE; y += 5) px(ctx, x0, y, dark, TILE, 1);           // the boards
+  px(ctx, x0, 0, dark, 1, TILE); px(ctx, x0 + TILE - 1, 0, dark, 1, TILE);   // corner boards
   if (window) {
-    px(ctx, x0 + 10, 9, '#30589c', 12, 12); px(ctx, x0 + 11, 10, '#bfe3ff', 10, 10);   // a square window with blue shutters
-    px(ctx, x0 + 15, 10, '#30589c', 1, 10); px(ctx, x0 + 11, 15, '#30589c', 10, 1);
-    px(ctx, x0 + 6, 9, '#30589c', 3, 12); px(ctx, x0 + 23, 9, '#30589c', 3, 12);
-    px(ctx, x0 + 9, 21, '#d94a4a', 14, 2);   // a flower box
+    px(ctx, x0 + 9, 8, '#ffffff', 14, 15);                                    // the frame
+    px(ctx, x0 + 11, 10, '#5c7f9a', 10, 11);                                  // jalousie slats
+    for (let y = 11; y < 21; y += 3) px(ctx, x0 + 11, y, '#dfe9f0', 10, 1);
+    px(ctx, x0 + 5, 8, '#ffffff', 3, 15); px(ctx, x0 + 24, 8, '#ffffff', 3, 15);   // shutters hooked open either side
   }
+}
+function fortWall(ctx, x0, port = true) {
+  px(ctx, x0, 0, '#cbbd9e', TILE, TILE);
+  for (let y = 7; y < TILE; y += 8) px(ctx, x0, y, '#a3916f', TILE, 1);
+  for (let row = 0; row < 4; row++) for (let x = (row % 2) * 6 + 3; x < TILE; x += 12) px(ctx, x0 + x, row * 8, '#a3916f', 1, 7);
+  for (let row = 0; row < 4; row++) px(ctx, x0 + (row % 2) * 6 + 5, row * 8 + 1, '#e2d6b8', 3, 1);
+  if (port) { px(ctx, x0 + 12, 11, '#2d2a4a', 8, 8); px(ctx, x0 + 14, 13, '#555a62', 4, 4); px(ctx, x0 + 15, 14, '#1d1b2e', 2, 2); }   // a gun port, the cannon's mouth in it
+}
+function fortTop(ctx, x0) {
+  fortWall(ctx, x0, false);
+  px(ctx, x0, 0, '#a08f6d', TILE, 10);
+  for (let x = 0; x < TILE; x += 8) { px(ctx, x0 + x, 0, '#bba985', 4, 10); px(ctx, x0 + x, 0, '#e2d6b8', 4, 1); }   // the crenellations
+  px(ctx, x0, 10, '#e2d6b8', TILE, 1);
+}
+function fortDoor(ctx, x0) {
+  fortWall(ctx, x0, false);
+  px(ctx, x0 + 6, 9, '#2d2a4a', 20, 23);
+  ctx.fillStyle = '#2d2a4a'; ctx.beginPath(); ctx.arc(x0 + 16, 10, 10, Math.PI, 0); ctx.fill();
+  px(ctx, x0 + 8, 10, '#4e3220', 16, 22);
+  ctx.fillStyle = '#4e3220'; ctx.beginPath(); ctx.arc(x0 + 16, 11, 8, Math.PI, 0); ctx.fill();
+  px(ctx, x0 + 15, 10, '#2d2a4a', 2, 22);
+  for (const [sx, sy] of [[10, 14], [20, 14], [10, 20], [20, 20], [10, 26], [20, 26]]) px(ctx, x0 + sx, sy, '#cbbd9e', 2, 2);
 }
 
 /** Castles: grey stone blocks, a crenellated top and a great iron-studded gate. */
@@ -464,7 +487,10 @@ export function tilesTexture(scene) {
   tile(T.roofScience, (c) => glassRoof(c, 0)); tile(T.wallScience, (c) => labWall(c, 0)); tile(T.doorScience, (c) => doorTile(c, 0, (cc, x) => labWall(cc, x, false)));
   // History Harbor (newest, so again after the rest).
   tile(T.quay, (c) => quayTile(c, 0, rnd));
-  tile(T.roofHistory, (c) => harbourRoof(c, 0)); tile(T.wallHistory, (c) => harbourWall(c, 0)); tile(T.doorHistory, (c) => doorTile(c, 0, (cc, x) => harbourWall(cc, x, false)));
+  tile(T.roofHistory, (c) => chattelRoof(c, 0));
+  const chattel = (wall, door, [base, dark]) => { tile(wall, (c) => chattelWall(c, 0, base, dark)); tile(door, (c) => doorTile(c, 0, (cc, x) => chattelWall(cc, x, base, dark, false))); };
+  chattel(T.wallHistory, T.doorHistory, CHATTEL.mint); chattel(T.wallHistory2, T.doorHistory2, CHATTEL.pink); chattel(T.wallHistory3, T.doorHistory3, CHATTEL.yellow);
+  tile(T.fortTop, (c) => fortTop(c, 0)); tile(T.fortWall, (c) => fortWall(c, 0)); tile(T.fortDoor, (c) => fortDoor(c, 0));
   tex.refresh();
 }
 

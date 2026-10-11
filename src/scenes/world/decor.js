@@ -348,6 +348,89 @@ export function createChurch(w) {
 }
 
 /** Three small stars above every villager's house, lit as the game's levels are passed. */
+/**
+ * History Harbor's dressing: the sea wall and bollards round the island, boats at the moorings, rails along the
+ * pier, and what each villager has put up: Captain Compass's weathervane, Mayor Marigold's clock and flag, Flora's
+ * bunting, the lighthouse beside Old Tom's house, and the flag over the Admiral's fort.
+ */
+export function createHarbour(w) {
+  const m = w.map, isl = m.island;
+  if (!isl) return;
+  const low = w.add.graphics().setDepth(1.6);   // flat on the ground, under the player
+  const high = w.add.graphics().setDepth(4);    // things that stand up, drawn over the player
+  const x0 = isl.x * TILE, y0 = isl.y * TILE, x1 = (isl.x + isl.w) * TILE, y1 = (isl.y + isl.h) * TILE;
+
+  // The sea wall: a stone kerb round the quay, bollards along the top with a rope slung between them.
+  low.fillStyle(0x6f7a86, 1); low.fillRect(x0 - 4, y0 - 4, x1 - x0 + 8, 6); low.fillRect(x0 - 4, y1 - 2, x1 - x0 + 8, 6); low.fillRect(x0 - 4, y0 - 4, 6, y1 - y0 + 8); low.fillRect(x1 - 2, y0 - 4, 6, y1 - y0 + 8);
+  low.fillStyle(0xaab3bd, 1); low.fillRect(x0 - 4, y0 - 4, x1 - x0 + 8, 2); low.fillRect(x0 - 4, y1 - 2, x1 - x0 + 8, 2); low.fillRect(x0 - 4, y0 - 4, 2, y1 - y0 + 8); low.fillRect(x1 - 2, y0 - 4, 2, y1 - y0 + 8);
+  const pierX = m.pier ? m.pier.tx : -1;
+  let last = null;
+  for (let tx = isl.x + 1; tx < isl.x + isl.w; tx += 3) {
+    const bx = (tx + 0.5) * TILE, by = y0 + 1;
+    if (Math.abs(tx - pierX) > 1) {
+      if (last !== null && bx - last < 4 * TILE) { low.lineStyle(1, 0x8b6b3e, 1); low.lineBetween(last, by, (last + bx) / 2, by + 5); low.lineBetween((last + bx) / 2, by + 5, bx, by); }
+      low.fillStyle(0x2d2a4a, 1); low.fillCircle(bx, by + 1, 2.8); low.fillStyle(0x5a5674, 1); low.fillCircle(bx, by, 2.1);
+      last = bx;
+    } else last = null;
+  }
+
+  // Boats tied up along the sea wall and at the west jetty.
+  const boat = (cx, cy, hull, sail) => {
+    low.fillStyle(0x0b4f8a, 0.25); low.fillEllipse(cx + 2, cy + 7, 30, 8);
+    low.fillStyle(hull, 1); low.fillPoints([{ x: cx - 15, y: cy }, { x: cx + 15, y: cy }, { x: cx + 10, y: cy + 8 }, { x: cx - 10, y: cy + 8 }], true);
+    low.fillStyle(0xf6efdd, 1); low.fillRect(cx - 13, cy - 1, 26, 2);
+    low.fillStyle(0x6e4a28, 1); low.fillRect(cx - 1, cy - 20, 2, 20);
+    low.fillStyle(sail, 1); low.fillTriangle(cx + 1, cy - 19, cx + 12, cy - 6, cx + 1, cy - 4);
+  };
+  boat((isl.x + 4.5) * TILE, y0 - 14, 0xd94a4a, 0xffffff); boat((isl.x + 9.5) * TILE, y0 - 13, 0x3d8bff, 0xfcd116); boat((isl.x + 28.5) * TILE, y0 - 14, 0x2e9e6a, 0xffffff);
+  if (m.jetty) { boat((m.jetty.x0 + 1) * TILE, (m.jetty.ty - 0.6) * TILE, 0xffc531, 0xffffff); boat((m.jetty.x0 + 2.5) * TILE, (m.jetty.ty + 1.4) * TILE, 0xd94a4a, 0x3d8bff); }
+
+  // Rails along the pier, and plank lines across it.
+  if (m.pier) {
+    const px = m.pier.tx * TILE, top = m.pier.y0 * TILE, bottom = (m.pier.y1 + 1) * TILE;
+    low.fillStyle(0x000000, 0.08); for (let y = top + 6; y < bottom; y += 8) low.fillRect(px + 2, y, TILE - 4, 1.5);
+    low.fillStyle(0x8b6b3e, 1); low.fillRect(px + 2, top, 2, bottom - top); low.fillRect(px + TILE - 4, top, 2, bottom - top);
+    for (let y = top + 4; y < bottom; y += 16) { low.fillRect(px + 1, y, 4, 6); low.fillRect(px + TILE - 5, y, 4, 6); }
+  }
+
+  // The villagers' houses: the roof is three tiles above the spot, the eaves one tile lower.
+  const house = (id) => { const s = m.npcSpots[id]; return s ? { cx: (s.tx + 0.5) * TILE, top: (s.ty - 3) * TILE, eaves: (s.ty - 2) * TILE, left: (s.tx - 1) * TILE, right: (s.tx + 2) * TILE } : null; };
+  const cc = house('captain-compass');   // a weathervane: pole, crossbar, gold arrow
+  if (cc) {
+    high.fillStyle(0x2d2a4a, 1); high.fillRect(cc.cx - 1, cc.top - 14, 2, 20); high.fillRect(cc.cx - 7, cc.top - 8, 14, 1.5);
+    high.fillStyle(0xffc531, 1); high.fillTriangle(cc.cx + 9, cc.top - 8, cc.cx + 2, cc.top - 11.5, cc.cx + 2, cc.top - 4.5); high.fillRect(cc.cx - 9, cc.top - 9, 7, 2); high.fillCircle(cc.cx, cc.top - 15, 2);
+  }
+  const mm = house('mayor-marigold');    // a clock on the gable and the national flag on a pole
+  if (mm) {
+    high.fillStyle(0x1f3d75, 1); high.fillCircle(mm.cx, mm.top + 13, 8); high.fillStyle(0xffffff, 1); high.fillCircle(mm.cx, mm.top + 13, 6.5);
+    high.lineStyle(1.2, 0x1f3d75, 1); high.lineBetween(mm.cx, mm.top + 13, mm.cx, mm.top + 8.5); high.lineBetween(mm.cx, mm.top + 13, mm.cx + 3.5, mm.top + 14.5);
+    high.fillStyle(0x2d2a4a, 1); high.fillRect(mm.right - 7, mm.top - 20, 2, 26);
+    high.fillStyle(0x00267f, 1); high.fillRect(mm.right - 5, mm.top - 20, 12, 8); high.fillStyle(0xffc726, 1); high.fillRect(mm.right - 1, mm.top - 20, 4, 8); high.fillStyle(0x000000, 1); high.fillRect(mm.right, mm.top - 18, 2, 4);
+  }
+  const fl = house('flora');             // bunting across the front
+  if (fl) {
+    high.lineStyle(1, 0x5a4634, 1); high.lineBetween(fl.left + 1, fl.eaves - 1, fl.right - 1, fl.eaves + 2);
+    const cols = [0xd94a4a, 0xfcd116, 0x2e9e6a, 0x3d8bff, 0xffffff];
+    for (let i = 0, x = fl.left + 4; x < fl.right - 4; i++, x += 8) { const y = fl.eaves + (i * 3) / ((fl.right - fl.left) / 8); high.fillStyle(cols[i % cols.length], 1); high.fillTriangle(x, y, x + 6, y, x + 3, y + 6); }
+  }
+  if (m.lighthouse) {                    // the lighthouse: white tower, red bands, a lamp room and a lit lamp
+    const lx = (m.lighthouse.tx + 0.5) * TILE, base = (m.lighthouse.ty + 1) * TILE - 2, h = 50;
+    w.add.ellipse(lx, base - h + 4, 30, 10, 0xffe8a3, 0.35).setDepth(3);
+    high.fillStyle(0x2d2a4a, 0.18); high.fillEllipse(lx + 2, base + 1, 22, 6);
+    high.fillStyle(0xf4f1ea, 1); high.fillPoints([{ x: lx - 9, y: base }, { x: lx + 9, y: base }, { x: lx + 6, y: base - h + 12 }, { x: lx - 6, y: base - h + 12 }], true);
+    high.fillStyle(0xd94a4a, 1); high.fillRect(lx - 8, base - 12, 16, 7); high.fillRect(lx - 7, base - 30, 14, 7);
+    high.fillStyle(0x2d2a4a, 1); high.fillRect(lx - 9, base - h + 10, 18, 3);                       // the gallery
+    high.fillStyle(0xffd75e, 1); high.fillRect(lx - 4, base - h + 3, 8, 7); high.fillStyle(0x2d2a4a, 1); high.fillRect(lx - 5, base - h + 2, 1.5, 9); high.fillRect(lx + 3.5, base - h + 2, 1.5, 9);
+    high.fillStyle(0xd94a4a, 1); high.fillTriangle(lx - 7, base - h + 2, lx + 7, base - h + 2, lx, base - h - 6);
+  }
+  const fort = (m.buildings || []).find((b) => b.style === 'fort');
+  if (fort) {                            // the Admiral's flag on the fort's corner tower
+    const fx = (fort.x + 0.5) * TILE, fy = fort.y * TILE;
+    high.fillStyle(0x2d2a4a, 1); high.fillRect(fx - 1, fy - 22, 2, 26);
+    high.fillStyle(0x1f3d75, 1); high.fillRect(fx + 1, fy - 22, 14, 9); high.fillStyle(0xffc531, 1); high.fillCircle(fx + 8, fy - 17.5, 2.2);
+  }
+}
+
 export function createHouseStars(w) {
   w.houseStarSprites = {};
   for (const npc of NPCS) {

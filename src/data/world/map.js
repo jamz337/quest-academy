@@ -18,11 +18,13 @@ export const TID = {
   roofBible: 22, wallBible: 23, doorBible: 24, castleTop: 25, castleWall: 26, castleDoor: 27, village: 28,
   plinth: 41,   // paving that something stands on (the fountain, the quest board): looks like path, cannot be walked on
   springs: 42, roofScience: 43, wallScience: 44, doorScience: 45,  // Science Springs: its bright ground and glass-house buildings
-  quay: 46, roofHistory: 47, wallHistory: 48, doorHistory: 49      // History Harbor: its cobbled quay and harbour cottages
+  // History Harbor: its cobbled quay, chattel houses in three colours, and the fort's coral stone
+  quay: 46, roofHistory: 47, wallHistory: 48, doorHistory: 49, wallHistory2: 50, doorHistory2: 51, wallHistory3: 52, doorHistory3: 53,
+  fortTop: 54, fortWall: 55, fortDoor: 56
 };
-export const ROOF_TILES = [TID.roof, TID.roofMath, TID.roofWords, TID.roofCode, TID.roofBible, TID.castleTop, TID.roofScience, TID.roofHistory];
-export const WALL_TILES = [TID.wall, TID.wallMath, TID.wallWords, TID.wallCode, TID.wallBible, TID.castleWall, TID.wallScience, TID.wallHistory];
-export const DOOR_TILES = [TID.door, TID.doorMath, TID.doorWords, TID.doorCode, TID.doorBible, TID.castleDoor, TID.doorScience, TID.doorHistory];
+export const ROOF_TILES = [TID.roof, TID.roofMath, TID.roofWords, TID.roofCode, TID.roofBible, TID.castleTop, TID.roofScience, TID.roofHistory, TID.fortTop];
+export const WALL_TILES = [TID.wall, TID.wallMath, TID.wallWords, TID.wallCode, TID.wallBible, TID.castleWall, TID.wallScience, TID.wallHistory, TID.wallHistory2, TID.wallHistory3, TID.fortWall];
+export const DOOR_TILES = [TID.door, TID.doorMath, TID.doorWords, TID.doorCode, TID.doorBible, TID.castleDoor, TID.doorScience, TID.doorHistory, TID.doorHistory2, TID.doorHistory3, TID.fortDoor];
 export const SOLID = [TID.water, TID.tree, TID.gateLocked, TID.plinth, ...ROOF_TILES, ...WALL_TILES];
 export const isWalkable = (id) => !SOLID.includes(id);
 
@@ -33,8 +35,11 @@ export const BUILDING_STYLES = {
   code: { roof: TID.roofCode, wall: TID.wallCode, door: TID.doorCode },
   bible: { roof: TID.roofBible, wall: TID.wallBible, door: TID.doorBible },
   science: { roof: TID.roofScience, wall: TID.wallScience, door: TID.doorScience },
-  history: { roof: TID.roofHistory, wall: TID.wallHistory, door: TID.doorHistory },
-  castle: { roof: TID.castleTop, wall: TID.castleWall, door: TID.castleDoor }
+  history: { roof: TID.roofHistory, wall: TID.wallHistory, door: TID.doorHistory },      // mint
+  history2: { roof: TID.roofHistory, wall: TID.wallHistory2, door: TID.doorHistory2 },   // pink
+  history3: { roof: TID.roofHistory, wall: TID.wallHistory3, door: TID.doorHistory3 },   // yellow
+  castle: { roof: TID.castleTop, wall: TID.castleWall, door: TID.castleDoor },
+  fort: { roof: TID.fortTop, wall: TID.fortWall, door: TID.fortDoor }
 };
 
 export const ZONE_NAMES = { hub: 'Academy Hub', math: 'Math Meadow', words: 'Word Woods', code: 'Code Cove', bible: 'Bible Village', science: 'Science Springs', history: 'History Harbor' };
@@ -289,39 +294,42 @@ export function buildMap() {
   clearBoxedTrees(data, scenery, walls, zones);
   coins.push({ tx: 10, ty: 9 }, { tx: 18, ty: 9 }, { tx: 22, ty: 11 });   // appended: saves keep coins by index
 
-  // ---- History Harbor: a cobbled quay along the bottom of the world, across the bay from Code Cove's beach ----
-  // A wooden pier runs south from the promenade over the sea, through the old bottom border, to the quay.
-  const hrnd = mulberry32(2027);
+  // ---- History Harbor: an island in the bay south of Code Cove, reached by a pier -----------------------------
+  // The sea fills the bottom rows; the quay is an island with a row of chattel houses, a lighthouse and a fort at
+  // its east end. A wooden pier runs from the beach promenade over the sea (through the old bottom border) onto
+  // the quay, and a little jetty of the harbour's own sticks out on the west side for the fishing boats.
   const har = { x: 1, y: H1, w: W - 2, h: HS - 1 };
   zones.push({ id: 'history', name: ZONE_NAMES.history, rect: har });
-  const hscenery = new Set(), hwalls = new Set();
-  const hwallRect = (x, y, w, h) => { fillRect(data, x, y, w, h, TID.tree); for (let ty = y; ty < y + h; ty++) for (let tx = x; tx < x + w; tx++) hwalls.add(`${tx},${ty}`); };
-  fillRect(data, har.x, har.y, har.w, har.h, TID.quay);
-  fillRect(data, 1, H1, W - 2, 1, TID.water);                 // the bay: the sea laps the top of the quay
-  sprinkle(data, hrnd, { x: 1, y: H1 + 1, w: W - 2, h: HS - 2 }, TID.quay, TID.tree, 0.02, hscenery);   // a palm or two on the quay
-  hwallRect(0, H - 1, W, 1); hwallRect(0, H1, 1, HS); hwallRect(W - 1, H1, 1, HS);
-  vline(data, 24, OY + 34, H1 - 2, TID.path);                // the pier, from the beach out over the sea
-  data[H1 - 1][24] = TID.gateOpen; gates.push({ zone: 'history', tx: 24, ty: H1 - 1 });   // through the old bottom border
-  vline(data, 24, H1, H1 + 4, TID.path);                     // and on across the bay to the quay road
-  hline(data, 3, 44, H1 + 4, TID.path);                      // the quay road, with the cottages along it
-  bossSpots.history = (() => { const door = building(data, 46, H1 + 1, 5, 4, BUILDING_STYLES.castle); buildings.push({ zone: 'history', style: 'castle', x: 46, y: H1 + 1, w: 5, h: 4, door }); return { tx: door.tx, ty: door.ty + 1 }; })();
-  fillRect(data, 46, H1 + 5, 5, 2, TID.path);                // the castle's forecourt, at the east end of the quay
-  vline(data, 44, H1 + 4, H1 + 6, TID.path); hline(data, 44, 52, H1 + 6, TID.path);   // the road round to it
-  const hplace = (npcId, x, y) => {
-    const door = building(data, x, y, 3, 3, BUILDING_STYLES.history);
+  fillRect(data, 0, H1, W, HS, TID.water);
+  const island = { x: 10, y: H1 + 1, w: 36, h: 7 };
+  fillRect(data, island.x, island.y, island.w, island.h, TID.quay);
+  const pier = { tx: 24, y0: OY + 34, y1: H1 };
+  vline(data, pier.tx, pier.y0, H1 - 2, TID.path);           // the pier, from the beach out over the sea
+  data[H1 - 1][pier.tx] = TID.gateOpen; gates.push({ zone: 'history', tx: pier.tx, ty: H1 - 1 });   // through the old bottom border
+  vline(data, pier.tx, H1, H1 + 5, TID.path);                // and across the bay onto the quay
+  hline(data, 11, 43, H1 + 5, TID.path);                     // the quay road, the chattel houses along it
+  const jetty = { x0: 5, x1: 9, ty: H1 + 5 };
+  hline(data, jetty.x0, 11, jetty.ty, TID.path);             // the west jetty
+  const hplace = (npcId, x, y, style) => {
+    const door = building(data, x, y, 3, 3, style);
     buildings.push({ zone: 'history', style: 'history', x, y, w: 3, h: 3, door });
     const spot = { tx: door.tx, ty: door.ty + 1 };
     data[spot.ty][spot.tx] = TID.path;
     npcSpots[npcId] = spot;
   };
-  hplace('captain-compass', 6, H1 + 1); hplace('mayor-marigold', 14, H1 + 1); hplace('flora', 30, H1 + 1); hplace('old-tom', 38, H1 + 1);
-  clearBoxedTrees(data, hscenery, hwalls, zones);
-  coins.push({ tx: 10, ty: H1 + 4 }, { tx: 34, ty: H1 + 4 }, { tx: 24, ty: H1 + 2 });
+  hplace('captain-compass', 12, H1 + 2, BUILDING_STYLES.history); hplace('mayor-marigold', 18, H1 + 2, BUILDING_STYLES.history2);
+  hplace('flora', 28, H1 + 2, BUILDING_STYLES.history3); hplace('old-tom', 34, H1 + 2, BUILDING_STYLES.history);
+  const lighthouse = { tx: 38, ty: H1 + 3 };                 // on paving beside Old Tom's house (drawn in scenes/world/decor.js)
+  data[H1 + 2][lighthouse.tx] = data[H1 + 3][lighthouse.tx] = TID.plinth;
+  bossSpots.history = (() => { const door = building(data, 40, H1 + 1, 5, 4, BUILDING_STYLES.fort); buildings.push({ zone: 'history', style: 'fort', x: 40, y: H1 + 1, w: 5, h: 4, door }); return { tx: door.tx, ty: door.ty + 1 }; })();
+  data[H1 + 7][16] = data[H1 + 7][31] = TID.tree;            // two palms on the south quay
+  coins.push({ tx: 22, ty: H1 + 5 }, { tx: 32, ty: H1 + 5 }, { tx: pier.tx, ty: H1 + 2 });
 
   return {
     width: W, height: H, data, spawn: down(old.spawn), zones, gates, npcSpots, bossSpots, buildings, coins,
     signSpot: down(old.signSpot), bellSpot: down(old.bellSpot), marketSpot: down(old.marketSpot), home, church,
-    trail: TRAIL_STONES, bridge: TRAIL_BRIDGE, fishSign: down(old.fishSign), fountain: down(old.fountain), questBoard: down(old.questBoard)
+    trail: TRAIL_STONES, bridge: TRAIL_BRIDGE, fishSign: down(old.fishSign), fountain: down(old.fountain), questBoard: down(old.questBoard),
+    island, pier, jetty, lighthouse
   };
 }
 

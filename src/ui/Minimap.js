@@ -73,7 +73,7 @@ export function paintMinimap(scene, map, explored) {
   }
   // Buildings: a little house in the land's colour; castles in stone with a flag.
   for (const bld of map.buildings || []) {
-    const x = bld.x * R, y = bld.y * R, w = bld.w * R, h = bld.h * R, castle = bld.style === 'castle';
+    const x = bld.x * R, y = bld.y * R, w = bld.w * R, h = bld.h * R, castle = bld.style === 'castle' || bld.style === 'fort';
     ctx.fillStyle = 'rgba(30,27,75,0.22)'; ctx.beginPath(); ctx.roundRect(x + R * 0.25, y + R * 0.45, w, h - R * 0.2, R * 0.5); ctx.fill();
     ctx.fillStyle = castle ? '#aab1c2' : '#fff6e6'; ctx.beginPath(); ctx.roundRect(x + R * 0.1, y + R * 0.2, w - R * 0.2, h - R * 0.3, R * 0.45); ctx.fill();
     ctx.fillStyle = castle ? '#7d869b' : ROOFS[bld.zone] || ROOFS.hub;
@@ -98,7 +98,7 @@ export function paintMinimap(scene, map, explored) {
   tex.refresh();
   return key;
 }
-const DOOR_IDS = new Set([TID.door, TID.doorMath, TID.doorWords, TID.doorCode, TID.doorBible, TID.doorScience, TID.doorHistory, TID.castleDoor]);
+const DOOR_IDS = new Set([TID.door, TID.doorMath, TID.doorWords, TID.doorCode, TID.doorBible, TID.doorScience, TID.doorHistory, TID.doorHistory2, TID.doorHistory3, TID.castleDoor, TID.fortDoor]);
 let fogScratch = null;
 function fogCanvas(w, h) {
   if (!fogScratch) fogScratch = document.createElement('canvas');
