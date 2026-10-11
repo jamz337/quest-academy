@@ -12,8 +12,8 @@ export const HERO_COLOUR_KEYS = { heroSkin: 'body', heroHair: 'hair', heroTop: '
  * `hair: null` means the sheet's hair cannot be recoloured (black has no hue to find).
  */
 export const HERO_PARTS = {
-  hero: { top: [0.30, 0.58, 215, 30], bottom: [0.58, 0.82, 215, 30], hair: null },
-  'hero-girl': { top: [0.34, 0.60, 345, 30], bottom: [0.58, 0.88, 275, 30], hair: [0, 0.45, 20, 25] }
+  hero: { top: [0.30, 0.58, 215, 30], bottom: [0.58, 0.84, 215, 30], hair: null },
+  'hero-girl': { top: [0.34, 0.60, 345, 30], bottom: [0.58, 0.89, 275, 30], hair: [0, 0.45, 20, 25] }
 };
 
 /** True when a look asks for any hero recolouring. */
@@ -52,26 +52,29 @@ const hexToHsl = (hx) => rgbToHsl(parseInt(hx.slice(1, 3), 16), parseInt(hx.slic
 const near = (h, t, tol) => Math.abs((((h - t + 180) % 360) + 360) % 360 - 180) <= tol;
 
 /**
- * Which part a pixel belongs to, from its colour and its height on the figure (0 at the top of the head, 1 at
- * the feet): 'skin', 'hair', 'top', 'bottom', 'shoes' or null. Exported so the rules can be tested without a canvas.
+ * Which part a pixel belongs to, from its colour and its place on the figure: `fy` is its height (0 at the top of
+ * the head, 1 at the feet) and `fx` how far it sits from the figure's middle (0 centre, 1 the figure's edge).
+ * 'skin', 'hair', 'top', 'bottom', 'shoes' or null. Exported so the rules can be tested without a canvas.
  */
-export function partOf(art, r, g, b, fy) {
+export function partOf(art, r, g, b, fy, fx = 0) {
   const parts = HERO_PARTS[art] || HERO_PARTS.hero;
-  const [h, s, l] = rgbToHsl(r, g, b), dark = l < 0.16;
-  const hair = parts.hair && fy < parts.hair[1] && near(h, parts.hair[2], parts.hair[3]) && s > 0.15 && l < 0.34;
+  const [h, s, l] = rgbToHsl(r, g, b), dark = l < 0.16, outline = l < 0.08;
+  // Shoes first: at the feet, anything that is not outline (the boy's pale trainers, the girl's dark sandals).
+  if (fy >= 0.89 && !outline && (l > 0.25 || s > 0.3)) return 'shoes';
+  // Hair: the top of the head, and the sides where curls hang past the face; never the face and neck in the middle.
+  const hair = parts.hair && fy < parts.hair[1] && (fy < 0.24 || Math.abs(fx) > 0.55) && near(h, parts.hair[2], parts.hair[3]) && s > 0.15 && l < 0.34;
   if (hair) return 'hair';
   if (!dark && s > 0.18 && near(h, 25, 20) && l > 0.22 && l < 0.86) return 'skin';
   if (!dark && fy >= parts.top[0] && fy < parts.top[1] && near(h, parts.top[2], parts.top[3]) && s > 0.25) return 'top';
   if (!dark && fy >= parts.bottom[0] && fy < parts.bottom[1] && near(h, parts.bottom[2], parts.bottom[3]) && s > 0.25) return 'bottom';
-  if (!dark && fy > 0.86 && l > 0.25) return 'shoes';
   return null;
 }
 
 /** A part's new colour: the chosen hue and saturation, the drawn pixel's light and shade kept around the choice. */
 export function shadeTo(part, hexColour, l) {
   const [th, ts, tl] = hexToHsl(hexColour);
-  const mid = part === 'hair' ? 0.22 : part === 'bottom' ? 0.45 : part === 'shoes' ? 0.6 : 0.5;
-  const k = part === 'hair' ? 1.2 : part === 'skin' ? 0.55 : part === 'shoes' ? 0.5 : 0.6;
+  const mid = part === 'hair' ? 0.22 : part === 'bottom' ? 0.45 : part === 'shoes' ? 0.3 : 0.5;
+  const k = part === 'hair' ? 1.2 : part === 'skin' ? 0.55 : part === 'shoes' ? 0.6 : 0.6;
   return hslToRgb(th, ts, tl + (l - mid) * k);
 }
 
@@ -90,17 +93,17 @@ export function recolourSheet(source, art, look, cell, cols, rows) {
   for (const k of Object.keys(HERO_COLOUR_KEYS)) if (look[k]) colours[k.slice(4).toLowerCase()] = heroHex(k, look[k]);
   if (!Object.keys(colours).length) return canvas;
   for (let cy = 0; cy < rows; cy++) for (let cx = 0; cx < cols; cx++) {
-    // The figure's top and bottom in this cell.
-    let y0 = cell, y1 = 0;
-    for (let y = 0; y < cell; y++) for (let x = 0; x < cell; x++) { if (d[((cy * cell + y) * W + cx * cell + x) * 4 + 3] > 40) { if (y < y0) y0 = y; if (y + 1 > y1) y1 = y + 1; } }
-    if (y1 <= y0) continue;
-    const fh = y1 - y0;
+    // The figure's box in this cell.
+    let y0 = cell, y1 = 0, x0 = cell, x1 = 0;
+    for (let y = 0; y < cell; y++) for (let x = 0; x < cell; x++) { if (d[((cy * cell + y) * W + cx * cell + x) * 4 + 3] > 40) { if (y < y0) y0 = y; if (y + 1 > y1) y1 = y + 1; if (x < x0) x0 = x; if (x + 1 > x1) x1 = x + 1; } }
+    if (y1 <= y0 || x1 <= x0) continue;
+    const fh = y1 - y0, mid = (x0 + x1) / 2, half = (x1 - x0) / 2;
     for (let y = y0; y < y1; y++) {
       const fy = (y - y0) / fh;
-      for (let x = 0; x < cell; x++) {
+      for (let x = x0; x < x1; x++) {
         const i = ((cy * cell + y) * W + cx * cell + x) * 4;
         if (d[i + 3] < 40) continue;
-        const part = partOf(art, d[i], d[i + 1], d[i + 2], fy);
+        const part = partOf(art, d[i], d[i + 1], d[i + 2], fy, (x + 0.5 - mid) / half);
         if (!part || !colours[part]) continue;
         const l = rgbToHsl(d[i], d[i + 1], d[i + 2])[2];
         const [r, g, b] = shadeTo(part, colours[part], l);
