@@ -361,8 +361,11 @@ export function buildMap() {
   // ---- Studio Summit: an artists' plateau in the forest east of the market, drawn as one picture ------------------
   // The whole land is a single drawn picture (public/sprites/world/studio/summit.png) laid over fifteen by fifteen
   // squares, columns 40 to 54 and rows 0 to 14; the map only says where its floor can be walked. 'o' is floor, '#'
-  // rock, building, easel or fence under the picture, 'T' forest in the picture's corners, 'c' a coin on the floor and
-  // 'g' the gate at the foot of the stairs, which lead down into Word Woods.
+  // rock, building, easel or fence under the picture, 'T' forest in the picture's corners, 'w' open forest floor where
+  // the picture is see-through, 'c' a coin on the floor and 'g' the gate at the foot of the stairs, which lead down into
+  // Word Woods. The stairs narrow to one square at the bottom so nobody walks through the gateway's posts. A path was
+  // opened through the sculptor's stones (tools/erase-boxes.py) so his pergola and the potter's wheel can be reached,
+  // and the little ledge under the big mosaic, with its stool and bunting, is reached from the woods below.
   const SUMMIT = {
     x: 40, y: 0, w: 15, h: 15,
     rows: [
@@ -374,25 +377,26 @@ export function buildMap() {
       'T###oo#######TT',
       '#####o#########',
       '#####o#########',
-      '###o#o#ooo#####',
-      '##ooocoooo#####',
+      '###o#o#ooo##o##',
+      '##ooocooooooo##',
       '####ooooo######',
-      '###oooooc######',
-      '####oo#########',
-      'T###oo########T',
-      'TT##og#####TTTT'
+      '####ooooc######',
+      'oo##oo#########',
+      'wo###o########T',
+      'ww###g#####TTTT'
     ]
   };
   const studio = { x: SUMMIT.x, y: 1, w: SUMMIT.w, h: 13 };
   zones.push({ id: 'studio', name: ZONE_NAMES.studio, rect: studio });
   SUMMIT.rows.forEach((row, r) => [...row].forEach((ch, c) => {
     const tx = SUMMIT.x + c, ty = SUMMIT.y + r;
-    data[ty][tx] = ch === 'o' ? TID.clay : ch === 'c' ? TID.path : ch === 'g' ? TID.gateOpen : ch === 'T' ? TID.tree : TID.cliff;
+    data[ty][tx] = ch === 'o' ? TID.clay : ch === 'w' ? TID.woods : ch === 'c' ? TID.path : ch === 'g' ? TID.gateOpen : ch === 'T' ? TID.tree : TID.cliff;
     if (ch === 'c') coins.push({ tx, ty });
     if (ch === 'g') gates.push({ zone: 'studio', tx, ty });
   }));
   vline(data, 45, OY + 1, OY + 6, TID.path); hline(data, 43, 45, OY + 7, TID.path);   // down through Word Woods to its lane
-  npcSpots.painter = { tx: 43, ty: 8 }; npcSpots.sculptor = { tx: 49, ty: 9 }; npcSpots['mirror-mia'] = { tx: 43, ty: 11 }; npcSpots.curator = { tx: 46, ty: 11 };
+  hline(data, 40, 44, OY + 1, TID.woods);                                               // open forest floor along the foot of the summit, to the ledge
+  npcSpots.painter = { tx: 43, ty: 8 }; npcSpots.sculptor = { tx: 52, ty: 9 }; npcSpots['mirror-mia'] = { tx: 41, ty: 12 }; npcSpots.curator = { tx: 46, ty: 11 };
   bossSpots.studio = { tx: 47, ty: 8 };   // in front of the studio's door
   const summit = { x: SUMMIT.x, y: SUMMIT.y, w: SUMMIT.w, h: SUMMIT.h };
 
@@ -414,6 +418,7 @@ export function buildMap() {
 /** Ground tile shown beneath a tree (trees are drawn on an overlay layer so the local ground shows through). */
 export function groundUnder(map, tx, ty) {
   const z = zoneAt(map, tx, ty);
+  if (z === 'studio') return TID.grass;   // the summit's floor is in its picture; the forest shows round its edges
   return (z && GROUND_OF[z]) ?? TID.grass;
 }
 

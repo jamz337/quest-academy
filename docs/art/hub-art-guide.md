@@ -54,6 +54,8 @@ and the forest's tile trees fill its corners. The map does not draw buildings or
 ('#'), where the coins sit ('c') and where the stairs leave through the gate ('g'). To redo it, generate the whole
 plateau again on plain white from the same viewpoint (looking down from the south, the building at the top, the
 stairs down at the bottom left) and cut it the same way; then fix the rows if the floor moved.
+Small things in the picture that block the way (a stone across a path) can be wiped with `tools/erase-boxes.py`,
+which covers a box with clean floor copied from elsewhere in the same picture.
 
 For a land done this way, give its villagers spots on the floor near the things they talk about: the painter by
 the easels, the sculptor in front of his stones, Mirror Mia by the big mosaic, the curator on the lower terrace.
