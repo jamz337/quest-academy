@@ -6,6 +6,15 @@ import { THEME } from '../../ui/theme.js';
 import * as Store from '../../systems/Store.js';
 import { TID, isWalkable, zoneAt } from '../../data/world/map.js';
 import { GATEWAYS, landStars } from './guide.js';
+import { bakeTexture } from '../../ui/Bake.js';
+
+const LAMP_K = 4, LAMP_W = 14, LAMP_H = 28;
+/** One lamp post, drawn around (0, 0): its shadow, the dark post and the lighter face. Baked once and shared. */
+function drawLamp(g) {
+  g.fillStyle(0x000000, 0.16); g.fillEllipse(0, 11, 10, 3);
+  g.fillStyle(0x34304a, 1); g.fillRoundedRect(-1.9, -8.6, 3.8, 20.2, 1.6); g.fillRoundedRect(-3.7, 7.8, 7.4, 4, 1.5); g.fillRoundedRect(-4.7, -10.8, 9.4, 3.6, 1.5);
+  g.fillStyle(0x5a5470, 1); g.fillRoundedRect(-1.1, -8, 2.2, 19, 1); g.fillRoundedRect(-3, 8.6, 6, 2.4, 1); g.fillRoundedRect(-4, -10, 8, 2, 1);
+}
 
 const SPACING = 2;   // a lamp every other step of road (Word Woods has little open ground)
 
@@ -46,15 +55,13 @@ export function lampSpots(map, zone, max = 12) {
 }
 
 export function createLamps(w) {
-  const g = w.add.graphics().setDepth(3);
+  const post = bakeTexture(w, 'lamp-post', drawLamp, LAMP_W, LAMP_H, LAMP_K);   // every lamp is the same picture: cheap to draw by the dozen
   w.lamps = {};
   for (const { zone } of GATEWAYS) {
     const col = THEME.subjects[zone];
     w.lamps[zone] = lampSpots(w.map, zone).map((s) => {
       const x = (s.tx + 0.5) * TILE, y = (s.ty + 0.5) * TILE;
-      g.fillStyle(0x000000, 0.16); g.fillEllipse(x, y + 11, 10, 3);
-      g.fillStyle(0x34304a, 1); g.fillRoundedRect(x - 1.9, y - 8.6, 3.8, 20.2, 1.6); g.fillRoundedRect(x - 3.7, y + 7.8, 7.4, 4, 1.5); g.fillRoundedRect(x - 4.7, y - 10.8, 9.4, 3.6, 1.5);
-      g.fillStyle(0x5a5470, 1); g.fillRoundedRect(x - 1.1, y - 8, 2.2, 19, 1); g.fillRoundedRect(x - 3, y + 8.6, 6, 2.4, 1); g.fillRoundedRect(x - 4, y - 10, 8, 2, 1);
+      w.add.image(x, y, post).setScale(1 / LAMP_K).setDepth(3);
       const glow = w.add.circle(x, y - 13, 13, col.accent, 0.28).setDepth(3.05).setVisible(false);
       const bulb = w.add.circle(x, y - 13, 4, 0x8f89a1, 1).setStrokeStyle(1.2, 0x34304a, 1).setDepth(3.1);
       w.tweens.add({ targets: glow, scale: 1.25, alpha: 0.12, duration: 1100 + ((s.tx * 7 + s.ty * 13) % 5) * 90, yoyo: true, repeat: -1, ease: 'Sine.InOut' });

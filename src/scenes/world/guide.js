@@ -12,6 +12,7 @@ import { TID, ZONE_NAMES, isWalkable, OY, H1 } from '../../data/world/map.js';
 import { MINIGAMES, gamesForSubject, getGame } from '../../data/minigames.js';
 import { houseStars, HOUSE_LEVELS } from '../../systems/Progression.js';
 import { dailyGoal } from '../../systems/Goals.js';
+import { bakeRegion } from '../../ui/Bake.js';
 
 /** Where each land's gateway stands and which way the road leaves the hub through it. */
 export const GATEWAYS = [
@@ -34,7 +35,7 @@ export function landStars(profile, zone) {
 // ---- Gateways ------------------------------------------------------------------------------------------
 
 export function createGateways(w) {
-  const tint = w.add.graphics().setDepth(1.2), g = w.add.graphics().setDepth(12);
+  const tint = w.add.graphics().setDepth(1.2);
   w.gateLabels = {};
   for (const gate of GATEWAYS) {
     const col = THEME.subjects[gate.zone], cx = (gate.tx + 0.5) * TILE, cy = (gate.ty + 0.5) * TILE;
@@ -48,8 +49,10 @@ export function createGateways(w) {
       tint.moveTo(mx - fx * 4 + sx * 8, my - fy * 4 + sy * 8); tint.lineTo(mx + fx * 5, my + fy * 5); tint.lineTo(mx - fx * 4 - sx * 8, my - fy * 4 - sy * 8);
       tint.strokePath();
     }
+    const across = gate.dx !== 0, by = cy - (across ? 52 : 30), bw = 62;
+    // The posts and banner are baked into one small picture per gateway: drawn once, never re-tessellated.
+    bakeRegion(w, (g) => {
     // Two pillars either side of the road (above and below it where the road runs east to west).
-    const across = gate.dx !== 0;
     for (const side of [-1, 1]) {
       const px = across ? cx : cx + side * 14, py = across ? cy + side * 28 : cy;
       g.fillStyle(0x000000, 0.18); g.fillEllipse(px + 1, py + 13, 12, 4);
@@ -60,15 +63,15 @@ export function createGateways(w) {
       g.lineStyle(1.3, col.dark, 1); g.strokeRoundedRect(px - 4, py - 14, 8, 27, 3); g.lineStyle(1.2, 0xb37400, 1); g.strokeCircle(px, py - 15, 3.2);
     }
     // The banner across the top: the land's name, and its stars on a tag beneath.
-    const by = cy - (across ? 52 : 30), bw = 62;
     g.fillStyle(0x000000, 0.18); g.fillRoundedRect(cx - bw / 2 + 1, by - 6, bw, 14, 5);
     g.fillStyle(col.dark, 1); g.fillRoundedRect(cx - bw / 2, by - 8, bw, 14, 5);
     g.fillStyle(col.accent, 1); g.fillRoundedRect(cx - bw / 2, by - 8, bw, 11.5, 5);
     g.fillStyle(0xffffff, 0.3); g.fillRoundedRect(cx - bw / 2 + 3, by - 6.5, bw - 6, 2, 1);
     g.lineStyle(1.4, col.dark, 1); g.strokeRoundedRect(cx - bw / 2, by - 8, bw, 14, 5);
-    w.add.text(cx, by - 1.5, ZONE_NAMES[gate.zone], { fontFamily: FONT, fontSize: '7px', color: '#ffffff', fontStyle: '700' }).setOrigin(0.5).setDepth(12.1).setResolution(6);
     g.fillStyle(0xffffff, 1); g.fillRoundedRect(cx - 15, by + 6.5, 30, 9, 4.5);
     g.lineStyle(1, col.accent, 1); g.strokeRoundedRect(cx - 15, by + 6.5, 30, 9, 4.5);
+    }, cx - 34, cy - 64, 68, 108, 12);
+    w.add.text(cx, by - 1.5, ZONE_NAMES[gate.zone], { fontFamily: FONT, fontSize: '7px', color: '#ffffff', fontStyle: '700' }).setOrigin(0.5).setDepth(12.1).setResolution(6);
     w.gateLabels[gate.zone] = w.add.text(cx, by + 11, '', { fontFamily: FONT, fontSize: '6px', color: hex(col.dark), fontStyle: '700' }).setOrigin(0.5).setDepth(12.1).setResolution(6);
   }
   refreshGateways(w);
