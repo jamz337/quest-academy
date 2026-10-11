@@ -14,6 +14,7 @@ describe('hero recolouring', () => {
     expect(partOf('hero-girl', 60, 35, 95, 0.93)).toBe('shoes');     // the girl's dark purple sandals, not her skirt
     expect(partOf('hero-girl', 60, 35, 95, 0.75)).toBe('bottom');    // the same purple higher up is the skirt
     expect(partOf('hero-girl', 10, 8, 8, 0.95)).toBe(null);          // the outline round the sandals
+    expect(partOf('hero-girl', 140, 90, 55, 0.93)).toBe('skin');    // her toes between the straps stay skin
     expect(partOf('hero', 20, 20, 20, 0.1)).toBe(null);             // black hair / outline: nothing to recolour
     expect(partOf('hero-girl', 70, 40, 25, 0.2)).toBe('hair');      // the girl's dark brown curls
     expect(partOf('hero-girl', 70, 40, 25, 0.35, 0.8)).toBe('hair');  // curls hanging beside the face

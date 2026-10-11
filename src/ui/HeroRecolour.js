@@ -59,12 +59,13 @@ const near = (h, t, tol) => Math.abs((((h - t + 180) % 360) + 360) % 360 - 180) 
 export function partOf(art, r, g, b, fy, fx = 0) {
   const parts = HERO_PARTS[art] || HERO_PARTS.hero;
   const [h, s, l] = rgbToHsl(r, g, b), dark = l < 0.16, outline = l < 0.08;
-  // Shoes first: at the feet, anything that is not outline (the boy's pale trainers, the girl's dark sandals).
-  if (fy >= 0.89 && !outline && (l > 0.25 || s > 0.3)) return 'shoes';
+  const skinLike = !dark && s > 0.18 && near(h, 25, 20) && l > 0.22 && l < 0.86;
+  // Shoes first: at the feet, anything that is not outline or skin (the boy's pale trainers, the girl's dark sandals; her toes stay hers).
+  if (fy >= 0.89 && !outline && !skinLike && (l > 0.25 || s > 0.3)) return 'shoes';
   // Hair: the top of the head, and the sides where curls hang past the face; never the face and neck in the middle.
   const hair = parts.hair && fy < parts.hair[1] && (fy < 0.24 || Math.abs(fx) > 0.55) && near(h, parts.hair[2], parts.hair[3]) && s > 0.15 && l < 0.34;
   if (hair) return 'hair';
-  if (!dark && s > 0.18 && near(h, 25, 20) && l > 0.22 && l < 0.86) return 'skin';
+  if (skinLike) return 'skin';
   if (!dark && fy >= parts.top[0] && fy < parts.top[1] && near(h, parts.top[2], parts.top[3]) && s > 0.25) return 'top';
   if (!dark && fy >= parts.bottom[0] && fy < parts.bottom[1] && near(h, parts.bottom[2], parts.bottom[3]) && s > 0.25) return 'bottom';
   return null;
