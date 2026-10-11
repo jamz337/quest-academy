@@ -88,6 +88,7 @@ export class WorldScene extends Phaser.Scene {
     }
     this.structureLayer = tilemap.createBlankLayer('structures', tileset, 0, 0).setScale(1 / TILE_RES).setDepth(0.5);
     layers.structures.forEach((row, ty) => row.forEach((id, tx) => { if (id >= 0) this.structureLayer.putTileAt(id, tx, ty); }));
+    this.placeDrawnHouse();
     const solid = this.make.tilemap({ data: this.map.data, tileWidth: res, tileHeight: res });
     this.layer = solid.createLayer(0, solid.addTilesetImage('tiles', 'tiles', res, res, TILE_PAD, TILE_PAD * 2), 0, 0).setScale(1 / TILE_RES).setVisible(false);
     this.layer.setCollision(SOLID.filter((id) => id !== TID.tree));   // trees collide on their own layer
@@ -221,6 +222,22 @@ export class WorldScene extends Phaser.Scene {
       this.tweens.add({ targets: img, y: img.y - 3, duration: 500 + (i % 4) * 90, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
     });
     this.physics.add.overlap(this.player, this.coinGroup, (_p, coin) => this.collectCoin(coin));
+  }
+
+  /**
+   * The player's house as one drawn picture (sprites/world/hub/house.png) over its three-by-three footprint: the
+   * picture's walls are lined up with the footprint's width and its base with the footprint's bottom, so the roof
+   * overhangs a little and the door stays where the map says. The footprint's own tiles come off the structure layer.
+   */
+  placeDrawnHouse() {
+    const home = this.map.home;
+    if (!home || !this.textures.exists('hub-house')) return;
+    for (let y = home.y; y < home.y + home.h; y++) for (let x = home.x; x < home.x + home.w; x++) this.structureLayer.removeTileAt(x, y);
+    const tex = this.textures.get('hub-house').getSourceImage();
+    const note = (this.cache.json && this.cache.json.get('hub-house-note')) || { wallLeft: 0, wallRight: tex.width, width: tex.width, height: tex.height };
+    const scale = (home.w * TILE) / Math.max(1, note.wallRight - note.wallLeft);
+    const cx = (home.x + home.w / 2) * TILE + (note.width / 2 - (note.wallLeft + note.wallRight) / 2) * scale;
+    this.drawnHouse = this.add.image(cx, (home.y + home.h) * TILE, 'hub-house').setOrigin(0.5, 1).setScale(scale).setDepth(1.1);
   }
 
   applyZoom() {

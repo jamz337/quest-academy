@@ -26,6 +26,8 @@ export class BootScene extends Phaser.Scene {
     for (const k of CALL_FILES) this.load.audio(`call-${k}`, `sounds/animals/${k}.mp3`);
     this.load.image('ark-backdrop', 'sprites/ark/backdrop.jpg');   // the Pre-K ark's painted shore
     this.load.image('ark-noah', 'sprites/ark/noah.png');
+    this.load.image('hub-house', 'sprites/world/hub/house.png');   // the player's house, drawn (see tools/clean-house.py)
+    this.load.json('hub-house-note', 'sprites/world/hub/house.json');
   }
 
   create() {

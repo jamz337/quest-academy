@@ -24,12 +24,17 @@ two sheets below, then drop the images into the chat. I cut them up with `tools/
 > tall grass.
 > Trees show their trunk at the bottom. All objects drawn at the same scale as each other.
 
-## Sheet 2: the player's house
+## Sheet 2: the player's house (done)
 
-> [shared style] One building, whole and centred: the cottage from the reference image. A two-storey
-> half-timbered house with cream plaster walls, dark brown timber beams, a terracotta tile roof seen from above,
-> a red brick base, four windows with wooden frames and an arched wooden front door with a brass knob in the
-> middle of the ground floor. The front of the house faces us. Roughly as wide as it is tall.
+The house is in: `public/sprites/world/hub/house.png`, cut from the generated picture by `tools/clean-house.py`
+(which patches out the hearts, the hanging sign and the player, and makes the grass transparent). The game lines
+its walls up with the house's three-by-three footprint, so the roof overhangs a little and the door stays where
+the map says. A new picture goes through the same tool:
+
+    python tools/clean-house.py <picture> public/sprites/world/hub/house.png
+
+For other buildings, generate them the simple way instead: one building, whole and centred, on plain white, with
+nothing in front of it and no sign (the game draws the name plates).
 
 ## Tips
 
