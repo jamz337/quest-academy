@@ -115,6 +115,7 @@ export class WorldScene extends Phaser.Scene {
     Decor.createMarketStall(this);
     Decor.createChurch(this);
     Decor.createHarbour(this);
+    Decor.createMarket(this);
     createProps(this);
     createGateways(this);
     Hub.createFountain(this);

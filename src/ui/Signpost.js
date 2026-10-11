@@ -10,6 +10,7 @@ const WOOD = { fill: 0xa06a3c, dark: 0x5a3a22, light: 0xc98c55 };
 /** Which lands the hub signpost points to, top board first. `dir` is where the arrow tip goes. */
 export const SIGN_BOARDS = [
   { id: 'science', label: 'Science', dir: 'up' },
+  { id: 'music', label: 'Music', dir: 'up' },
   { id: 'words', label: 'Words', dir: 'right' },
   { id: 'math', label: 'Math', dir: 'left' },
   { id: 'bible', label: 'Bible', dir: 'right' },
@@ -43,7 +44,8 @@ export function signpost(scene, x, y, opts = {}) {
   // A down-pointing board that is not the lowest gets room below it, so its tip shows above the next board.
   const extraBelow = (i) => (boards[i].dir === 'down' && i < n - 1 ? TIP : 0);
   const offsets = []; let acc = 0;
-  for (let i = 0; i < n; i++) { offsets.push(acc); acc += BH + GAP + extraBelow(i); }
+  // Likewise an up-pointing board below the top one gets room above it for its tip.
+  for (let i = 0; i < n; i++) { if (i > 0 && boards[i].dir === 'up') acc += TIP; offsets.push(acc); acc += BH + GAP + extraBelow(i); }
   const top = -(POST_TOP + acc + 6);
 
   // Ground shadow and the post itself.

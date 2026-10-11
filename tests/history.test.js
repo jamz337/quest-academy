@@ -102,7 +102,7 @@ describe('History Harbor facts', () => {
   it('is a sixth subject with its own colours and four games in every grade of the Challenge menu', () => {
     expect(SUBJECTS.history).toMatchObject({ id: 'history', title: 'History', zone: 'History Harbor' });
     expect(THEME.subjects.history.accent).toBeTruthy();
-    expect(Object.keys(SUBJECTS)).toHaveLength(6);
+    expect(Object.keys(SUBJECTS).length).toBeGreaterThanOrEqual(6);
     expect(MINIGAMES.filter((g) => g.subject === 'history').map((g) => g.id)).toEqual(HISTORY_GAMES);
     for (const g of [-1, 0, 3, 8]) expect(gamesForGrade('history', g).map((x) => x.id)).toEqual(HISTORY_GAMES);
     for (const id of HISTORY_GAMES) { expect(getGame(id).sceneKey).toBe('MG_HistoryQuiz'); expect(getGame(id).playSceneKey).toBe('MG_HistoryPlay'); }

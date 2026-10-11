@@ -196,7 +196,12 @@ export const SKILL_TIPS = {
   community: 'Talk about what the town pays for together: roads, schools, the fire service.', flags: 'Spot flags on buildings and cars and name the countries.',
   capitals: 'Pick a country at dinner and find its capital on a map.', continents: 'Name the seven continents with a song or a globe.', 'world-geography': 'Trace the Nile and the Amazon on a map.',
   'then-now': 'Ask a grandparent what they used before phones and fridges.', timeline: 'Make a timeline of the family: who was born when.',
-  'history-words': 'Visit the museum and find an artefact.', 'history-facts': 'Read about Independence Day and Bussa together.'
+  'history-words': 'Visit the museum and find an artefact.', 'history-facts': 'Read about Independence Day and Bussa together.',
+  rhythm: 'Clap a pattern and have it clapped back to you.', tempo: 'March fast round the room, then slow, to a song.', 'note-values': 'Clap a long note and four quick ones, and count.',
+  'note-names': 'Say the music alphabet, A to G, and start again.', 'reading-music': 'Sing do re mi up and down the scale.', 'music-words': 'Listen to a song and say when it gets louder or softer.',
+  'music-facts': 'Watch an orchestra play and spot the conductor.', 'high-low': 'Make a mouse voice and a bear voice.', pitch: 'Hum a note, then one higher, then one lower.',
+  voices: 'Listen to a choir and pick out the high and low voices.', instruments: 'Find three things at home you can drum, pluck or blow.', 'instrument-families': 'Sort the instruments in a song into hit, blown and strings.',
+  'caribbean-music': 'Play some calypso and some spouge and clap along.'
 };
 
 export const skillTip = (id) => SKILL_TIPS[id] || `Practise ${skillLabel(id)} together for a few minutes.`;

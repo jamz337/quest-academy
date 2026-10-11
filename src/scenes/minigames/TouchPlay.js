@@ -44,6 +44,8 @@ export class TouchPlay extends MinigameScene {
 
   /** A thing's picture, `px` tall, centred on (x, y). */
   picture(x, y, px, item) { return this.add.text(x, y, item.pic, { fontSize: Math.round(px) + 'px' }).setOrigin(0.5); }
+  /** Whenever a thing is touched (waiting or at home): a subject can play its sound. */
+  onTap() {}
 
   finaleLine() { return `Well done, ${this.who}! Touch anything to hear about it again.`; }
 
@@ -127,6 +129,7 @@ export class TouchPlay extends MinigameScene {
     if (s.locked || s.finale || !it || s.home[i] || s.phase !== 'explore') return;
     s.locked = true;
     Sfx.pop();
+    this.onTap(it);
     this.say(it.line);
     const card = this.things[i], home = this.slots[`target-${it.target}`];
     if (card && card.active && this.tweens && home) {
@@ -151,6 +154,7 @@ export class TouchPlay extends MinigameScene {
     const slot = this.slots[i];
     if (slot && slot.pic && this.tweens) this.tweens.add({ targets: slot.pic, scale: 1.35, duration: 150, yoyo: true });
     Sfx.pop();
+    this.onTap(it);
     if (s.phase !== 'ask') { this.say(it.line); return; }
     const ask = s.asks[s.askI];
     if (!ask) return;

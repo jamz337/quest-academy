@@ -7,10 +7,10 @@ import { FONT, WEIGHT } from './TextStyles.js';
 // The map is painted as a little illustration: soft ground colours for each land, roads as rounded ribbons, water
 // with rounded banks, trees as round tufts and every building as a small house in its land's colour.
 const GROUND = {
-  [TID.grass]: '#63c765', [TID.flower]: '#63c765', [TID.meadow]: '#c3e266', [TID.woods]: '#3f9d4a', [TID.cove]: '#f0dfae', [TID.village]: '#a3d66f', [TID.springs]: '#9fe6d9', [TID.quay]: '#d8d3c8', [TID.quayStone]: '#d8d3c8'
+  [TID.grass]: '#63c765', [TID.flower]: '#63c765', [TID.meadow]: '#c3e266', [TID.woods]: '#3f9d4a', [TID.cove]: '#f0dfae', [TID.village]: '#a3d66f', [TID.springs]: '#9fe6d9', [TID.quay]: '#d8d3c8', [TID.quayStone]: '#d8d3c8', [TID.fair]: '#b9e67a'
 };
-const ZONE_GROUND = { math: GROUND[TID.meadow], words: GROUND[TID.woods], code: GROUND[TID.cove], bible: GROUND[TID.village], science: GROUND[TID.springs], history: GROUND[TID.quay] };
-const ROOFS = { math: '#4c8df6', words: '#249762', code: '#e8623f', bible: '#8566ee', science: '#12a3b0', history: '#30589c', hub: '#ff6fae' };
+const ZONE_GROUND = { math: GROUND[TID.meadow], words: GROUND[TID.woods], code: GROUND[TID.cove], bible: GROUND[TID.village], science: GROUND[TID.springs], history: GROUND[TID.quay], music: GROUND[TID.fair] };
+const ROOFS = { math: '#4c8df6', words: '#249762', code: '#e8623f', bible: '#8566ee', science: '#12a3b0', history: '#30589c', music: '#d8368a', hub: '#ff6fae' };
 const ROAD = '#f0d6a4', ROAD_EDGE = '#d2ae6c', WATER = '#58aef7', WATER_DEEP = '#3d8be0';
 const FOG = '#2d2a4a';
 /** Pixels of the map texture per tile. */
@@ -73,7 +73,7 @@ export function paintMinimap(scene, map, explored) {
   }
   // Buildings: a little house in the land's colour; castles in stone with a flag.
   for (const bld of map.buildings || []) {
-    const x = bld.x * R, y = bld.y * R, w = bld.w * R, h = bld.h * R, castle = bld.style === 'castle' || bld.style === 'fort';
+    const x = bld.x * R, y = bld.y * R, w = bld.w * R, h = bld.h * R, castle = bld.style === 'castle' || bld.style === 'fort' || bld.style === 'hall';
     ctx.fillStyle = 'rgba(30,27,75,0.22)'; ctx.beginPath(); ctx.roundRect(x + R * 0.25, y + R * 0.45, w, h - R * 0.2, R * 0.5); ctx.fill();
     ctx.fillStyle = castle ? '#aab1c2' : '#fff6e6'; ctx.beginPath(); ctx.roundRect(x + R * 0.1, y + R * 0.2, w - R * 0.2, h - R * 0.3, R * 0.45); ctx.fill();
     ctx.fillStyle = castle ? '#7d869b' : ROOFS[bld.zone] || ROOFS.hub;
@@ -98,7 +98,7 @@ export function paintMinimap(scene, map, explored) {
   tex.refresh();
   return key;
 }
-const DOOR_IDS = new Set([TID.door, TID.doorMath, TID.doorWords, TID.doorCode, TID.doorBible, TID.doorScience, TID.doorHistory, TID.doorHistory2, TID.doorHistory3, TID.castleDoor, TID.fortDoor]);
+const DOOR_IDS = new Set([TID.door, TID.doorMath, TID.doorWords, TID.doorCode, TID.doorBible, TID.doorScience, TID.doorHistory, TID.doorHistory2, TID.doorHistory3, TID.castleDoor, TID.fortDoor, TID.doorMusic]);
 let fogScratch = null;
 function fogCanvas(w, h) {
   if (!fogScratch) fogScratch = document.createElement('canvas');

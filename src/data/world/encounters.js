@@ -4,7 +4,7 @@ import { TID, reachableFrom } from './map.js';
 import { mulberry32 } from '../../systems/Rng.js';
 
 export const SPARKLES_PER_DAY = 12;
-export const GRASS = new Set([TID.grass, TID.flower, TID.meadow, TID.woods, TID.cove, TID.village, TID.springs, TID.quay]);
+export const GRASS = new Set([TID.grass, TID.flower, TID.meadow, TID.woods, TID.cove, TID.village, TID.springs, TID.quay, TID.fair]);
 export const SURPRISE_CHANCE = 1 / 70;      // per new grass tile stepped on
 export const SURPRISE_COOLDOWN_MS = 30000;
 export const QUIZ_REWARD = { coins: 8, xp: 15 };

@@ -88,6 +88,20 @@ export const CHAPTERS = [
     }
   },
   {
+    zone: 'music', guide: 'drummer', piece: 'wheel', pieceName: 'the wheel of the bell', title: 'The Market Piece',
+    intro: ['Maestro Mayhem marched off with the bell\'s wheel, the part that swings it to ring, and set up in the market hall at Melody Market.', 'Kofi the Drummer keeps the beat at the market, up through the archway at the top of Word Woods. Find him first.'],
+    lines: {
+      guide: 'Kofi says the Maestro plays everything off-key on purpose. We will put the music right!',
+      meet: 'Everyone at the market has met you. The whole square is humming your name!',
+      stars: 'Every stall at the market shines with stars. What a musician!',
+      duels: 'Nobody at the market can out-play you now. The Maestro has gone quiet!',
+      errand: 'Kofi has his drumsticks back. The market folk trust you now.',
+      coins: 'The last coin in the square! The Maestro has nowhere left to hide.',
+      ready: 'The market hall doors are open. Go and show the Maestro how it is done!',
+      piece: 'The wheel of the bell! Now it can swing and ring.'
+    }
+  },
+  {
     zone: 'bible', guide: 'shepherd', piece: 'clapper', pieceName: 'the clapper of the bell', title: 'The Village Piece',
     intro: ['Only the clapper is missing now, and Goliath keeps it in his castle in Bible Village.', 'Shepherd Eli has faced giants before. Go and find him.'],
     lines: {
@@ -199,7 +213,7 @@ export function signpostLine(profile) {
   return st.next ? `Chapter ${st.chapter}, ${ZONE_NAMES[st.zone]}: ${st.next.title.toLowerCase()}. ${st.next.id === 'boss' ? ch.lines.ready : ''}`.trim() : `Head to ${ZONE_NAMES[st.zone]}.`;
 }
 
-const WAY = { math: 'to the west of the plaza', science: 'up north, through the archway at the top of the plaza', words: 'up in the north-east, through the archway', code: 'down south by the sea', history: 'down south, along the pier at the end of Code Cove', bible: 'over to the east, past the archway' };
+const WAY = { math: 'to the west of the plaza', science: 'up north, through the archway at the top of the plaza', words: 'up in the north-east, through the archway', code: 'down south by the sea', history: 'down south, along the pier at the end of Code Cove', music: 'up north, through the archway at the top of Word Woods', bible: 'over to the east, past the archway' };
 
 /** A clue for the next step of the story, for Mango's visits; null once the bell is whole. */
 export function clueFor(profile) {

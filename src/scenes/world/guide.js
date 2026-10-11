@@ -20,7 +20,8 @@ export const GATEWAYS = [
   { zone: 'words', tx: 36, ty: 13 + OY, dx: 0, dy: -1 },
   { zone: 'code', tx: 24, ty: 28 + OY, dx: 0, dy: 1 },
   { zone: 'bible', tx: 37, ty: 17 + OY, dx: 1, dy: 0 },
-  { zone: 'history', tx: 24, ty: H1 - 1, dx: 0, dy: 1 }
+  { zone: 'history', tx: 24, ty: H1 - 1, dx: 0, dy: 1 },
+  { zone: 'music', tx: 36, ty: OY, dx: 0, dy: -1 }
 ];
 
 /** Stars earned in a land's games, and the most there are: { stars, total }. */

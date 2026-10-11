@@ -128,3 +128,27 @@ export const Sfx = {
   /** An animal's call by name (see ANIMAL_SOUNDS); unknown names are silent. */
   animal: (kind) => { const fn = ANIMAL_SOUNDS[kind]; if (fn) fn(); }
 };
+
+// ---- Melody Market: notes by name, a little drum kit, and whole tunes and rhythms, all from the synth ------------
+export const NOTE_HZ = { C3: 131, D3: 147, E3: 165, F3: 175, G3: 196, A3: 220, B3: 247, C4: 262, D4: 294, E4: 330, F4: 349, G4: 392, A4: 440, B4: 494, C5: 523, D5: 587, E5: 659, F5: 698, G5: 784, A5: 880, B5: 988, C6: 1047 };
+export const Music = {
+  /** One note by name ('C4' is middle C), `dur` seconds long, `when` seconds from now. */
+  note: (name, dur = 0.45, when = 0, wave = 'triangle') => tone(NOTE_HZ[name] || Number(name) || 440, dur, wave, 0.12, when),
+  /** Notes in turn, `gap` seconds apart ('-' is a rest). Returns how long the whole thing lasts. */
+  notes: (names, gap = 0.5, dur = 0.42) => { names.forEach((n, i) => { if (n && n !== '-') Music.note(n, dur, i * gap); }); return names.length * gap; },
+  /** One drum hit: 'boom' (the big drum), 'tak' (the small drum), 'shake' (a shaker) or 'ding' (a triangle). */
+  drum: (kind = 'tak', when = 0) => {
+    if (kind === 'boom') tone(110, 0.24, 'sine', 0.22, when, -60);
+    else if (kind === 'shake') creature({ wave: 'square', from: 3200, to: 2400, dur: 0.09, vol: 0.05, noise: 1, cutoff: 7000, when });
+    else if (kind === 'ding') { tone(2093, 0.7, 'sine', 0.08, when); tone(3136, 0.4, 'sine', 0.03, when); }
+    else tone(420, 0.09, 'triangle', 0.16, when, -200);
+  },
+  /** A rhythm: one hit (or '-' for a rest) per beat, `gap` seconds apart. Returns how long it lasts. */
+  rhythm: (beats, gap = 0.4) => { beats.forEach((b, i) => { if (b && b !== '-') Music.drum(b, i * gap); }); return beats.length * gap; },
+  /** Play a sound descriptor from a question or a play set: { kind: 'notes', notes, gap } or { kind: 'rhythm', beats, gap }. */
+  play: (sound) => {
+    if (!sound) return 0;
+    if (sound.kind === 'rhythm') return Music.rhythm(sound.beats, sound.gap);
+    return Music.notes(sound.notes, sound.gap, sound.dur);
+  }
+};

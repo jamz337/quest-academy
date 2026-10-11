@@ -21,11 +21,12 @@ export const TID = {
   // History Harbor: its cobbled quay, chattel houses in three colours, and the fort's coral stone
   quay: 46, roofHistory: 47, wallHistory: 48, doorHistory: 49, wallHistory2: 50, doorHistory2: 51, wallHistory3: 52, doorHistory3: 53,
   fortTop: 54, fortWall: 55, fortDoor: 56,
-  quayStone: 57   // quay paving something stands on (the lighthouse): looks like the quay, cannot be walked on
+  quayStone: 57,  // quay paving something stands on (the lighthouse): looks like the quay, cannot be walked on
+  fair: 61, roofMusic: 62, wallMusic: 63, doorMusic: 64   // Melody Market: fairground grass and striped market stalls (58-60 are grass looks)
 };
-export const ROOF_TILES = [TID.roof, TID.roofMath, TID.roofWords, TID.roofCode, TID.roofBible, TID.castleTop, TID.roofScience, TID.roofHistory, TID.fortTop];
-export const WALL_TILES = [TID.wall, TID.wallMath, TID.wallWords, TID.wallCode, TID.wallBible, TID.castleWall, TID.wallScience, TID.wallHistory, TID.wallHistory2, TID.wallHistory3, TID.fortWall];
-export const DOOR_TILES = [TID.door, TID.doorMath, TID.doorWords, TID.doorCode, TID.doorBible, TID.castleDoor, TID.doorScience, TID.doorHistory, TID.doorHistory2, TID.doorHistory3, TID.fortDoor];
+export const ROOF_TILES = [TID.roof, TID.roofMath, TID.roofWords, TID.roofCode, TID.roofBible, TID.castleTop, TID.roofScience, TID.roofHistory, TID.fortTop, TID.roofMusic];
+export const WALL_TILES = [TID.wall, TID.wallMath, TID.wallWords, TID.wallCode, TID.wallBible, TID.castleWall, TID.wallScience, TID.wallHistory, TID.wallHistory2, TID.wallHistory3, TID.fortWall, TID.wallMusic];
+export const DOOR_TILES = [TID.door, TID.doorMath, TID.doorWords, TID.doorCode, TID.doorBible, TID.castleDoor, TID.doorScience, TID.doorHistory, TID.doorHistory2, TID.doorHistory3, TID.fortDoor, TID.doorMusic];
 export const SOLID = [TID.water, TID.tree, TID.gateLocked, TID.plinth, TID.quayStone, ...ROOF_TILES, ...WALL_TILES];
 export const isWalkable = (id) => !SOLID.includes(id);
 
@@ -39,13 +40,15 @@ export const BUILDING_STYLES = {
   history: { roof: TID.roofHistory, wall: TID.wallHistory, door: TID.doorHistory },      // mint
   history2: { roof: TID.roofHistory, wall: TID.wallHistory2, door: TID.doorHistory2 },   // pink
   history3: { roof: TID.roofHistory, wall: TID.wallHistory3, door: TID.doorHistory3 },   // yellow
+  music: { roof: TID.roofMusic, wall: TID.wallMusic, door: TID.doorMusic },
   castle: { roof: TID.castleTop, wall: TID.castleWall, door: TID.castleDoor },
-  fort: { roof: TID.fortTop, wall: TID.fortWall, door: TID.fortDoor }
+  fort: { roof: TID.fortTop, wall: TID.fortWall, door: TID.fortDoor },
+  hall: { roof: TID.roof, wall: TID.wall, door: TID.door }   // the market hall: red tiles and plaster, like the hub's houses
 };
 
-export const ZONE_NAMES = { hub: 'Academy Hub', math: 'Math Meadow', words: 'Word Woods', code: 'Code Cove', bible: 'Bible Village', science: 'Science Springs', history: 'History Harbor' };
+export const ZONE_NAMES = { hub: 'Academy Hub', math: 'Math Meadow', words: 'Word Woods', code: 'Code Cove', bible: 'Bible Village', science: 'Science Springs', history: 'History Harbor', music: 'Melody Market' };
 /** The ground tile of each land. */
-const GROUND_OF = { math: TID.meadow, words: TID.woods, code: TID.cove, bible: TID.village, science: TID.springs, history: TID.quay };
+const GROUND_OF = { math: TID.meadow, words: TID.woods, code: TID.cove, bible: TID.village, science: TID.springs, history: TID.quay, music: TID.fair };
 
 function fillRect(data, x, y, w, h, id) {
   for (let ty = y; ty < y + h; ty++) for (let tx = x; tx < x + w; tx++) {
@@ -326,11 +329,39 @@ export function buildMap() {
   data[H1 + 7][16] = data[H1 + 7][31] = TID.tree;            // two palms on the south quay
   coins.push({ tx: 22, ty: H1 + 5 }, { tx: 32, ty: H1 + 5 }, { tx: pier.tx, ty: H1 + 2 });
 
+  // ---- Melody Market: a festival square carved out of the forest east of the springs, above Word Woods --------
+  // A market hall at the top (the boss's), four striped stalls round a paved square, and an archway down through
+  // the old top border into Word Woods, where a lane runs south to the woods' own road.
+  const mkt = { x: 24, y: 1, w: 15, h: 13 };
+  zones.push({ id: 'music', name: ZONE_NAMES.music, rect: mkt });
+  fillRect(data, mkt.x, mkt.y, mkt.w, mkt.h, TID.fair);                 // the forest's tree walls stay either side (columns 23 and 39)
+  const mrnd = mulberry32(2028), mscenery = new Set();
+  sprinkle(data, mrnd, mkt, TID.fair, TID.tree, 0.05, mscenery);
+  fillRect(data, 29, 7, 7, 4, TID.path);                                 // the market square
+  hline(data, 26, 37, 6, TID.path);                                      // the lane along the top of the square, past the hall's door
+  hline(data, 26, 28, 10, TID.path); hline(data, 35, 37, 10, TID.path);  // and out to the two lower stalls
+  vline(data, 36, 11, OY - 1, TID.path);                                 // down to the archway
+  data[OY][36] = TID.gateOpen; gates.push({ zone: 'music', tx: 36, ty: OY });
+  vline(data, 36, OY + 1, OY + 6, TID.path);                             // through Word Woods to its lane
+  bossSpots.music = (() => { const door = building(data, 30, 2, 5, 4, BUILDING_STYLES.hall); buildings.push({ zone: 'music', style: 'hall', x: 30, y: 2, w: 5, h: 4, door }); return { tx: door.tx, ty: door.ty + 1 }; })();
+  const mplace = (npcId, x, y) => {
+    const door = building(data, x, y, 3, 3, BUILDING_STYLES.music);
+    buildings.push({ zone: 'music', style: 'music', x, y, w: 3, h: 3, door });
+    const spot = { tx: door.tx, ty: door.ty + 1 };
+    data[spot.ty][spot.tx] = TID.path;
+    npcSpots[npcId] = spot;
+  };
+  mplace('note-seller', 25, 2); mplace('singer', 36, 2); mplace('drummer', 25, 7); mplace('luthier', 36, 7);
+  vline(data, 26, 5, 6, TID.path); vline(data, 37, 5, 6, TID.path);     // from the two top stalls down to the lane
+  clearBoxedTrees(data, mscenery, new Set(), zones);
+  coins.push({ tx: 33, ty: 8 }, { tx: 28, ty: 10 }, { tx: 36, ty: 12 });
+  const market = { square: { x: 29, y: 7, w: 7, h: 4 } };
+
   return {
     width: W, height: H, data, spawn: down(old.spawn), zones, gates, npcSpots, bossSpots, buildings, coins,
     signSpot: down(old.signSpot), bellSpot: down(old.bellSpot), marketSpot: down(old.marketSpot), home, church,
     trail: TRAIL_STONES, bridge: TRAIL_BRIDGE, fishSign: down(old.fishSign), fountain: down(old.fountain), questBoard: down(old.questBoard),
-    island, pier, jetty, lighthouse
+    island, pier, jetty, lighthouse, market
   };
 }
 

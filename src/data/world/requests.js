@@ -35,7 +35,11 @@ export const REQUESTS = {
   'captain-compass': { emoji: '🧭', ask: 'The fishing boats are lost in the fog! Play Compass Quest for two stars and I can call them home.', thanks: 'Every boat is back in the harbour. Steady bearings!' },
   'mayor-marigold': { emoji: '🏛️', ask: 'The town fair needs every helper in the right place! Play Community Helpers for two stars and I can sort the stalls.', thanks: 'Doctor, firefighter, baker: all in place. What a fair!' },
   flora: { emoji: '🏁', ask: 'A ship is coming in and I cannot tell whose flag it flies! Play Flag Finder for two stars and help me greet them.', thanks: 'Welcomed in their own language! Thank you, flag spotter.' },
-  'old-tom': { emoji: '🕰️', ask: 'The museum is opening and the exhibits are all muddled! Play Past & Present for two stars and help me put them in order.', thanks: 'Long ago on the left, today on the right. The museum is open!' }
+  'old-tom': { emoji: '🕰️', ask: 'The museum is opening and the exhibits are all muddled! Play Past & Present for two stars and help me put them in order.', thanks: 'Long ago on the left, today on the right. The museum is open!' },
+  drummer: { emoji: '🥁', ask: 'The parade starts at noon and my drummers have lost the beat! Play Rhythm Repeat for two stars and get them marching.', thanks: 'Boom, tak, tak! The parade is on its way.' },
+  'note-seller': { emoji: '🎵', ask: 'The choir\'s music sheets blew away! Play Note Match for two stars and help me write the notes out again.', thanks: 'Every note back on its line. The choir can sing!' },
+  singer: { emoji: '🎤', ask: 'I have a concert tonight and my voice keeps wobbling between high and low! Play High & Low for two stars and steady me.', thanks: 'Pitch perfect! The concert will be a dream.' },
+  luthier: { emoji: '🎸', ask: 'A whole band\'s instruments came in muddled up! Play Instrument Families for two stars and help me sort them.', thanks: 'Drums here, strings there, horns in the corner. All sorted!' }
 };
 
 /** The villagers with an order today (their ids), the same all day for this player. */

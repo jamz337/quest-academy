@@ -113,7 +113,8 @@ export const TILE_IDS = {
   quay: 46, roofHistory: 47, wallHistory: 48, doorHistory: 49, wallHistory2: 50, doorHistory2: 51, wallHistory3: 52, doorHistory3: 53,
   fortTop: 54, fortWall: 55, fortDoor: 56,
   quayStone: 57,   // quay paving something stands on (the lighthouse): looks like the quay, cannot be walked on
-  grass2: 58, grass3: 59, grass4: 60   // more looks for plain grass (display only, like the flower looks)
+  grass2: 58, grass3: 59, grass4: 60,   // more looks for plain grass (display only, like the flower looks)
+  fair: 61, roofMusic: 62, wallMusic: 63, doorMusic: 64
 };
 /** Flower and daisy patches come in several looks; the world picks one per map square so no two neighbours match. */
 export const FLOWER_TILES = [6, 29, 30, 31, 32, 33], MEADOW_TILES = [7, 34, 35, 36, 37, 38, 39, 40], GRASS_TILES = [0, 58, 59, 60];
@@ -413,6 +414,28 @@ function fortDoor(ctx, x0) {
   for (const [sx, sy] of [[10, 14], [20, 14], [10, 20], [20, 20], [10, 26], [20, 26]]) px(ctx, x0 + sx, sy, '#cbbd9e', 2, 2);
 }
 
+/** Melody Market: fairground grass with confetti, and stalls with striped awnings over wooden counters. */
+function fairTile(ctx, x0, rnd) {
+  paintedGrass(ctx, x0, rnd, 3);
+  for (let i = 0; i < 5; i++) disc(ctx, x0 + inside(rnd, 3), inside(rnd, 3), 0.9, ['#ff6fae', '#ffd23f', '#4aa8ff', '#ffffff', '#ff8f5a'][i], 0.9);
+}
+function awningRoof(ctx, x0) {
+  for (let x = 0; x < TILE; x += 8) { px(ctx, x0 + x, 0, '#d8368a', 4, TILE - 4); px(ctx, x0 + x + 4, 0, '#f6c343', 4, TILE - 4); }
+  px(ctx, x0, 0, '#ffffff', TILE, 1.5);
+  for (let x = 0; x < TILE; x += 8) { ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(x0 + x + 4, TILE - 4, 4, 0, Math.PI); ctx.fill(); }   // the scalloped edge
+  px(ctx, x0, TILE - 4.5, '#ffffff', TILE, 1.5);
+}
+function stallWall(ctx, x0, window = true) {
+  px(ctx, x0, 0, '#c98a4f', TILE, TILE);
+  for (let y = 5; y < TILE; y += 6) px(ctx, x0, y, '#a5693a', TILE, 1);
+  px(ctx, x0, 0, '#8a5a2b', 1, TILE); px(ctx, x0 + TILE - 1, 0, '#8a5a2b', 1, TILE);
+  if (window) {   // a shelf of little instruments and a hanging lantern
+    px(ctx, x0 + 4, 20, '#8a5a2b', 24, 2);
+    px(ctx, x0 + 6, 13, '#ff6fae', 5, 7); px(ctx, x0 + 13, 11, '#ffd23f', 4, 9); px(ctx, x0 + 20, 14, '#4aa8ff', 6, 6);
+    disc(ctx, x0 + 26, 7, 2.6, '#ffd23f'); px(ctx, x0 + 25.3, 3, '#5a3a22', 1.4, 2.5);
+  }
+}
+
 /** Castles: grey stone blocks, a crenellated top and a great iron-studded gate. */
 function castleWall(ctx, x0, slit = true) {
   px(ctx, x0, 0, '#9aa3ad', TILE, TILE);
@@ -539,6 +562,9 @@ export function tilesTexture(scene) {
   chattel(T.wallHistory, T.doorHistory, CHATTEL.mint); chattel(T.wallHistory2, T.doorHistory2, CHATTEL.pink); chattel(T.wallHistory3, T.doorHistory3, CHATTEL.yellow);
   tile(T.fortTop, (c) => fortTop(c, 0)); tile(T.fortWall, (c) => fortWall(c, 0)); tile(T.fortDoor, (c) => fortDoor(c, 0));
   tile(T.quayStone, (c) => quayTile(c, 0, rnd));
+  // Melody Market.
+  tile(T.fair, (c) => fairTile(c, 0, prnd));
+  tile(T.roofMusic, (c) => awningRoof(c, 0)); tile(T.wallMusic, (c) => stallWall(c, 0)); tile(T.doorMusic, (c) => doorTile(c, 0, (cc, x) => stallWall(cc, x, false)));
   tex.refresh();
 }
 

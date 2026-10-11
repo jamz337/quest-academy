@@ -53,7 +53,15 @@ export const MINIGAMES = [
   { id: 'his-flags', subject: 'history', title: 'Flag Finder', sceneKey: 'MG_HistoryQuiz', playSceneKey: 'MG_HistoryPlay', icon: '🏁', npc: 'flora',
     description: 'Flags, capitals and continents, from Barbados to the whole world.', playDescription: 'Touch a flag to hear its country.' },
   { id: 'his-time', subject: 'history', title: 'Past & Present', sceneKey: 'MG_HistoryQuiz', playSceneKey: 'MG_HistoryPlay', icon: '🕰️', npc: 'old-tom',
-    description: 'Then and now, what came first, and the story of Barbados.', playDescription: 'Touch something to find out if it is from long ago or today.' }
+    description: 'Then and now, what came first, and the story of Barbados.', playDescription: 'Touch something to find out if it is from long ago or today.' },
+  { id: 'mus-rhythm', subject: 'music', title: 'Rhythm Repeat', sceneKey: 'MG_MusicQuiz', playSceneKey: 'MG_MusicPlay', icon: '🥁', npc: 'drummer',
+    description: 'Hear a drum pattern and find it, count the beats, and learn how long notes last.', playDescription: 'Touch the drums and shakers to hear them.' },
+  { id: 'mus-notes', subject: 'music', title: 'Note Match', sceneKey: 'MG_MusicQuiz', playSceneKey: 'MG_MusicPlay', icon: '🎵', npc: 'note-seller',
+    description: 'Count the notes you hear, the music alphabet, do re mi, and the words of music.', playDescription: 'Touch things to hear long sounds and short sounds.' },
+  { id: 'mus-pitch', subject: 'music', title: 'High & Low', sceneKey: 'MG_MusicQuiz', playSceneKey: 'MG_MusicPlay', icon: '🐦', npc: 'singer',
+    description: 'High or low, up or down, which note was higher, and the singing voices.', playDescription: 'Touch an animal to hear if its sound is high or low.' },
+  { id: 'mus-instruments', subject: 'music', title: 'Instrument Families', sceneKey: 'MG_MusicQuiz', playSceneKey: 'MG_MusicPlay', icon: '🎸', npc: 'luthier',
+    description: 'Hit, blown, strings or keys: the instrument families, and the music of the Caribbean.', playDescription: 'Touch an instrument to hear how it is played.' }
 ];
 
 /** Games only for the youngest players (Pre-K to Grade 1), shown first in their Challenge menu. */

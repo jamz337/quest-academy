@@ -60,6 +60,16 @@ export const BOSSES = [
     taunts: ['Forgotten already?', 'Lost at sea!', 'Ha! Wrong heading!'],
     beaten: ['I… remember now. You beat me.', 'The harbour is yours. Come back when the tide turns for a rematch.'],
     win: 'Admiral Amnesia is all at sea!', lose: 'Admiral Amnesia sent you overboard…', unlocks: null
+  },
+  {
+    id: 'boss-music', voice: 'male', pitch: 0.55, rate: 1.0, zone: 'music', subject: 'music', name: 'Maestro Mayhem', title: 'The Off-Key Ogre',
+    look: { sex: 'boy', skin: 'olive', hairStyle: 'spiked', hair: 'purple', topStyle: 'polo', top: 'black', bottomStyle: 'pants', bottom: 'purple', shoes: 'black', eyes: 'green', bg: '#9f1f62' },
+    hp: 8, hearts: 3, questionTimeMs: 18000,
+    intro: ['WRONG note! Wrong note! Ha! I play everything off-key, and I LIKE it.', 'Answer wrong and you lose a heart. Answer right and you spoil my racket.', 'Let us see if you have any music in you. BEGIN!'],
+    locked: ['Not yet, little songbird. The market folk have tunes for you to learn first.', 'Meet everyone, earn your stars, then come and put my music right.'],
+    taunts: ['Off-key!', 'That was flat!', 'Ha! No rhythm!'],
+    beaten: ['Oh… that… actually sounds lovely.', 'The market is yours. Come back for an encore some day.'],
+    win: 'Maestro Mayhem is in tune at last!', lose: 'Maestro Mayhem drowned you out…', unlocks: null
   }
 ];
 

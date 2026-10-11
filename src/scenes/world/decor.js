@@ -118,7 +118,7 @@ export function createLandmarks(w, profile) {
 
 /**
  * The bell tower at the top of the plaza: a wooden frame with a roof, and the Academy Bell hanging inside it,
- * drawn piece by piece (yoke, crown, left side, right side, rope, clapper) as the bosses give them back. Missing pieces are
+ * drawn piece by piece (yoke, wheel, crown, left side, right side, rope, clapper) as the bosses give them back. Missing pieces are
  * shown as faint outlines so the goal is always in view. The base cannot be walked through.
  */
 export function createBellTower(w) {
@@ -155,6 +155,7 @@ export function refreshBell(w) {
   piece('right', () => { g.fillPoints([{ x, y: by }, { x: x + 4, y: by }, { x: x + 6, y: by + 8 }, { x: x + 11, y: by + 13 }, { x: x + 11, y: by + 16 }, { x, y: by + 16 }], true); });
   piece('clapper', () => { g.fillRect(x - 1, by + 12, 2, 6); g.fillCircle(x, by + 19, 2.5); });
   piece('rope', () => { g.fillRect(x + 13, by - 5, 2, 26); g.fillCircle(x + 14, by + 22, 2.5); });   // the bell rope, hanging from the yoke
+  piece('wheel', () => { g.slice(x - 14, by - 2, 7, Math.PI * 0.5, Math.PI * 1.5, false); g.fillPath(); g.fillRect(x - 15, by - 5, 3, 6); });   // the wheel that swings the bell, beside the yoke
   if (have.size === CHAPTERS.length) { g.lineStyle(1, 0xffc531, 0.7); g.strokeCircle(x, by + 8, 16); g.strokeCircle(x, by + 8, 20); }
   t.label.setText(have.size === CHAPTERS.length ? 'The Academy Bell' : `Academy Bell  ${have.size}/${CHAPTERS.length}`);
 }
@@ -422,6 +423,42 @@ export function createHarbour(w) {
     high.fillStyle(0x2d2a4a, 1); high.fillRect(fx - 1, fy - 22, 2, 26);
     high.fillStyle(0x1f3d75, 1); high.fillRect(fx + 1, fy - 22, 14, 9); high.fillStyle(0xffc531, 1); high.fillCircle(fx + 8, fy - 17.5, 2.2);
   }
+}
+
+/**
+ * Melody Market's dressing: strings of bunting across the square between the stalls, paper lanterns along the lane
+ * at the top, and a few painted music notes on the paving.
+ */
+export function createMarket(w) {
+  const m = w.map.market;
+  if (!m) return;
+  const sq = m.square, g = w.add.graphics().setDepth(4), low = w.add.graphics().setDepth(1.6);
+  const x0 = (sq.x - 2) * TILE, x1 = (sq.x + sq.w + 2) * TILE;
+  const cols = [0xd8368a, 0xf6c343, 0x3d8bff, 0x2ec46a, 0xff7a59, 0x8b5cf6];
+  // Two strings of bunting, sagging a little in the middle, each flag a triangle with an ink edge.
+  [[sq.y * TILE + 2, 0], [(sq.y + sq.h) * TILE - 6, 3]].forEach(([y, offset]) => {
+    const n = Math.floor((x1 - x0) / 11), pts = [];
+    for (let i = 0; i <= n; i++) { const t = i / n; pts.push({ x: x0 + (x1 - x0) * t, y: y + Math.sin(Math.PI * t) * 7 }); }
+    g.lineStyle(1.2, 0x5a4634, 1); g.strokePoints(pts, false, false);
+    pts.slice(0, -1).forEach((p, i) => { g.fillStyle(0x3b2d2a, 1); g.fillTriangle(p.x, p.y, p.x + 8, p.y, p.x + 4, p.y + 9); g.fillStyle(cols[(i + offset) % cols.length], 1); g.fillTriangle(p.x + 1, p.y + 1, p.x + 7, p.y + 1, p.x + 4, p.y + 7.5); });
+  });
+  // Lanterns on a wire along the top lane: round paper lamps in the bunting's colours, each with a little glow.
+  const ly = (sq.y - 1) * TILE - 10;
+  g.lineStyle(1, 0x5a4634, 1); g.lineBetween(x0, ly, x1, ly);
+  for (let x = x0 + 14, i = 0; x < x1 - 8; x += 26, i++) {
+    const c = cols[(i * 5) % cols.length];
+    g.fillStyle(0x5a4634, 1); g.fillRect(x - 0.7, ly, 1.4, 5);
+    g.fillStyle(c, 0.3); g.fillCircle(x, ly + 11, 8);
+    g.fillStyle(0x3b2d2a, 1); g.fillEllipse(x, ly + 11, 10.5, 12.5);
+    g.fillStyle(c, 1); g.fillEllipse(x, ly + 11, 8.5, 10.5);
+    g.fillStyle(0xffffff, 0.45); g.fillEllipse(x - 2, ly + 8.5, 2.6, 3.4);
+  }
+  // Notes painted on the square's paving.
+  const notes = [[1.2, 1.3], [3.6, 2.4], [5.4, 1.1], [2.4, 3.3], [4.8, 3.5]];
+  notes.forEach(([dx, dy], i) => {
+    const nx = (sq.x + dx) * TILE, ny = (sq.y + dy) * TILE, c = cols[(i * 2 + 1) % cols.length];
+    low.fillStyle(c, 0.55); low.fillEllipse(nx, ny, 9, 6.5); low.fillRect(nx + 3.2, ny - 13, 1.8, 13);
+  });
 }
 
 export function createHouseStars(w) {

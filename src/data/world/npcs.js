@@ -154,6 +154,27 @@ export const NPCS = [
     id: 'old-tom', duel: { prop: '🕰️', challenge: 'I have seen a thing or two in my time. Duel me, young one!', win: 'Old Tom tips his cap to you!', lose: 'Old Tom wins this round. Long memory, see?' }, pitch: 0.7, rate: 0.85, voice: 'male', name: 'Old Tom the Lighthouse Keeper', sprite: 'npc26', gameId: 'his-time', zone: 'history',
     lines: ['When I was a boy there were no cars on this quay, only horses and carts.', 'Long ago and today: things change, and that is what history is. Come and see.'],
     playPrompt: 'Want to play Past & Present?'
+  },
+  // Melody Market
+  {
+    id: 'drummer', duel: { prop: '🥁', challenge: 'Can you keep up with my beat? Duel me!', win: 'Kofi drops a stick!', lose: 'Kofi keeps the beat this round.' }, pitch: 0.85, rate: 1.1, voice: 'male', name: 'Kofi the Drummer', sprite: 'npc27', gameId: 'mus-rhythm', zone: 'music',
+    lines: ['Boom, tak, tak! Every song starts with a beat, and the beat starts with a drum.', 'Listen close and clap it back. Can you feel it in your feet?'],
+    playPrompt: 'Want to play Rhythm Repeat?'
+  },
+  {
+    id: 'note-seller', duel: { prop: '🎵', challenge: 'Do re mi, duel with me!', win: 'Nina hits a wrong note!', lose: 'Nina stays in tune this round.' }, pitch: 1.0, rate: 1.1, voice: 'female', name: 'Nina Notes', sprite: 'npc28', gameId: 'mus-notes', zone: 'music',
+    lines: ['Notes, notes, lovely notes! Long ones, short ones, all written on five little lines.', 'Count them, name them, sing them: do re mi fa so la ti do!'],
+    playPrompt: 'Want to play Note Match?'
+  },
+  {
+    id: 'singer', duel: { prop: '🎤', challenge: 'High or low, which way will it go? Duel me!', win: 'Lark is lost for words!', lose: 'Lark holds the high note this round.' }, pitch: 1.35, rate: 1.05, voice: 'female', name: 'Lark the Singer', sprite: 'npc29', gameId: 'mus-pitch', zone: 'music',
+    lines: ['La la LA! A bird sings high and a bullfrog sings low. Every sound has its place.', 'Close your eyes and listen: did that go up, or down?'],
+    playPrompt: 'Want to play High & Low?'
+  },
+  {
+    id: 'luthier', duel: { prop: '🎸', challenge: 'Strings, drums, horns or keys: duel me and name them all!', win: 'Uncle Strings is out of tune!', lose: 'Uncle Strings wins this round. Back to the workbench!' }, pitch: 0.8, rate: 1.1, voice: 'male', name: 'Uncle Strings', sprite: 'npc30', gameId: 'mus-instruments', zone: 'music',
+    lines: ['I mend guitars, violins and the odd banjo. Every instrument belongs to a family.', 'Some you hit, some you blow, some you pluck. And the steelpan? That one is ours, from right here in the Caribbean.'],
+    playPrompt: 'Want to play Instrument Families?'
   }
 ];
 
