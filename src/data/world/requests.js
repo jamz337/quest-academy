@@ -39,6 +39,10 @@ export const REQUESTS = {
   drummer: { emoji: '🥁', ask: 'The parade starts at noon and my drummers have lost the beat! Play Rhythm Repeat for two stars and get them marching.', thanks: 'Boom, tak, tak! The parade is on its way.' },
   'note-seller': { emoji: '🎵', ask: 'The choir\'s music sheets blew away! Play Note Match for two stars and help me write the notes out again.', thanks: 'Every note back on its line. The choir can sing!' },
   singer: { emoji: '🎤', ask: 'I have a concert tonight and my voice keeps wobbling between high and low! Play High & Low for two stars and steady me.', thanks: 'Pitch perfect! The concert will be a dream.' },
+  painter: { emoji: '🎨', ask: 'The summit mural needs every colour mixed just right! Play Color Mixer for two stars and help me fill the palette.', thanks: 'Orange, green and purple, all mixed. The mural glows!' },
+  'mirror-mia': { emoji: '🪞', ask: 'Half of my new mosaic is missing and I cannot picture the other side! Play Symmetry Painter for two stars and help me finish it.', thanks: 'Both halves match. The mosaic is whole!' },
+  sculptor: { emoji: '🗿', ask: 'A customer wants a statue and I cannot tell a cube from a cuboid today! Play Sculpting Shapes for two stars and set me straight.', thanks: 'Six faces, eight corners. The statue is started!' },
+  curator: { emoji: '🖼️', ask: 'The gallery labels are all muddled, portraits under landscapes! Play Gallery Guide for two stars and help me sort them.', thanks: 'Every picture with its proper label. The gallery is open!' },
   luthier: { emoji: '🎸', ask: 'A whole band\'s instruments came in muddled up! Play Instrument Families for two stars and help me sort them.', thanks: 'Drums here, strings there, horns in the corner. All sorted!' }
 };
 

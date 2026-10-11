@@ -15,7 +15,7 @@ import { NPCS } from '../../data/world/npcs.js';
 import { ZONE_ORDER } from '../../data/world/quests.js';
 
 // Each land's jewel sits on the side of the fountain that faces its land.
-const JEWELS = [{ zone: 'math', a: Math.PI }, { zone: 'science', a: -Math.PI * 0.75 }, { zone: 'words', a: -Math.PI / 4 }, { zone: 'bible', a: 0 }, { zone: 'code', a: Math.PI / 2 }, { zone: 'history', a: Math.PI * 0.75 }, { zone: 'music', a: -Math.PI / 2 }];
+const JEWELS = [{ zone: 'math', a: Math.PI }, { zone: 'science', a: -Math.PI * 0.75 }, { zone: 'words', a: -Math.PI / 4 }, { zone: 'bible', a: 0 }, { zone: 'code', a: Math.PI / 2 }, { zone: 'history', a: Math.PI * 0.75 }, { zone: 'music', a: -Math.PI / 2 }, { zone: 'studio', a: Math.PI / 4 }];
 const WOOD_DARK = 0x4a3320;   // outlines are a dark shade of the thing's own colour (the mock-up's look)
 const STONE = 0xb9b3c6, STONE_LIGHT = 0xe2deeb, STONE_DARK = 0x8f89a1, DULL = 0xa7a3b5;
 

@@ -201,7 +201,11 @@ export const SKILL_TIPS = {
   'note-names': 'Say the music alphabet, A to G, and start again.', 'reading-music': 'Sing do re mi up and down the scale.', 'music-words': 'Listen to a song and say when it gets louder or softer.',
   'music-facts': 'Watch an orchestra play and spot the conductor.', 'high-low': 'Make a mouse voice and a bear voice.', pitch: 'Hum a note, then one higher, then one lower.',
   voices: 'Listen to a choir and pick out the high and low voices.', instruments: 'Find three things at home you can drum, pluck or blow.', 'instrument-families': 'Sort the instruments in a song into hit, blown and strings.',
-  'caribbean-music': 'Play some calypso and some spouge and clap along.'
+  'caribbean-music': 'Play some calypso and some spouge and clap along.',
+  shapes: 'Hunt for circles, squares and triangles around the house.', colours: 'Go on a colour hunt: find five red things, then five blue.', mixing: 'Mix two paints or food colours and name what you get.', 'colour-words': 'Sort the crayons into warm and cool piles.',
+  symmetry: 'Fold a paper heart in half and see the halves match.', reflection: 'Hold a mirror beside a drawing and look at the flipped picture.', 'symmetry-words': 'Spot symmetry on a butterfly, a face and a snowflake.',
+  'solid-shapes': 'Count the faces and corners of a cereal box and a dice.', 'sculpture-words': 'Shape a pot from play dough and talk about the clay.', 'art-tools': 'Set out brushes, crayons and scissors and say what each does.',
+  'art-kinds': 'Draw a portrait of someone at home and a landscape out of the window.', 'art-words': 'Look at a picture and point to its foreground and background.', 'art-facts': 'Look up the Mona Lisa and a Bridgetown mural together.'
 };
 
 export const skillTip = (id) => SKILL_TIPS[id] || `Practise ${skillLabel(id)} together for a few minutes.`;

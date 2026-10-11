@@ -8,10 +8,10 @@ import { activeErrand, errandLine, errandFor, errandState } from './errands.js';
 import { duelsWon, duelVillagers } from './duels.js';
 import { ZONE_NAMES, buildMap, zoneAt } from './map.js';
 
-export const ZONE_ORDER = ['math', 'science', 'words', 'code', 'history', 'music', 'bible'];
+export const ZONE_ORDER = ['math', 'science', 'words', 'code', 'history', 'music', 'studio', 'bible'];
 /** The villager who guides each chapter of the Academy Bell story (see story.js); their errand is a quest. */
-export const ZONE_GUIDE = { math: 'prof-plus', science: 'botanist', words: 'owl-librarian', code: 'robo-mechanic', history: 'captain-compass', music: 'drummer', bible: 'shepherd' };
-const SUBJECT_OF_ZONE = { math: 'math', science: 'science', words: 'words', code: 'code', history: 'history', music: 'music', bible: 'bible' };
+export const ZONE_GUIDE = { math: 'prof-plus', science: 'botanist', words: 'owl-librarian', code: 'robo-mechanic', history: 'captain-compass', music: 'drummer', studio: 'painter', bible: 'shepherd' };
+const SUBJECT_OF_ZONE = { math: 'math', science: 'science', words: 'words', code: 'code', history: 'history', music: 'music', studio: 'studio', bible: 'bible' };
 
 let coinIndexByZone = null;
 /** Indices into map.coins per zone, computed once (the map is deterministic). */

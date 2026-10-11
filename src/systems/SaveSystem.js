@@ -3,7 +3,7 @@ import { SAVE_KEY, SAVE_BACKUP_KEY, SAVE_VERSION, TILE } from '../constants.js';
 import { OY, H0, H1, HS } from '../data/world/map.js';
 
 /** Every land, in story order (kept in step with data/world/quests.js ZONE_ORDER). */
-const ALL_ZONES = ['math', 'science', 'words', 'code', 'history', 'music', 'bible'];
+const ALL_ZONES = ['math', 'science', 'words', 'code', 'history', 'music', 'studio', 'bible'];
 
 export function defaultSave() {
   return { version: SAVE_VERSION, activeProfileId: null, settings: { sound: true, lastMode: 'roam' }, profiles: {}, deleted: {} };

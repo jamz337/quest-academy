@@ -10,7 +10,7 @@ const fresh = () => ({ games: {}, world: {}, coding: {} });
 
 describe('the gateways out of the hub', () => {
   it('each stands on the road, with its land just beyond it', () => {
-    expect(GATEWAYS.map((g) => g.zone).sort()).toEqual(['bible', 'code', 'history', 'math', 'music', 'science', 'words']);
+    expect(GATEWAYS.map((g) => g.zone).sort()).toEqual(['bible', 'code', 'history', 'math', 'music', 'science', 'studio', 'words']);
     for (const g of GATEWAYS) {
       expect([TID.path, TID.gateOpen], g.zone).toContain(map.data[g.ty][g.tx]);
       let inLand = false;
@@ -66,6 +66,7 @@ describe('lamps along the roads', () => {
     const { lampSpots } = await import('../src/scenes/world/lamps.js');
     const all = new Set();
     for (const g of GATEWAYS) {
+      if (g.zone === 'studio') continue;   // drawn as one picture, with its lanterns painted in; it has no roads for lamps
       const spots = lampSpots(map, g.zone);
       expect(spots.length, g.zone).toBeGreaterThanOrEqual(8);
       expect(spots.length).toBeLessThanOrEqual(12);

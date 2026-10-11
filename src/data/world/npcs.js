@@ -180,6 +180,27 @@ export const NPCS = [
     id: 'luthier', duel: { prop: '🎸', challenge: 'Strings, drums, horns or keys: duel me and name them all!', win: 'Uncle Strings is out of tune!', lose: 'Uncle Strings wins this round. Back to the workbench!' }, pitch: 0.8, rate: 1.1, voice: 'male', name: 'Uncle Strings', sprite: 'npc30', gameId: 'mus-instruments', zone: 'music',
     lines: ['I mend guitars, violins and the odd banjo. Every instrument belongs to a family.', 'Some you hit, some you blow, some you pluck. And the steelpan? That one is ours, from right here in the Caribbean.'],
     playPrompt: 'Want to play Instrument Families?'
+  },
+  // Studio Summit
+  {
+    id: 'painter', duel: { prop: '🎨', challenge: 'Red and yellow make what? Duel me and mix it up!', win: 'Marlon drops his palette!', lose: 'Marlon paints you into a corner this round.' }, pitch: 0.95, rate: 0.95, voice: 'male', name: 'Marlon the Painter', sprite: 'npc31', gameId: 'art-colours', zone: 'studio',
+    lines: ['Welcome to the summit! Up here the light is perfect for painting.', 'Red, yellow and blue: with those three I can mix every colour you can think of.'],
+    playPrompt: 'Want to play Color Mixer?'
+  },
+  {
+    id: 'mirror-mia', duel: { prop: '🪞', challenge: 'Same on both sides? Duel me and see!', win: 'Mirror Mia\'s glass has misted over!', lose: 'Mia reflects your answer right back this round.' }, pitch: 1.2, rate: 1.0, voice: 'female', name: 'Mirror Mia', sprite: 'npc32', gameId: 'art-symmetry', zone: 'studio',
+    lines: ['Look at my mosaic: fold it down the middle and the two halves match. That is symmetry!', 'Butterflies, hearts and your own face all have it. Fish and flags do not. Can you tell which is which?'],
+    playPrompt: 'Want to play Symmetry Painter?'
+  },
+  {
+    id: 'sculptor', duel: { prop: '🗿', challenge: 'How many faces on a cube? Duel me and count them!', win: 'Chisel Charlie chips the wrong corner!', lose: 'Charlie carves out the win this round.' }, pitch: 0.7, rate: 1.05, voice: 'male', name: 'Chisel Charlie', sprite: 'npc33', gameId: 'art-shapes', zone: 'studio',
+    lines: ['Tap, tap, tap! There is a statue inside every stone; I just take away the bits that are not it.', 'Spheres roll, cubes stack, cones have a point. Know your shapes and you can build anything.'],
+    playPrompt: 'Want to play Sculpting Shapes?'
+  },
+  {
+    id: 'curator', duel: { prop: '🖼️', challenge: 'Portrait or landscape? Duel me and tell them apart!', win: 'Curator Clara hangs the picture upside down!', lose: 'Clara curates the win this round.' }, pitch: 1.05, rate: 1.0, voice: 'female', name: 'Curator Clara', sprite: 'npc34', gameId: 'art-gallery', zone: 'studio',
+    lines: ['I look after the gallery inside the studio: paintings, sculptures and a mosaic from Bridgetown.', 'A portrait is a person, a landscape is a view, and a still life is a bowl of fruit that keeps very still.'],
+    playPrompt: 'Want to play Gallery Guide?'
   }
 ];
 

@@ -36,9 +36,13 @@ const RAW_ERRANDS = [
   { id: 'drumsticks', npc: 'drummer', item: 'pair of drumsticks', emoji: '🥢', zone: 'code', tx: 16, ty: 33, ask: 'I left my drumsticks on the promenade in Code Cove after the beach party. Could you fetch them?', thanks: 'My sticks! Boom, tak, tak: the beat is back.' },
   { id: 'songbook', npc: 'note-seller', item: 'songbook', emoji: '📒', zone: 'math', tx: 13, ty: 24, ask: 'I lent my songbook to the Meadow folk and it is sitting on the Number Trail. Would you bring it back?', thanks: 'My songbook! Every note is where it should be.' },
   { id: 'microphone', npc: 'singer', item: 'microphone', emoji: '🎤', zone: 'bible', tx: 49, ty: 25, ask: 'I sang at the church fair and left my microphone in Bible Village, down on the south lane. Could you find it?', thanks: 'Testing, one two! La la LA. Thank you!'  },
+  { id: 'chisel', npc: 'sculptor', item: 'chisel', emoji: '🔨', zone: 'music', tx: 31, ny: 12, ask: 'My best chisel! I lent it to the stall builders at Melody Market and it is still lying in the square. Could you fetch it?', thanks: 'My chisel! Tap, tap, tap: back to work.' },
+  { id: 'paintbrush', npc: 'painter', item: 'favourite paintbrush', emoji: '🖌️', zone: 'science', tx: 4, ny: 11, ask: 'I went to paint the springs and left my favourite brush on the grass in Science Springs. Would you bring it back?', thanks: 'My brush! Now I can finish the sky.' },
+  { id: 'handmirror', npc: 'mirror-mia', item: 'hand mirror', emoji: '🪞', zone: 'history', tx: 14, ny: 60, ask: 'I took my hand mirror to the harbour to catch the sunset and left it on the quay. Could you find it for me?', thanks: 'My mirror! Now I can check that both sides match.' },
+  { id: 'frame', npc: 'curator', item: 'gilded picture frame', emoji: '🖼️', zone: 'bible', tx: 47, ty: 21, ask: 'A beautiful frame was delivered to Bible Village by mistake and left on the high street. Would you carry it up for me?', thanks: 'The frame! Now the mosaic can hang in the gallery.' },
   { id: 'tuningfork', npc: 'luthier', item: 'tuning fork', emoji: '🔱', zone: 'history', tx: 20, ty: 45, ask: 'A sailor borrowed my tuning fork and left it on the quay at History Harbor. Would you fetch it for me?', thanks: 'Ting! Perfect pitch again. Every string in tune.' }
 ];
-export const ERRANDS = RAW_ERRANDS.map((e) => ({ ...e, ty: e.ty + OY }));
+export const ERRANDS = RAW_ERRANDS.map((e) => ({ ...e, ty: e.ny ?? e.ty + OY }));   // `ny` is a row in the grown map's own numbering
 
 export const getErrand = (id) => ERRANDS.find((e) => e.id === id) || null;
 export const errandFor = (npcId) => ERRANDS.find((e) => e.npc === npcId) || null;

@@ -70,7 +70,7 @@ describe('Melody Market facts', () => {
   it('is a seventh subject with its own colours and four games in every grade of the Challenge menu', () => {
     expect(SUBJECTS.music).toMatchObject({ id: 'music', title: 'Music', zone: 'Melody Market' });
     expect(THEME.subjects.music.accent).toBeTruthy();
-    expect(Object.keys(SUBJECTS)).toHaveLength(7);
+    expect(Object.keys(SUBJECTS).length).toBeGreaterThanOrEqual(7);
     expect(MINIGAMES.filter((g) => g.subject === 'music').map((g) => g.id)).toEqual(MUSIC_GAMES);
     for (const g of [-1, 0, 3, 8]) expect(gamesForGrade('music', g).map((x) => x.id)).toEqual(MUSIC_GAMES);
     for (const id of MUSIC_GAMES) { expect(getGame(id).sceneKey).toBe('MG_MusicQuiz'); expect(getGame(id).playSceneKey).toBe('MG_MusicPlay'); }

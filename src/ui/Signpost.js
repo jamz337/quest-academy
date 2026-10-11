@@ -11,6 +11,7 @@ const WOOD = { fill: 0xa06a3c, dark: 0x5a3a22, light: 0xc98c55 };
 export const SIGN_BOARDS = [
   { id: 'science', label: 'Science', dir: 'up' },
   { id: 'music', label: 'Music', dir: 'up' },
+  { id: 'studio', label: 'Art', dir: 'up' },
   { id: 'words', label: 'Words', dir: 'right' },
   { id: 'math', label: 'Math', dir: 'left' },
   { id: 'bible', label: 'Bible', dir: 'right' },

@@ -59,7 +59,11 @@ export const NPC_STYLES = [
   { sex: 'boy', skin: 'black', hairStyle: 'buzzcut', hair: 'black', topStyle: 'tshirt', top: 'yellow', bottomStyle: 'pants', bottom: 'black', shoes: 'white', eyes: 'brown' },      // kofi the drummer
   { sex: 'girl', skin: 'bronze', hairStyle: 'high_ponytail', hair: 'black', topStyle: 'polo', top: 'pink', bottomStyle: 'skirt', bottom: 'purple', shoes: 'white', eyes: 'brown' },   // nina notes
   { sex: 'girl', skin: 'brown', hairStyle: 'afro', hair: 'black', topStyle: 'tshirt', top: 'orange', bottomStyle: 'skirt', bottom: 'yellow', shoes: 'brown', eyes: 'brown' },        // lark the singer
-  { sex: 'boy', skin: 'taupe', hairStyle: 'curly_short', hair: 'gray', topStyle: 'polo', top: 'green', bottomStyle: 'pants', bottom: 'brown', shoes: 'brown', eyes: 'green' }       // uncle strings
+  { sex: 'boy', skin: 'taupe', hairStyle: 'curly_short', hair: 'gray', topStyle: 'polo', top: 'green', bottomStyle: 'pants', bottom: 'brown', shoes: 'brown', eyes: 'green' },      // uncle strings
+  { sex: 'boy', skin: 'brown', hairStyle: 'buzzcut', hair: 'black', topStyle: 'tshirt', top: 'orange', bottomStyle: 'pants', bottom: 'blue', shoes: 'brown', eyes: 'brown' },    // marlon the painter
+  { sex: 'girl', skin: 'bronze', hairStyle: 'bob', hair: 'black', topStyle: 'tshirt', top: 'purple', bottomStyle: 'skirt', bottom: 'white', shoes: 'black', eyes: 'brown' },     // mirror mia
+  { sex: 'boy', skin: 'light', hairStyle: 'plain', hair: 'gray', topStyle: 'polo', top: 'green', bottomStyle: 'pants', bottom: 'brown', shoes: 'brown', eyes: 'blue' },        // chisel charlie
+  { sex: 'girl', skin: 'black', hairStyle: 'long', hair: 'black', topStyle: 'polo', top: 'red', bottomStyle: 'skirt', bottom: 'navy', shoes: 'black', eyes: 'brown' }           // curator clara
 ];
 
 // Badge backgrounds players can pick in the profile editor.

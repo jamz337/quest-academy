@@ -23,6 +23,8 @@ export const SKILL_LABELS = {
   'then-now': 'then and now', timeline: 'timelines', 'history-words': 'history words', 'history-facts': 'history facts',
   rhythm: 'rhythm and beats', tempo: 'fast and slow', 'note-values': 'how long notes last', 'note-names': 'the music alphabet', 'reading-music': 'reading music',
   'music-words': 'music words', 'music-facts': 'music facts', 'high-low': 'high and low sounds', pitch: 'pitch', voices: 'singing voices',
-  instruments: 'instruments', 'instrument-families': 'instrument families', 'caribbean-music': 'Caribbean music'
+  instruments: 'instruments', 'instrument-families': 'instrument families', 'caribbean-music': 'Caribbean music',
+  colours: 'colours', mixing: 'mixing colours', 'colour-words': 'colour words', symmetry: 'symmetry', reflection: 'reflections', 'symmetry-words': 'symmetry words',
+  'solid-shapes': 'solid shapes', 'sculpture-words': 'sculpture words', 'art-tools': 'the tools of art', 'art-kinds': 'kinds of art', 'art-words': 'art words', 'art-facts': 'art facts'
 };
 export const skillLabel = (id) => SKILL_LABELS[id] || String(id).replace(/[-_]/g, ' ');

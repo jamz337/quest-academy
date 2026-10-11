@@ -61,7 +61,15 @@ export const MINIGAMES = [
   { id: 'mus-pitch', subject: 'music', title: 'High & Low', sceneKey: 'MG_MusicQuiz', playSceneKey: 'MG_MusicPlay', icon: '🐦', npc: 'singer',
     description: 'High or low, up or down, which note was higher, and the singing voices.', playDescription: 'Touch an animal to hear if its sound is high or low.' },
   { id: 'mus-instruments', subject: 'music', title: 'Instrument Families', sceneKey: 'MG_MusicQuiz', playSceneKey: 'MG_MusicPlay', icon: '🎸', npc: 'luthier',
-    description: 'Hit, blown, strings or keys: the instrument families, and the music of the Caribbean.', playDescription: 'Touch an instrument to hear how it is played.' }
+    description: 'Hit, blown, strings or keys: the instrument families, and the music of the Caribbean.', playDescription: 'Touch an instrument to hear how it is played.' },
+  { id: 'art-colours', subject: 'studio', title: 'Color Mixer', sceneKey: 'MG_ArtQuiz', playSceneKey: 'MG_ArtPlay', icon: '🎨', npc: 'painter',
+    description: 'Name the colours, mix the primaries, warm and cool, tints and shades, and the colour wheel.', playDescription: 'Touch something to hear its colour.' },
+  { id: 'art-symmetry', subject: 'studio', title: 'Symmetry Painter', sceneKey: 'MG_ArtQuiz', playSceneKey: 'MG_ArtPlay', icon: '🦋', npc: 'mirror-mia',
+    description: 'Same on both sides? Mirror letters, lines of symmetry, reflections and patterns.', playDescription: 'Touch something to see if its two sides match.' },
+  { id: 'art-shapes', subject: 'studio', title: 'Sculpting Shapes', sceneKey: 'MG_ArtQuiz', playSceneKey: 'MG_ArtPlay', icon: '🗿', npc: 'sculptor',
+    description: 'Flat shapes and solid ones, sides, faces, edges and corners, and the words of the sculptor.', playDescription: 'Touch something to hear if it is round, pointy or square.' },
+  { id: 'art-gallery', subject: 'studio', title: 'Gallery Guide', sceneKey: 'MG_ArtQuiz', playSceneKey: 'MG_ArtPlay', icon: '🖼️', npc: 'curator',
+    description: 'The tools of the studio, portraits and landscapes, art words, and famous art from Barbados and the world.', playDescription: 'Touch a tool to hear what artists do with it.' }
 ];
 
 /** Games only for the youngest players (Pre-K to Grade 1), shown first in their Challenge menu. */

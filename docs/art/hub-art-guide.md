@@ -44,6 +44,20 @@ the map says. A new picture goes through the same tool:
 For other buildings, generate them the simple way instead: one building, whole and centred, on plain white, with
 nothing in front of it and no sign (the game draws the name plates).
 
+## Sheet 3: Studio Summit, a whole land as one picture (done)
+
+Studio Summit is in: `public/sprites/world/studio/summit.png`, the generated plateau on white with the white made
+transparent (the cutter kept the biggest connected piece and softened the edge). The game lays it over fifteen by
+fifteen map squares (columns 40 to 54, rows 0 to 14) at depth 1.1, so the player, villagers and coins draw on top
+and the forest's tile trees fill its corners. The map does not draw buildings or roads there: `SUMMIT.rows` in
+`src/data/world/map.js` is a fifteen-line picture of where the floor is ('o'), what is rock, building or easel
+('#'), where the coins sit ('c') and where the stairs leave through the gate ('g'). To redo it, generate the whole
+plateau again on plain white from the same viewpoint (looking down from the south, the building at the top, the
+stairs down at the bottom left) and cut it the same way; then fix the rows if the floor moved.
+
+For a land done this way, give its villagers spots on the floor near the things they talk about: the painter by
+the easels, the sculptor in front of his stones, Mirror Mia by the big mosaic, the curator on the lower terrace.
+
 ## Tips
 
 - Ask for the largest size your generator offers. I scale down; scaling up goes blurry.

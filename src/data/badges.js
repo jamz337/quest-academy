@@ -22,6 +22,7 @@ export const BADGES = [
   { id: 'science-star', title: 'Young Scientist', desc: '3 stars in every Science game', test: (p) => subjectStars(p, 'science') >= allStars('science') },
   { id: 'history-star', title: 'Harbour Historian', desc: '3 stars in every History game', test: (p) => subjectStars(p, 'history') >= allStars('history') },
   { id: 'music-star', title: 'Market Maestro', desc: '3 stars in every Music game', test: (p) => subjectStars(p, 'music') >= allStars('music') },
+  { id: 'studio-star', title: 'Summit Artist', desc: '3 stars in every Art game', test: (p) => subjectStars(p, 'studio') >= allStars('studio') },
   { id: 'explorer', title: 'Explorer', desc: 'Say hello to someone in every village', test: (p) => ZONE_ORDER.every((z) => NPCS.some((n) => n.zone === z && (p.world.npcsTalked || []).includes(n.id))) },
   { id: 'rich', title: 'Coin Collector', desc: 'Hold 200 coins', test: (p) => p.coins >= 200 },
   { id: 'all-rounder', title: 'All-Rounder', desc: 'Play every game', test: (p) => MINIGAMES.every((g) => p.games[g.id]) },

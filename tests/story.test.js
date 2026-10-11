@@ -22,7 +22,7 @@ describe('The Academy Bell', () => {
 
   it('has a chapter per land in order, each guided by a villager of that land who has an errand, with a full set of lines', () => {
     expect(CHAPTERS.map((c) => c.zone)).toEqual(ZONE_ORDER);
-    expect(new Set(CHAPTERS.map((c) => c.piece)).size).toBe(7);
+    expect(new Set(CHAPTERS.map((c) => c.piece)).size).toBe(8);
     for (const c of CHAPTERS) {
       expect(chapterGuideOk(c), c.zone).toBe(true);
       expect(ZONE_GUIDE[c.zone]).toBe(c.guide);
@@ -102,9 +102,9 @@ describe('The Academy Bell', () => {
     expect(st).toMatchObject({ pieces: 1, chapter: 2, zone: 'science' });
     expect(chapterMissions(p, 'words')[0].title).toBe('Talk to Owl Librarian');
     expect(claimFinale(p)).toBe(false);
-    for (const z of ['science', 'words', 'code', 'history', 'music', 'bible']) { finishChapter(p, z, map); p.world.bosses[z] = { defeated: true, attempts: 1 }; }
+    for (const z of ['science', 'words', 'code', 'history', 'music', 'studio', 'bible']) { finishChapter(p, z, map); p.world.bosses[z] = { defeated: true, attempts: 1 }; }
     st = storyState(p);
-    expect(st).toMatchObject({ pieces: 7, complete: true, next: null, finale: false });
+    expect(st).toMatchObject({ pieces: 8, complete: true, next: null, finale: false });
     expect(mentorLines(p)[0]).toContain('every piece');
     const coins = p.coins;
     expect(claimFinale(p)).toBe(true);

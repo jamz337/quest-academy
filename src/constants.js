@@ -19,7 +19,8 @@ export const SUBJECTS = {
   bible: { id: 'bible', title: 'Bible', ...THEME.subjects.bible, color: THEME.subjects.bible.accent, zone: 'Bible Village' },
   science: { id: 'science', title: 'Science', ...THEME.subjects.science, color: THEME.subjects.science.accent, zone: 'Science Springs' },
   history: { id: 'history', title: 'History', ...THEME.subjects.history, color: THEME.subjects.history.accent, zone: 'History Harbor' },
-  music: { id: 'music', title: 'Music', ...THEME.subjects.music, color: THEME.subjects.music.accent, zone: 'Melody Market' }
+  music: { id: 'music', title: 'Music', ...THEME.subjects.music, color: THEME.subjects.music.accent, zone: 'Melody Market' },
+  studio: { id: 'studio', title: 'Art', ...THEME.subjects.studio, color: THEME.subjects.studio.accent, zone: 'Studio Summit' }
 };
 
 export const GRADES = [-1, 0, 1, 2, 3, 4, 5, 6, 7, 8];   // -1 = Pre-K, 0 = Kindergarten (see data/grades.js)

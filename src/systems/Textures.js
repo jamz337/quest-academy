@@ -114,7 +114,8 @@ export const TILE_IDS = {
   fortTop: 54, fortWall: 55, fortDoor: 56,
   quayStone: 57,   // quay paving something stands on (the lighthouse): looks like the quay, cannot be walked on
   grass2: 58, grass3: 59, grass4: 60,   // more looks for plain grass (display only, like the flower looks)
-  fair: 61, roofMusic: 62, wallMusic: 63, doorMusic: 64
+  fair: 61, roofMusic: 62, wallMusic: 63, doorMusic: 64,
+  clay: 65, cliff: 66   // Studio Summit: the plateau's floor, and its rock (both lie under the summit's drawn picture)
 };
 /** Flower and daisy patches come in several looks; the world picks one per map square so no two neighbours match. */
 export const FLOWER_TILES = [6, 29, 30, 31, 32, 33], MEADOW_TILES = [7, 34, 35, 36, 37, 38, 39, 40], GRASS_TILES = [0, 58, 59, 60];
@@ -373,6 +374,22 @@ function quayTile(ctx, x0, rnd) {
   }
   for (let i = 0; i < 3; i++) disc(ctx, x0 + inside(rnd, 3), inside(rnd, 3), 0.6, '#b3ada0');
 }
+/** Studio Summit's floor: warm flagstones (seen only where the drawn picture leaves a gap, and on the minimap). */
+function clayTile(ctx, x0, rnd) {
+  px(ctx, x0, 0, '#dcc8a8', TILE, TILE);
+  for (let i = 0; i < 7; i++) {
+    const x = x0 + 1 + rnd() * (TILE - 9), y = 1 + rnd() * (TILE - 7);
+    ctx.fillStyle = rnd() < 0.5 ? '#cdb892' : '#e6d4b6'; ctx.beginPath(); ctx.roundRect(x, y, 6 + rnd() * 3, 4.5, 1.6); ctx.fill();
+  }
+}
+/** Studio Summit's rock: grey stone with a few lighter facets. */
+function cliffTile(ctx, x0, rnd) {
+  px(ctx, x0, 0, '#9aa0a8', TILE, TILE);
+  for (let i = 0; i < 5; i++) {
+    const x = x0 + rnd() * (TILE - 10), y = rnd() * (TILE - 8);
+    ctx.fillStyle = rnd() < 0.5 ? '#b4bac2' : '#878d96'; ctx.beginPath(); ctx.roundRect(x, y, 7 + rnd() * 4, 5 + rnd() * 3, 2); ctx.fill();
+  }
+}
 function chattelRoof(ctx, x0) {
   px(ctx, x0, 0, '#cfd6dd', TILE, TILE);
   for (let x = 0; x < TILE; x += 4) { px(ctx, x0 + x, 0, '#a7b1bd', 1, TILE - 5); px(ctx, x0 + x + 2, 0, '#eef2f5', 1, TILE - 5); }   // corrugated sheets
@@ -564,6 +581,7 @@ export function tilesTexture(scene) {
   tile(T.quayStone, (c) => quayTile(c, 0, rnd));
   // Melody Market.
   tile(T.fair, (c) => fairTile(c, 0, prnd));
+  tile(T.clay, (c) => clayTile(c, 0, prnd)); tile(T.cliff, (c) => cliffTile(c, 0, prnd));
   tile(T.roofMusic, (c) => awningRoof(c, 0)); tile(T.wallMusic, (c) => stallWall(c, 0)); tile(T.doorMusic, (c) => doorTile(c, 0, (cc, x) => stallWall(cc, x, false)));
   tex.refresh();
 }

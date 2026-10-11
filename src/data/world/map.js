@@ -22,12 +22,13 @@ export const TID = {
   quay: 46, roofHistory: 47, wallHistory: 48, doorHistory: 49, wallHistory2: 50, doorHistory2: 51, wallHistory3: 52, doorHistory3: 53,
   fortTop: 54, fortWall: 55, fortDoor: 56,
   quayStone: 57,  // quay paving something stands on (the lighthouse): looks like the quay, cannot be walked on
-  fair: 61, roofMusic: 62, wallMusic: 63, doorMusic: 64   // Melody Market: fairground grass and striped market stalls (58-60 are grass looks)
+  fair: 61, roofMusic: 62, wallMusic: 63, doorMusic: 64,  // Melody Market: fairground grass and striped market stalls (58-60 are grass looks)
+  clay: 65, cliff: 66   // Studio Summit: its flagstone floor and its rock, both under the summit's drawn picture
 };
 export const ROOF_TILES = [TID.roof, TID.roofMath, TID.roofWords, TID.roofCode, TID.roofBible, TID.castleTop, TID.roofScience, TID.roofHistory, TID.fortTop, TID.roofMusic];
 export const WALL_TILES = [TID.wall, TID.wallMath, TID.wallWords, TID.wallCode, TID.wallBible, TID.castleWall, TID.wallScience, TID.wallHistory, TID.wallHistory2, TID.wallHistory3, TID.fortWall, TID.wallMusic];
 export const DOOR_TILES = [TID.door, TID.doorMath, TID.doorWords, TID.doorCode, TID.doorBible, TID.castleDoor, TID.doorScience, TID.doorHistory, TID.doorHistory2, TID.doorHistory3, TID.fortDoor, TID.doorMusic];
-export const SOLID = [TID.water, TID.tree, TID.gateLocked, TID.plinth, TID.quayStone, ...ROOF_TILES, ...WALL_TILES];
+export const SOLID = [TID.water, TID.tree, TID.gateLocked, TID.plinth, TID.quayStone, TID.cliff, ...ROOF_TILES, ...WALL_TILES];
 export const isWalkable = (id) => !SOLID.includes(id);
 
 /** Each neighbourhood builds in its own style; bosses get a castle. */
@@ -46,9 +47,9 @@ export const BUILDING_STYLES = {
   hall: { roof: TID.roof, wall: TID.wall, door: TID.door }   // the market hall: red tiles and plaster, like the hub's houses
 };
 
-export const ZONE_NAMES = { hub: 'Academy Hub', math: 'Math Meadow', words: 'Word Woods', code: 'Code Cove', bible: 'Bible Village', science: 'Science Springs', history: 'History Harbor', music: 'Melody Market' };
+export const ZONE_NAMES = { hub: 'Academy Hub', math: 'Math Meadow', words: 'Word Woods', code: 'Code Cove', bible: 'Bible Village', science: 'Science Springs', history: 'History Harbor', music: 'Melody Market', studio: 'Studio Summit' };
 /** The ground tile of each land. */
-const GROUND_OF = { math: TID.meadow, words: TID.woods, code: TID.cove, bible: TID.village, science: TID.springs, history: TID.quay, music: TID.fair };
+const GROUND_OF = { math: TID.meadow, words: TID.woods, code: TID.cove, bible: TID.village, science: TID.springs, history: TID.quay, music: TID.fair, studio: TID.clay };
 
 function fillRect(data, x, y, w, h, id) {
   for (let ty = y; ty < y + h; ty++) for (let tx = x; tx < x + w; tx++) {
@@ -357,6 +358,44 @@ export function buildMap() {
   coins.push({ tx: 33, ty: 8 }, { tx: 28, ty: 10 }, { tx: 36, ty: 12 });
   const market = { square: { x: 29, y: 7, w: 7, h: 4 } };
 
+  // ---- Studio Summit: an artists' plateau in the forest east of the market, drawn as one picture ------------------
+  // The whole land is a single drawn picture (public/sprites/world/studio/summit.png) laid over fifteen by fifteen
+  // squares, columns 40 to 54 and rows 0 to 14; the map only says where its floor can be walked. 'o' is floor, '#'
+  // rock, building, easel or fence under the picture, 'T' forest in the picture's corners, 'c' a coin on the floor and
+  // 'g' the gate at the foot of the stairs, which lead down into Word Woods.
+  const SUMMIT = {
+    x: 40, y: 0, w: 15, h: 15,
+    rows: [
+      'TTTTTTTT###TTTT',
+      'TTT##T#####TTTT',
+      'TT##########TTT',
+      'TT##########TTT',
+      'T###co#######TT',
+      'T###oo#######TT',
+      '#####o#########',
+      '#####o#########',
+      '###o#o#ooo#####',
+      '##ooocoooo#####',
+      '####ooooo######',
+      '###oooooc######',
+      '####oo#########',
+      'T###oo########T',
+      'TT##og#####TTTT'
+    ]
+  };
+  const studio = { x: SUMMIT.x, y: 1, w: SUMMIT.w, h: 13 };
+  zones.push({ id: 'studio', name: ZONE_NAMES.studio, rect: studio });
+  SUMMIT.rows.forEach((row, r) => [...row].forEach((ch, c) => {
+    const tx = SUMMIT.x + c, ty = SUMMIT.y + r;
+    data[ty][tx] = ch === 'o' ? TID.clay : ch === 'c' ? TID.path : ch === 'g' ? TID.gateOpen : ch === 'T' ? TID.tree : TID.cliff;
+    if (ch === 'c') coins.push({ tx, ty });
+    if (ch === 'g') gates.push({ zone: 'studio', tx, ty });
+  }));
+  vline(data, 45, OY + 1, OY + 6, TID.path); hline(data, 43, 45, OY + 7, TID.path);   // down through Word Woods to its lane
+  npcSpots.painter = { tx: 43, ty: 8 }; npcSpots.sculptor = { tx: 49, ty: 9 }; npcSpots['mirror-mia'] = { tx: 43, ty: 11 }; npcSpots.curator = { tx: 46, ty: 11 };
+  bossSpots.studio = { tx: 47, ty: 8 };   // in front of the studio's door
+  const summit = { x: SUMMIT.x, y: SUMMIT.y, w: SUMMIT.w, h: SUMMIT.h };
+
   // ---- The hospital: on the grass above the player's house, its path joining the road up to the springs -----------
   const hospitalDoor = building(data, 16, 23, 5, 4, BUILDING_STYLES.hall);
   buildings.push({ zone: 'hub', style: 'hospital', x: 16, y: 23, w: 5, h: 4, door: hospitalDoor });
@@ -368,7 +407,7 @@ export function buildMap() {
     width: W, height: H, data, spawn: down(old.spawn), zones, gates, npcSpots, bossSpots, buildings, coins,
     signSpot: down(old.signSpot), bellSpot: down(old.bellSpot), marketSpot: down(old.marketSpot), home, church,
     trail: TRAIL_STONES, bridge: TRAIL_BRIDGE, fishSign: down(old.fishSign), fountain: down(old.fountain), questBoard: down(old.questBoard),
-    island, pier, jetty, lighthouse, market, hospital
+    island, pier, jetty, lighthouse, market, hospital, summit
   };
 }
 

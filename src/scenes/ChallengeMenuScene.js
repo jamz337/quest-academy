@@ -17,7 +17,10 @@ import { StarRow } from '../ui/StarRow.js';
 import { enter } from '../ui/motion.js';
 import { icon, hasIcon } from '../ui/Icons.js';
 
-/** Challenge mode: every game on one screen, grouped in a frosted panel per land, each with its best star rating. */
+/**
+ * Challenge mode: every game on one screen, grouped in a frosted panel per land, each with its best star rating.
+ * Eight lands no longer fit a phone's height, so the panels scroll (drag or wheel) when they need to.
+ */
 export class ChallengeMenuScene extends BaseScene {
   constructor() { super(SCENES.ChallengeMenu); this.fade = true; }
 
@@ -42,9 +45,11 @@ export class ChallengeMenuScene extends BaseScene {
 
     const subjects = Object.values(SUBJECTS);
     const areaTop = bar.bottom + 6 * ui, areaH = h - areaTop - 12;
-    // Six lands in one column would squash the cards: on a wide screen the panels sit two abreast.
+    // Eight lands in one column would squash the cards: on a wide screen the panels sit two abreast, and on a
+    // phone each keeps room for its header and a row of cards, the whole list scrolling when it runs long.
     const cols = subjects.length > 4 && w >= 900 ? 2 : 1, rowsN = Math.ceil(subjects.length / cols);
-    const sectionH = areaH / rowsN, colW = (w - 16) / cols;
+    const sectionH = Math.max(areaH / rowsN, 140 * ui), colW = (w - 16) / cols;
+    const scroller = this.add.container(0, 0), firstChild = this.children.list.length;
     const labelH = Math.min(34 * ui, sectionH * 0.26);
     const cards = [];
     subjects.forEach((s, si) => {
@@ -68,7 +73,31 @@ export class ChallengeMenuScene extends BaseScene {
       const cells = grid({ x: px + 8, y: hy + hh + 6, w: pw - 16, h: ph - hh - 20 }, games.length, 1, 8);
       games.forEach((g, gi) => cards.push(this.card(g, cells[gi], s, p)));
     });
+    scroller.add(this.children.list.slice(firstChild));
+    this.makeScrollable(scroller, { top: areaTop, h: areaH, w }, rowsN * sectionH - areaH, cards);
     enter(this, cards, { from: 'up', stagger: 35 });
+  }
+
+  /** Drag or wheel the panels up and down when they run past the bottom; a drag never counts as a tap on a card. */
+  makeScrollable(scroller, area, maxScroll, cards) {
+    this.scroll = { scroller, max: Math.max(0, maxScroll), cards, y: 0, startY: 0, startScroll: 0, moved: false, down: false };
+    if (this.scroll.max <= 0 || !this.input || !this.make) return;   // (the headless tests have no input or factory)
+    const mask = this.make.graphics({ add: false });
+    mask.fillRect(0, area.top - 4, area.w, area.h + 8);
+    scroller.setMask(mask.createGeometryMask());
+    if (this.scrollWired) return;
+    this.scrollWired = true;
+    const setScroll = (v) => { const s = this.scroll; s.y = Math.max(0, Math.min(s.max, v)); s.scroller.y = -s.y; };
+    this.input.on('pointerdown', (p) => { const s = this.scroll; if (!s || s.max <= 0) return; s.down = true; s.moved = false; s.startY = p.y; s.startScroll = s.y; });
+    this.input.on('pointermove', (p) => {
+      const s = this.scroll;
+      if (!s || !s.down || !p.isDown) return;
+      const dy = p.y - s.startY;
+      if (!s.moved && Math.abs(dy) > 8) { s.moved = true; s.cards.forEach((c) => c.emit('pointerout')); }
+      if (s.moved) setScroll(s.startScroll - dy);
+    });
+    this.input.on('pointerup', () => { if (this.scroll) this.scroll.down = false; });
+    this.input.on('wheel', (p, objs, dx, dy) => { if (this.scroll && this.scroll.max > 0) setScroll(this.scroll.y + dy * 0.6); });
   }
 
   card(g, c, subject, profile) {

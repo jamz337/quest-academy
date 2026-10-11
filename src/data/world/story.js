@@ -102,6 +102,20 @@ export const CHAPTERS = [
     }
   },
   {
+    zone: 'studio', guide: 'painter', piece: 'lip', pieceName: 'the lip of the bell', title: 'The Summit Piece',
+    intro: ['Baron Blot smeared paint all over the bell\'s lip, its bottom rim, and carried it up to the studio on Studio Summit.', 'Marlon the Painter works at the easels on the summit, up the stairs at the top of Word Woods. Find him first.'],
+    lines: {
+      guide: 'Marlon says the Baron smudges on purpose, because he never learned to mix a colour. We will show him!',
+      meet: 'Every artist on the summit has met you. They want to paint your portrait!',
+      stars: 'Every easel on the summit shines with stars. What an artist!',
+      duels: 'Nobody on the summit can out-draw you now. The Baron is hiding behind his canvas!',
+      errand: 'Marlon has his brush back. The artists trust you now.',
+      coins: 'The last coin on the summit! The Baron has nowhere left to hide.',
+      ready: 'The studio door is open. Go and clean up the Baron\'s mess!',
+      piece: 'The lip of the bell, wiped clean! Now it has its rim to ring on.'
+    }
+  },
+  {
     zone: 'bible', guide: 'shepherd', piece: 'clapper', pieceName: 'the clapper of the bell', title: 'The Village Piece',
     intro: ['Only the clapper is missing now, and Goliath keeps it in his castle in Bible Village.', 'Shepherd Eli has faced giants before. Go and find him.'],
     lines: {
@@ -117,7 +131,7 @@ export const CHAPTERS = [
   }
 ];
 
-const COUNT = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven'];
+const COUNT = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight'];
 
 export const chapterFor = (zone) => CHAPTERS.find((c) => c.zone === zone) || null;
 export const chapterNumber = (zone) => CHAPTERS.findIndex((c) => c.zone === zone) + 1;
@@ -213,7 +227,7 @@ export function signpostLine(profile) {
   return st.next ? `Chapter ${st.chapter}, ${ZONE_NAMES[st.zone]}: ${st.next.title.toLowerCase()}. ${st.next.id === 'boss' ? ch.lines.ready : ''}`.trim() : `Head to ${ZONE_NAMES[st.zone]}.`;
 }
 
-const WAY = { math: 'to the west of the plaza', science: 'up north, through the archway at the top of the plaza', words: 'up in the north-east, through the archway', code: 'down south by the sea', history: 'down south, along the pier at the end of Code Cove', music: 'up north, through the archway at the top of Word Woods', bible: 'over to the east, past the archway' };
+const WAY = { math: 'to the west of the plaza', science: 'up north, through the archway at the top of the plaza', words: 'up in the north-east, through the archway', code: 'down south by the sea', history: 'down south, along the pier at the end of Code Cove', music: 'up north, through the archway at the top of Word Woods', studio: 'up the stairs in the far north-east corner of Word Woods', bible: 'over to the east, past the archway' };
 
 /** A clue for the next step of the story, for Mango's visits; null once the bell is whole. */
 export function clueFor(profile) {

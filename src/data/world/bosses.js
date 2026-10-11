@@ -70,6 +70,16 @@ export const BOSSES = [
     taunts: ['Off-key!', 'That was flat!', 'Ha! No rhythm!'],
     beaten: ['Oh… that… actually sounds lovely.', 'The market is yours. Come back for an encore some day.'],
     win: 'Maestro Mayhem is in tune at last!', lose: 'Maestro Mayhem drowned you out…', unlocks: null
+  },
+  {
+    id: 'boss-studio', voice: 'male', pitch: 0.6, rate: 1.05, zone: 'studio', subject: 'studio', name: 'Baron Blot', title: 'The Smudge of the Summit',
+    look: { sex: 'boy', skin: 'light', hairStyle: 'long', hair: 'black', topStyle: 'polo', top: 'black', bottomStyle: 'pants', bottom: 'gray', shoes: 'black', eyes: 'brown', bg: '#a3461c' },
+    hp: 8, hearts: 3, questionTimeMs: 18000,
+    intro: ['SPLAT! Another masterpiece ruined. I am Baron Blot, and I smudge everything I touch.', 'Answer wrong and you lose a heart. Answer right and you wipe away a smudge.', 'Colours, shapes, symmetry: let us see if you know your art. BEGIN!'],
+    locked: ['Not yet, little dauber. The artists of the summit have lessons for you first.', 'Meet everyone, earn your stars, then come and clean up my mess.'],
+    taunts: ['Smudged!', 'What a blot!', 'Ha! Outside the lines!'],
+    beaten: ['Oh… that is… rather beautiful, actually.', 'The summit is yours. Come back when the paint is dry for a rematch.'],
+    win: 'Baron Blot has been wiped clean!', lose: 'Baron Blot smudged you out…', unlocks: null
   }
 ];
 
