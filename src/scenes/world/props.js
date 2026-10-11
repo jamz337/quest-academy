@@ -5,6 +5,7 @@
 import { TILE } from '../../constants.js';
 import { TID, zoneAt, isWalkable } from '../../data/world/map.js';
 import { PROP_SETS, SCATTER, hashAt, pickProp, propKey } from '../../data/world/props.js';
+import { footDepth } from './depth.js';
 
 const GRASSY = new Set([TID.grass, TID.flower, 6, 29, 30, 31, 32, 33]);
 
@@ -37,7 +38,7 @@ export function createProps(w) {
       const tile = w.treeLayer && w.treeLayer.getTileAt(tx, ty);
       if (tile) tile.setVisible(false);
       const p = pickProp(set.props, 'tree', hashAt(tx, ty, 1));
-      if (p && w.textures.exists(propKey(land, p.key))) w.props.push(place(w, land, p, cx, bottom - 2, 2 + ty * 0.0005));
+      if (p && w.textures.exists(propKey(land, p.key))) w.props.push(place(w, land, p, cx, bottom - 2, footDepth(bottom - 4)));
       continue;
     }
     if (!GRASSY.has(id) || !isWalkable(id) || taken.has(key(tx, ty))) continue;
@@ -50,7 +51,7 @@ export function createProps(w) {
     const p = pickProp(set.props, kind, hashAt(tx, ty, 3));
     if (!p || !w.textures.exists(propKey(land, p.key))) continue;
     const jx = (hashAt(tx, ty, 4) - 0.5) * TILE * 0.5, jy = (hashAt(tx, ty, 5) - 0.5) * TILE * 0.3;
-    w.props.push(place(w, land, p, cx + jx, bottom - 3 + jy, kind === 'bush' || kind === 'plant' ? 1.6 + ty * 0.0005 : 1.4));
+    w.props.push(place(w, land, p, cx + jx, bottom - 3 + jy, kind === 'bush' || kind === 'plant' ? footDepth(bottom - 5 + jy) : 1.4));
   }
 }
 

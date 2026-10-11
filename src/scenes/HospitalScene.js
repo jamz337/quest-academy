@@ -15,6 +15,7 @@ import { lookSpriteTexture, fitPlayer, IDLE_FRAMES, CHAR_WORLD_SCALE } from '../
 import { outfitOf, outfitId } from '../systems/Market.js';
 import { gameGrade, gradeUps, nextHouseLevel, HOUSE_LEVELS } from '../systems/Progression.js';
 import { HOSPITAL_W, HOSPITAL_H, PICTURE_PX, FLOOR, EXIT, SPAWN, STAFF, isFloor, onExit } from '../data/health/hospital.js';
+import { sortSprite, addShadow } from './world/depth.js';
 
 const SPEED = 110;
 const USE_DIST = 30;
@@ -91,6 +92,7 @@ export class HospitalScene extends Phaser.Scene {
     this.player = fitPlayer(this.physics.add.sprite(SPAWN.tx * TILE, SPAWN.ty * TILE, key, IDLE_FRAMES.up)).setDepth(10);
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.solids);
+    addShadow(this, this.player, 20); sortSprite(this.player);
   }
 
   /** The staff stand at their work, each with a plate naming their game and its stars. */
@@ -103,6 +105,7 @@ export class HospitalScene extends Phaser.Scene {
       s.setScale(CHAR_WORLD_SCALE).setDepth(5).refreshBody();
       s.body.setSize(22, 22);
       s.def = def;
+      addShadow(this, s, 18); sortSprite(s);
       const game = getGame(def.gameId);
       s.plate = this.add.text(s.x, s.y + 22, game ? `${game.icon} ${game.title}` : def.name, { fontFamily: FONT, fontSize: '6px', color: '#ffffff', backgroundColor: '#1e2a3a', padding: { x: 3, y: 1 } }).setOrigin(0.5, 0).setDepth(6).setResolution(4);
       s.stars = [0, 1, 2].map((i) => this.add.image(s.x + (i - 1) * 8, s.y + 34, 'star-off').setDisplaySize(7, 7).setDepth(6));
@@ -169,11 +172,13 @@ export class HospitalScene extends Phaser.Scene {
     const { dx, dy } = inp;
     this.player.setVelocity(dx * SPEED, dy * SPEED);
     if (dx !== 0 || dy !== 0) {
-      const dir = dx !== 0 ? 'side' : dy < 0 ? 'up' : 'down';
-      if (dx !== 0) this.player.setFlipX(dx > 0);
+      const dir = Math.abs(dx) >= Math.abs(dy) ? 'side' : dy < 0 ? 'up' : 'down';
+      if (dir === 'side') this.player.setFlipX(dx > 0);
       this.facing = dir === 'side' ? (dx > 0 ? 'right' : 'left') : dir;
       this.player.anims.play(`${this.player.texture.key}-${dir}`, true);
+      this.player.anims.timeScale = Math.max(0.5, Math.hypot(dx, dy));   // a gentle joystick walks slowly
     } else this.stopPlayer();
+    sortSprite(this.player);
 
     let near = null, best = USE_DIST;
     for (const s of this.staff) {

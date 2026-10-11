@@ -399,7 +399,7 @@ export function buildMap() {
   hline(data, 40, 44, OY + 1, TID.woods);                                               // open forest floor along the foot of the summit, to the ledge
   npcSpots.painter = { tx: 43, ty: 8 }; npcSpots.sculptor = { tx: 51, ty: 9 }; npcSpots['mirror-mia'] = { tx: 41, ty: 12 }; npcSpots.curator = { tx: 46, ty: 11 };
   bossSpots.studio = { tx: 47, ty: 7 };   // in the studio's doorway
-  const summit = { x: SUMMIT.x, y: SUMMIT.y, w: SUMMIT.w, h: SUMMIT.h };
+  const summit = { x: SUMMIT.x, y: SUMMIT.y, w: SUMMIT.w, h: SUMMIT.h, floor: true };   // drawn as the ground itself, under everyone
 
   // ---- The hospital: on the grass above the player's house, its path joining the road up to the springs -----------
   const hospitalDoor = building(data, 16, 23, 5, 4, BUILDING_STYLES.hall);

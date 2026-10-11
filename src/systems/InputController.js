@@ -5,7 +5,8 @@ import { SCENES } from '../constants.js';
 /**
  * Pure merge step (unit-tested).
  * keys: { left, right, up, down } booleans; joy: { x, y } in [-1,1] or null; prefer: 'x'|'y' axis to
- * favour when keyboard diagonals are held. Output dx/dy are snapped to one axis with magnitude 0..1.
+ * favour when keyboard diagonals are held. Output dx/dy keep their direction (diagonals allowed) with the pair's
+ * magnitude capped at 1, so a diagonal walks no faster than a straight line.
  */
 export function mergeInput(keys, joy, actionPressed, prefer = 'x') {
   let x = (keys.right ? 1 : 0) - (keys.left ? 1 : 0);
@@ -13,11 +14,10 @@ export function mergeInput(keys, joy, actionPressed, prefer = 'x') {
   if (x === 0 && y === 0 && joy) { x = joy.x || 0; y = joy.y || 0; }
   let dx = 0, dy = 0;
   if (x !== 0 || y !== 0) {
-    const mag = Math.min(1, Math.hypot(x, y));
-    const ax = Math.abs(x), ay = Math.abs(y);
-    const horizontal = ax === ay ? prefer === 'x' : ax > ay;
-    if (horizontal) dx = Math.sign(x) * mag; else dy = Math.sign(y) * mag;
+    const len = Math.hypot(x, y), mag = Math.min(1, len);
+    dx = (x / len) * mag; dy = (y / len) * mag;
   }
+  void prefer;
   return { dx, dy, actionJustPressed: !!actionPressed };
 }
 

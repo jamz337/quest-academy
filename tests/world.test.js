@@ -79,15 +79,18 @@ describe('mergeInput', () => {
     expect(mergeInput({ ...none, right: true }, null, false)).toEqual({ dx: 1, dy: 0, actionJustPressed: false });
     expect(mergeInput({ ...none, up: true }, null, true)).toEqual({ dx: 0, dy: -1, actionJustPressed: true });
   });
-  it('keyboard diagonals snap to the preferred axis', () => {
-    expect(mergeInput({ ...none, right: true, down: true }, null, false, 'x')).toEqual({ dx: 1, dy: 0, actionJustPressed: false });
-    expect(mergeInput({ ...none, right: true, down: true }, null, false, 'y')).toEqual({ dx: 0, dy: 1, actionJustPressed: false });
+  it('keyboard diagonals walk diagonally, no faster than a straight line', () => {
+    const d = mergeInput({ ...none, right: true, down: true }, null, false, 'x');
+    expect(d.dx).toBeCloseTo(Math.SQRT1_2, 3); expect(d.dy).toBeCloseTo(Math.SQRT1_2, 3);
+    expect(Math.hypot(d.dx, d.dy)).toBeCloseTo(1, 6);
   });
-  it('joystick snaps to the dominant axis and keeps magnitude', () => {
+  it('joystick keeps its direction and magnitude', () => {
     const r = mergeInput(none, { x: 0.3, y: -0.8 }, false);
-    expect(r.dx).toBe(0); expect(r.dy).toBeCloseTo(-0.85, 2);
+    expect(r.dx).toBeCloseTo(0.3, 2); expect(r.dy).toBeCloseTo(-0.8, 2);
     const r2 = mergeInput(none, { x: -0.5, y: 0.1 }, false);
-    expect(r2.dy).toBe(0); expect(r2.dx).toBeCloseTo(-0.51, 2);
+    expect(r2.dx).toBeCloseTo(-0.5, 2); expect(r2.dy).toBeCloseTo(0.1, 2);
+    const far = mergeInput(none, { x: 1, y: 1 }, false);
+    expect(Math.hypot(far.dx, far.dy)).toBeCloseTo(1, 6);
     expect(mergeInput(none, { x: 0, y: 0 }, false)).toEqual({ dx: 0, dy: 0, actionJustPressed: false });
   });
   it('keyboard wins over the joystick', () => {

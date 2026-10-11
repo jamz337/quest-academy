@@ -38,6 +38,7 @@ import { createTrail, trailTick } from './world/trail.js';
 import * as Hub from './world/hub.js';
 import { createProps } from './world/props.js';
 import { heartsOf } from '../systems/Hearts.js';
+import { sortSprite, addShadow, footDepth, SHADOW_DEPTH } from './world/depth.js';
 import { villagerKey, VILLAGER_CELL, VILLAGER_WORLD_HEIGHT } from '../ui/Villagers.js';
 import { refreshRequestBubbles, requestLine, requestAfterGame } from './world/requests.js';
 import { createLamps, refreshLamps } from './world/lamps.js';
@@ -179,6 +180,9 @@ export class WorldScene extends Phaser.Scene {
     }
     const key = lookSpriteTexture(this, resolveLook(profile), outfitOf(profile), outfitId(profile));
     this.player = fitPlayer(this.physics.add.sprite(x, y, key, IDLE_FRAME.down)).setDepth(10);
+    addShadow(this, this.player, 20);
+    sortSprite(this.player);
+    this.stepTimer = 0;
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.layer);
     this.physics.add.collider(this.player, this.treeLayer);
@@ -197,6 +201,7 @@ export class WorldScene extends Phaser.Scene {
       s.setScale(drawn ? VILLAGER_WORLD_HEIGHT / VILLAGER_CELL : CHAR_SCALE).setDepth(5).refreshBody();
       s.body.setSize(22, 22);
       s.npc = def;
+      addShadow(this, s, 18); sortSprite(s);
       this.npcs.push(s);
     }
     // Bosses stand in their arenas and talk like villagers; `boss` marks them for talk().
@@ -207,6 +212,7 @@ export class WorldScene extends Phaser.Scene {
       s.setScale(CHAR_SCALE * (boss.scale || 1.3)).setDepth(5).refreshBody();
       s.body.setSize(26, 26);
       s.boss = boss;
+      addShadow(this, s, 24); sortSprite(s);
       if (bossDefeated(Store.getProfile(), boss.zone)) this.poseDefeated(s);
       this.npcs.push(s);
       this.tweens.add({ targets: s, y: s.y - 3, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
@@ -242,7 +248,8 @@ export class WorldScene extends Phaser.Scene {
       const note = (this.cache.json && this.cache.json.get(`${key}-note`)) || { wallLeft: 0, wallRight: tex.width, width: tex.width, height: tex.height };
       const scale = (b.w * TILE) / Math.max(1, note.wallRight - note.wallLeft);
       const cx = (b.x + b.w / 2) * TILE + (note.width / 2 - (note.wallLeft + note.wallRight) / 2) * scale;
-      this.drawnBuildings[key] = this.add.image(cx, (b.y + b.h) * TILE, key).setOrigin(0.5, 1).setScale(scale).setDepth(1.1);
+      // A building sorts with the people by its doorstep, so you walk behind it from the garden; a whole land (the summit) is the floor itself.
+      this.drawnBuildings[key] = this.add.image(cx, (b.y + b.h) * TILE, key).setOrigin(0.5, 1).setScale(scale).setDepth(b.floor ? 1.1 : footDepth((b.y + b.h) * TILE - 6));
     }
     this.drawnHouse = this.drawnBuildings['hub-house'];
   }
@@ -310,11 +317,18 @@ export class WorldScene extends Phaser.Scene {
     const { dx, dy } = inp;
     this.player.setVelocity(dx * SPEED, dy * SPEED);
     if (dx !== 0 || dy !== 0) {
-      const dir = dx !== 0 ? 'side' : dy < 0 ? 'up' : 'down';
-      if (dx !== 0) this.player.setFlipX(dx > 0);
+      const dir = Math.abs(dx) >= Math.abs(dy) ? 'side' : dy < 0 ? 'up' : 'down';
+      if (dir === 'side') this.player.setFlipX(dx > 0);
       this.facing = dir === 'side' ? (dx > 0 ? 'right' : 'left') : dir;
       this.player.anims.play(`${this.player.texture.key}-${dir}`, true);
+      this.player.anims.timeScale = Math.max(0.5, Math.hypot(dx, dy));   // a gentle joystick walks slowly
     } else this.stopPlayer();
+    sortSprite(this.player);
+
+    // Dust at the feet while walking, and the critters sort with everyone else.
+    if (dx !== 0 || dy !== 0) { this.stepTimer += this.game.loop.delta; if (this.stepTimer > 260) { this.stepTimer = 0; this.dustPuff(); } }
+    for (const c of this.critters || []) sortSprite(c);
+    if (this.mango) sortSprite(this.mango);
 
     // Nearest NPC and the "!" bubble
     let near = null, best = TALK_DIST;
@@ -335,6 +349,13 @@ export class WorldScene extends Phaser.Scene {
       else if (rim) Hub.tossCoin(this);
       else Fishing.tryFishing(this);
     }
+  }
+
+  /** A little puff of dust behind the feet, gone in a blink. */
+  dustPuff() {
+    const p = this.player, fy = p.y + p.displayHeight * 0.46;
+    const puff = this.add.circle(p.x + (Math.random() - 0.5) * 6, fy - 1, 2.2, 0xe6dcc6, 0.55).setDepth(SHADOW_DEPTH + 0.005);
+    this.tweens.add({ targets: puff, alpha: 0, scale: 2.4, y: fy - 6, duration: 380, ease: 'Quad.Out', onComplete: () => puff.destroy() });
   }
 
   stopPlayer() {

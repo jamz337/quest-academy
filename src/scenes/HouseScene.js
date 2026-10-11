@@ -17,6 +17,7 @@ import { outfitOf, outfitId, roomDecor } from '../systems/Market.js';
 import { drawFurniture, drawExhibit } from './house/furniture.js';
 import { bakeSharp } from '../ui/Bake.js';
 import { drinkUp } from './world/drink.js';
+import { sortSprite, addShadow } from './world/depth.js';
 
 const SPEED = 110;
 const USE_DIST = 26;          // px from the centre of the tile you stand on to use something
@@ -202,6 +203,7 @@ export class HouseScene extends Phaser.Scene {
     this.player = fitPlayer(this.physics.add.sprite(SPAWN.tx * TILE, SPAWN.ty * TILE, key, IDLE_FRAME.up)).setDepth(10);
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.solids);
+    addShadow(this, this.player, 20); sortSprite(this.player);
   }
 
   /** Everything that can be used: the exhibits (with their stars and an unread glow) and the usable furniture. */
@@ -279,11 +281,13 @@ export class HouseScene extends Phaser.Scene {
     const { dx, dy } = inp;
     this.player.setVelocity(dx * SPEED, dy * SPEED);
     if (dx !== 0 || dy !== 0) {
-      const dir = dx !== 0 ? 'side' : dy < 0 ? 'up' : 'down';
-      if (dx !== 0) this.player.setFlipX(dx > 0);
+      const dir = Math.abs(dx) >= Math.abs(dy) ? 'side' : dy < 0 ? 'up' : 'down';
+      if (dir === 'side') this.player.setFlipX(dx > 0);
       this.facing = dir === 'side' ? (dx > 0 ? 'right' : 'left') : dir;
       this.player.anims.play(`${this.player.texture.key}-${dir}`, true);
+      this.player.anims.timeScale = Math.max(0.5, Math.hypot(dx, dy));   // a gentle joystick walks slowly
     } else this.stopPlayer();
+    sortSprite(this.player);
 
     // The nearest usable thing: measured from the tile you stand on to use it.
     let near = null, best = USE_DIST;

@@ -68,6 +68,33 @@ transparent (the floors inside are nearly white too, so a plain white cut would 
 twenty by twenty squares; `FLOOR` in `src/data/health/hospital.js` says where the corridors and room floors are, where the
 four staff stand and where the door mat is. A new picture goes through the same tool, then the rows are checked against it.
 
+## Sheet 5: the hero, in a style the kids can edit (in progress)
+
+The drawn hero is one fixed picture, so the profile editor's choices (skin, hair, top, bottom, shoes) stopped showing.
+The fix is a small set of hero sheets drawn with **flat marker colours** that the game swaps for each child's choices
+when it loads the sheet. Generate one sheet per body type and hairstyle; the game recolours everything else.
+
+What to generate, each as its own picture (the same layout as the player sheet, so `tools/make-player-sheet.py`
+cuts it): four rows of the same child facing front, left, right and back; in each row standing poses then a walk
+cycle, every figure the same size with feet on one line, on a plain flat background that is not one of the marker
+colours (mid grey #808080 is ideal).
+
+Marker colours (ask for them by hex, flat with only simple two-tone shading, nothing patterned):
+- skin: #F5CBA7, with the darker shade #E0A878
+- hair: #9B59B6 (purple)
+- top (a plain T-shirt): #2ECC71 (green)
+- bottom (plain shorts or trousers): #3498DB (blue)
+- shoes: #E74C3C (red)
+- eyes: #000000 pupils, white eyes
+
+Sheets wanted (name each file `hero-<body>-<hair>`): two body types, `a` and `b`, each with six hairstyles:
+`curls` (short curls), `afro`, `braids` (plaits or cornrows), `bun` (puff or bun), `long` (long straight or wavy),
+`buzz` (very short). Twelve sheets. The style line at the top of this guide applies, plus: "cute, friendly child of
+about eight, big eyes, simple shapes, thick outline in a darker shade of each colour".
+
+The game then maps each marker to the chosen colour while keeping the shading, so a green shirt becomes any shirt
+colour, purple hair any hair colour, and the skin any of the editor's tones.
+
 ## Tips
 
 - Ask for the largest size your generator offers. I scale down; scaling up goes blurry.
