@@ -15,7 +15,7 @@ export function buildBoard(hud, b) {
   const rows = b.lands.length, need = (86 + (b.goal ? 86 : 0) + 26 + rows * 40 + 10 + (orders.length ? 44 : 0) + 62 + 66) * ui;
   const f = ui * Math.min(1, (h - 24) / need);
   const mw = Math.min(w - 24, 470 * f), mh = need * (f / ui);
-  const m = modal(hud, { w: mw, h: mh, accent: THEME.gold, depth: 600, dimAlpha: 0.45 });
+  const m = modal(hud, { look: 'storybook', w: mw, h: mh, accent: THEME.gold, depth: 600, dimAlpha: 0.45 });
   const g = hud.add.graphics().setDepth(602);
   const font = (size, color, weight = WEIGHT.heavy) => ({ fontFamily: FONT, fontSize: Math.round(size * f) + 'px', color: hex(color), fontStyle: weight });
   const put = (x, y, str, style, ox = 0, oy = 0.5) => hud.add.text(x, y, str, style).setOrigin(ox, oy).setDepth(D);

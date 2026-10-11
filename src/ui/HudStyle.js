@@ -104,6 +104,46 @@ export function glassMenuButton(scene, x, y, size, onClick) {
   return c;
 }
 
+/**
+ * The world's panels (the dialog box, the quest board, the menu and its pages): cream parchment inside a thick ink
+ * outline, a darker parchment edge and a soft shadow, drawn into graphics `g` (made if not given).
+ */
+export function storybookPanel(scene, x, y, w, h, opts = {}) {
+  const s = uiScale(scene), r = Math.min(opts.radius ?? 22 * s, Math.min(w, h) / 2), ow = Math.max(2.5, 3.2 * s);
+  const g = opts.g || scene.add.graphics();
+  g.fillStyle(0x000000, 0.22); g.fillRoundedRect(x, y + 6 * s, w, h, r);
+  g.fillStyle(PANEL_INK, 1); g.fillRoundedRect(x, y, w, h, r);
+  g.fillStyle(0xe9d3a2, 1); g.fillRoundedRect(x + ow, y + ow, w - ow * 2, h - ow * 2, r - ow);
+  g.fillStyle(0xfff6e2, 1); g.fillRoundedRect(x + ow + 3 * s, y + ow + 3 * s, w - (ow + 3 * s) * 2, h - (ow + 3 * s) * 2, Math.max(4, r - ow - 3 * s));
+  g.fillStyle(0xffffff, 0.5); g.fillRoundedRect(x + r, y + ow + 5 * s, w - r * 2, 3 * s, 1.5 * s);   // light along the top
+  return g;
+}
+const PANEL_INK = 0x2a2238;
+
+/**
+ * A ribbon banner centred on (cx, cy) carrying `str` in white with an ink edge: a panel's title or a speaker's name.
+ * opts: colour (the ribbon's fill), fontSize, minWidth. Returns a Container with `.text`, `.w`, `.h`.
+ */
+export function ribbon(scene, cx, cy, str, opts = {}) {
+  const { colour = 0xd9642c, fontSize = 18, minWidth = 0 } = opts;
+  const s = uiScale(scene), c = scene.add.container(cx, cy);
+  const t = scene.add.text(0, 0, str, { fontFamily: FONT, fontSize: Math.round(fontSize * s) + 'px', color: '#ffffff', fontStyle: WEIGHT.heavy, stroke: hex(PANEL_INK), strokeThickness: Math.max(3, Math.round(4 * s)) }).setOrigin(0.5);
+  const h = t.height + 10 * s, w = Math.max(minWidth, t.width + 34 * s), tail = 12 * s, g = scene.add.graphics();
+  const dark = darkenHex(colour);
+  for (const side of [-1, 1]) {   // the folded tails behind the band
+    const x0 = side * (w / 2 - 4 * s), x1 = side * (w / 2 + tail);
+    g.fillStyle(PANEL_INK, 1); g.fillPoints([{ x: x0, y: -h / 2 + 5 * s }, { x: x1, y: -h / 2 + 5 * s }, { x: x1 - side * 6 * s, y: 4 * s }, { x: x1, y: h / 2 + 5 * s }, { x: x0, y: h / 2 + 5 * s }], true);
+    g.fillStyle(dark, 1); g.fillPoints([{ x: x0, y: -h / 2 + 7.5 * s }, { x: x1 - side * 2.5 * s, y: -h / 2 + 7.5 * s }, { x: x1 - side * 8 * s, y: 4 * s }, { x: x1 - side * 2.5 * s, y: h / 2 + 2.5 * s }, { x: x0, y: h / 2 + 2.5 * s }], true);
+  }
+  g.fillStyle(PANEL_INK, 1); g.fillRoundedRect(-w / 2, -h / 2, w, h, 6 * s);
+  g.fillStyle(colour, 1); g.fillRoundedRect(-w / 2 + 2.5 * s, -h / 2 + 2.5 * s, w - 5 * s, h - 5 * s, 4 * s);
+  g.fillStyle(0xffffff, 0.3); g.fillRoundedRect(-w / 2 + 6 * s, -h / 2 + 4 * s, w - 12 * s, h * 0.22, 2 * s);
+  c.add([g, t]);
+  c.text = t; c.w = w; c.h = h;
+  return c;
+}
+function darkenHex(c) { const f = (v) => Math.round(v * 0.72); return (f((c >> 16) & 255) << 16) | (f((c >> 8) & 255) << 8) | f(c & 255); }
+
 /** The glossy blue action bubble: a deep blue ball, a bright highlight across its top and a white "A" outlined in navy. */
 export function paintActionBubble(scene, g, r, pressed = false) {
   g.clear();

@@ -22,7 +22,7 @@ export function buildHome(hud) {
   if (!p) return;
   const badges = (p.badges || []).map((id) => getBadge(id)).filter(Boolean);
   const rows = Math.min(badges.length, 6);
-  const m = modal(hud, { w: 420 * ui, h: (352 + rows * 24) * ui, title: `${p.name}'s house`, accent: THEME.pink, depth: 600, dimAlpha: 0.45 });
+  const m = modal(hud, { look: 'storybook', w: 420 * ui, h: (352 + rows * 24) * ui, title: `${p.name}'s house`, accent: THEME.pink, depth: 600, dimAlpha: 0.45 });
   let y = m.contentTop + 4 * ui;
   const stars = MINIGAMES.reduce((sum, g) => sum + houseStars(p, g.id), 0);
   const bosses = Object.values(p.world.bosses || {}).filter((b) => b.defeated).length;

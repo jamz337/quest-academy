@@ -55,6 +55,7 @@ export function createGateways(w) {
       g.fillStyle(col.accent, 1); g.fillRoundedRect(px - 4, py - 14, 5, 27, 3);
       g.fillStyle(0xffffff, 0.35); g.fillRoundedRect(px - 3, py - 12, 1.5, 22, 1);
       g.fillStyle(0xffc531, 1); g.fillCircle(px, py - 15, 3.2);                                   // a gold ball on top
+      g.lineStyle(1.4, 0x2a2238, 1); g.strokeRoundedRect(px - 4, py - 14, 8, 27, 3); g.strokeCircle(px, py - 15, 3.2);
     }
     // The banner across the top: the land's name, and its stars on a tag beneath.
     const by = cy - (across ? 52 : 30), bw = 62;
@@ -62,6 +63,7 @@ export function createGateways(w) {
     g.fillStyle(col.dark, 1); g.fillRoundedRect(cx - bw / 2, by - 8, bw, 14, 5);
     g.fillStyle(col.accent, 1); g.fillRoundedRect(cx - bw / 2, by - 8, bw, 11.5, 5);
     g.fillStyle(0xffffff, 0.3); g.fillRoundedRect(cx - bw / 2 + 3, by - 6.5, bw - 6, 2, 1);
+    g.lineStyle(1.5, 0x2a2238, 1); g.strokeRoundedRect(cx - bw / 2, by - 8, bw, 14, 5);
     w.add.text(cx, by - 1.5, ZONE_NAMES[gate.zone], { fontFamily: FONT, fontSize: '7px', color: '#ffffff', fontStyle: '700' }).setOrigin(0.5).setDepth(12.1).setResolution(6);
     g.fillStyle(0xffffff, 1); g.fillRoundedRect(cx - 15, by + 6.5, 30, 9, 4.5);
     g.lineStyle(1, col.accent, 1); g.strokeRoundedRect(cx - 15, by + 6.5, 30, 9, 4.5);

@@ -16,6 +16,7 @@ import { ZONE_ORDER } from '../../data/world/quests.js';
 
 // Each land's jewel sits on the side of the fountain that faces its land.
 const JEWELS = [{ zone: 'math', a: Math.PI }, { zone: 'science', a: -Math.PI * 0.75 }, { zone: 'words', a: -Math.PI / 4 }, { zone: 'bible', a: 0 }, { zone: 'code', a: Math.PI / 2 }, { zone: 'history', a: Math.PI * 0.75 }];
+const INK = 0x2a2238;   // the painted look's outline colour
 const STONE = 0xb9b3c6, STONE_LIGHT = 0xe2deeb, STONE_DARK = 0x8f89a1, DULL = 0xa7a3b5;
 
 const centreOf = (r) => ({ x: (r.tx + (r.w || 1) / 2) * TILE, y: (r.ty + (r.h || 1) / 2) * TILE });
@@ -42,11 +43,14 @@ export function createFountain(w) {
   g.fillStyle(STONE_DARK, 1); g.fillCircle(x, y + 1.5, 10);
   g.fillStyle(STONE_LIGHT, 1); g.fillCircle(x, y, 10);
   g.fillStyle(0x8cc6ff, 1); g.fillCircle(x, y, 6.5);
+  g.lineStyle(2.4, INK, 1); g.strokeCircle(x, y + 1, 45.8);              // ink: the stone rim, the pool, the pedestal
+  g.lineStyle(1.6, INK, 0.85); g.strokeCircle(x, y, 36.2); g.strokeCircle(x, y + 0.6, 10.4);
   // The ripples breathe, so the water never looks still.
   const ring = w.add.circle(x, y, 18).setStrokeStyle(1.2, 0xffffff, 0.7).setDepth(3.1);
   w.tweens.add({ targets: ring, scale: 1.9, alpha: 0, duration: 2200, repeat: -1, ease: 'Sine.Out' });
   w.fountain = { x, y, jewels: w.add.graphics().setDepth(3.2), drops: [], star: w.add.image(x, y, 'star').setDisplaySize(11, 11).setDepth(3.4),
-    count: w.add.text(x, y - 54, '', { fontFamily: FONT, fontSize: '7px', color: '#1e1b4b', fontStyle: '700', backgroundColor: '#ffffff', padding: { x: 4, y: 1.5 } }).setOrigin(0.5).setDepth(12).setResolution(6) };
+    countBg: w.add.graphics().setDepth(11.9),
+    count: w.add.text(x, y - 56, '', { fontFamily: FONT, fontSize: '8px', color: '#1e1b4b', fontStyle: '800' }).setOrigin(0.5).setDepth(12).setResolution(6) };
   refreshFountain(w);
 }
 
@@ -71,6 +75,7 @@ export function refreshFountain(w) {
     g.fillStyle(DULL, 1); g.fillCircle(jx, jy, 6);
     if (share > 0) { g.fillStyle(col.accent, 1); g.slice(jx, jy, 6, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, share), false); g.fillPath(); }
     g.fillStyle(0xffffff, 0.55); g.fillCircle(jx - 2, jy - 2, 1.6);
+    g.lineStyle(1.3, INK, 1); g.strokeCircle(jx, jy, 7.6);
     // Its jet: a column of water in the pool beside the jewel, as tall as the land's stars (a bubble when none).
     const bx = x + Math.cos(j.a) * 24, by = y + Math.sin(j.a) * 24, h = 6 + 44 * share;
     const jet = makeJet(w, bx, by, h, share > 0 ? col.accent : 0xffffff);
@@ -83,6 +88,13 @@ export function refreshFountain(w) {
   const all = allStars(p);
   ft.star.setAlpha(all.stars >= all.total ? 1 : 0.45);
   ft.count.setText(`★ ${all.stars}/${all.total}`);
+  if (ft.countBg) {   // a cream pill with a little point towards the fountain
+    const cw = ft.count.width + 12, ch = 12, cx = ft.count.x, cy = ft.count.y, b = ft.countBg;
+    b.clear();
+    b.fillStyle(0x000000, 0.15); b.fillRoundedRect(cx - cw / 2, cy - ch / 2 + 1.5, cw, ch, 4);
+    b.fillStyle(0xfff8e8, 1); b.fillRoundedRect(cx - cw / 2, cy - ch / 2, cw, ch, 4); b.fillTriangle(cx - 3, cy + ch / 2 - 0.5, cx + 3, cy + ch / 2 - 0.5, cx, cy + ch / 2 + 3);
+    b.lineStyle(1, 0xc9b78f, 1); b.strokeRoundedRect(cx - cw / 2, cy - ch / 2, cw, ch, 4);
+  }
 }
 
 /** A column of water `h` tall rising from (x, y): a tapered spout with a white core and a splash crown, swaying. */
@@ -207,8 +219,10 @@ export function createQuestBoard(w) {
     g.fillStyle(col.soft, 1); g.fillRoundedRect(x - 18, by, 36, 3, 1.5);
     g.fillStyle(col.accent, 1); g.fillRoundedRect(x - 18, by, 14 + ((i * 7) % 4) * 6, 3, 1.5);
   });
+  g.lineStyle(1.6, INK, 1); g.strokeRoundedRect(x - 19, y - 8, 4, 21, 2); g.strokeRoundedRect(x + 15, y - 8, 4, 21, 2); g.strokeRoundedRect(x - bw / 2, top, bw, bh + 2, 7);
   g.fillStyle(0xcf8a00, 1); g.fillCircle(x, top - 1, 8.5);
   g.fillStyle(0xffc531, 1); g.fillCircle(x, top - 2.5, 8.5);
+  g.lineStyle(1.4, INK, 1); g.strokeCircle(x, top - 2, 9);
   w.add.image(x, top - 2.5, 'star').setDisplaySize(11, 11).setDepth(3.1);
   const tag = w.add.text(x, y + 19, 'Quest board', { fontFamily: FONT, fontSize: '6px', color: '#1e1b4b', fontStyle: '700', backgroundColor: '#ffffff', padding: { x: 3, y: 1 } }).setOrigin(0.5).setDepth(3.1).setResolution(6);
   void tag;

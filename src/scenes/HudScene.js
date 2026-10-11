@@ -25,7 +25,7 @@ import { buildBoard } from './hud/boardPanel.js';
 import * as CookingPanel from './hud/cookingPanel.js';
 import { buildEncounter } from './hud/encounterPanel.js';
 import { buildMenu } from './hud/menuPanel.js';
-import { glassPill, landPill, scrollBanner, glassMenuButton, paintActionBubble } from '../ui/HudStyle.js';
+import { glassPill, landPill, scrollBanner, glassMenuButton, paintActionBubble, storybookPanel, ribbon } from '../ui/HudStyle.js';
 
 /**
  * Overlay on top of the World scene: joystick, action button, coin counter, zone label, minimap, menu and
@@ -314,21 +314,23 @@ export class HudScene extends BaseScene {
     const { w, h, ui } = this;
     const last = d.idx >= d.lines.length - 1;
     const showButtons = last && !!(d.onPlay || d.secondary);
-    const pw = Math.min(w - 20, 520 * ui), ph = (showButtons ? 176 : 124) * ui;
+    const pw = Math.min(w - 20, 540 * ui), ph = (showButtons ? 184 : 132) * ui;
     const px = (w - pw) / 2, py = h - ph - 14 - safeArea().bottom;
-    const g = panel(this, px, py, pw, ph, { shadow: 'lg', radius: THEME.radius.xl });
+    const g = storybookPanel(this, px, py, pw, ph);
     g.setDepth(500);
     const zone = this.add.zone(px, py, pw, ph).setOrigin(0).setInteractive({ useHandCursor: true }).setDepth(501);
     zone.on('pointerup', () => { if (!showButtons) this.advanceDialog(); });
-    const name = chip(this, px + 16, py + 20 * ui, { text: d.name, color: THEME.primarySoft, textColor: THEME.primaryDark, fontSize: 13, height: 26 * ui, shadow: 'none' }).setDepth(502);
+    // The speaker's name on a ribbon across the panel's top-left corner.
+    const name = ribbon(this, 0, py + 2 * ui, d.name, { colour: 0x3d7be0, fontSize: 15 }).setDepth(502);
+    name.x = px + 18 * ui + name.w / 2;
     const line = last && d.prompt ? `${d.lines[d.idx]}\n${d.prompt}` : d.lines[d.idx] || '';
-    const body = readable(this, px + 16, py + 40 * ui, line, T.body(this), { width: pw - 64 * ui, align: 'left' }).setOrigin(0, 0).setDepth(502);
+    const body = readable(this, px + 22 * ui, py + 30 * ui, line, T.body(this), { width: pw - 74 * ui, align: 'left' }).setOrigin(0, 0).setDepth(502);
     const how = { rate: this.speechRate * (d.rate || 1), pitch: d.pitch || 1, voice: d.voice || 'female', speaker: d.speaker || d.name };
-    const sb = speakButton(this, px + pw - 30 * ui, py + 22 * ui, 40 * ui, body, how); if (sb) sb.setDepth(502);
+    const sb = speakButton(this, px + pw - 32 * ui, py + 28 * ui, 40 * ui, body, how); if (sb) sb.setDepth(502);
     this.autoRead(body, how);
     if (!showButtons) {
       const hint = last ? 'Tap to close' : 'Tap to continue  ▼';
-      this.add.text(px + pw - 14, py + ph - 10, hint, T.small(this, THEME.ink3)).setOrigin(1, 1).setDepth(502);
+      this.add.text(px + pw - 20 * ui, py + ph - 14 * ui, hint, T.small(this, 0x8a6a3a)).setOrigin(1, 1).setDepth(502);
     } else {
       const bh = 46 * ui, by = py + ph - 34 * ui;
       if (d.secondary) {

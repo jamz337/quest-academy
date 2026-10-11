@@ -24,18 +24,21 @@ export function buildMenu(hud) {
   if (hud.state.menuPage === 'credits') return buildCreditsPage(hud);
   if (hud.state.menuPage === 'bag') return buildBag(hud);
   const { w, ui } = hud;
-  const m = modal(hud, { w: 320 * ui, h: 580 * ui, title: 'Paused', accent: THEME.primary, depth: 600, dimAlpha: 0.45 });
-  const bw = m.w - 48, bh = 50 * ui;
-  let y = m.contentTop + 12 * ui + bh / 2;
+  const m = modal(hud, { look: 'storybook', w: 320 * ui, h: 528 * ui, title: 'Paused', accent: THEME.primary, depth: 600, dimAlpha: 0.45 });
+  // Seven buttons and the credits link, spaced to fit the panel (a short landscape screen squeezes them).
+  const room = m.y + m.h - m.contentTop - 52 * ui, gap = Math.min(12, room * 0.025);
+  const bw = m.w - 48, bh = Math.min(50 * ui, (room - gap * 7) / 7);
+  let y = m.contentTop + 8 * ui + bh / 2;
   const page = (p) => { Sfx.click(); hud.state.menuPage = p; hud.rebuild(); };
-  button(hud, w / 2, y, bw, bh, 'Resume', { variant: 'primary', onClick: () => hud.closeMenu() }).setDepth(603); y += bh + 12;
-  button(hud, w / 2, y, bw, bh, '🔔 Journal', { variant: 'warning', onClick: () => page('quests') }).setDepth(603); y += bh + 12;
-  button(hud, w / 2, y, bw, bh, 'Map', { variant: 'success', onClick: () => page('map') }).setDepth(603); y += bh + 12;
-  button(hud, w / 2, y, bw, bh, '🧺 Market', { variant: 'warning', onClick: () => { Sfx.click(); hud.openMarket(); } }).setDepth(603); y += bh + 12;
-  button(hud, w / 2, y, bw, bh, '🎒 My bag', { variant: 'secondary', onClick: () => page('bag') }).setDepth(603); y += bh + 12;
-  button(hud, w / 2, y, bw, bh, 'Challenge Mode', { variant: 'subject', subject: 'code', onClick: () => hud.leaveTo(SCENES.ChallengeMenu) }).setDepth(603); y += bh + 12;
-  button(hud, w / 2, y, bw, bh, 'Home', { variant: 'secondary', onClick: () => hud.leaveTo(SCENES.ModeSelect) }).setDepth(603); y += bh + 4;
-  button(hud, w / 2, y + 6 * ui, bw, 30 * ui, 'Art credits', { variant: 'ghost', fontSize: 13, onClick: () => page('credits') }).setDepth(603);
+  const opts = { compact: true, fontSize: Math.min(17, (bh / ui) * 0.36) };
+  button(hud, w / 2, y, bw, bh, 'Resume', { ...opts, variant: 'primary', onClick: () => hud.closeMenu() }).setDepth(603); y += bh + gap;
+  button(hud, w / 2, y, bw, bh, '🔔 Journal', { ...opts, variant: 'warning', onClick: () => page('quests') }).setDepth(603); y += bh + gap;
+  button(hud, w / 2, y, bw, bh, 'Map', { ...opts, variant: 'success', onClick: () => page('map') }).setDepth(603); y += bh + gap;
+  button(hud, w / 2, y, bw, bh, '🧺 Market', { ...opts, variant: 'warning', onClick: () => { Sfx.click(); hud.openMarket(); } }).setDepth(603); y += bh + gap;
+  button(hud, w / 2, y, bw, bh, '🎒 My bag', { ...opts, variant: 'secondary', onClick: () => page('bag') }).setDepth(603); y += bh + gap;
+  button(hud, w / 2, y, bw, bh, 'Challenge Mode', { ...opts, variant: 'subject', subject: 'code', onClick: () => hud.leaveTo(SCENES.ChallengeMenu) }).setDepth(603); y += bh + gap;
+  button(hud, w / 2, y, bw, bh, 'Home', { ...opts, variant: 'secondary', onClick: () => hud.leaveTo(SCENES.ModeSelect) }).setDepth(603); y += bh / 2 + 4;
+  button(hud, w / 2, y + 16 * ui, bw, 30 * ui, 'Art credits', { variant: 'ghost', fontSize: 13, compact: true, onClick: () => page('credits') }).setDepth(603);
 }
 
 /** The bag: the snacks the player carries (drinks can be drunk here), and what else they own. */
@@ -45,7 +48,7 @@ export function buildBag(hud) {
   const snacks = snacksOf(profile), hearts = heartsOf(profile);
   const charms = Object.keys(profile.charms || {}).length, owned = (profile.inventory && profile.inventory.owned ? profile.inventory.owned.length : 0);
   const rowH = 54 * ui, rows = Math.max(1, snacks.length);
-  const m = modal(hud, { w: Math.min(w - 16, 420 * ui), h: Math.min(h - 16, (196 + rows * 54) * ui), title: '🎒 My bag', accent: THEME.warning, depth: 600, dimAlpha: 0.5 });
+  const m = modal(hud, { look: 'storybook', w: Math.min(w - 16, 420 * ui), h: Math.min(h - 16, (196 + rows * 54) * ui), title: '🎒 My bag', accent: THEME.warning, depth: 600, dimAlpha: 0.5 });
   let y = m.contentTop + 6 * ui;
   text(hud, m.x + m.w / 2, y + 8 * ui, `♥ ${hearts}/${HEARTS_MAX} hearts  ·  ${profile.coins | 0} coins`, T.small(hud, THEME.ink2)).setDepth(603);
   y += 28 * ui;
@@ -74,7 +77,7 @@ export function buildBag(hud) {
 /** Who drew the characters (the pack's licences ask for this to be easy to find). */
 export function buildCreditsPage(hud) {
   const { w, h, ui } = hud;
-  const m = modal(hud, { w: Math.min(w - 16, 520 * ui), h: Math.min(h - 16, 560 * ui), title: 'Art credits', accent: THEME.brand, depth: 600, dimAlpha: 0.5 });
+  const m = modal(hud, { look: 'storybook', w: Math.min(w - 16, 520 * ui), h: Math.min(h - 16, 560 * ui), title: 'Art credits', accent: THEME.brand, depth: 600, dimAlpha: 0.5 });
   creditLines(hud, m.x + 20, m.contentTop + 4 * ui, m.w - 40, 603, m.y + m.h - 64 * ui);
   button(hud, w / 2, m.y + m.h - 34 * ui, Math.min(m.w - 48, 200 * ui), 42 * ui, 'Back', { variant: 'secondary', onClick: () => { hud.state.menuPage = 'menu'; hud.rebuild(); } }).setDepth(603);
 }
@@ -89,7 +92,7 @@ export function buildQuests(hud) {
   const ch = chapterFor(zone);
   const missions = chapterMissions(profile, zone);
   const compact = h < 720 * ui;   // short windows: tighter rows
-  const m = modal(hud, { w: 440 * ui, h: Math.min(h - 16, (250 + missions.length * (compact ? 27 : 31)) * ui), title: '🔔 The Academy Bell', accent: THEME.warning, depth: 600, dimAlpha: 0.5 });
+  const m = modal(hud, { look: 'storybook', w: 440 * ui, h: Math.min(h - 16, (250 + missions.length * (compact ? 27 : 31)) * ui), title: '🔔 The Academy Bell', accent: THEME.warning, depth: 600, dimAlpha: 0.5 });
   let y = m.contentTop + 4 * ui;
   // The bell: one slot per piece, lit as the bosses give them back.
   const pieces = bellPieces(profile);
@@ -132,7 +135,7 @@ export function buildMapPage(hud) {
   const { w, h, ui } = hud;
   const map = hud.worldMap();
   const profile = Store.getProfile();
-  const m = modal(hud, { w: Math.min(w - 16, 560 * ui), h: Math.min(h - 16, 520 * ui), title: 'Map', accent: THEME.success, depth: 600, dimAlpha: 0.5 });
+  const m = modal(hud, { look: 'storybook', w: Math.min(w - 16, 560 * ui), h: Math.min(h - 16, 520 * ui), title: 'Map', accent: THEME.success, depth: 600, dimAlpha: 0.5 });
   if (!map || !profile) {
     text(hud, w / 2, m.contentTop + 40, 'The map is drawn as you explore.', T.body(hud, THEME.ink2)).setDepth(603);
   } else {

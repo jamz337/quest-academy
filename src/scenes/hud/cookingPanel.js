@@ -69,7 +69,7 @@ export function buildCooking(hud, c) {
   const { w, h, ui } = hud;
   const p = Store.getProfile();
   if (c.phase === 'menu') {
-    const m = modal(hud, { w: 440 * ui, h: Math.min(h - 24, (150 + RECIPES.length * 58) * ui), title: '🍳 The stove', accent: THEME.warning, depth: 600, dimAlpha: 0.45 });
+    const m = modal(hud, { look: 'storybook', w: 440 * ui, h: Math.min(h - 24, (150 + RECIPES.length * 58) * ui), title: '🍳 The stove', accent: THEME.warning, depth: 600, dimAlpha: 0.45 });
     let y = m.contentTop + 6 * ui;
     text(hud, w / 2, y, 'What shall we cook today?', T.body(hud, THEME.ink2)).setDepth(603); y += 30 * ui;
     // The recipe buttons share whatever height is left above the Close button (short landscape windows).
@@ -88,7 +88,7 @@ export function buildCooking(hud, c) {
   }
   const r = c.recipe;
   if (c.phase === 'step') {
-    const m = modal(hud, { w: 460 * ui, h: Math.min(h - 24, 470 * ui), title: `${r.pic} ${r.name}`, accent: THEME.warning, depth: 600, dimAlpha: 0.45 });
+    const m = modal(hud, { look: 'storybook', w: 460 * ui, h: Math.min(h - 24, 470 * ui), title: `${r.pic} ${r.name}`, accent: THEME.warning, depth: 600, dimAlpha: 0.45 });
     let y = m.contentTop + 4 * ui;
     text(hud, w / 2, y + 8 * ui, `Step ${c.step + 1} of ${r.steps.length}`, T.small(hud, THEME.ink3)).setDepth(603);
     y += 26 * ui;
@@ -113,7 +113,7 @@ export function buildCooking(hud, c) {
     return;
   }
   // Done: the dish, what it is, and the coins.
-  const m = modal(hud, { w: 440 * ui, h: Math.min(h - 24, 380 * ui), title: 'Dinner is ready!', accent: THEME.success, depth: 600, dimAlpha: 0.45 });
+  const m = modal(hud, { look: 'storybook', w: 440 * ui, h: Math.min(h - 24, 380 * ui), title: 'Dinner is ready!', accent: THEME.success, depth: 600, dimAlpha: 0.45 });
   let y = m.contentTop + 10 * ui;
   const dish = hud.add.text(w / 2, y + 30 * ui, r.pic, { fontSize: Math.round(64 * ui) + 'px' }).setOrigin(0.5).setDepth(603);
   enter(hud, dish, { from: 'pop' });

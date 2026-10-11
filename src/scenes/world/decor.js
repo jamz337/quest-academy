@@ -145,6 +145,7 @@ export function refreshBell(w) {
   g.fillStyle(0x7a4a2a, 1); g.fillRect(x - 15, y - 48, 30, 4);
   g.fillStyle(0xc45a3c, 1); g.fillTriangle(x - 19, y - 48, x + 19, y - 48, x, y - 60);
   g.fillStyle(0x8a3a24, 1); g.fillTriangle(x - 19, y - 48, x + 19, y - 48, x, y - 50);
+  g.lineStyle(1.5, 0x2a2238, 1); g.strokeRect(x - 13, y - 46, 4, 46); g.strokeRect(x + 9, y - 46, 4, 46); g.strokeRect(x - 15, y - 48, 30, 4); g.strokeTriangle(x - 19, y - 48, x + 19, y - 48, x, y - 60);
   // The bell, piece by piece. Missing pieces: faint dotted ghosts.
   const piece = (id, draw) => { if (have.has(id)) { g.fillStyle(0xffc531, 1); draw(); g.fillStyle(0xe09a12, 0.5); } else { g.fillStyle(0xfff1e8, 0.25); draw(); } };
   const by = y - 40;   // top of the bell body
@@ -173,6 +174,8 @@ export function createMarketStall(w) {
   for (let i = 0; i < 8; i++) { g.fillStyle(i % 2 ? 0xffffff : 0xff5c6c, 1); g.fillRect(x - 34 + i * 8.5, y - 52, 8.5, 10); }   // striped awning
   g.fillStyle(0xd94656, 1); g.fillRect(x - 34, y - 54, 68, 3);
   for (let i = 0; i < 8; i++) { g.fillStyle(i % 2 ? 0xffffff : 0xff5c6c, 1); g.fillTriangle(x - 34 + i * 8.5, y - 42, x - 34 + (i + 1) * 8.5, y - 42, x - 34 + i * 8.5 + 4.25, y - 37); }
+  g.lineStyle(1.5, 0x2a2238, 1); g.strokeRect(x - 28, y - 42, 4, 42); g.strokeRect(x + 24, y - 42, 4, 42); g.strokeRoundedRect(x - 30, y - 22, 60, 22, 3); g.strokeRect(x - 34, y - 54, 68, 12);
+  for (let i = 0; i < 8; i++) g.strokeTriangle(x - 34 + i * 8.5, y - 42, x - 34 + (i + 1) * 8.5, y - 42, x - 34 + i * 8.5 + 4.25, y - 37);
   w.add.text(x, y - 60, 'Cheapside Market', { fontFamily: 'Fredoka, sans-serif', fontSize: '7px', color: '#2d2a4a', backgroundColor: '#fff8ef', padding: { x: 3, y: 1 } }).setOrigin(0.5).setDepth(4).setResolution(4);
   const post = w.add.rectangle(x, y - 12, 62, 24).setVisible(false);
   w.physics.add.existing(post, true);

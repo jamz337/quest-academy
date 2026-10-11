@@ -50,7 +50,7 @@ export function closeFishing(hud) {
 
 export function buildFishing(hud, f) {
   const { w, ui } = hud;
-  const m = modal(hud, { w: 400 * ui, h: (f.phase === 'done' && f.message ? 400 : 330) * ui, title: 'Gone fishing', accent: THEME.subjects.code.accent, depth: 600, dimAlpha: 0.4 });
+  const m = modal(hud, { look: 'storybook', w: 400 * ui, h: (f.phase === 'done' && f.message ? 400 : 330) * ui, title: 'Gone fishing', accent: THEME.subjects.code.accent, depth: 600, dimAlpha: 0.4 });
   const pond = hud.add.graphics().setDepth(603);
   const px = m.x + 24, py = m.contentTop, pw = m.w - 48, ph = 130 * ui;
   pond.fillStyle(0x4aa8ff, 1); pond.fillRoundedRect(px, py, pw, ph, 16);

@@ -22,7 +22,7 @@ export function buildEncounter(hud, e) {
   if (prompt && e.picked === null) hud.autoRead(prompt);
   const why = quiz && e.picked !== null && !e.right ? readable(hud, 0, 0, explainQuestion(e.q, e.subject), T.at(hud, 14, THEME.ink2), { width: mw - 48 }).setOrigin(0.5, 0).setDepth(603) : null;
   const mh = quiz ? 68 * ui + 8 * ui + prompt.height + 20 * ui + rows * bh + (rows - 1) * gap + 14 * ui + 28 * ui + (why ? why.height + 10 * ui : 0) + 74 * ui : 250 * ui;
-  const m = modal(hud, { w: mw, h: mh, title, accent, depth: 600, dimAlpha: 0.4 });
+  const m = modal(hud, { look: 'storybook', w: mw, h: mh, title, accent, depth: 600, dimAlpha: 0.4 });
   let y = m.contentTop;
   if (quiz) {
     const q = e.q;
