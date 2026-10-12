@@ -25,7 +25,7 @@ export function fishCueTick(w, tx, ty) {
     w.events.once('shutdown', () => { w.events.off('update', follow); w.fishCue = null; });
   }
   const hud = w.hud();
-  const show = besideWater(w, tx, ty) && !w.nearNpc && !(hud && hud.blocking);
+  const show = besideWater(w, tx, ty) && !w.nearNpc && !w.swimming && !(hud && hud.blocking);
   if (show && !w.fishCue.visible) w.fishCue.setPosition(w.player.x, w.player.y - 24);
   w.fishCue.setVisible(show);
 }

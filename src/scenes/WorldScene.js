@@ -45,6 +45,8 @@ import { createLamps, refreshLamps } from './world/lamps.js';
 import { createGateways, refreshGateways, createGuide, retargetGuide, guideTick } from './world/guide.js';
 
 const SPEED = 110;          // px/s
+const SWIM_SPEED = 62;      // px/s in the water: a steady breaststroke
+const SWIM_CROP = 0.62;     // how much of the figure shows above the waterline
 const TALK_DIST = 44;       // px between player and NPC centres
 const CHAR_SCALE = CHAR_WORLD_SCALE;   // character frames are drawn large and shown one tile tall
 const IDLE_FRAME = IDLE_FRAMES;
@@ -93,7 +95,7 @@ export class WorldScene extends Phaser.Scene {
     this.placeDrawnHouse();
     const solid = this.make.tilemap({ data: this.map.data, tileWidth: res, tileHeight: res });
     this.layer = solid.createLayer(0, solid.addTilesetImage('tiles', 'tiles', res, res, TILE_PAD, TILE_PAD * 2), 0, 0).setScale(1 / TILE_RES).setVisible(false);
-    this.layer.setCollision(SOLID.filter((id) => id !== TID.tree));   // trees collide on their own layer
+    this.layer.setCollision(SOLID.filter((id) => id !== TID.tree && id !== TID.water));   // trees collide on their own layer; water is swum
     Decor.drawDecor(this);
     Decor.createTrailNumbers(this);
     createTrail(this);
@@ -183,6 +185,7 @@ export class WorldScene extends Phaser.Scene {
     addShadow(this, this.player, 20);
     sortSprite(this.player);
     this.stepTimer = 0;
+    this.swimming = false; this.ripple = null;
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.layer);
     this.physics.add.collider(this.player, this.treeLayer);
@@ -315,15 +318,18 @@ export class WorldScene extends Phaser.Scene {
 
     // Movement (4-way)
     const { dx, dy } = inp;
-    this.player.setVelocity(dx * SPEED, dy * SPEED);
+    this.checkWater();
+    const speed = this.swimming ? SWIM_SPEED : SPEED;
+    this.player.setVelocity(dx * speed, dy * speed);
     if (dx !== 0 || dy !== 0) {
       const dir = Math.abs(dx) >= Math.abs(dy) ? 'side' : dy < 0 ? 'up' : 'down';
       if (dir === 'side') this.player.setFlipX(dx > 0);
       this.facing = dir === 'side' ? (dx > 0 ? 'right' : 'left') : dir;
       this.player.anims.play(`${this.player.texture.key}-${dir}`, true);
-      this.player.anims.timeScale = Math.max(0.5, Math.hypot(dx, dy));   // a gentle joystick walks slowly
+      this.player.anims.timeScale = Math.max(0.5, Math.hypot(dx, dy)) * (this.swimming ? 0.7 : 1);   // a gentle joystick walks slowly; swimming is slower still
     } else this.stopPlayer();
     sortSprite(this.player);
+    if (this.ripple) this.ripple.setPosition(this.player.x, this.waterlineY());
 
     // Dust at the feet while walking, and the critters sort with everyone else.
     if (dx !== 0 || dy !== 0) { this.stepTimer += this.game.loop.delta; if (this.stepTimer > 260) { this.stepTimer = 0; this.dustPuff(); } }
@@ -347,13 +353,55 @@ export class WorldScene extends Phaser.Scene {
       if (near) this.talk(near);
       else if (board) Hub.readBoard(this);
       else if (rim) Hub.tossCoin(this);
-      else Fishing.tryFishing(this);
+      else if (!this.swimming) Fishing.tryFishing(this);   // you fish from the bank, not from the water
     }
   }
 
-  /** A little puff of dust behind the feet, gone in a blink. */
+  // ---- Swimming ------------------------------------------------------------------------------
+
+  /** The square under the player's feet decides: in water the figure sinks to the waist, slows down and leaves ripples. */
+  checkWater() {
+    const b = this.player.body, tx = Math.floor(b.center.x / TILE), ty = Math.floor(b.center.y / TILE);
+    const inWater = !!(this.map.data[ty] && this.map.data[ty][tx] === TID.water);
+    if (inWater !== this.swimming) this.setSwimming(inWater);
+  }
+
+  waterlineY() { const p = this.player; return p.y - p.displayHeight / 2 + p.displayHeight * SWIM_CROP - 1; }
+
+  setSwimming(on) {
+    const p = this.player;
+    this.swimming = on;
+    if (on) {
+      p.setCrop(0, 0, p.frame.width, Math.round(p.frame.height * SWIM_CROP));   // the legs are under the water
+      if (p.shadow) p.shadow.setVisible(false);
+      this.ripple = this.add.ellipse(p.x, this.waterlineY(), 24, 9).setStrokeStyle(1.5, 0xffffff, 0.8).setDepth(SHADOW_DEPTH + 0.01);
+      this.tweens.add({ targets: this.ripple, scaleX: 1.2, scaleY: 1.25, alpha: 0.35, duration: 750, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+    } else {
+      p.setCrop();
+      if (p.shadow) p.shadow.setVisible(true);
+      if (this.ripple) { this.ripple.destroy(); this.ripple = null; }
+    }
+    this.splash(on ? 3 : 2);
+    Sfx.pop();
+  }
+
+  /** Rings spreading on the water where the player went in or came out. */
+  splash(n) {
+    const p = this.player, y = this.waterlineY();
+    for (let i = 0; i < n; i++) {
+      const ring = this.add.ellipse(p.x, y, 10, 4).setStrokeStyle(1.4, 0xffffff, 0.8).setDepth(SHADOW_DEPTH + 0.02);
+      this.tweens.add({ targets: ring, scaleX: 3 + i, scaleY: 3 + i, alpha: 0, duration: 650 + i * 150, delay: i * 120, ease: 'Quad.Out', onComplete: () => ring.destroy() });
+    }
+  }
+
+  /** A little puff of dust behind the feet, gone in a blink; in the water, a ripple ring instead. */
   dustPuff() {
     const p = this.player, fy = p.y + p.displayHeight * 0.46;
+    if (this.swimming) {
+      const ring = this.add.ellipse(p.x, this.waterlineY(), 12, 5).setStrokeStyle(1.2, 0xffffff, 0.7).setDepth(SHADOW_DEPTH + 0.02);
+      this.tweens.add({ targets: ring, scaleX: 2.6, scaleY: 2.6, alpha: 0, duration: 700, ease: 'Quad.Out', onComplete: () => ring.destroy() });
+      return;
+    }
     const puff = this.add.circle(p.x + (Math.random() - 0.5) * 6, fy - 1, 2.2, 0xe6dcc6, 0.55).setDepth(SHADOW_DEPTH + 0.005);
     this.tweens.add({ targets: puff, alpha: 0, scale: 2.4, y: fy - 6, duration: 380, ease: 'Quad.Out', onComplete: () => puff.destroy() });
   }
@@ -375,7 +423,7 @@ export class WorldScene extends Phaser.Scene {
     const hud = this.hud();
     if (z !== this.currentZone) {
       this.currentZone = z;
-      const name = z ? ZONE_NAMES[z] : 'Grasslands';
+      const name = z ? ZONE_NAMES[z] : this.swimming ? 'Open water' : 'Grasslands';
       if (hud) { hud.setZone(name, z); if (z && !hud.blocking) hud.banner(name); }
     }
     const p = Store.getProfile();
