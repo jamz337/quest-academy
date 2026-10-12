@@ -46,7 +46,8 @@ import { createGateways, refreshGateways, createGuide, retargetGuide, guideTick 
 
 const SPEED = 110;          // px/s
 const SWIM_SPEED = 62;      // px/s in the water: a steady breaststroke
-const SWIM_CROP = 0.62;     // how much of the figure shows above the waterline
+const SWIM_CROP = 0.62;     // how much of the figure shows above the waterline when treading water
+const STROKE_CROP = 0.56;   // and when swimming along: head, shoulders and the arms, seen from above
 const TALK_DIST = 44;       // px between player and NPC centres
 const CHAR_SCALE = CHAR_WORLD_SCALE;   // character frames are drawn large and shown one tile tall
 const IDLE_FRAME = IDLE_FRAMES;
@@ -185,7 +186,7 @@ export class WorldScene extends Phaser.Scene {
     addShadow(this, this.player, 20);
     sortSprite(this.player);
     this.stepTimer = 0;
-    this.swimming = false; this.ripple = null;
+    this.swimming = false; this.ripple = null; this.playerScale = this.player.scaleX; this.wakeTimer = 0; this.handSide = 1;
     this.player.setCollideWorldBounds(true);
     this.physics.add.collider(this.player, this.layer);
     this.physics.add.collider(this.player, this.treeLayer);
@@ -323,16 +324,18 @@ export class WorldScene extends Phaser.Scene {
     this.player.setVelocity(dx * speed, dy * speed);
     if (dx !== 0 || dy !== 0) {
       const dir = Math.abs(dx) >= Math.abs(dy) ? 'side' : dy < 0 ? 'up' : 'down';
-      if (dir === 'side') this.player.setFlipX(dx > 0);
       this.facing = dir === 'side' ? (dx > 0 ? 'right' : 'left') : dir;
-      this.player.anims.play(`${this.player.texture.key}-${dir}`, true);
-      this.player.anims.timeScale = Math.max(0.5, Math.hypot(dx, dy)) * (this.swimming ? 0.7 : 1);   // a gentle joystick walks slowly; swimming is slower still
+      if (!this.swimming) {   // in the water, updateSwim poses the figure
+        if (dir === 'side') this.player.setFlipX(dx > 0);
+        this.player.anims.play(`${this.player.texture.key}-${dir}`, true);
+        this.player.anims.timeScale = Math.max(0.5, Math.hypot(dx, dy));   // a gentle joystick walks slowly
+      }
     } else this.stopPlayer();
     sortSprite(this.player);
-    if (this.ripple) this.ripple.setPosition(this.player.x, this.waterlineY());
+    if (this.swimming) this.updateSwim(dx, dy);
 
     // Dust at the feet while walking, and the critters sort with everyone else.
-    if (dx !== 0 || dy !== 0) { this.stepTimer += this.game.loop.delta; if (this.stepTimer > 260) { this.stepTimer = 0; this.dustPuff(); } }
+    if ((dx !== 0 || dy !== 0) && !this.swimming) { this.stepTimer += this.game.loop.delta; if (this.stepTimer > 260) { this.stepTimer = 0; this.dustPuff(); } }
     for (const c of this.critters || []) sortSprite(c);
     if (this.mango) sortSprite(this.mango);
 
@@ -375,14 +378,52 @@ export class WorldScene extends Phaser.Scene {
       p.setCrop(0, 0, p.frame.width, Math.round(p.frame.height * SWIM_CROP));   // the legs are under the water
       if (p.shadow) p.shadow.setVisible(false);
       this.ripple = this.add.ellipse(p.x, this.waterlineY(), 24, 9).setStrokeStyle(1.5, 0xffffff, 0.8).setDepth(SHADOW_DEPTH + 0.01);
-      this.tweens.add({ targets: this.ripple, scaleX: 1.2, scaleY: 1.25, alpha: 0.35, duration: 750, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+      this.rippleTween = this.tweens.add({ targets: this.ripple, alpha: 0.35, duration: 750, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
     } else {
-      p.setCrop();
+      p.setCrop(); p.setRotation(0); p.setScale(this.playerScale); p.anims.timeScale = 1;
       if (p.shadow) p.shadow.setVisible(true);
       if (this.ripple) { this.ripple.destroy(); this.ripple = null; }
     }
     this.splash(on ? 3 : 2);
     Sfx.pop();
+  }
+
+  /**
+   * Swimming, seen from above: moving, the figure turns to point the way it is going and only the head, shoulders and
+   * arms show, the walk's arm swing becoming the stroke; a wake spreads behind and the hands splash in turn. Still, it
+   * treads water facing us, bobbing gently.
+   */
+  updateSwim(dx, dy) {
+    const p = this.player, moving = dx !== 0 || dy !== 0, H = p.displayHeight, t = this.time.now;
+    const bob = 1 + Math.sin(t / 260) * 0.025;
+    p.setScale(this.playerScale * bob);
+    if (moving) {
+      const th = Math.atan2(dy, dx), ux = Math.cos(th), uy = Math.sin(th);
+      p.setFlipX(false).setRotation(th + Math.PI / 2);
+      p.anims.play(`${p.texture.key}-up`, true);
+      p.anims.timeScale = 0.55;
+      if (p.cropHeightFor !== STROKE_CROP) { p.setCrop(0, 0, p.frame.width, Math.round(p.frame.height * STROKE_CROP)); p.cropHeightFor = STROKE_CROP; }
+      // The visible body is the top of the frame, so its middle sits a little ahead of the sprite's centre.
+      const cx = p.x + ux * H * 0.2, cy = p.y + uy * H * 0.2;
+      if (this.ripple) { this.ripple.setPosition(cx, cy).setRotation(th); this.ripple.width = 36; this.ripple.height = 15; this.ripple.setSize(36, 15); }
+      this.wakeTimer += this.game.loop.delta;
+      if (this.wakeTimer > 150) {
+        this.wakeTimer = 0;
+        const wake = this.add.ellipse(cx - ux * H * 0.3, cy - uy * H * 0.3, 10, 6).setStrokeStyle(1.2, 0xffffff, 0.6).setDepth(SHADOW_DEPTH + 0.02).setRotation(th);
+        this.tweens.add({ targets: wake, scaleX: 2.4, scaleY: 2.8, alpha: 0, duration: 900, ease: 'Quad.Out', onComplete: () => wake.destroy() });
+        // A hand splash, alternating sides, beside the shoulders.
+        this.handSide = -this.handSide;
+        const nx = -uy * this.handSide, ny = ux * this.handSide;
+        const hand = this.add.ellipse(cx + ux * H * 0.08 + nx * H * 0.26, cy + uy * H * 0.08 + ny * H * 0.26, 5, 3).setStrokeStyle(1.3, 0xffffff, 0.85).setDepth(SHADOW_DEPTH + 0.03);
+        this.tweens.add({ targets: hand, scaleX: 2.2, scaleY: 2.2, alpha: 0, duration: 420, ease: 'Quad.Out', onComplete: () => hand.destroy() });
+      }
+    } else {
+      p.setRotation(Math.sin(t / 700) * 0.05);
+      p.anims.play(`${p.texture.key}-down`, true);
+      p.anims.timeScale = 0.3;
+      if (p.cropHeightFor !== SWIM_CROP) { p.setCrop(0, 0, p.frame.width, Math.round(p.frame.height * SWIM_CROP)); p.cropHeightFor = SWIM_CROP; }
+      if (this.ripple) { this.ripple.setPosition(p.x, this.waterlineY()).setRotation(0); this.ripple.setSize(24, 9); }
+    }
   }
 
   /** Rings spreading on the water where the player went in or came out. */
@@ -397,11 +438,6 @@ export class WorldScene extends Phaser.Scene {
   /** A little puff of dust behind the feet, gone in a blink; in the water, a ripple ring instead. */
   dustPuff() {
     const p = this.player, fy = p.y + p.displayHeight * 0.46;
-    if (this.swimming) {
-      const ring = this.add.ellipse(p.x, this.waterlineY(), 12, 5).setStrokeStyle(1.2, 0xffffff, 0.7).setDepth(SHADOW_DEPTH + 0.02);
-      this.tweens.add({ targets: ring, scaleX: 2.6, scaleY: 2.6, alpha: 0, duration: 700, ease: 'Quad.Out', onComplete: () => ring.destroy() });
-      return;
-    }
     const puff = this.add.circle(p.x + (Math.random() - 0.5) * 6, fy - 1, 2.2, 0xe6dcc6, 0.55).setDepth(SHADOW_DEPTH + 0.005);
     this.tweens.add({ targets: puff, alpha: 0, scale: 2.4, y: fy - 6, duration: 380, ease: 'Quad.Out', onComplete: () => puff.destroy() });
   }
@@ -409,6 +445,7 @@ export class WorldScene extends Phaser.Scene {
   stopPlayer() {
     if (!this.player || !this.player.body) return;
     this.player.setVelocity(0, 0);
+    if (this.swimming) return;   // treading water keeps its own slow motion
     this.player.anims.stop();
     const f = this.facing === 'left' || this.facing === 'right' ? 'side' : this.facing;
     this.player.setFrame(IDLE_FRAME[f] ?? 0);
