@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New Skill mock-ups</title>
+<style>
+  :root { --ink: #1e1b4b; --ink2: #5a5570; --paper: #f6f1e7; --card: #fff; --accent: #6c4ce0; --soft: #efeaff; --ok: #17694a; --bad: #b02a3d; }
+  body { margin: 0; font-family: Fredoka, 'Segoe UI', sans-serif; background: var(--paper); color: var(--ink); padding: 14px; }
+  h1 { font-size: 22px; margin: 0 0 4px; } p.note { margin: 0 0 14px; color: var(--ink2); font-size: 14px; }
+  .wrap { display: grid; grid-template-columns: 1fr; gap: 16px; } @media (min-width: 1100px) { .wrap { grid-template-columns: 1fr 1fr; } }
+  .card { background: var(--card); border-radius: 18px; padding: 14px; box-shadow: 0 6px 20px rgba(30,27,75,.08); position: relative; }
+  .card h2 { font-size: 18px; margin: 0 0 4px; } .card > p { font-size: 13px; color: var(--ink2); margin: 0 0 10px; }
+  .page { background: var(--soft); border-radius: 14px; padding: 12px; min-height: 330px; position: relative; overflow: hidden; }
+  .title { text-align: center; font-weight: 800; font-size: 18px; color: var(--accent); }
+  .sub { text-align: center; font-size: 13px; color: var(--ink2); margin: 2px 0 8px; min-height: 18px; }
+  canvas { width: 100%; height: auto; border-radius: 12px; display: block; touch-action: none; background: #fff; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+  button { font-family: inherit; font-size: 15px; font-weight: 700; padding: 8px 14px; border-radius: 999px; border: 2px solid var(--accent); background: #fff; color: var(--accent); cursor: pointer; }
+  button.go { background: #2fae63; border-color: #2fae63; color: #fff; }
+  button[disabled] { opacity: .45; cursor: default; }
+  .bubble { background: #fff; border-radius: 14px; padding: 8px 12px; font-weight: 700; font-size: 14px; box-shadow: 0 2px 8px rgba(0,0,0,.08); margin: 6px 0; min-height: 20px; }
+  .buddy { display: flex; gap: 8px; align-items: center; } .buddy .face { font-size: 34px; }
+  .step { background: #fff; border-radius: 12px; padding: 8px 10px 8px 40px; margin: 6px 0; position: relative; font-weight: 600; font-size: 14px; cursor: pointer; border: 2px solid transparent; }
+  .step b.n { position: absolute; left: 8px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: 13px; }
+  .step.bad { border-color: var(--bad); background: #fde7ea; } .step.good { border-color: var(--ok); background: #e3f6ea; }
+  .choices { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 6px; }
+  .choices button { border-radius: 12px; }
+  .hints { display: flex; gap: 6px; justify-content: center; margin: 6px 0; }
+  .hint { background: #fff8e1; border-radius: 12px; padding: 8px 10px; margin: 6px 0; font-size: 14px; font-weight: 600; }
+  .stars { text-align: center; font-size: 20px; letter-spacing: 2px; }
+  .ok { color: var(--ok); } .bad { color: var(--bad); }
+</style>
+</head>
+<body>
+<h1>The New Skill page, four ways to make it hands-on</h1>
+<p class="note">Today the page shows a worked example as text cards revealed with "Next step", then one multiple-choice try. These mock-ups put the child's hands on it. Try them with a mouse or finger.</p>
+<div class="wrap">
+
+  <div class="card">
+    <h2>A. Watch the hand, then you</h2>
+    <p>The lesson happens on the game's own board. A ghost hand does the first one while the villager explains, then the child does one on the same board. If they wait, the right spot starts to glow.</p>
+    <div class="page">
+      <div class="title">New skill: animal homes</div>
+      <div class="buddy"><div class="face">🧑‍🌾</div><div class="bubble" id="aSay"></div></div>
+      <canvas id="aBoard" width="420" height="230"></canvas>
+      <div class="row"><button id="aReplay">↺ Watch again</button><button class="go" id="aGo" disabled>Got it! ▶</button></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>B. Do each step yourself</h2>
+    <p>Each step is something the child does, not reads. "Tap 3 apples", "Now tap 2 more", "How many altogether?" The next step only comes when this one is done.</p>
+    <div class="page">
+      <div class="title">New skill: adding</div>
+      <div class="sub" id="bSub"></div>
+      <canvas id="bBoard" width="420" height="200"></canvas>
+      <div class="bubble" id="bSay"></div>
+      <div class="choices" id="bChoices"></div>
+      <div class="row"><button id="bReset">↺ Start again</button></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>C. Spot the mistake (Grades 3 to 8)</h2>
+    <p>Buddy has worked one out but slipped up. The child taps the wrong step, then picks what it should say. Finding a mistake shows they understand every step, not just the answer.</p>
+    <div class="page">
+      <div class="title">New skill: adding with carrying</div>
+      <div class="sub">47 + 38 = ?</div>
+      <div class="buddy"><div class="face">🦉</div><div class="bubble" id="cSay">I worked this one out. One of my steps is wrong. Can you find it?</div></div>
+      <div id="cSteps"></div>
+      <div class="choices" id="cFix"></div>
+      <div class="row"><button id="cReset">↺ Again</button></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>D. Your turn with a hint ladder</h2>
+    <p>Instead of one fixed tip, the child climbs hints only when they want one: a picture, then the rule, then half the working. Fewer hints earn more stars, so it is their choice.</p>
+    <div class="page">
+      <div class="title">New skill: fractions of a shape</div>
+      <div class="sub">What fraction of the pizza is eaten?</div>
+      <canvas id="dBoard" width="420" height="150"></canvas>
+      <div class="hints"><button id="h1">💡 Hint 1</button><button id="h2" disabled>💡 Hint 2</button><button id="h3" disabled>💡 Hint 3</button></div>
+      <div id="dHints"></div>
+      <div class="choices" id="dChoices"></div>
+      <div class="stars" id="dStars">⭐⭐⭐</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const posOf = (c, e) => { const r = c.getBoundingClientRect(); return { x: (e.clientX - r.left) * c.width / r.width, y: (e.clientY - r.top) * c.height / r.height }; };
+function emoji(x, s, size, px, py) { x.font = size + 'px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(s, px, py); }
+function label(x, s, px, py, color = '#1e1b4b', size = 12) { x.fillStyle = color; x.font = '700 ' + size + 'px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(s, px, py); }
+const speak = (t) => { try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.rate = 0.9; speechSynthesis.speak(u); } catch (e) {} };
+
+// ---- A. Watch the hand, then you ----------------------------------------------------------------------------
+(() => {
+  const c = document.getElementById('aBoard'), x = c.getContext('2d'), say = document.getElementById('aSay'), go = document.getElementById('aGo');
+  const HOMES = [{ id: 'polar', name: 'the ice', col: '#dcefff', x: 10 }, { id: 'desert', name: 'the desert', col: '#f7d58a', x: 147 }, { id: 'ocean', name: 'the sea', col: '#6fa8e6', x: 284 }];
+  let animals, phase, hand, t0, drag = null, idleSince = 0, done = false;
+  function reset() {
+    animals = [{ pic: '🐪', home: 'desert', x: 140, y: 196, hx: 140, hy: 196, placed: false, demo: true }, { pic: '🐻‍❄️', home: 'polar', x: 280, y: 196, hx: 280, hy: 196, placed: false }];
+    phase = 'demo'; t0 = performance.now(); done = false; go.disabled = true;
+    say.textContent = 'Watch me. A camel lives in the hot, dry desert, so it goes here.';
+    speak(say.textContent);
+  }
+  const homeAt = (p) => HOMES.find((h) => p.x > h.x && p.x < h.x + 126 && p.y > 8 && p.y < 158);
+  function draw(t) {
+    x.clearRect(0, 0, c.width, c.height);
+    const glow = phase === 'you' && !done && t - idleSince > 4000;
+    for (const h of HOMES) {
+      x.fillStyle = h.col; x.beginPath(); x.roundRect(h.x, 8, 126, 150, 12); x.fill();
+      if (glow && h.id === 'polar') { x.strokeStyle = `rgba(255,190,0,${0.5 + 0.5 * Math.sin(t / 200)})`; x.lineWidth = 5; x.stroke(); }
+      label(x, h.name, h.x + 63, 22, h.id === 'ocean' ? '#fff' : '#1e1b4b');
+    }
+    x.fillStyle = '#c9a26b'; x.beginPath(); x.roundRect(80, 172, 260, 50, 10); x.fill();
+    // The demo: the ghost hand carries the camel from the truck to the desert.
+    if (phase === 'demo') {
+      const k = Math.min(1, Math.max(0, (t - t0 - 900) / 1600)), e = k < 0.5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+      const cam = animals[0]; cam.x = 140 + (210 - 140) * e; cam.y = 196 + (95 - 196) * e;
+      if (k >= 1 && !cam.placed) { cam.placed = true; setTimeout(() => { phase = 'you'; idleSince = performance.now(); say.textContent = 'Your turn! Where does the polar bear live? Drag it home.'; speak(say.textContent); }, 900); }
+      hand = { x: cam.x + 14, y: cam.y + 18, press: t - t0 > 900 && k < 1 };
+    }
+    for (const a of animals) emoji(x, a.pic, 34, a.x, a.y);
+    if (phase === 'demo' && hand) { x.globalAlpha = 0.85; emoji(x, '👆', hand.press ? 30 : 34, hand.x, hand.y); x.globalAlpha = 1; }
+    if (glow) { const bear = animals[1]; x.globalAlpha = 0.5 + 0.5 * Math.sin(t / 200); emoji(x, '👆', 28, bear.hx + 14, bear.hy + 16); x.globalAlpha = 1; }
+    requestAnimationFrame(draw);
+  }
+  c.addEventListener('pointerdown', (e) => { if (phase !== 'you' || done) return; const p = posOf(c, e), b = animals[1]; if (Math.hypot(p.x - b.x, p.y - b.y) < 26) { drag = b; c.setPointerCapture(e.pointerId); } });
+  c.addEventListener('pointermove', (e) => { if (!drag) return; const p = posOf(c, e); drag.x = p.x; drag.y = p.y; idleSince = performance.now(); });
+  c.addEventListener('pointerup', () => {
+    if (!drag) return; const b = drag; drag = null; const h = homeAt(b);
+    if (h && h.id === b.home) { b.x = h.x + 63; b.y = 95; done = true; go.disabled = false; say.innerHTML = '<span class="ok">Yes! Thick fur keeps it warm on the ice. You have got it!</span>'; speak('Yes! Thick fur keeps it warm on the ice. You have got it!'); }
+    else { b.x = b.hx; b.y = b.hy; idleSince = 0; say.innerHTML = h ? `<span class="bad">Brrr, not ${h.name}. Think: where is it icy? (It's glowing now.)</span>` : say.innerHTML; }
+  });
+  document.getElementById('aReplay').onclick = reset;
+  go.onclick = () => { say.textContent = 'Off to play!'; };
+  reset(); requestAnimationFrame(draw);
+})();
+
+// ---- B. Do each step yourself -------------------------------------------------------------------------------
+(() => {
+  const c = document.getElementById('bBoard'), x = c.getContext('2d'), sub = document.getElementById('bSub'), say = document.getElementById('bSay'), ch = document.getElementById('bChoices');
+  let lit, step;
+  const APPLES = Array.from({ length: 8 }, (_, i) => ({ x: 40 + (i % 8) * 48, y: 70 }));
+  const STEPS = ['Tap 3 apples to put them in the basket.', 'Now tap 2 more apples.', 'How many apples are in the basket altogether?'];
+  function reset() { lit = []; step = 0; ch.innerHTML = ''; show(); }
+  function show() { sub.textContent = `Step ${step + 1} of 3:  3 + 2`; say.textContent = STEPS[step]; speak(STEPS[step]); draw(); }
+  function draw() {
+    x.clearRect(0, 0, c.width, c.height);
+    APPLES.forEach((a, i) => { if (!lit.includes(i)) emoji(x, '🍎', 34, a.x, a.y); });
+    x.fillStyle = '#e9c48a'; x.beginPath(); x.roundRect(110, 120, 200, 70, 16); x.fill(); label(x, 'the basket', 210, 182, '#8b6b3e', 11);
+    lit.forEach((i, k) => { emoji(x, '🍎', 28, 130 + k * 36, 148); label(x, String(k + 1), 130 + k * 36, 128, k < 3 ? '#6c4ce0' : '#2fae63', 12); });
+    if (lit.length) label(x, `${Math.min(lit.length, 3)}${lit.length > 3 ? ' + ' + (lit.length - 3) : ''}`, 360, 150, '#1e1b4b', 18);
+  }
+  c.addEventListener('pointerdown', (e) => {
+    if (step > 1) return;
+    const p = posOf(c, e), i = APPLES.findIndex((a, k) => !lit.includes(k) && Math.hypot(p.x - a.x, p.y - a.y) < 22);
+    if (i < 0) return;
+    if ((step === 0 && lit.length >= 3) || (step === 1 && lit.length >= 5)) return;
+    lit.push(i); draw();
+    if (step === 0 && lit.length === 3) { step = 1; setTimeout(show, 500); }
+    else if (step === 1 && lit.length === 5) {
+      step = 2; setTimeout(() => { show(); ch.innerHTML = ''; [4, 5, 6, 32].forEach((n) => { const b = document.createElement('button'); b.textContent = n; b.onclick = () => { if (n === 5) { say.innerHTML = '<span class="ok">Yes! 3 and 2 more makes 5. 3 + 2 = 5 ⭐</span>'; speak('Yes! 3 and 2 more makes 5.'); b.className = 'go'; } else { say.innerHTML = `<span class="bad">Count the apples in the basket again: 1, 2, 3, 4, 5.</span>`; b.disabled = true; } }; ch.appendChild(b); }); }, 500);
+    }
+  });
+  document.getElementById('bReset').onclick = reset;
+  reset();
+})();
+
+// ---- C. Spot the mistake --------------------------------------------------------------------------------------
+(() => {
+  const steps = document.getElementById('cSteps'), fix = document.getElementById('cFix'), say = document.getElementById('cSay');
+  const STEPS = ['Add the ones: 7 + 8 = 15.', 'Write 5 in the ones and carry the 1 ten.', 'Add the tens: 4 + 3 = 7.', 'So the answer is 75.'];
+  const WRONG = 3, FIXES = ['So the answer is 85: 7 tens plus the 1 carried ten is 8 tens.', 'So the answer is 715.', 'So the answer is 75: carrying does not change the tens.'];
+  function reset() {
+    fix.innerHTML = ''; say.textContent = 'I worked this one out. One of my steps is wrong. Can you find it?';
+    steps.innerHTML = STEPS.map((s, i) => `<div class="step" data-i="${i}"><b class="n">${i + 1}</b>${s}</div>`).join('');
+    steps.querySelectorAll('.step').forEach((el) => el.onclick = () => tap(Number(el.dataset.i), el));
+  }
+  function tap(i, el) {
+    if (fix.children.length) return;
+    if (i !== WRONG) { el.classList.add('good'); say.innerHTML = `<span class="ok">Step ${i + 1} is right.</span> Keep looking!`; return; }
+    el.classList.add('bad'); say.innerHTML = 'You found it! What should step 4 say?';
+    FIXES.forEach((f, k) => { const b = document.createElement('button'); b.textContent = f; b.style.fontSize = '13px'; b.onclick = () => { if (k === 0) { el.classList.remove('bad'); el.classList.add('good'); el.innerHTML = `<b class="n">4</b>${f}`; say.innerHTML = '<span class="ok">That is it! I forgot the ten I carried. 47 + 38 = 85 ⭐</span>'; fix.innerHTML = ''; } else { b.disabled = true; say.innerHTML = '<span class="bad">Not that one. What happened to the 1 ten we carried?</span>'; } }; fix.appendChild(b); });
+  }
+  document.getElementById('cReset').onclick = reset;
+  reset();
+})();
+
+// ---- D. Your turn with a hint ladder ----------------------------------------------------------------------------
+(() => {
+  const c = document.getElementById('dBoard'), x = c.getContext('2d'), list = document.getElementById('dHints'), ch = document.getElementById('dChoices'), stars = document.getElementById('dStars');
+  let used = 0, shadeTalk = false;
+  const HINTS = [
+    { text: 'Look: the pizza is cut into equal slices. Count ALL the slices.', show: 'count' },
+    { text: 'The bottom number is how many slices in all. The top number is how many are eaten.', show: 'rule' },
+    { text: 'There are 8 slices in all, so the bottom number is 8. Now count the eaten ones for the top.', show: 'half' }
+  ];
+  function draw() {
+    x.clearRect(0, 0, c.width, c.height);
+    const cx = 110, cy = 75, r = 62;
+    for (let i = 0; i < 8; i++) {
+      const a0 = -Math.PI / 2 + (i * Math.PI) / 4, a1 = a0 + Math.PI / 4, eaten = i < 3;
+      x.beginPath(); x.moveTo(cx, cy); x.arc(cx, cy, r, a0, a1); x.closePath();
+      x.fillStyle = eaten ? '#f4e6cf' : '#f2b04a'; x.fill(); x.strokeStyle = '#a0522d'; x.lineWidth = 2; x.stroke();
+      if (!eaten) emoji(x, '🍕', 10, cx + Math.cos(a0 + 0.39) * r * 0.62, cy + Math.sin(a0 + 0.39) * r * 0.62);
+      if (used >= 1) label(x, String(i + 1), cx + Math.cos(a0 + 0.39) * (r + 12), cy + Math.sin(a0 + 0.39) * (r + 12), eaten ? '#b02a3d' : '#5a5570', 11);
+    }
+    if (used >= 2) { label(x, 'eaten', 300, 50, '#b02a3d', 14); label(x, '─────', 300, 72, '#1e1b4b', 14); label(x, 'all the slices', 300, 94, '#1e1b4b', 14); }
+    if (used >= 3) { label(x, '?', 300, 40, '#b02a3d', 22); label(x, '8', 300, 108, '#1e1b4b', 22); }
+  }
+  function useHint(k) {
+    used = Math.max(used, k + 1);
+    list.innerHTML = HINTS.slice(0, used).map((h, i) => `<div class="hint">💡 ${i + 1}. ${h.text}</div>`).join('');
+    document.getElementById('h2').disabled = used < 1; document.getElementById('h3').disabled = used < 2;
+    stars.textContent = '⭐'.repeat(Math.max(1, 3 - used)) + '☆'.repeat(Math.min(2, used));
+    speak(HINTS[k].text); draw();
+  }
+  ['h1', 'h2', 'h3'].forEach((id, k) => document.getElementById(id).onclick = () => useHint(k));
+  ['3/8', '5/8', '3/5', '8/3'].forEach((f) => { const b = document.createElement('button'); b.textContent = f; b.onclick = () => { if (f === '3/8') { b.className = 'go'; list.innerHTML += `<div class="hint ok">Yes! 3 of the 8 slices are eaten: 3/8. ${'⭐'.repeat(Math.max(1, 3 - used))}</div>`; } else { b.disabled = true; list.innerHTML += `<div class="hint bad">Not ${f}. Try a hint if you like!</div>`; } }; ch.appendChild(b); });
+  draw();
+})();
+</script>
+</body>
+</html>
