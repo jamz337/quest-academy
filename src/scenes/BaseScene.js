@@ -55,9 +55,13 @@ export class BaseScene extends Phaser.Scene {
     if (this.leaving) return;
     this.leaving = true;
     const cam = this.cameras && this.cameras.main;
-    const start = () => (data === undefined ? this.scene.start(key) : this.scene.start(key, data));
+    let started = false;
+    const start = () => { if (started) return; started = true; if (data === undefined) this.scene.start(key); else this.scene.start(key, data); };
     if (!this.fade || !cam || typeof cam.fadeOut !== 'function') { start(); return; }
     cam.fadeOut(THEME.motion.base, ...FADE, (c, progress) => { if (progress >= 1) start(); });
+    // The fade runs on game frames; a throttled or struggling device can make it crawl (a 0.18 s fade taking seconds,
+    // so a tap looks ignored). A real-time fallback makes the change happen on time regardless.
+    setTimeout(() => { if (this.sys && this.sys.isActive()) start(); }, THEME.motion.base + 250);
   }
 
   /** Convenience: current viewport (refreshed on rebuild). */
