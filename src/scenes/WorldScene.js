@@ -220,8 +220,7 @@ export class WorldScene extends Phaser.Scene {
       s.boss = boss;
       addShadow(this, s, 24); sortSprite(s);
       if (bossDefeated(Store.getProfile(), boss.zone)) this.poseDefeated(s);
-      this.npcs.push(s);
-      this.tweens.add({ targets: s, y: s.y - 3, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+      this.npcs.push(s);   // bosses stand their ground (no bobbing: with a shadow it looked like floating)
     }
     this.physics.add.collider(this.player, this.bossGroup);   // villagers are walked past, not into
   }
