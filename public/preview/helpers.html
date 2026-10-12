@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Community Helpers mock-ups</title>
+<style>
+  :root { --ink: #1e1b4b; --paper: #f6f1e7; --card: #fff; --grass: #8fd48a; --road: #c9c3b8; --accent: #30589c; --gold: #ffc531; }
+  body { margin: 0; font-family: Fredoka, 'Segoe UI', sans-serif; background: var(--paper); color: var(--ink); padding: 14px; }
+  h1 { font-size: 22px; margin: 0 0 4px; } p.note { margin: 0 0 14px; color: #5a5570; font-size: 14px; }
+  .wrap { display: grid; grid-template-columns: 1fr; gap: 16px; } @media (min-width: 1000px) { .wrap { grid-template-columns: 1fr 1fr 1fr; } }
+  .card { background: var(--card); border-radius: 18px; padding: 14px; box-shadow: 0 6px 20px rgba(30,27,75,.08); }
+  .card h2 { font-size: 18px; margin: 0 0 4px; } .card p { font-size: 13px; color: #5a5570; margin: 0 0 10px; }
+  canvas { width: 100%; height: auto; border-radius: 14px; display: block; touch-action: none; }
+  .ask { font-weight: 700; font-size: 15px; margin: 8px 0; min-height: 44px; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+  button { font-family: inherit; font-size: 15px; font-weight: 700; padding: 8px 14px; border-radius: 999px; border: 2px solid var(--accent); background: #fff; color: var(--accent); cursor: pointer; }
+  button.go { background: var(--accent); color: #fff; }
+  .ok { color: #17694a; } .bad { color: #b02a3d; }
+</style>
+</head>
+<body>
+<h1>Community Helpers, three ways to make it hands-on</h1>
+<p class="note">Rough mock-ups you can try with a mouse or finger. The same facts as today (who helps, what they use, where they work, how a town runs), answered by doing.</p>
+<div class="wrap">
+  <div class="card">
+    <h2>A. Who do you call?</h2>
+    <p>A little town. Trouble pops up at the house ("Smoke is coming from the kitchen!"). Tap the right building and the helper's vehicle drives over. Pre-K hears it read aloud and sees pictures only.</p>
+    <canvas id="town" width="360" height="300"></canvas>
+    <div class="ask" id="townAsk"></div>
+    <div class="row"><button id="townNext">Next ▶</button></div>
+  </div>
+  <div class="card">
+    <h2>B. Pack the kit</h2>
+    <p>A helper is off to work with an empty bag. Drag the two things they need from the shelf into the bag. Wrong things bounce back with a word about who really uses them.</p>
+    <canvas id="kit" width="360" height="300"></canvas>
+    <div class="ask" id="kitAsk"></div>
+    <div class="row"><button id="kitNext">Next ▶</button></div>
+  </div>
+  <div class="card">
+    <h2>C. Run the town (Grades 4 to 8)</h2>
+    <p>The town's tax chest. Drag a coin onto each thing taxes should pay for. Private things (the sweet shop, a birthday party) send the coin back. Later rounds: vote for the mayor, pass a law in parliament.</p>
+    <canvas id="budget" width="360" height="300"></canvas>
+    <div class="ask" id="budgetAsk"></div>
+    <div class="row"><button id="budgetNext">Next ▶</button></div>
+  </div>
+</div>
+<script>
+const rnd = (n) => Math.floor(Math.random() * n);
+const pick = (arr) => arr[rnd(arr.length)];
+const posOf = (c) => (e) => { const r = c.getBoundingClientRect(); return { x: (e.clientX - r.left) * c.width / r.width, y: (e.clientY - r.top) * c.height / r.height }; };
+function emoji(x, s, size, px, py) { x.font = size + 'px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(s, px, py); }
+function label(x, s, px, py, color = '#1e1b4b', size = 11) { x.fillStyle = color; x.font = '700 ' + size + 'px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(s, px, py); }
+
+// ---- A. Who do you call? -------------------------------------------------------------------------------
+(() => {
+  const c = document.getElementById('town'), x = c.getContext('2d'), ask = document.getElementById('townAsk');
+  const B = [
+    { id: 'hospital', pic: '🏥', name: 'hospital', x: 60, y: 60, car: '🚑', who: 'doctor' },
+    { id: 'fire', pic: '🚒', name: 'fire station', x: 180, y: 50, car: '🚒', who: 'firefighter' },
+    { id: 'police', pic: '🚔', name: 'police station', x: 300, y: 60, car: '🚓', who: 'police officer' },
+    { id: 'post', pic: '🏤', name: 'post office', x: 50, y: 240, car: '🚚', who: 'postal worker' },
+    { id: 'vet', pic: '🐕', name: 'animal clinic', x: 180, y: 250, car: '🚐', who: 'vet' },
+    { id: 'school', pic: '🏫', name: 'school', x: 310, y: 240, car: '🚌', who: 'teacher' }
+  ];
+  const HOUSE = { x: 180, y: 150 };
+  const CALLS = [
+    { say: 'Smoke is coming from the kitchen!', pic: '🔥', to: 'fire' },
+    { say: 'Grandpa has a bad cough and a fever.', pic: '🤒', to: 'hospital' },
+    { say: "Someone has taken Mr Lee's bicycle.", pic: '🚲', to: 'police' },
+    { say: 'This parcel must get to Aunt May in Speightstown.', pic: '📦', to: 'post' },
+    { say: 'The puppy has hurt its paw.', pic: '🐶', to: 'vet' },
+    { say: 'Mia wants to learn to read.', pic: '📖', to: 'school' }
+  ];
+  let q, car = null, done = false;
+  function next() { q = pick(CALLS); car = null; done = false; ask.innerHTML = `${q.pic} ${q.say} <span style="font-weight:500;color:#5a5570">Tap the building to call.</span>`; draw(); }
+  function draw() {
+    x.fillStyle = '#8fd48a'; x.fillRect(0, 0, c.width, c.height);
+    x.strokeStyle = '#c9c3b8'; x.lineWidth = 14; x.lineCap = 'round';
+    for (const b of B) { x.beginPath(); x.moveTo(b.x, b.y + 18); x.lineTo(HOUSE.x, HOUSE.y + 14); x.stroke(); }
+    for (const b of B) { emoji(x, b.pic, 30, b.x, b.y); label(x, b.name, b.x, b.y + 26); }
+    emoji(x, '🏠', 34, HOUSE.x, HOUSE.y);
+    if (!done) emoji(x, q.pic, 22, HOUSE.x + 22, HOUSE.y - 22);
+    if (car) emoji(x, car.pic, 26, car.x, car.y);
+    label(x, 'N ▲', c.width - 30, 14, '#1e1b4b', 13);
+  }
+  function drive(b) {
+    const t0 = performance.now();
+    const step = (t) => { const k = Math.min(1, (t - t0) / 1400); car = { pic: b.car, x: b.x + (HOUSE.x - b.x) * k, y: b.y + 18 + (HOUSE.y + 14 - b.y - 18) * k }; draw(); if (k < 1) requestAnimationFrame(step); else { done = true; draw(); ask.innerHTML = `<span class="ok">The ${b.who} is here! ⭐</span>`; setTimeout(next, 1800); } };
+    requestAnimationFrame(step);
+  }
+  c.addEventListener('pointerdown', (e) => {
+    if (car) return;
+    const p = posOf(c)(e), b = B.find((b) => Math.hypot(p.x - b.x, p.y - b.y) < 34);
+    if (!b) return;
+    if (b.id === q.to) drive(b); else ask.innerHTML = `<span class="bad">The ${b.who} can't help with that. Who does?</span>`;
+  });
+  document.getElementById('townNext').onclick = next;
+  next();
+})();
+
+// ---- B. Pack the kit -----------------------------------------------------------------------------------
+(() => {
+  const c = document.getElementById('kit'), x = c.getContext('2d'), ask = document.getElementById('kitAsk');
+  const KITS = [
+    { name: 'doctor', pic: '👩‍⚕️', tools: [['🩺', 'a stethoscope'], ['🌡️', 'a thermometer']] },
+    { name: 'firefighter', pic: '👨‍🚒', tools: [['🧯', 'a hose'], ['🪜', 'a ladder']] },
+    { name: 'chef', pic: '👨‍🍳', tools: [['🍳', 'a frying pan'], ['🔪', 'a knife']] },
+    { name: 'farmer', pic: '👩‍🌾', tools: [['🚜', 'a tractor'], ['🪣', 'a bucket']] },
+    { name: 'builder', pic: '👷', tools: [['🔨', 'a hammer'], ['🧱', 'bricks']] },
+    { name: 'fisher', pic: '🎣', tools: [['🪢', 'a net'], ['🛶', 'a boat']] },
+    { name: 'teacher', pic: '👩‍🏫', tools: [['📋', 'a whiteboard'], ['📚', 'books']] },
+    { name: 'postal worker', pic: '📫', tools: [['✉️', 'letters'], ['📦', 'a parcel']] },
+    { name: 'pilot', pic: '✈️', tools: [['🗺️', 'a flight map'], ['🎧', 'a headset']] }
+  ];
+  const BAG = { x: 95, y: 215, w: 110, h: 70 };
+  let kit, shelf, packed, drag = null;
+  function next() {
+    kit = pick(KITS); packed = 0;
+    const others = KITS.filter((k) => k !== kit);
+    const wrong = []; while (wrong.length < 4) { const o = pick(others), t = pick(o.tools); if (!wrong.some((w) => w[0] === t[0]) && !kit.tools.some((k) => k[0] === t[0])) wrong.push([...t, o.name]); }
+    shelf = [...kit.tools.map((t) => [...t, kit.name]), ...wrong].sort(() => Math.random() - 0.5).map((t, i) => ({ pic: t[0], name: t[1], owner: t[2], hx: 235 + (i % 2) * 70, hy: 60 + Math.floor(i / 2) * 75, x: 0, y: 0, home: true, inBag: false }));
+    shelf.forEach((t) => { t.x = t.hx; t.y = t.hy; });
+    ask.innerHTML = `The ${kit.name} is off to work. Drag the two things they need into the bag.`; draw();
+  }
+  function draw() {
+    x.fillStyle = '#fff8ef'; x.fillRect(0, 0, c.width, c.height);
+    x.fillStyle = '#e9ddc6'; x.fillRect(200, 20, 150, 240); label(x, 'the shelf', 275, 32, '#8b6b3e', 12);
+    emoji(x, kit.pic, 64, 150, 100); label(x, 'the ' + kit.name, 150, 150, '#1e1b4b', 13);
+    x.fillStyle = packed === 2 ? '#d7f3df' : '#ffe9b8'; x.strokeStyle = '#b37400'; x.lineWidth = 3;
+    x.beginPath(); x.roundRect(BAG.x - BAG.w / 2, BAG.y - BAG.h / 2, BAG.w, BAG.h, 14); x.fill(); x.stroke();
+    label(x, packed === 2 ? 'Packed! ⭐' : 'the bag', BAG.x, BAG.y + BAG.h / 2 + 12, '#b37400', 12);
+    shelf.forEach((t) => { if (t.inBag) return; if (!t.home) x.globalAlpha = 0.9; emoji(x, t.pic, 32, t.x, t.y); x.globalAlpha = 1; });
+    shelf.filter((t) => t.inBag).forEach((t, i) => emoji(x, t.pic, 30, BAG.x - 26 + i * 52, BAG.y));
+  }
+  const pos = posOf(c);
+  c.addEventListener('pointerdown', (e) => { const p = pos(e); drag = shelf.find((t) => !t.inBag && Math.hypot(p.x - t.x, p.y - t.y) < 24) || null; if (drag) { drag.home = false; c.setPointerCapture(e.pointerId); } });
+  c.addEventListener('pointermove', (e) => { if (!drag) return; const p = pos(e); drag.x = p.x; drag.y = p.y; draw(); });
+  c.addEventListener('pointerup', () => {
+    if (!drag) return;
+    const t = drag; drag = null;
+    const over = Math.abs(t.x - BAG.x) < BAG.w / 2 + 10 && Math.abs(t.y - BAG.y) < BAG.h / 2 + 10;
+    if (over && t.owner === kit.name) { t.inBag = true; packed += 1; ask.innerHTML = packed === 2 ? `<span class="ok">The ${kit.name} has everything. Off to work! ⭐</span>` : `<span class="ok">Yes, ${t.name}. One more.</span>`; if (packed === 2) setTimeout(next, 1800); }
+    else if (over) ask.innerHTML = `<span class="bad">${t.name[0].toUpperCase() + t.name.slice(1)}? That is what a ${t.owner} uses.</span>`;
+    t.x = t.hx; t.y = t.hy; t.home = true; draw();
+  });
+  document.getElementById('kitNext').onclick = next;
+  next();
+})();
+
+// ---- C. Run the town -----------------------------------------------------------------------------------
+(() => {
+  const c = document.getElementById('budget'), x = c.getContext('2d'), ask = document.getElementById('budgetAsk');
+  const ALL = [
+    { pic: '🚒', name: 'fire service', pub: true }, { pic: '🏫', name: 'the school', pub: true }, { pic: '🏥', name: 'the hospital', pub: true },
+    { pic: '🛣️', name: 'the roads', pub: true }, { pic: '💡', name: 'street lights', pub: true }, { pic: '🏛️', name: 'the library', pub: true },
+    { pic: '🍬', name: 'the sweet shop', pub: false, why: 'A shop is a private business; it earns its own money.' },
+    { pic: '🎂', name: 'a birthday party', pub: false, why: 'A party is for one family, not something everyone shares.' },
+    { pic: '⚽', name: 'a football team\'s kit', pub: false, why: 'A club buys its own kit; taxes pay for what everyone shares.' },
+    { pic: '🎁', name: 'presents for the mayor', pub: false, why: 'Taxes are not the mayor\'s to spend on themselves.' }
+  ];
+  let items, coins, drag = null;
+  function next() {
+    const pub = ALL.filter((a) => a.pub).sort(() => Math.random() - 0.5).slice(0, 4), priv = ALL.filter((a) => !a.pub).sort(() => Math.random() - 0.5).slice(0, 2);
+    items = [...pub, ...priv].sort(() => Math.random() - 0.5).map((a, i) => ({ ...a, x: 70 + (i % 3) * 110, y: 60 + Math.floor(i / 3) * 80, paid: false }));
+    coins = Array.from({ length: 4 }, (_, i) => ({ hx: 60 + i * 60, hy: 255, x: 60 + i * 60, y: 255, used: false }));
+    ask.innerHTML = 'The town has collected its taxes. Drag a coin to each thing the town should pay for.'; draw();
+  }
+  function draw() {
+    x.fillStyle = '#fff8ef'; x.fillRect(0, 0, c.width, c.height);
+    for (const it of items) { x.fillStyle = it.paid ? '#d7f3df' : '#eef2f8'; x.strokeStyle = it.paid ? '#17694a' : '#c7d0e0'; x.lineWidth = 2; x.beginPath(); x.roundRect(it.x - 50, it.y - 32, 100, 64, 12); x.fill(); x.stroke(); emoji(x, it.pic, 26, it.x, it.y - 8); label(x, it.name, it.x, it.y + 20, '#1e1b4b', 10); if (it.paid) emoji(x, '🪙', 16, it.x + 38, it.y - 20); }
+    x.fillStyle = '#e9ddc6'; x.beginPath(); x.roundRect(20, 225, 320, 60, 12); x.fill(); label(x, 'the tax chest', 300, 240, '#8b6b3e', 11);
+    for (const co of coins) if (!co.used) emoji(x, '🪙', 30, co.x, co.y);
+  }
+  const pos = posOf(c);
+  c.addEventListener('pointerdown', (e) => { const p = pos(e); drag = coins.find((co) => !co.used && Math.hypot(p.x - co.x, p.y - co.y) < 22) || null; if (drag) c.setPointerCapture(e.pointerId); });
+  c.addEventListener('pointermove', (e) => { if (!drag) return; const p = pos(e); drag.x = p.x; drag.y = p.y; draw(); });
+  c.addEventListener('pointerup', () => {
+    if (!drag) return;
+    const co = drag; drag = null;
+    const it = items.find((it) => !it.paid && Math.abs(co.x - it.x) < 55 && Math.abs(co.y - it.y) < 36);
+    if (it && it.pub) { it.paid = true; co.used = true; const left = items.filter((i) => i.pub && !i.paid).length; ask.innerHTML = left ? `<span class="ok">Yes, ${it.name} is a public service.</span> ${left} more.` : '<span class="ok">The town is running! Everyone shares what taxes pay for. ⭐</span>'; if (!left) setTimeout(next, 2200); }
+    else if (it) ask.innerHTML = `<span class="bad">Not ${it.name}. ${it.why}</span>`;
+    co.x = co.hx; co.y = co.hy; draw();
+  });
+  document.getElementById('budgetNext').onclick = next;
+  next();
+})();
+</script>
+</body>
+</html>
