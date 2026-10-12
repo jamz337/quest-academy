@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flag Finder mock-ups</title>
+<style>
+  :root { --ink: #1e1b4b; --paper: #f6f1e7; --card: #fff; --sea: #8fb8e8; --accent: #30589c; --gold: #ffc531; }
+  body { margin: 0; font-family: Fredoka, 'Segoe UI', sans-serif; background: var(--paper); color: var(--ink); padding: 14px; }
+  h1 { font-size: 22px; margin: 0 0 4px; } p.note { margin: 0 0 14px; color: #5a5570; font-size: 14px; }
+  .wrap { display: grid; grid-template-columns: 1fr; gap: 16px; } @media (min-width: 1000px) { .wrap { grid-template-columns: 1fr 1fr 1fr; } }
+  .card { background: var(--card); border-radius: 18px; padding: 14px; box-shadow: 0 6px 20px rgba(30,27,75,.08); }
+  .card h2 { font-size: 18px; margin: 0 0 4px; } .card p { font-size: 13px; color: #5a5570; margin: 0 0 10px; }
+  canvas { width: 100%; height: auto; border-radius: 14px; display: block; touch-action: none; }
+  .ask { font-weight: 700; font-size: 15px; margin: 8px 0; min-height: 44px; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+  button { font-family: inherit; font-size: 15px; font-weight: 700; padding: 8px 14px; border-radius: 999px; border: 2px solid var(--accent); background: #fff; color: var(--accent); cursor: pointer; }
+  button.go { background: var(--accent); color: #fff; }
+  .pot { width: 38px; height: 38px; border-radius: 50%; border: 3px solid #d6d2c8; padding: 0; }
+  .pot.on { border-color: var(--ink); transform: scale(1.15); }
+  .ok { color: #17694a; } .bad { color: #b02a3d; }
+</style>
+</head>
+<body>
+<h1>Flag Finder, three ways to make it hands-on</h1>
+<p class="note">Rough mock-ups you can try with a mouse or finger. The flags are the game's own drawings. Same facts as today (which flag, whose flag, where in the world), answered by doing.</p>
+<div class="wrap">
+  <div class="card">
+    <h2>A. Paint the flag</h2>
+    <p>A blank flag with its shapes drawn in. Pick a paint pot, tap a part to fill it, then Check. Wrong parts wobble and say what colour goes there on the second try.</p>
+    <canvas id="paint" width="360" height="240"></canvas>
+    <div class="ask" id="paintAsk"></div>
+    <div class="row" id="pots"></div>
+    <div class="row"><button class="go" id="paintCheck">Check ✓</button><button id="paintNext">Next ▶</button></div>
+  </div>
+  <div class="card">
+    <h2>B. Fly it where it belongs</h2>
+    <p>A map of the world. Drag the flag to the part of the world its country is in. Older grades drop it on the country's spot and name the capital.</p>
+    <canvas id="world" width="360" height="270"></canvas>
+    <div class="ask" id="worldAsk"></div>
+    <div class="row"><button id="worldNext">Next ▶</button></div>
+  </div>
+  <div class="card">
+    <h2>C. Flag pairs</h2>
+    <p>Cards face down. Turn two at a time to match each flag with its country's name. Pre-K would match a flag with the same flag.</p>
+    <canvas id="pairs" width="360" height="270"></canvas>
+    <div class="ask" id="pairsAsk"></div>
+    <div class="row"><button id="pairsNext">New game ▶</button></div>
+  </div>
+</div>
+<script type="module">
+// The game's own flags (src/ui/Flags.js) drawn through a little canvas stand-in for Phaser's Graphics.
+// On a build without the source files the emoji flag is used instead.
+let drawFlag = null;
+try { ({ drawFlag } = await import('/src/ui/Flags.js')); } catch (e) { drawFlag = null; }
+const css = (c, a = 1) => `rgba(${(c >> 16) & 255},${(c >> 8) & 255},${c & 255},${a})`;
+function graphicsOn(x) {
+  return {
+    fillStyle(c, a = 1) { x.fillStyle = css(c, a); }, lineStyle(w, c, a = 1) { x.lineWidth = w; x.strokeStyle = css(c, a); },
+    fillRect(a, b, w, h) { x.fillRect(a, b, w, h); }, strokeRect(a, b, w, h) { x.strokeRect(a, b, w, h); },
+    fillTriangle(a, b, c, d, e, f) { x.beginPath(); x.moveTo(a, b); x.lineTo(c, d); x.lineTo(e, f); x.closePath(); x.fill(); },
+    fillPoints(pts) { x.beginPath(); pts.forEach((p, i) => (i ? x.lineTo(p.x, p.y) : x.moveTo(p.x, p.y))); x.closePath(); x.fill(); },
+    fillCircle(a, b, r) { x.beginPath(); x.arc(a, b, r, 0, Math.PI * 2); x.fill(); }, strokeCircle(a, b, r) { x.beginPath(); x.arc(a, b, r, 0, Math.PI * 2); x.stroke(); },
+    fillEllipse(a, b, w, h) { x.beginPath(); x.ellipse(a, b, w / 2, h / 2, 0, 0, Math.PI * 2); x.fill(); },
+    lineBetween(a, b, c, d) { x.beginPath(); x.moveTo(a, b); x.lineTo(c, d); x.stroke(); }
+  };
+}
+const flagCache = {};
+function flagCanvas(code) {
+  if (flagCache[code]) return flagCache[code];
+  const c = document.createElement('canvas'); c.width = 150; c.height = 100;
+  const x = c.getContext('2d');
+  if (drawFlag) drawFlag(graphicsOn(x), code);
+  else { x.fillStyle = '#eef2f8'; x.fillRect(0, 0, 150, 100); x.font = '80px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String.fromCodePoint(...[...code.toUpperCase()].map((ch) => 0x1f1e6 + ch.charCodeAt(0) - 65)), 75, 54); }
+  return (flagCache[code] = c);
+}
+const putFlag = (x, code, cx, cy, w) => { const h = (w * 2) / 3; x.drawImage(flagCanvas(code), cx - w / 2, cy - h / 2, w, h); };
+const rnd = (n) => Math.floor(Math.random() * n), pick = (a) => a[rnd(a.length)], shuffle = (a) => a.map((v) => [Math.random(), v]).sort((p, q) => p[0] - q[0]).map((p) => p[1]);
+const posOf = (c, e) => { const r = c.getBoundingClientRect(); return { x: (e.clientX - r.left) * c.width / r.width, y: (e.clientY - r.top) * c.height / r.height }; };
+const COUNTRIES = [
+  { code: 'bb', name: 'Barbados', where: 'the Caribbean', capital: 'Bridgetown' }, { code: 'jm', name: 'Jamaica', where: 'the Caribbean', capital: 'Kingston' },
+  { code: 'tt', name: 'Trinidad and Tobago', where: 'the Caribbean', capital: 'Port of Spain' }, { code: 'lc', name: 'Saint Lucia', where: 'the Caribbean', capital: 'Castries' },
+  { code: 'gy', name: 'Guyana', where: 'South America', capital: 'Georgetown' }, { code: 'br', name: 'Brazil', where: 'South America', capital: 'Brasília' },
+  { code: 'us', name: 'the United States', where: 'North America', capital: 'Washington, D.C.' }, { code: 'ca', name: 'Canada', where: 'North America', capital: 'Ottawa' },
+  { code: 'mx', name: 'Mexico', where: 'North America', capital: 'Mexico City' }, { code: 'gb', name: 'the United Kingdom', where: 'Europe', capital: 'London' },
+  { code: 'fr', name: 'France', where: 'Europe', capital: 'Paris' }, { code: 'de', name: 'Germany', where: 'Europe', capital: 'Berlin' },
+  { code: 'it', name: 'Italy', where: 'Europe', capital: 'Rome' }, { code: 'jp', name: 'Japan', where: 'Asia', capital: 'Tokyo' },
+  { code: 'cn', name: 'China', where: 'Asia', capital: 'Beijing' }, { code: 'in', name: 'India', where: 'Asia', capital: 'New Delhi' },
+  { code: 'ke', name: 'Kenya', where: 'Africa', capital: 'Nairobi' }, { code: 'au', name: 'Australia', where: 'Australia (Oceania)', capital: 'Canberra' }
+];
+
+// ---- A. Paint the flag ------------------------------------------------------------------------------------
+(() => {
+  const c = document.getElementById('paint'), x = c.getContext('2d'), ask = document.getElementById('paintAsk'), pots = document.getElementById('pots');
+  const PAINTS = { red: 0xd21034, blue: 0x00267f, 'light blue': 0x66ccff, gold: 0xffc726, green: 0x009b3a, black: 0x111111, white: 0xffffff };
+  const R = (x0, y0, w, h) => [[x0, y0], [x0 + w, y0], [x0 + w, y0 + h], [x0, y0 + h]];
+  // Each flag: its parts (topmost last) with the paint that belongs there, and anything drawn for you on top.
+  const FLAGS = [
+    { code: 'fr', name: 'France', parts: [{ pts: R(0, 0, 50, 100), paint: 'blue' }, { pts: R(50, 0, 50, 100), paint: 'white' }, { pts: R(100, 0, 50, 100), paint: 'red' }] },
+    { code: 'it', name: 'Italy', parts: [{ pts: R(0, 0, 50, 100), paint: 'green' }, { pts: R(50, 0, 50, 100), paint: 'white' }, { pts: R(100, 0, 50, 100), paint: 'red' }] },
+    { code: 'de', name: 'Germany', parts: [{ pts: R(0, 0, 150, 33.4), paint: 'black' }, { pts: R(0, 33.3, 150, 33.4), paint: 'red' }, { pts: R(0, 66.6, 150, 33.4), paint: 'gold' }] },
+    { code: 'jp', name: 'Japan', parts: [{ pts: R(0, 0, 150, 100), paint: 'white' }, { circle: [75, 50, 28], paint: 'red' }] },
+    { code: 'bb', name: 'Barbados', parts: [{ pts: R(0, 0, 50, 100), paint: 'blue' }, { pts: R(50, 0, 50, 100), paint: 'gold' }, { pts: R(100, 0, 50, 100), paint: 'blue' }], top: 'trident' },
+    { code: 'jm', name: 'Jamaica', parts: [{ pts: [[0, 0], [150, 0], [75, 50]], paint: 'green' }, { pts: [[0, 100], [150, 100], [75, 50]], paint: 'green' }, { pts: [[0, 0], [0, 100], [75, 50]], paint: 'black' }, { pts: [[150, 0], [150, 100], [75, 50]], paint: 'black' }], top: 'saltire' },
+    { code: 'lc', name: 'Saint Lucia', parts: [{ pts: R(0, 0, 150, 100), paint: 'light blue' }, { pts: [[75, 14], [106, 86], [44, 86]], paint: 'black' }, { pts: [[75, 50], [106, 86], [44, 86]], paint: 'gold' }] }
+  ];
+  const FX = 30, FY = 20, K = 2;   // the flag drawn at 300 x 200
+  let f, filled, chosen = 'red', tries = 0, done = false, wobble = new Set();
+  Object.entries(PAINTS).forEach(([name, col]) => { const b = document.createElement('button'); b.className = 'pot'; b.title = name; b.style.background = css(col); b.onclick = () => { chosen = name; [...pots.children].forEach((p) => p.classList.toggle('on', p === b)); }; pots.appendChild(b); });
+  pots.children[0].classList.add('on');
+  const pathOf = (p) => { const path = new Path2D(); if (p.circle) path.arc(FX + p.circle[0] * K, FY + p.circle[1] * K, p.circle[2] * K, 0, Math.PI * 2); else { p.pts.forEach(([a, b], i) => (i ? path.lineTo(FX + a * K, FY + b * K) : path.moveTo(FX + a * K, FY + b * K))); path.closePath(); } return path; };
+  function next() { f = pick(FLAGS); filled = f.parts.map(() => null); tries = 0; done = false; wobble.clear(); ask.innerHTML = `Paint the flag of ${f.name}.`; draw(); }
+  function draw() {
+    x.fillStyle = '#fff8ef'; x.fillRect(0, 0, c.width, c.height);
+    f.parts.forEach((p, i) => { const path = pathOf(p); x.fillStyle = filled[i] ? css(PAINTS[filled[i]]) : '#f4f4f4'; x.fill(path); x.strokeStyle = wobble.has(i) ? '#e5383b' : '#9aa3ad'; x.lineWidth = wobble.has(i) ? 4 : 1.5; x.setLineDash(filled[i] ? [] : [6, 5]); x.stroke(path); x.setLineDash([]); });
+    if (f.top === 'saltire') { x.strokeStyle = css(PAINTS.gold); x.lineWidth = 26; x.beginPath(); x.moveTo(FX, FY); x.lineTo(FX + 300, FY + 200); x.moveTo(FX + 300, FY); x.lineTo(FX, FY + 200); x.stroke(); }
+    if (f.top === 'trident') { x.fillStyle = '#111'; x.fillRect(FX + 146, FY + 70, 8, 90); x.fillRect(FX + 116, FY + 100, 68, 8); x.fillRect(FX + 116, FY + 60, 8, 48); x.fillRect(FX + 176, FY + 60, 8, 48); x.beginPath(); x.moveTo(FX + 150, FY + 40); x.lineTo(FX + 160, FY + 72); x.lineTo(FX + 140, FY + 72); x.fill(); }
+    x.strokeStyle = '#9aa3ad'; x.lineWidth = 2; x.strokeRect(FX, FY, 300, 200);
+    if (done) { x.font = '40px sans-serif'; x.textAlign = 'center'; x.fillText('⭐', 330, 30); }
+  }
+  c.addEventListener('pointerdown', (e) => {
+    if (done) return;
+    const p = posOf(c, e);
+    for (let i = f.parts.length - 1; i >= 0; i--) if (x.isPointInPath(pathOf(f.parts[i]), p.x, p.y)) { filled[i] = chosen; wobble.delete(i); draw(); return; }
+  });
+  document.getElementById('paintCheck').onclick = () => {
+    if (done) return;
+    if (filled.some((v) => !v)) { ask.innerHTML = `Paint the flag of ${f.name}. <span class="bad">Some parts are still blank.</span>`; return; }
+    const wrong = f.parts.map((p, i) => (filled[i] !== p.paint ? i : -1)).filter((i) => i >= 0);
+    if (!wrong.length) { done = true; ask.innerHTML = `<span class="ok">That is the flag of ${f.name}! ⭐</span>`; draw(); setTimeout(next, 1800); return; }
+    tries += 1; wobble = new Set(wrong);
+    ask.innerHTML = tries === 1 ? `<span class="bad">Not quite: the parts in red are the wrong colour. Try again.</span>` : `<span class="bad">The red-edged parts should be ${wrong.map((i) => f.parts[i].paint).join(' and ')}.</span>`;
+    draw();
+  };
+  document.getElementById('paintNext').onclick = next;
+  next();
+})();
+
+// ---- B. Fly it where it belongs ---------------------------------------------------------------------------
+(() => {
+  const c = document.getElementById('world'), x = c.getContext('2d'), ask = document.getElementById('worldAsk');
+  // Simple blobs for the parts of the world, roughly where they sit on a map.
+  const LANDS = [
+    { name: 'North America', x: 80, y: 70, rx: 58, ry: 40 }, { name: 'the Caribbean', x: 128, y: 128, rx: 22, ry: 12, islands: true },
+    { name: 'South America', x: 120, y: 190, rx: 30, ry: 46 }, { name: 'Europe', x: 195, y: 62, rx: 26, ry: 22 },
+    { name: 'Africa', x: 200, y: 150, rx: 32, ry: 44 }, { name: 'Asia', x: 275, y: 78, rx: 54, ry: 38 }, { name: 'Australia (Oceania)', x: 300, y: 200, rx: 30, ry: 20 }
+  ];
+  const HOME = { x: 50, y: 235 };
+  let q, flag, drag = false, done = false, hint = null;
+  function next() { q = pick(COUNTRIES); flag = { ...HOME }; done = false; hint = null; ask.innerHTML = `Drag the flag of ${q.name} to its part of the world.`; draw(); }
+  function draw() {
+    x.fillStyle = '#8fb8e8'; x.fillRect(0, 0, c.width, c.height);
+    for (const l of LANDS) {
+      x.fillStyle = hint === l.name ? '#ffe08a' : '#63c765';
+      if (l.islands) for (let i = 0; i < 5; i++) { x.beginPath(); x.ellipse(l.x - 18 + i * 9, l.y - 6 + (i % 2) * 8, 5, 4, 0, 0, Math.PI * 2); x.fill(); }
+      else { x.beginPath(); x.ellipse(l.x, l.y, l.rx, l.ry, 0, 0, Math.PI * 2); x.fill(); }
+      x.fillStyle = '#1e1b4b'; x.font = '700 10px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(l.name, l.x, l.y + (l.islands ? -16 : 0));
+    }
+    x.fillStyle = 'rgba(255,255,255,.6)'; x.beginPath(); x.roundRect(10, 214, 80, 46, 10); x.fill();
+    x.fillStyle = '#5a5570'; x.font = '700 10px sans-serif'; x.fillText('drag me', 50, 264 - 2);
+    // A little pole with the flag on it.
+    x.strokeStyle = '#8b6b3e'; x.lineWidth = 3; x.beginPath(); x.moveTo(flag.x - 24, flag.y - 16); x.lineTo(flag.x - 24, flag.y + 18); x.stroke();
+    putFlag(x, q.code, flag.x, flag.y - 4, 44);
+    if (done) { x.font = '28px sans-serif'; x.fillText('⭐', flag.x + 26, flag.y - 20); }
+  }
+  const landAt = (p) => LANDS.find((l) => ((p.x - l.x) / (l.rx + 8)) ** 2 + ((p.y - l.y) / (l.ry + 8)) ** 2 <= 1);
+  c.addEventListener('pointerdown', (e) => { if (done) return; const p = posOf(c, e); if (Math.abs(p.x - flag.x) < 30 && Math.abs(p.y - flag.y) < 24) { drag = true; c.setPointerCapture(e.pointerId); } });
+  c.addEventListener('pointermove', (e) => { if (!drag) return; const p = posOf(c, e); flag = { x: p.x, y: p.y }; draw(); });
+  c.addEventListener('pointerup', () => {
+    if (!drag) return; drag = false;
+    const l = landAt(flag);
+    if (l && l.name === q.where) { done = true; hint = null; ask.innerHTML = `<span class="ok">Yes! ${q.name[0].toUpperCase() + q.name.slice(1)} is in ${q.where}. Its capital is ${q.capital}. ⭐</span>`; draw(); setTimeout(next, 2200); return; }
+    if (l) { hint = q.where; ask.innerHTML = `<span class="bad">Not ${l.name}. ${q.name[0].toUpperCase() + q.name.slice(1)} is in the part that lit up.</span>`; }
+    flag = { ...HOME }; draw();
+  });
+  document.getElementById('worldNext').onclick = next;
+  next();
+})();
+
+// ---- C. Flag pairs ----------------------------------------------------------------------------------------
+(() => {
+  const c = document.getElementById('pairs'), x = c.getContext('2d'), ask = document.getElementById('pairsAsk');
+  const COLS = 4, ROWS = 3, CW = 82, CH = 78, OX = 12, OY = 14, GAP = 6;
+  let cards, open, matched, busy, turns;
+  function next() {
+    const six = shuffle(COUNTRIES).slice(0, 6);
+    cards = shuffle([...six.map((k) => ({ code: k.code, kind: 'flag', k })), ...six.map((k) => ({ code: k.code, kind: 'name', k }))]);
+    open = []; matched = new Set(); busy = false; turns = 0; ask.innerHTML = 'Turn two cards: find each flag and its country.'; draw();
+  }
+  const cell = (i) => ({ x: OX + (i % COLS) * (CW + GAP), y: OY + Math.floor(i / COLS) * (CH + GAP) });
+  function draw() {
+    x.fillStyle = '#fff8ef'; x.fillRect(0, 0, c.width, c.height);
+    cards.forEach((card, i) => {
+      const p = cell(i), up = open.includes(i) || matched.has(card.code);
+      x.fillStyle = matched.has(card.code) ? '#d7f3df' : up ? '#ffffff' : '#30589c';
+      x.beginPath(); x.roundRect(p.x, p.y, CW, CH, 10); x.fill();
+      x.strokeStyle = matched.has(card.code) ? '#17694a' : '#c7d0e0'; x.lineWidth = 2; x.stroke();
+      x.textAlign = 'center'; x.textBaseline = 'middle';
+      if (!up) { x.font = '28px sans-serif'; x.fillText('🏁', p.x + CW / 2, p.y + CH / 2); return; }
+      if (card.kind === 'flag') putFlag(x, card.code, p.x + CW / 2, p.y + CH / 2, CW - 16);
+      else { x.fillStyle = '#1e1b4b'; x.font = '700 12px sans-serif'; const words = card.k.name.replace(/^the /, '').split(' '); const lines = words.length > 2 ? [words.slice(0, 2).join(' '), words.slice(2).join(' ')] : [words.join(' ')]; lines.forEach((ln, j) => x.fillText(ln, p.x + CW / 2, p.y + CH / 2 + (j - (lines.length - 1) / 2) * 15)); }
+    });
+  }
+  c.addEventListener('pointerdown', (e) => {
+    if (busy) return;
+    const p = posOf(c, e), i = cards.findIndex((_, k) => { const q = cell(k); return p.x >= q.x && p.x <= q.x + CW && p.y >= q.y && p.y <= q.y + CH; });
+    if (i < 0 || open.includes(i) || matched.has(cards[i].code)) return;
+    open.push(i); draw();
+    if (open.length < 2) return;
+    turns += 1;
+    const [a, b] = open.map((k) => cards[k]);
+    if (a.code === b.code) { matched.add(a.code); open = []; ask.innerHTML = matched.size === 6 ? `<span class="ok">All six pairs in ${turns} turns! ⭐</span>` : `<span class="ok">A pair! That is ${a.k.name}.</span>`; draw(); return; }
+    busy = true; ask.innerHTML = '<span class="bad">Not a pair. Remember where they were!</span>';
+    setTimeout(() => { open = []; busy = false; draw(); }, 1100);
+  });
+  document.getElementById('pairsNext').onclick = next;
+  next();
+})();
+</script>
+</body>
+</html>
