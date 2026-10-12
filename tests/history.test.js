@@ -72,7 +72,7 @@ describe('History Harbor facts', () => {
     for (const k of skills) { expect(SKILL_LABELS[k], k).toBeTruthy(); expect(SKILL_TIPS[k], k).toBeTruthy(); }
     // The youngest get pictures and people; the oldest reach how a town is run.
     const young = historySet('his-helpers', 0, new Rng(5), 10).map((q) => q.skill), older = historySet('his-helpers', 7, new Rng(5), 10).map((q) => q.skill);
-    expect(young.every((k) => k === 'helpers')).toBe(true); expect(older).toContain('community');
+    expect(young.every((k) => k === 'helpers' || k === 'helper-tools')).toBe(true); expect(older).toContain('community');
     expect(historySet('his-compass', 8, new Rng(2), 10).map((q) => q.skill)).toContain('compass-degrees');
   });
 
@@ -105,7 +105,7 @@ describe('History Harbor facts', () => {
     expect(Object.keys(SUBJECTS).length).toBeGreaterThanOrEqual(6);
     expect(MINIGAMES.filter((g) => g.subject === 'history').map((g) => g.id)).toEqual(HISTORY_GAMES);
     for (const g of [-1, 0, 3, 8]) expect(gamesForGrade('history', g).map((x) => x.id)).toEqual(HISTORY_GAMES);
-    for (const id of HISTORY_GAMES) { expect(getGame(id).sceneKey).toBe('MG_HistoryQuiz'); expect(getGame(id).playSceneKey).toBe(id === 'his-compass' ? undefined : 'MG_HistoryPlay'); }   // Compass Quest's Pre-K sails
+    for (const id of HISTORY_GAMES) { expect(getGame(id).sceneKey).toBe('MG_HistoryQuiz'); expect(getGame(id).playSceneKey).toBe(id === 'his-compass' || id === 'his-helpers' ? undefined : 'MG_HistoryPlay'); }   // Pre-K sails and calls for help in the quiz itself
   });
 });
 
@@ -217,9 +217,72 @@ describe('Compass Quest, hands on (headless)', () => {
   });
 });
 
+describe('Community Helpers, hands on (headless)', () => {
+  it('calls name a building that is there, kits hold exactly two of the helper\'s things, budgets four public and two private; Pre-K gets calls only with four buildings', () => {
+    let calls = 0, kits = 0, budgets = 0;
+    for (const grade of [-1, 0, 1, 3, 4, 6, 8]) for (let seed = 1; seed <= 8; seed++) {
+      for (const q of historySet('his-helpers', grade, new Rng(seed * 5 + grade), 10)) {
+        if (q.call) {
+          calls++;
+          const right = q.call.buildings.filter((b) => b.id === q.call.to);
+          expect(right).toHaveLength(1);
+          expect(new Set(q.call.buildings.map((b) => b.name)).size).toBe(q.call.buildings.length);
+          expect(new Set(q.call.buildings.map((b) => b.pic)).size).toBe(q.call.buildings.length);
+          expect(q.call.buildings).toHaveLength(grade <= -1 ? 4 : 6);
+          expect(right[0].car).toBeTruthy();
+        }
+        if (q.kit) { kits++; expect(q.kit.shelf).toHaveLength(6); expect(q.kit.shelf.filter((t) => t.owner === q.kit.helper.name)).toHaveLength(2); expect(new Set(q.kit.shelf.map((t) => t.pic)).size).toBe(6); }
+        if (q.budget) { budgets++; expect(q.budget.items.filter((t) => t.pub)).toHaveLength(4); expect(q.budget.items.filter((t) => !t.pub && t.why)).toHaveLength(2); expect(q.budget.coins).toBe(4); }
+        if (grade <= -1) expect(!!q.call).toBe(true);
+      }
+    }
+    expect(calls).toBeGreaterThan(60); expect(kits).toBeGreaterThan(40); expect(budgets).toBeGreaterThan(20);
+    for (let seed = 1; seed <= 6; seed++) for (const grade of [-1, 2, 6]) for (const q of historySet('his-helpers', grade, new Rng(seed), 10, null, { drawn: false })) expect(!!(q.call || q.kit || q.budget)).toBe(false);
+    expect(getGame('his-helpers').playSceneKey).toBeUndefined();
+  });
+
+  it('a wrong building is a try again and the right one drives the helper over; the bag takes two right things; coins pay only for public services', () => {
+    const s = makeScene(HistoryQuiz, { gameId: 'his-helpers', grade: 5, band: 'C', seed: 6 });
+    const idx = (k) => s.state.questions.findIndex((q) => q[k]);
+    const go = (k) => { s.state.idx = idx(k); s.state.locked = false; s.state.picked = null; s.state.right = null; s.rebuild(); return s.round[k]; };
+    // Calls come from a lower grade's set.
+    const s2 = makeScene(HistoryQuiz, { gameId: 'his-helpers', grade: 2, band: 'A', seed: 6 });
+    s2.state.idx = s2.state.questions.findIndex((q) => q.call); s2.rebuild();
+    const c = s2.round.call, wrongB = c.buildings.find((b) => b.id !== c.to);
+    s2.callTap(wrongB.id);
+    expect(s2.state.picked).toBe(null); expect(s2.state.missed.helpers).toBe(1);
+    expect(s2.state.inter[s2.state.idx].hint).toContain(wrongB.who);
+    s2.callTap(c.to);
+    expect(s2.state.right).toBe(true);
+    expect(s2.state.bench.at(-1).pic).toBe(c.buildings.find((b) => b.id === c.to).car);
+
+    const k = go('kit');
+    const mine = k.shelf.map((t, i) => (t.owner === k.helper.name ? i : -1)).filter((i) => i >= 0), other = k.shelf.findIndex((t) => t.owner !== k.helper.name);
+    s.kitDrop(other);
+    expect(s.state.picked).toBe(null); expect(s.state.inter[s.state.idx].hint).toContain(k.shelf[other].owner);
+    s.kitDrop(mine[0]);
+    expect(s.state.picked).toBe(null); expect(s.state.inter[s.state.idx].packed).toEqual([mine[0]]);
+    s.kitDrop(mine[0]);   // already in the bag: nothing happens
+    expect(s.state.inter[s.state.idx].packed).toEqual([mine[0]]);
+    s.kitDrop(mine[1]);
+    expect(s.state.right).toBe(true);
+    expect(s.state.bench.at(-1).pic).toBe(k.helper.pic);
+
+    const b = go('budget');
+    const pubs = b.items.map((t, i) => (t.pub ? i : -1)).filter((i) => i >= 0), priv = b.items.findIndex((t) => !t.pub);
+    s.budgetPay(priv);
+    expect(s.state.picked).toBe(null); expect(s.state.inter[s.state.idx].hint).toContain(b.items[priv].why);
+    pubs.slice(0, 3).forEach((i) => s.budgetPay(i));
+    expect(s.state.picked).toBe(null); expect(s.state.inter[s.state.idx].paid).toEqual(pubs.slice(0, 3));
+    s.budgetPay(priv);   // a second wrong coin: the round is missed and explained
+    expect(s.state.right).toBe(false); expect(s.state.locked).toBe(true);
+    expect(findButton(s, 'Next ▶')).toBeTruthy();
+  });
+});
+
 describe('History Harbor for Pre-K (headless)', () => {
   it('each set has six things with homes and asks that can be answered; proper names take no article', () => {
-    for (const id of HISTORY_GAMES) {
+    for (const id of Object.keys(HISTORY_PLAY_SETS)) {
       const set = HISTORY_PLAY_SETS[id];
       expect(set.items).toHaveLength(6);
       for (const it of set.items) expect(targetOf(set, it), it.name).toBeTruthy();
@@ -227,7 +290,7 @@ describe('History Harbor for Pre-K (headless)', () => {
       expect(asks).toHaveLength(3);
       expect(new Set(asks.map((a) => a.item.name)).size).toBe(3);
     }
-    expect(Object.keys(HISTORY_PLAY_SETS)).toEqual(HISTORY_GAMES);
+    expect(Object.keys(HISTORY_PLAY_SETS)).toEqual(HISTORY_GAMES.filter((id) => getGame(id).playSceneKey));
     const flags = HISTORY_PLAY_SETS['his-flags'];
     const bb = flags.items.find((i) => i.flag === 'bb');
     expect(playFoundLine(flags, bb)).toBe('Yes! Barbados. Island countries!');

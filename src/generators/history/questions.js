@@ -5,7 +5,7 @@
 import { bandFor, gradeOf } from '../../data/grades.js';
 import {
   DIRECTIONS, BETWEEN, dirOf, DIRECTION_CLUES, HARBOUR_MAP, MAP_WORDS,
-  HELPERS, COMMUNITY_FACTS, COUNTRIES, CONTINENTS, WORLD_FACTS, THEN_NOW, EVENTS, HISTORY_WORDS, HISTORY_FACTS
+  HELPERS, CALLS, TOWN_SPEND, COMMUNITY_FACTS, COUNTRIES, CONTINENTS, WORLD_FACTS, THEN_NOW, EVENTS, HISTORY_WORDS, HISTORY_FACTS
 } from '../../data/history/facts.js';
 
 export const HISTORY_GAMES = ['his-compass', 'his-helpers', 'his-flags', 'his-time'];
@@ -275,9 +275,53 @@ function needleQ(grade, rng, d) {
 }
 needleQ.drawn = true;
 
+// ---- Hands-on helper work: call the right building, pack a helper's kit, spend the town's taxes --------------
+// Drawn and played by the scene (HistoryQuiz); the two "choices" are the outcomes so second tries and explanations work.
+
+function callQ(grade, rng, d) {
+  const call = rng.pick(CALLS), h = HELPERS.find((x) => x.name === call.helper);
+  const n = grade <= -1 ? 4 : 6;
+  const seen = new Set([h.place]), others = [];
+  for (const x of rng.shuffle(HELPERS)) { if (others.length >= n - 1) break; if (seen.has(x.place) || x.placePic === h.placePic) continue; seen.add(x.place); others.push(x); }
+  const buildings = rng.shuffle([h, ...others]).map((x) => ({ id: x.name, pic: x.placePic, name: x.place, who: x.name, car: x.car }));
+  const text = call.say;
+  return done({ prompt: text, text, pics: [call.pic], answer: 'Called the right helper', skill: 'helpers', choices: ['Called the right helper', 'Called the wrong helper'],
+    call: { say: call.say, pic: call.pic, to: h.name, buildings },
+    explain: [`A ${h.name} ${h.does}.`, `You call ${h.place}: that is where the ${h.name} works.`] }, d);
+}
+callQ.drawn = true;
+
+function kitQ(grade, rng, d) {
+  const h = rng.pick(HELPERS);
+  const mine = [{ pic: h.toolPic, name: h.tool, owner: h.name }, { pic: h.tool2Pic, name: h.tool2, owner: h.name }];
+  const wrong = [];
+  for (const o of rng.shuffle(HELPERS.filter((x) => x !== h))) {
+    if (wrong.length >= 4) break;
+    const t = rng.chance(0.5) ? { pic: o.toolPic, name: o.tool, owner: o.name } : { pic: o.tool2Pic, name: o.tool2, owner: o.name };
+    if (!mine.some((m) => m.pic === t.pic) && !wrong.some((w) => w.pic === t.pic)) wrong.push(t);
+  }
+  const text = `The ${h.name} is off to work. Pack the two things they need.`;
+  return done({ prompt: text, text, pics: [h.pic], answer: 'Packed the right things', skill: 'helper-tools', choices: ['Packed the right things', 'Packed the wrong thing'],
+    kit: { helper: { name: h.name, pic: h.pic }, shelf: rng.shuffle([...mine, ...wrong]) },
+    explain: [`A ${h.name} ${h.does}.`, `For that they use ${h.tool} and ${h.tool2}.`] }, d);
+}
+kitQ.drawn = true;
+
+function budgetQ(grade, rng, d) {
+  const pub = rng.sample(TOWN_SPEND.filter((t) => t.pub), 4), priv = rng.sample(TOWN_SPEND.filter((t) => !t.pub), 2);
+  const items = rng.shuffle([...pub, ...priv]).map((t) => ({ pic: t.pic, name: t.name, pub: t.pub, why: t.why || null }));
+  const text = 'The town has collected its taxes. Pay for the four things everyone shares.';
+  // Two prompt spellings, so a set (which skips repeated prompts) holds at most two budget rounds among its kit rounds.
+  return done({ prompt: text + (rng.chance(0.5) ? '' : ' '), text, pics: [], answer: 'Paid for the public services', skill: 'community', choices: ['Paid for the public services', 'Spent the taxes on the wrong thing'],
+    budget: { items, coins: 4 },
+    explain: ['Taxes pay for the things everyone in the town shares: roads, schools, the hospital, the fire service.', `Here that is ${pub.map((p) => p.name).join(', ')}.`] }, d);
+}
+budgetQ.drawn = true;
+
 const KINDS = {
   'his-compass': { E: [sailQ, arrowQ], A: [sailQ, needleQ, arrowQ, clueQ, letterQ, mapQ], B: [sailQ, needleQ, mapQ, turnQ, betweenQ, mapWordQ], C: [needleQ, sailQ, turnQ, betweenQ, degreesQ, mapWordQ] },
-  'his-helpers': { E: [whoHelpsQ, placeQ], A: [whoHelpsQ, placeQ, toolQ], B: [toolQ, whatDoesQ, communityQ], C: [whatDoesQ, communityQ] },
+  // P is Pre-K's own list (pictures and a read-aloud line, nothing to read); bosses and duels (drawn: false) fall back to the band.
+  'his-helpers': { P: [callQ], E: [callQ, kitQ, whoHelpsQ, placeQ], A: [callQ, kitQ, whoHelpsQ, placeQ, toolQ], B: [kitQ, budgetQ, toolQ, whatDoesQ, communityQ], C: [budgetQ, kitQ, whatDoesQ, communityQ] },
   'his-flags': { E: [whichFlagQ, whoseFlagQ], A: [whichFlagQ, whoseFlagQ, continentQ], B: [whoseFlagQ, continentQ, capitalQ, worldQ], C: [capitalQ, continentQ, worldQ] },
   'his-time': { E: [thenNowQ], A: [thenNowQ, firstQ], B: [firstQ, historyWordQ, historyFactQ, yearQ], C: [yearQ, historyWordQ, historyFactQ] }
 };
@@ -288,7 +332,8 @@ const KINDS = {
  */
 export function historyQuestion(gameId, grade, rng, d = 0.5, opts = {}) {
   const g = gradeOf(grade);
-  let kinds = (KINDS[gameId] || KINDS['his-compass'])[bandFor(g)];
+  const table = KINDS[gameId] || KINDS['his-compass'];
+  let kinds = g <= -1 && table.P && opts.drawn !== false ? table.P : table[bandFor(g)];
   if (opts.drawn === false) kinds = kinds.filter((k) => !k.drawn);
   const reach = Math.max(1, Math.round(1 + d * (kinds.length - 1)));
   const kind = kinds[rng.int(0, reach - 1)];

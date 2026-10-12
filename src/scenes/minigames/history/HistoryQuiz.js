@@ -11,6 +11,9 @@ import { plainTheme } from '../../../ui/Explain.js';
 import { T } from '../../../ui/TextStyles.js';
 import { pointerPos } from '../../../systems/Layout.js';
 import { Sfx } from '../../../systems/Audio.js';
+import { draggable, nearestTarget } from '../../../ui/Drag.js';
+
+const cap = (str) => str.charAt(0).toUpperCase() + str.slice(1);
 import { flagImage } from '../../../ui/Flags.js';
 
 const SKY = 0xe9eff9, SEA = 0x8fb8e8, SEA_DARK = 0x4f7fc0, SAND = 0xf1dfb0, ROPE = 0x8b6b3e;
@@ -87,13 +90,14 @@ export class HistoryQuiz extends PictureQuiz {
   interState() {
     const s = this.state, q = this.round;
     s.inter ||= {};
-    if (!s.inter[s.idx]) s.inter[s.idx] = q.sail ? { x: q.sail.start.x, y: q.sail.start.y, leg: 0, left: q.sail.orders[0].n } : { angle: q.needle.start };
+    if (!s.inter[s.idx]) s.inter[s.idx] = q.sail ? { x: q.sail.start.x, y: q.sail.start.y, leg: 0, left: q.sail.orders[0].n } : q.needle ? { angle: q.needle.start }
+      : q.call ? { driving: false, hint: null } : q.kit ? { packed: [], hint: null } : { paid: [], hint: null };
     return s.inter[s.idx];
   }
 
   buildGame(area) {
     const q = this.round;
-    if (q && (q.sail || q.needle) && !this.inReview) return this.buildInteractive(area, q);
+    if (q && (q.sail || q.needle || q.call || q.kit || q.budget) && !this.inReview) return this.buildInteractive(area, q);
     return super.buildGame(area);
   }
 
@@ -115,7 +119,8 @@ export class HistoryQuiz extends PictureQuiz {
     speakButton(this, area.x + area.w - 30 * ui, area.y + 26 * ui, 40 * ui, said, { rate: this.speechRate });
     this.autoRead(said, null);
     const board = { x: area.x, y: area.y + promptH + 10, w: area.w, h: area.h - promptH - 10 };
-    if (q.sail) this.buildSail(board, q, answered); else this.buildNeedle(board, q, answered);
+    if (q.sail) this.buildSail(board, q, answered); else if (q.needle) this.buildNeedle(board, q, answered);
+    else if (q.call) this.buildCall(board, q, answered); else if (q.kit) this.buildKit(board, q, answered); else this.buildBudget(board, q, answered);
     if (answered && !s.right) this.explanationPanel(area, q, () => this.next());
   }
 
@@ -174,6 +179,148 @@ export class HistoryQuiz extends PictureQuiz {
     if (st.left === 0) { st.leg += 1; st.left = sail.orders[st.leg] ? sail.orders[st.leg].n : 0; }
     if (st.leg >= sail.orders.length) { Sfx.pop(); return this.pick(0); }
     Sfx.pop();
+    this.rebuild();
+  }
+
+  /** The line under a helpers board: what to do, the last mistake, or the outcome. */
+  hintLine(board, y, text, good = null) {
+    const ui = this.ui, colour = good === true ? THEME.successDark : good === false ? THEME.danger : THEME.ink2;
+    this.add.text(board.x + board.w / 2, y, text, { fontFamily: FONT, fontSize: Math.round(13 * ui) + 'px', color: hex(colour), fontStyle: WEIGHT.bold, wordWrap: { width: board.w - 16 }, align: 'center' }).setOrigin(0.5, 0);
+  }
+
+  /** Who do you call? A little town: trouble at the house in the middle, the helpers' workplaces around it. */
+  buildCall(board, q, answered) {
+    const ui = this.ui, st = this.interState(), c = q.call, s = this.state;
+    const hintH = 34 * ui, bx = board.x + 4, by = board.y, bw = board.w - 8, bh = Math.max(110, board.h - hintH);
+    const g = this.add.graphics();
+    g.fillStyle(0x8fd48a, 1); g.fillRoundedRect(bx, by, bw, bh, 14);
+    const n = c.buildings.length, cols = Math.ceil(n / 2);
+    const house = { x: bx + bw / 2, y: by + bh / 2 };
+    const spots = c.buildings.map((b, i) => ({ x: bx + (bw * ((i % cols) + 0.5)) / cols, y: by + (i < cols ? bh * 0.2 : bh * 0.78) }));
+    const size = Math.max(20, Math.min(36 * ui, bw / (cols * 2.6), bh * 0.17));
+    g.lineStyle(Math.max(8, Math.min(14 * ui, size * 0.4)), 0xc9c3b8, 1);
+    spots.forEach((p) => g.lineBetween(p.x, p.y + size * 0.3, house.x, house.y + size * 0.25));
+    const right = c.buildings.find((b) => b.id === c.to), ri = c.buildings.indexOf(right);
+    if (answered && !s.right) { g.lineStyle(3, 0xffc531, 1); g.strokeCircle(spots[ri].x, spots[ri].y + size * 0.25, size * 1.05); }
+    const nameStyle = { fontFamily: FONT, fontSize: Math.round(Math.max(9, 11 * ui)) + 'px', color: hex(THEME.ink), fontStyle: WEIGHT.bold, backgroundColor: '#ffffffb0', padding: { x: 3, y: 1 } };
+    c.buildings.forEach((b, i) => {
+      const p = spots[i];
+      this.add.text(p.x, p.y, b.pic, { fontSize: Math.round(size) + 'px' }).setOrigin(0.5);
+      this.add.text(p.x, p.y + size * 0.62, b.name, nameStyle).setOrigin(0.5, 0);
+      if (!answered && !st.driving) this.add.zone(p.x, p.y + size * 0.35, size * 2.6, size * 2).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.callTap(b.id));
+    });
+    this.add.text(house.x, house.y, '🏠', { fontSize: Math.round(size * 1.15) + 'px' }).setOrigin(0.5);
+    if (!(answered && s.right)) this.add.text(house.x + size * 0.75, house.y - size * 0.7, c.pic, { fontSize: Math.round(size * 0.75) + 'px' }).setOrigin(0.5);
+    if (answered && s.right) this.add.text(house.x - size * 0.95, house.y + size * 0.35, right.car, { fontSize: Math.round(size * 0.85) + 'px' }).setOrigin(0.5);
+    this.callSpots = { spots, house, size };
+    const line = answered ? (s.right ? `The ${right.who} is here! ⭐` : `Call ${right.name}: that is where the ${right.who} works.`) : st.hint || 'Tap the building to call for help.';
+    this.hintLine(board, by + bh + 6 * ui, line, answered ? s.right : st.hint ? false : null);
+  }
+
+  /** A tap on a building: the right one sends the helper's vehicle to the house; a wrong one is a try again. */
+  callTap(id) {
+    const s = this.state, q = this.round;
+    if (!q || !q.call || s.locked || s.picked !== null) return;
+    const st = this.interState(), c = q.call, b = c.buildings.find((x) => x.id === id);
+    if (!b || st.driving) return;
+    if (b.id !== c.to) { Sfx.wrong(); st.hint = `The ${b.who} can't help with that. Who can?`; return this.pick(1); }
+    st.hint = null; st.driving = true; Sfx.pop();
+    const sp = this.callSpots, from = sp.spots[c.buildings.indexOf(b)];
+    const car = this.add.text(from.x, from.y + sp.size * 0.3, b.car, { fontSize: Math.round(sp.size * 0.85) + 'px' }).setOrigin(0.5).setDepth(50);
+    const arrive = () => { st.driving = false; this.pick(0); };
+    if (this.tweens) this.tweens.add({ targets: car, x: sp.house.x - sp.size * 0.95, y: sp.house.y + sp.size * 0.35, duration: 1100, ease: 'Sine.InOut', onComplete: arrive }); else arrive();
+  }
+
+  /** Pack the kit: the helper and their bag beside a shelf of six things (the shelf runs along the bottom on a phone); drag or tap two in. */
+  buildKit(board, q, answered) {
+    const ui = this.ui, st = this.interState(), k = q.kit, s = this.state;
+    const hintH = 34 * ui, bh = Math.max(120, board.h - hintH), portrait = bh > board.w * 1.1;
+    // The shelf: a column of 2 x 3 on the right, or a row of 3 x 2 along the bottom.
+    const shelf = portrait ? { x: board.x + 4, y: board.y + bh * 0.5, w: board.w - 8, h: bh * 0.5, cols: 3, rows: 2 }
+      : { x: board.x + board.w - Math.min(board.w * 0.48, 230 * ui) - 4, y: board.y, w: Math.min(board.w * 0.48, 230 * ui), h: bh, cols: 2, rows: 3 };
+    const g = this.add.graphics();
+    g.fillStyle(0xe9ddc6, 1); g.fillRoundedRect(shelf.x, shelf.y, shelf.w, shelf.h, 12);
+    const small = { fontFamily: FONT, fontSize: Math.round(12 * ui) + 'px', color: hex(0x8b6b3e), fontStyle: WEIGHT.bold };
+    this.add.text(shelf.x + shelf.w / 2, shelf.y + 6 * ui, 'the shelf', small).setOrigin(0.5, 0);
+    // The helper and the bag: stacked on the left, or side by side above the shelf.
+    const side = portrait ? { x: board.x + 4, y: board.y, w: board.w - 8, h: bh * 0.5 - 8 } : { x: board.x + 4, y: board.y, w: shelf.x - board.x - 8, h: bh };
+    const hx = portrait ? side.x + side.w * 0.27 : side.x + side.w / 2, hy = portrait ? side.y + side.h * 0.42 : side.y + side.h * 0.26;
+    const hs = Math.max(28, Math.min(64 * ui, (portrait ? side.h : side.w) * 0.42, side.h * (portrait ? 0.5 : 0.28)));
+    this.add.text(hx, hy, k.helper.pic, { fontSize: Math.round(hs) + 'px' }).setOrigin(0.5);
+    this.add.text(hx, hy + hs * 0.62, `the ${k.helper.name}`, { fontFamily: FONT, fontSize: Math.round(13 * ui) + 'px', color: hex(THEME.ink), fontStyle: WEIGHT.bold }).setOrigin(0.5, 0);
+    const full = st.packed.length >= 2;
+    const bag = portrait ? { x: side.x + side.w * 0.7, y: side.y + side.h * 0.46, w: Math.min(side.w * 0.5, 170 * ui), h: Math.min(side.h * 0.6, 90 * ui) }
+      : { x: hx, y: side.y + side.h * 0.76, w: Math.min(side.w - 12, 160 * ui), h: Math.min(side.h * 0.3, 84 * ui) };
+    g.fillStyle(full ? 0xd7f3df : 0xffe9b8, 1); g.fillRoundedRect(bag.x - bag.w / 2, bag.y - bag.h / 2, bag.w, bag.h, 14);
+    g.lineStyle(3, full ? THEME.successDark : 0xb37400, 1); g.strokeRoundedRect(bag.x - bag.w / 2, bag.y - bag.h / 2, bag.w, bag.h, 14);
+    this.add.text(bag.x, bag.y + bag.h / 2 + 4 * ui, full ? 'packed!' : 'the bag', { ...small, color: hex(full ? THEME.successDark : 0xb37400) }).setOrigin(0.5, 0);
+    const is = Math.max(22, Math.min(36 * ui, (shelf.w / shelf.cols) * 0.55, ((shelf.h - 26 * ui) / shelf.rows) * 0.6));
+    st.packed.forEach((i, n) => this.add.text(bag.x - bag.w / 4 + (n * bag.w) / 2, bag.y, k.shelf[i].pic, { fontSize: Math.round(is) + 'px' }).setOrigin(0.5));
+    this.bagRect = bag;
+    k.shelf.forEach((item, i) => {
+      if (st.packed.includes(i)) return;
+      const col = i % shelf.cols, row = Math.floor(i / shelf.cols);
+      const t = this.add.text(shelf.x + (shelf.w * (col + 0.5)) / shelf.cols, shelf.y + 24 * ui + ((shelf.h - 28 * ui) * (row + 0.5)) / shelf.rows, item.pic, { fontSize: Math.round(is) + 'px' }).setOrigin(0.5);
+      if (answered) return;
+      const over = (x, y) => Math.abs(x - bag.x) < bag.w / 2 + 12 && Math.abs(y - bag.y) < bag.h / 2 + 12;
+      draggable(this, t, { onTap: () => this.kitDrop(i), onDrop: (x, y) => { if (!over(x, y)) return false; this.kitDrop(i); return true; } });
+    });
+    const line = answered ? (s.right ? `The ${k.helper.name} has everything. Off to work! ⭐` : `A ${k.helper.name} needs ${k.shelf.filter((x) => x.owner === k.helper.name).map((x) => x.name).join(' and ')}.`) : st.hint || 'Drag the two things they need into the bag.';
+    this.hintLine(board, board.y + bh + 6 * ui, line, answered ? s.right : st.hint ? false : null);
+  }
+
+  /** Something put in the bag: the helper's own things stay in, anything else is a try again. */
+  kitDrop(i) {
+    const s = this.state, q = this.round;
+    if (!q || !q.kit || s.locked || s.picked !== null) return;
+    const st = this.interState(), k = q.kit, item = k.shelf[i];
+    if (!item || st.packed.includes(i)) return;
+    if (item.owner !== k.helper.name) { Sfx.wrong(); st.hint = `${cap(item.name)}? That is what a ${item.owner} uses.`; return this.pick(1); }
+    st.packed.push(i); st.hint = null; Sfx.pop();
+    if (st.packed.length >= 2) return this.pick(0);
+    this.rebuild();
+  }
+
+  /** Run the town: six things in boxes, a chest of tax coins below; drag (or tap) a coin onto each public service. */
+  buildBudget(board, q, answered) {
+    const ui = this.ui, st = this.interState(), b = q.budget, s = this.state;
+    const hintH = 34 * ui, chestH = Math.max(48, Math.min(72 * ui, board.h * 0.2)), gridH = board.h - hintH - chestH - 8;
+    const cols = 3, cw = (board.w - 8) / cols, ch = gridH / 2;
+    const boxes = b.items.map((it, i) => ({ x: board.x + 4 + cw * (i % cols) + cw / 2, y: board.y + ch * Math.floor(i / cols) + ch / 2, w: cw - 8, h: ch - 8 }));
+    const g = this.add.graphics();
+    const ps = Math.max(18, Math.min(30 * ui, ch * 0.4)), ns = Math.round(Math.max(9, Math.min(12 * ui, cw / 11)));
+    b.items.forEach((it, i) => {
+      const bx = boxes[i], paid = st.paid.includes(i);
+      g.fillStyle(paid ? 0xd7f3df : 0xeef2f8, 1); g.fillRoundedRect(bx.x - bx.w / 2, bx.y - bx.h / 2, bx.w, bx.h, 12);
+      g.lineStyle(2, paid ? THEME.successDark : 0xc7d0e0, 1); g.strokeRoundedRect(bx.x - bx.w / 2, bx.y - bx.h / 2, bx.w, bx.h, 12);
+      this.add.text(bx.x, bx.y - bx.h * 0.18, it.pic, { fontSize: Math.round(ps) + 'px' }).setOrigin(0.5);
+      this.add.text(bx.x, bx.y + bx.h * 0.18, it.name, { fontFamily: FONT, fontSize: ns + 'px', color: hex(THEME.ink), fontStyle: WEIGHT.bold, wordWrap: { width: bx.w - 8 }, align: 'center' }).setOrigin(0.5, 0);
+      if (paid) this.add.text(bx.x + bx.w / 2 - 12 * ui, bx.y - bx.h / 2 + 12 * ui, '🪙', { fontSize: Math.round(ps * 0.6) + 'px' }).setOrigin(0.5);
+      else if (!answered) this.add.zone(bx.x, bx.y, bx.w, bx.h).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.budgetPay(i));
+    });
+    const cy = board.y + gridH + 4 + chestH / 2;
+    g.fillStyle(0xe9ddc6, 1); g.fillRoundedRect(board.x + 4, cy - chestH / 2, board.w - 8, chestH, 12);
+    this.add.text(board.x + board.w - 12 * ui, cy - chestH / 2 + 6 * ui, 'the tax chest', { fontFamily: FONT, fontSize: Math.round(11 * ui) + 'px', color: hex(0x8b6b3e), fontStyle: WEIGHT.bold }).setOrigin(1, 0);
+    const left = b.coins - st.paid.length, cs = Math.max(22, Math.min(34 * ui, chestH * 0.6));
+    for (let n = 0; n < left; n++) {
+      const coin = this.add.text(board.x + 24 * ui + cs / 2 + n * cs * 1.5, cy, '🪙', { fontSize: Math.round(cs) + 'px' }).setOrigin(0.5);
+      if (answered) continue;
+      draggable(this, coin, { onDrop: (x, y) => { const i = nearestTarget(boxes, x, y, Math.max(boxes[0].w, boxes[0].h) * 0.6); if (i < 0) return false; this.budgetPay(i); return true; } });
+    }
+    const pub = b.items.filter((x) => x.pub).map((x) => x.name);
+    const line = answered ? (s.right ? 'The town is running! Everyone shares what the taxes pay for. ⭐' : `Taxes pay for ${pub.join(', ')}.`) : st.hint || 'Drag a coin onto each thing the town should pay for.';
+    this.hintLine(board, cy + chestH / 2 + 6 * ui, line, answered ? s.right : st.hint ? false : null);
+  }
+
+  /** A coin on a box: a public service takes it; a private thing sends it back with the reason, as a try again. */
+  budgetPay(i) {
+    const s = this.state, q = this.round;
+    if (!q || !q.budget || s.locked || s.picked !== null) return;
+    const st = this.interState(), b = q.budget, it = b.items[i];
+    if (!it || st.paid.includes(i)) return;
+    if (!it.pub) { Sfx.wrong(); st.hint = `Not ${it.name}. ${it.why}`; return this.pick(1); }
+    st.paid.push(i); st.hint = null; Sfx.pop();
+    if (st.paid.length >= b.items.filter((x) => x.pub).length) return this.pick(0);
     this.rebuild();
   }
 
@@ -289,6 +436,7 @@ export class HistoryQuiz extends PictureQuiz {
   /** What a right answer adds to the bench: its picture, the flag it was about, the direction it found. */
   benchItem(q) {
     if (q.sail || q.needle) return { pic: q.sail ? '⛵' : '🧭', flag: null, dir: q.dir || null };
+    if (q.call || q.kit || q.budget) return { pic: q.call ? q.call.buildings.find((b) => b.id === q.call.to).car : q.kit ? q.kit.helper.pic : '🪙', flag: null, dir: null };
     const first = q.answer.split(' ')[0];
     const emoji = /\p{Extended_Pictographic}/u.test(first) ? first : null;
     const pic = emoji || (q.pics && q.pics[0] && !q.map ? q.pics[0] : null);

@@ -48,8 +48,8 @@ export const MINIGAMES = [
     description: 'Solids, liquids and gases, and how heat and cold change them.', playDescription: 'Touch ice, water and steam to find out what they are.' },
   { id: 'his-compass', subject: 'history', title: 'Compass Quest', sceneKey: 'MG_HistoryQuiz', icon: '🧭', npc: 'captain-compass',   // Pre-K sails too (one order at a time), so no touch version
     description: 'North, south, east and west: reading maps and turning the right way.', playDescription: 'Touch the sunrise, the compass and the penguin to find their directions.' },
-  { id: 'his-helpers', subject: 'history', title: 'Community Helpers', sceneKey: 'MG_HistoryQuiz', playSceneKey: 'MG_HistoryPlay', icon: '🚒', npc: 'mayor-marigold',
-    description: 'Who helps in a town, what they use, and how a community runs.', playDescription: 'Touch a helper to hear what they do and where they work.' },
+  { id: 'his-helpers', subject: 'history', title: 'Community Helpers', sceneKey: 'MG_HistoryQuiz', icon: '🚒', npc: 'mayor-marigold',   // Pre-K calls for help with pictures, so no touch version
+    description: 'Who helps in a town, what they use, and how a community runs.' },
   { id: 'his-flags', subject: 'history', title: 'Flag Finder', sceneKey: 'MG_HistoryQuiz', playSceneKey: 'MG_HistoryPlay', icon: '🏁', npc: 'flora',
     description: 'Flags, capitals and continents, from Barbados to the whole world.', playDescription: 'Touch a flag to hear its country.' },
   { id: 'his-time', subject: 'history', title: 'Past & Present', sceneKey: 'MG_HistoryQuiz', playSceneKey: 'MG_HistoryPlay', icon: '🕰️', npc: 'old-tom',

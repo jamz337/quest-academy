@@ -51,22 +51,59 @@ export const MAP_WORDS = [
 // ---- Community Helpers ----------------------------------------------------------------------------------------
 
 export const HELPERS = [
-  { name: 'doctor', pic: '👩‍⚕️', does: 'helps people get better when they are ill', tool: 'a stethoscope', toolPic: '🩺', place: 'the hospital', placePic: '🏥' },
-  { name: 'nurse', pic: '🧑‍⚕️', does: 'cares for people in hospital', tool: 'a thermometer', toolPic: '🌡️', place: 'the hospital', placePic: '🏥' },
-  { name: 'firefighter', pic: '👨‍🚒', does: 'puts out fires and rescues people', tool: 'a hose', toolPic: '🧯', place: 'the fire station', placePic: '🚒' },
-  { name: 'police officer', pic: '👮', does: 'keeps people safe and helps when there is trouble', tool: 'a radio', toolPic: '📻', place: 'the police station', placePic: '🚔' },
-  { name: 'teacher', pic: '👩‍🏫', does: 'helps children learn', tool: 'a whiteboard', toolPic: '📋', place: 'the school', placePic: '🏫' },
-  { name: 'postal worker', pic: '📫', does: 'delivers letters and parcels', tool: 'a mail bag', toolPic: '✉️', place: 'the post office', placePic: '🏤' },
-  { name: 'farmer', pic: '👩‍🌾', does: 'grows the food we eat', tool: 'a tractor', toolPic: '🚜', place: 'the farm', placePic: '🌾' },
-  { name: 'fisher', pic: '🎣', does: 'catches fish for the market', tool: 'a net', toolPic: '🪢', place: 'the harbour', placePic: '⚓' },
-  { name: 'bus driver', pic: '🚌', does: 'drives people around town', tool: 'a bus', toolPic: '🚍', place: 'the bus station', placePic: '🚏' },
-  { name: 'chef', pic: '👨‍🍳', does: 'cooks meals for people', tool: 'a frying pan', toolPic: '🍳', place: 'the restaurant', placePic: '🍽️' },
-  { name: 'librarian', pic: '📚', does: 'looks after the books and helps you find one', tool: 'a library card', toolPic: '🪪', place: 'the library', placePic: '🏛️' },
-  { name: 'dentist', pic: '🦷', does: 'keeps teeth healthy', tool: 'a toothbrush', toolPic: '🪥', place: 'the dental clinic', placePic: '🏥' },
-  { name: 'builder', pic: '👷', does: 'builds houses and roads', tool: 'a hammer', toolPic: '🔨', place: 'the building site', placePic: '🏗️' },
-  { name: 'vet', pic: '🐾', does: 'looks after sick animals', tool: 'a bandage', toolPic: '🩹', place: 'the animal clinic', placePic: '🐕' },
-  { name: 'pilot', pic: '✈️', does: 'flies aeroplanes', tool: 'a flight map', toolPic: '🗺️', place: 'the airport', placePic: '🛫' },
-  { name: 'lifeguard', pic: '🏊', does: 'keeps swimmers safe at the beach', tool: 'a float', toolPic: '🛟', place: 'the beach', placePic: '🏖️' }
+  { name: 'doctor', pic: '👩‍⚕️', does: 'helps people get better when they are ill', tool: 'a stethoscope', toolPic: '🩺', place: 'the hospital', placePic: '🏥', tool2: 'medicine', tool2Pic: '💊', car: '🚑' },
+  { name: 'nurse', pic: '🧑‍⚕️', does: 'cares for people in hospital', tool: 'a thermometer', toolPic: '🌡️', place: 'the hospital', placePic: '🏥', tool2: 'a plaster', tool2Pic: '🩹', car: '🚑' },
+  { name: 'firefighter', pic: '👨‍🚒', does: 'puts out fires and rescues people', tool: 'a hose', toolPic: '🧯', place: 'the fire station', placePic: '🚒', tool2: 'a ladder', tool2Pic: '🪜', car: '🚒' },
+  { name: 'police officer', pic: '👮', does: 'keeps people safe and helps when there is trouble', tool: 'a radio', toolPic: '📻', place: 'the police station', placePic: '🚔', tool2: 'a torch', tool2Pic: '🔦', car: '🚓' },
+  { name: 'teacher', pic: '👩‍🏫', does: 'helps children learn', tool: 'a whiteboard', toolPic: '📋', place: 'the school', placePic: '🏫', tool2: 'books', tool2Pic: '📚', car: '🚶' },
+  { name: 'postal worker', pic: '📫', does: 'delivers letters and parcels', tool: 'a mail bag', toolPic: '✉️', place: 'the post office', placePic: '🏤', tool2: 'parcels', tool2Pic: '📦', car: '🚚' },
+  { name: 'farmer', pic: '👩‍🌾', does: 'grows the food we eat', tool: 'a tractor', toolPic: '🚜', place: 'the farm', placePic: '🌾', tool2: 'a basket', tool2Pic: '🧺', car: '🚜' },
+  { name: 'fisher', pic: '🎣', does: 'catches fish for the market', tool: 'a net', toolPic: '🪢', place: 'the harbour', placePic: '⚓', tool2: 'a boat', tool2Pic: '🛶', car: '🚤' },
+  { name: 'bus driver', pic: '🚌', does: 'drives people around town', tool: 'a bus', toolPic: '🚍', place: 'the bus station', placePic: '🚏', tool2: 'tickets', tool2Pic: '🎫', car: '🚌' },
+  { name: 'chef', pic: '👨‍🍳', does: 'cooks meals for people', tool: 'a frying pan', toolPic: '🍳', place: 'the restaurant', placePic: '🍽️', tool2: 'a spoon', tool2Pic: '🥄', car: '🛵' },
+  { name: 'librarian', pic: '📚', does: 'looks after the books and helps you find one', tool: 'a library card', toolPic: '🪪', place: 'the library', placePic: '🏛️', tool2: 'a bookmark', tool2Pic: '🔖', car: '🚲' },
+  { name: 'dentist', pic: '🦷', does: 'keeps teeth healthy', tool: 'a toothbrush', toolPic: '🪥', place: 'the dental clinic', placePic: '🏢', tool2: 'a mirror', tool2Pic: '🪞', car: '🚗' },
+  { name: 'builder', pic: '👷', does: 'builds houses and roads', tool: 'a hammer', toolPic: '🔨', place: 'the building site', placePic: '🏗️', tool2: 'bricks', tool2Pic: '🧱', car: '🚛' },
+  { name: 'vet', pic: '🐾', does: 'looks after sick animals', tool: 'a bandage', toolPic: '🩹', place: 'the animal clinic', placePic: '🐕', tool2: 'a pet scale', tool2Pic: '⚖️', car: '🚐' },
+  { name: 'pilot', pic: '✈️', does: 'flies aeroplanes', tool: 'a flight map', toolPic: '🗺️', place: 'the airport', placePic: '🛫', tool2: 'a headset', tool2Pic: '🎧', car: '🛩️' },
+  { name: 'lifeguard', pic: '🏊', does: 'keeps swimmers safe at the beach', tool: 'a float', toolPic: '🛟', place: 'the beach', placePic: '🏖️', tool2: 'a megaphone', tool2Pic: '📣', car: '🛟' }
+];
+
+/** Trouble in town and the helper to call: the scene draws the helper's workplace among others and the player taps it. */
+export const CALLS = [
+  { say: 'Grandpa has a bad cough and a fever.', pic: '🤒', helper: 'doctor' },
+  { say: 'Dad has a bad pain in his tummy.', pic: '🤕', helper: 'doctor' },
+  { say: 'The baby needs her check-up and her jab.', pic: '👶', helper: 'nurse' },
+  { say: 'Smoke is coming from the kitchen!', pic: '🔥', helper: 'firefighter' },
+  { say: 'A kitten is stuck high up in a tree.', pic: '🐱', helper: 'firefighter' },
+  { say: "Someone has taken Mr Lee's bicycle.", pic: '🚲', helper: 'police officer' },
+  { say: 'A lost little boy is crying in the market.', pic: '😢', helper: 'police officer' },
+  { say: 'Mia wants to learn to read.', pic: '📖', helper: 'teacher' },
+  { say: 'This parcel must get to Aunt May in Speightstown.', pic: '📦', helper: 'postal worker' },
+  { say: 'A birthday card has to reach Grandma by Friday.', pic: '💌', helper: 'postal worker' },
+  { say: 'The market needs fresh sweet potatoes and yams.', pic: '🍠', helper: 'farmer' },
+  { say: 'The restaurant needs flying fish for Friday.', pic: '🐟', helper: 'fisher' },
+  { say: 'Twenty children need a ride to the beach.', pic: '🏖️', helper: 'bus driver' },
+  { say: 'Fifty hungry guests are coming to the wedding dinner.', pic: '🍽️', helper: 'chef' },
+  { say: 'Sam wants a book about dinosaurs.', pic: '🦕', helper: 'librarian' },
+  { say: 'Zara has a toothache.', pic: '🦷', helper: 'dentist' },
+  { say: 'The roof has a hole where the rain comes in.', pic: '🏚️', helper: 'builder' },
+  { say: 'The puppy has hurt its paw.', pic: '🐶', helper: 'vet' },
+  { say: 'The goat will not eat her food.', pic: '🐐', helper: 'vet' },
+  { say: 'Uncle Ben must fly to Jamaica today.', pic: '🛫', helper: 'pilot' },
+  { say: 'A swimmer is waving for help in the waves.', pic: '🌊', helper: 'lifeguard' }
+];
+
+/** What the town's taxes pay for, and what they do not (with the reason), for the Run the Town board. */
+export const TOWN_SPEND = [
+  { pic: '🚒', name: 'the fire service', pub: true }, { pic: '🏫', name: 'the school', pub: true }, { pic: '🏥', name: 'the hospital', pub: true },
+  { pic: '🛣️', name: 'the roads', pub: true }, { pic: '💡', name: 'the street lights', pub: true }, { pic: '🏛️', name: 'the library', pub: true },
+  { pic: '🚮', name: 'the rubbish collection', pub: true }, { pic: '🏞️', name: 'the park', pub: true },
+  { pic: '🍬', name: 'the sweet shop', pub: false, why: 'A shop is a private business; it earns its own money.' },
+  { pic: '🎂', name: 'a birthday party', pub: false, why: 'A party is for one family, not something everyone shares.' },
+  { pic: '⚽', name: "a football team's kit", pub: false, why: 'A club buys its own kit; taxes pay for what everyone shares.' },
+  { pic: '🎁', name: 'presents for the mayor', pub: false, why: "Taxes are not the mayor's to spend on themselves." },
+  { pic: '🏎️', name: 'a sports car for the council', pub: false, why: 'Taxes pay for services everyone uses, not treats for the council.' }
 ];
 
 /** How a town runs, for Grades 4-8. */
