@@ -195,7 +195,10 @@ export function guideSays(scene, it, x, y, w, h, line, colour, f) {
   g.fillTriangle(x + h + 6 * f, y + h / 2 - 7 * f, x + h + 6 * f, y + h / 2 + 7 * f, x + h - 2 * f, y + h / 2);
   drawGuide(scene, px, y + h / 2, h * 0.9, it.guide);
   const t = readable(scene, x + h + 16 * f, y + h / 2, line, T.at(scene, 15, colour, { fontStyle: '700' }), { width: w - h - 30 * f, align: 'left' }).setOrigin(0, 0.5);
-  if (it.guide && it.guide.name && h > 40 * f) scene.add.text(px, y + h + 2 * f, it.guide.name, { fontFamily: FONT, fontSize: Math.round(10 * f) + 'px', color: hex(THEME.ink2), fontStyle: WEIGHT.bold }).setOrigin(0.5, 0);
+  if (it.guide && it.guide.name && h > 40 * f) {
+    const name = scene.add.text(px, y + h + 2 * f, it.guide.name, { fontFamily: FONT, fontSize: Math.round(10 * f) + 'px', color: hex(THEME.ink2), fontStyle: WEIGHT.bold }).setOrigin(0.5, 0);
+    if (name.width && px - name.width / 2 < x) name.setX(x + name.width / 2);   // kept on screen at the left edge
+  }
   if (scene.autoReads && it.said !== line) {
     it.said = line;
     const voice = it.guide ? { voice: it.guide.voice || 'female', pitch: it.guide.pitch || 1 } : {};

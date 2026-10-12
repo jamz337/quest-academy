@@ -89,6 +89,14 @@ export class ScienceLab extends PictureQuiz {
       : q.survive ? { given: [], hint: null } : q.chain ? { slots: q.chain.links.map(() => null), sel: null, wrong: [], hint: null } : { hint: null };
   }
 
+  /** The next move that solves each board, for the New Skill demo's hand (and its pointing when a child waits). */
+  demoNext(q, st) {
+    if (q.release) { const i = q.release.animals.findIndex((a, k) => !st.home[k]); if (i < 0) return null; const a = q.release.animals[i]; return { from: `animal:${i}`, to: `home:${a.home}`, run: () => this.releaseDrop(i, a.home) }; }
+    if (q.survive) { const i = q.survive.tray.findIndex((t, k) => t.owner === q.survive.name && !st.given.includes(k)); return i < 0 ? null : { from: `tray:${i}`, to: 'animal', run: () => this.surviveGive(i) }; }
+    if (q.chain) { const i = st.slots.findIndex((v, k) => v !== k); return i < 0 ? { from: 'check', run: () => this.chainCheck() } : { from: `card:${i}`, to: `slot:${i}`, run: () => this.chainPlace(i, i) }; }
+    return null;
+  }
+
   /** A home drawn as a little scene: its sky, its ground, something that grows there and its name. */
   drawHome(g, home, x, y, w, h) {
     const ui = this.ui, look = HOME_LOOK[home.id] || HOME_LOOK.farm;
@@ -107,6 +115,7 @@ export class ScienceLab extends PictureQuiz {
     const g = this.add.graphics();
     const cells = R.homes.map((home, i) => ({ home, x: board.x + 4 + (i % cols) * (cw + gap), y: board.y + Math.floor(i / cols) * (ch + gap) }));
     cells.forEach((c) => {
+      this.mark(`home:${c.home.id}`, c.x + cw / 2, c.y + ch / 2);
       this.drawHome(g, c.home, c.x, c.y, cw, ch);
       if (!answered) this.add.zone(c.x + cw / 2, c.y + ch / 2, cw, ch).setInteractive({ useHandCursor: true }).on('pointerdown', () => { if (st.sel !== null) this.releaseDrop(st.sel, c.home.id); });
     });
@@ -131,6 +140,7 @@ export class ScienceLab extends PictureQuiz {
     if (!answered) waiting.forEach((i) => {
       // Each animal keeps its own spot in the truck, so the others don't slide about as they leave.
       const m = R.animals.length, a = R.animals[i], x = board.x + board.w / 2 + (i - (m - 1) / 2) * Math.min(90 * ui, (board.w - 40) / m), y = ty + crateH * 0.58;
+      this.mark(`animal:${i}`, x, y);
       if (st.sel === i) { g.fillStyle(0xffffff, 0.75); g.fillCircle(x, y, size * 0.75); g.lineStyle(3, this.subject.accent, 1); g.strokeCircle(x, y, size * 0.75); }
       const t = this.add.text(x, y - 6 * ui, a.pic, { fontSize: Math.round(size * 1.05) + 'px' }).setOrigin(0.5);
       this.add.text(x, ty + crateH - 4 * ui, a.name, { fontFamily: FONT, fontSize: Math.round(11 * ui) + 'px', color: hex(0x3d2e1f), fontStyle: WEIGHT.bold }).setOrigin(0.5, 1);
@@ -189,6 +199,7 @@ export class ScienceLab extends PictureQuiz {
     // The animal, cheerful once it has what it needs.
     const happy = st.given.length >= 2 || (answered && s.right), acx = sx + sw * 0.45, acy = board.y + sceneH * 0.42, asz = Math.round(Math.min(sceneH * 0.42, 86 * ui));
     const animal = this.add.text(acx, acy, S.pic, { fontSize: asz + 'px' }).setOrigin(0.5);
+    this.mark('animal', acx, acy);
     if (happy && this.tweens) this.tweens.add({ targets: animal, y: acy - 6 * ui, duration: 420, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
     this.add.text(acx + asz * 0.62, acy - asz * 0.5, happy ? '😊' : S.temp < 0 ? '🥶' : S.temp > 35 ? '🥵' : '😟', { fontSize: Math.round(asz * 0.32) + 'px' }).setOrigin(0.5);
     const shown = answered ? S.tray.map((t, i) => i).filter((i) => S.tray[i].owner === S.name) : st.given;
@@ -203,6 +214,7 @@ export class ScienceLab extends PictureQuiz {
     S.tray.forEach((t, i) => {
       if (st.given.includes(i) || answered) return;
       const x = sx + (i % cols) * (iw + gap) + iw / 2, y = ty + Math.floor(i / cols) * (itemH + gap) + itemH / 2;
+      this.mark(`tray:${i}`, x, y);
       const bg = this.add.graphics(); bg.fillStyle(0xeef2f8, 1); bg.fillRoundedRect(-iw / 2, -itemH / 2, iw, itemH, 10); bg.lineStyle(1.5, 0xc7d0e0, 1); bg.strokeRoundedRect(-iw / 2, -itemH / 2, iw, itemH, 10);
       const pic = this.add.text(-iw / 2 + 18 * ui, 0, t.pic, { fontSize: Math.round(Math.min(20 * ui, itemH * 0.5)) + 'px' }).setOrigin(0.5);
       const words = this.add.text(-iw / 2 + 34 * ui, 0, t.text, { fontFamily: FONT, fontSize: Math.round(Math.max(9, Math.min(12 * ui, iw / 15))) + 'px', color: hex(THEME.ink), fontStyle: WEIGHT.bold, wordWrap: { width: iw - 40 * ui } }).setOrigin(0, 0.5);
@@ -249,6 +261,8 @@ export class ScienceLab extends PictureQuiz {
     const slots = C.links.map((_, i) => ({ x: x0 + step * (i + 1), y: rowY }));
     slots.forEach((sl, i) => {
       const ci = order[i], bad = !answered && st.wrong.includes(i);
+      this.mark(`slot:${i}`, sl.x, sl.y);
+      if (ci !== null) this.mark(`card:${ci}`, sl.x, sl.y);
       g.fillStyle(ci !== null ? 0xffffff : 0xeef2f8, 1); g.fillRoundedRect(sl.x - box / 2, sl.y - box / 2, box, box, 12);
       g.lineStyle(bad ? 4 : 2, bad ? THEME.danger : 0xc7d0e0, 1); g.strokeRoundedRect(sl.x - box / 2, sl.y - box / 2, box, box, 12);
       this.add.text(sl.x, sl.y + box / 2 + 4 * ui, C.links[i].role, { fontFamily: FONT, fontSize: Math.round(Math.max(9, 11 * ui)) + 'px', color: hex(THEME.ink2), fontStyle: WEIGHT.bold }).setOrigin(0.5, 0);
@@ -265,6 +279,7 @@ export class ScienceLab extends PictureQuiz {
     loose.forEach((ci) => {
       // Each card keeps its own spot in the row, so the others don't slide about as cards are placed.
       const k = C.cards.indexOf(ci), l = C.links[ci], x = board.x + board.w / 2 + (k - (n - 1) / 2) * (cardW + 8 * ui), y = cardsY + cardH / 2;
+      this.mark(`card:${ci}`, x, y);
       const bg = this.add.graphics(); bg.fillStyle(st.sel === ci ? 0xfff3c4 : 0xeef2f8, 1); bg.fillRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 12);
       bg.lineStyle(st.sel === ci ? 3 : 1.5, st.sel === ci ? 0xb37400 : 0xc7d0e0, 1); bg.strokeRoundedRect(-cardW / 2, -cardH / 2, cardW, cardH, 12);
       const pic = this.add.text(0, -cardH * 0.14, l.pic, { fontSize: Math.round(cardH * 0.4) + 'px' }).setOrigin(0.5);
@@ -276,6 +291,7 @@ export class ScienceLab extends PictureQuiz {
       });
     });
     const by = cardsY + cardH + 12 * ui + btnH / 2;
+    this.mark('check', board.x + board.w / 2, by);
     button(this, board.x + board.w / 2, by, Math.min(board.w - 24, 200 * ui), btnH, answered ? (s.right ? '⭐ Energy flows!' : 'The right order') : 'Check ✓',
       { variant: answered ? (s.right ? 'success' : 'secondary') : 'go', fontSize: 16, disabled: answered, onClick: () => this.chainCheck() });
     const line = answered ? (s.right ? `The sun feeds the ${C.links[0].name}, and the energy passes along the chain. ⭐` : 'This is the right order, from the sun.') : st.hint || 'Drag each living thing into its box, or tap it, then tap a box.';

@@ -12,6 +12,9 @@ import { stripe } from '../../ui/Panel.js';
 import { enter } from '../../ui/motion.js';
 import { plainTheme } from '../../ui/Explain.js';
 import { speak } from '../../systems/Speech.js';
+import { Sfx } from '../../systems/Audio.js';
+import { guideSays } from '../../ui/SkillIntro.js';
+import { skillLabel } from '../../data/skills.js';
 
 /**
  * A picture quiz: ten questions with big answer buttons, each read aloud, a second try on a miss and an
@@ -34,7 +37,8 @@ export class PictureQuiz extends MinigameScene {
     return { questions, idx: 0, correct: 0, locked: false, picked: null, right: null, missed: {}, bench: [], parTimeMs: tune.parTimeMs };
   }
 
-  get round() { return this.state.questions[this.state.idx]; }
+  // While a board's New Skill demo is on, its example is the round the board works on (see boardIntroFor).
+  get round() { return this.introRound || this.state.questions[this.state.idx]; }
   get total() { return this.state.questions.length; }
   progressLabel() { return `${Math.min(this.state.idx + 1, this.total)} / ${this.total}`; }
   progressRatio() { return this.state.idx / this.total; }
@@ -72,11 +76,17 @@ export class PictureQuiz extends MinigameScene {
   /** A board's starting state (kept per question across rebuilds, in state.inter). */
   newInter() { return { hint: null }; }
   interState() {
-    const s = this.state;
+    const s = this.state, key = this.introRound ? this.introKey : s.idx;
     s.inter ||= {};
-    if (!s.inter[s.idx]) s.inter[s.idx] = this.newInter(this.round);
-    return s.inter[s.idx];
+    if (!s.inter[key]) s.inter[key] = this.newInter(this.round);
+    return s.inter[key];
   }
+  /** A board notes where its pieces are (for the New Skill demo's hand): mark('dir:north', x, y). */
+  mark(key, x, y) { (this.points ||= {})[key] = { x, y }; }
+  /** The next move that solves a board from where it is: { from, to?, run } (subclasses; null when there is none). */
+  demoNext() { return null; }
+  /** A question that may be a board (History's makeOne leaves boards out, for the plain New Skill page). */
+  makeBoardOne(d) { return this.makeOne(d); }
 
   /** A board question: the bench, the prompt card read aloud, then the board below. */
   buildInteractive(area, q, build) {
@@ -100,6 +110,131 @@ export class PictureQuiz extends MinigameScene {
     if (answered && !s.right) this.explanationPanel(area, q, () => this.next());
   }
 
+  // ---- A board's New Skill page: watch the hand, then you ------------------------------------------------------
+  // The first round of a new skill on a board is taught on the board itself. The villager says what to do while a
+  // ghost hand does one (each move from demoNext, its hand going to the points the board marked), then the child
+  // does another on the same board; if they wait or slip, the hand points to the next move. Then the game starts.
+
+  /** Two examples of this board for a skill (one to watch, one to do), or null. */
+  boardExamples(q, build) {
+    const found = [];
+    for (let i = 0; i < 160 && found.length < 2; i++) {
+      const x = this.makeBoardOne(Math.min(1, 0.2 + (i % 9) * 0.1));
+      // Two different ones (some boards have one wording for many puzzles, so the whole question is compared).
+      if (x && x.skill === q.skill && this.boardFor(x) === build && ![q, ...found].some((y) => JSON.stringify(y) === JSON.stringify(x))) found.push(x);
+    }
+    return found.length === 2 ? found : null;
+  }
+
+  /** True while the board's New Skill page is on screen (buildGame returns straight after). */
+  boardIntroFor(area, q, build) {
+    const s = this.state;
+    s.introduced ||= {};
+    if (!s.boardIntro && !s.introduced[q.skill] && this.needsIntro(q.skill)) {
+      const ex = this.boardExamples(q, build);
+      if (ex && s.inter) { delete s.inter['intro-demo']; delete s.inter['intro-try']; }   // a fresh board for each new skill
+      if (ex) { s.introduced[q.skill] = true; s.boardIntro = { skill: q.skill, phase: 'demo', demo: ex[0], practice: ex[1], guide: this.guide, said: null, missed: 0 }; }
+    }
+    const bi = s.boardIntro;
+    if (!bi) { this.introRound = null; return false; }
+    this.drawBoardIntro(area, bi, build);
+    return true;
+  }
+
+  drawBoardIntro(area, bi, build) {
+    const ui = this.ui, watching = bi.phase === 'demo' || bi.phase === 'shown';
+    this.introRound = watching ? bi.demo : bi.practice;
+    this.introKey = watching ? 'intro-demo' : 'intro-try';
+    this.points = {};
+    const q = this.introRound, cx = area.x + area.w / 2;
+    this.add.text(cx, area.y + 4 * ui, `New skill: ${skillLabel(bi.skill)}`, { fontFamily: FONT, fontSize: Math.round(18 * ui) + 'px', color: hex(this.subject.dark), fontStyle: WEIGHT.heavy }).setOrigin(0.5, 0);
+    const line = bi.phase === 'demo' ? `Watch me. ${q.text}` : bi.phase === 'shown' ? 'Now you try one!'
+      : bi.phase === 'done' ? 'You have got it! Now for the real thing.' : bi.missed ? `Look where my hand is pointing. ${q.text}` : `Your turn! ${q.text}`;
+    const bubbleH = Math.max(48 * ui, Math.min(64 * ui, area.h * 0.12));
+    guideSays(this, bi, area.x + 4, area.y + 30 * ui, area.w - 8, bubbleH, line, bi.phase === 'done' ? THEME.successDark : THEME.ink, ui);
+    const headH = 30 * ui + bubbleH + (bi.guide && bi.guide.name ? 18 : 8) * ui, footH = 54 * ui;
+    const board = { x: area.x, y: area.y + headH, w: area.w, h: area.h - headH - footH };
+    build.call(this, board, q, false);
+    // While the hand works, and once a board is solved, the child's taps don't reach it.
+    if (bi.phase !== 'try') this.add.zone(board.x + board.w / 2, board.y + board.h / 2, board.w, board.h).setInteractive().setDepth(1500);
+    const fy = area.y + area.h - footH / 2;
+    if (bi.phase !== 'done') button(this, area.x + 44 * ui, fy, 76 * ui, 38 * ui, 'Skip', { variant: 'ghost', compact: true, fontSize: 15, onClick: () => { Sfx.click(); this.finishBoardIntro(); } });
+    // Left to right: Skip, Watch again, then the next move, sized to fit a phone.
+    const watchW = Math.min(140 * ui, area.w * 0.3), watchX = area.x + 86 * ui + watchW / 2;
+    const goW = Math.min(180 * ui, area.x + area.w - (watchX + watchW / 2) - 14), goX = area.x + area.w - goW / 2 - 6;
+    if (bi.phase === 'shown' || bi.phase === 'try') button(this, watchX, fy, watchW, 38 * ui, '↺ Watch again', { variant: 'ghost', compact: true, fontSize: 14, onClick: () => { Sfx.click(); this.watchAgain(bi); } });
+    if (bi.phase === 'shown') button(this, goX, fy, goW, 46 * ui, 'Your turn ▶', { variant: 'go', compact: true, fontSize: 17, onClick: () => { Sfx.click(); bi.phase = 'try'; this.rebuild(); } });
+    if (bi.phase === 'done') button(this, area.x + area.w - Math.min(180 * ui, area.w * 0.5) / 2 - 6, fy, Math.min(180 * ui, area.w * 0.5), 46 * ui, 'Got it! ▶', { variant: 'go', compact: true, fontSize: 17, onClick: () => { Sfx.click(); this.finishBoardIntro(); } });
+    if (bi.phase === 'demo') this.demoStep(bi);
+    if (bi.phase === 'try') this.hintLater(bi);
+  }
+
+  /** The ghost hand's next move: to the piece, a press, along to where it goes, and the move is made. */
+  demoStep(bi) {
+    const token = (this.demoToken = (this.demoToken || 0) + 1), ui = this.ui;
+    const alive = () => this.demoToken === token && this.state.boardIntro === bi && bi.phase === 'demo';
+    this.time.delayedCall(650, () => {
+      if (!alive()) return;
+      const step = this.demoNext(this.introRound, this.interState(), true), from = step && this.points[step.from];
+      if (!step || !from) { bi.phase = 'shown'; this.rebuild(); return; }
+      const to = step.to ? this.points[step.to] : null, start = this.handPos || { x: from.x + 40 * ui, y: from.y + 60 * ui };
+      const hand = this.add.text(start.x, start.y, '👆', { fontSize: Math.round(34 * ui) + 'px' }).setOrigin(0.35, 0.05).setDepth(2000);
+      const go = () => { this.handPos = to || from; step.run(); };
+      if (!this.tweens) return go();
+      this.tweens.add({ targets: hand, x: from.x, y: from.y, duration: 420, ease: 'Sine.InOut', onComplete: () => {
+        if (!alive()) return;
+        this.tweens.add({ targets: hand, scale: 0.82, duration: 110, yoyo: true, onComplete: () => {
+          if (!alive()) return;
+          if (!to) return go();
+          this.tweens.add({ targets: hand, x: to.x, y: to.y, duration: 620, ease: 'Sine.InOut', onComplete: () => { if (alive()) go(); } });
+        } });
+      } });
+    });
+  }
+
+  /** Your turn: if the child waits (or slips), the hand points to the next move, pulsing. */
+  hintLater(bi) {
+    const token = (this.hintToken = (this.hintToken || 0) + 1), ui = this.ui;
+    this.time.delayedCall(bi.missed ? 400 : 5000, () => {
+      if (this.hintToken !== token || this.state.boardIntro !== bi || bi.phase !== 'try') return;
+      const step = this.demoNext(this.introRound, this.interState(), false), from = step && this.points[step.from];
+      if (!from) return;
+      const hand = this.add.text(from.x, from.y, '👆', { fontSize: Math.round(32 * ui) + 'px' }).setOrigin(0.35, 0.05).setDepth(2000).setAlpha(0.85);
+      bi.hinted = (bi.hinted || 0) + 1;
+      if (!this.tweens) return;
+      const to = step.to ? this.points[step.to] : null;
+      if (to) this.tweens.add({ targets: hand, x: to.x, y: to.y, duration: 900, ease: 'Sine.InOut', repeat: -1, repeatDelay: 300 });
+      else this.tweens.add({ targets: hand, scale: 0.85, duration: 420, yoyo: true, repeat: -1 });
+    });
+  }
+
+  /** A board's win or slip while it is the New Skill page: the demo is over, the try is won, or a hint shows. */
+  introPick(i) {
+    const bi = this.state.boardIntro;
+    if (!bi) { this.introRound = null; return; }
+    if (bi.phase === 'demo' && i === 0) { bi.phase = 'shown'; Sfx.pop(); }
+    else if (bi.phase === 'try') { if (i === 0) { bi.phase = 'done'; Sfx.correct(); } else { bi.missed += 1; Sfx.wrong(); } }
+    this.rebuild();
+  }
+
+  watchAgain(bi) {
+    const s = this.state;
+    if (s.inter) { delete s.inter['intro-demo']; delete s.inter['intro-try']; }
+    bi.phase = 'demo'; bi.missed = 0; this.handPos = null;
+    this.rebuild();
+  }
+
+  /** Into the game: the skill is learnt (or skipped), and the first real round starts. */
+  finishBoardIntro() {
+    const s = this.state, bi = s.boardIntro;
+    if (bi) this.markIntroduced(bi.skill);
+    if (s.inter) { delete s.inter['intro-demo']; delete s.inter['intro-try']; }
+    s.boardIntro = null; this.introRound = null; this.handPos = null; this.demoToken = (this.demoToken || 0) + 1; this.hintToken = (this.hintToken || 0) + 1;
+    this.qStartAt = Date.now();
+    if ('qStart' in s) s.qStart = Date.now();
+    this.rebuild();
+  }
+
   /** The line under a board: what to do, the last mistake, or the outcome. */
   hintLine(board, y, text, good = null) {
     const ui = this.ui, colour = good === true ? THEME.successDark : good === false ? THEME.danger : THEME.ink2;
@@ -109,7 +244,8 @@ export class PictureQuiz extends MinigameScene {
   sayHint(text) { if (text && this.payload.grade <= 0) speak(text, { rate: this.speechRate }); }
 
   buildGame(area) {
-    const boardQ = this.round, build = boardQ && !this.inReview ? this.boardFor(boardQ) : null;
+    const boardQ = this.state.questions[this.state.idx], build = boardQ && !this.inReview ? this.boardFor(boardQ) : null;
+    if (build && this.boardIntroFor(area, boardQ, build)) return;
     if (build) return this.buildInteractive(area, boardQ, build);
     const s = this.state, ui = this.ui, q = this.round;
     if (!q) return;
@@ -163,6 +299,7 @@ export class PictureQuiz extends MinigameScene {
   }
 
   pick(i) {
+    if (this.introRound) return this.introPick(i);
     const s = this.state, q = this.round;
     if (s.locked || !q) return;
     const right = q.choices[i] === q.answer;

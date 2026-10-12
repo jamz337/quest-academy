@@ -29,6 +29,7 @@ export class HistoryQuiz extends PictureQuiz {
   makeSet(n, targets) { return historySet(this.gameId, this.payload.grade, this.rng, n, targets); }
   /** New Skill pages are words only, so their examples come from the kinds that need no drawn flag or map. */
   makeOne(d) { return historyQuestion(this.gameId, this.payload.grade, this.rng, d, { drawn: false }); }
+  makeBoardOne(d) { return historyQuestion(this.gameId, this.payload.grade, this.rng, d); }
 
   promptHeight(area, q) { return q.map || q.flag ? Math.min(area.h * 0.46, 190 * this.ui) : super.promptHeight(area, q); }
 
@@ -97,6 +98,44 @@ export class HistoryQuiz extends PictureQuiz {
       : q.paint ? this.buildPaint : q.fly ? this.buildFly : q.pairs ? this.buildPairs : null;
   }
 
+  /** A point inside a flag part where a tap lands on that part (the hit nearest the middle of all its hits). */
+  partPoint(parts, i) {
+    const hits = [];
+    for (let x = 2; x < 150; x += 4) for (let y = 2; y < 100; y += 4) if (partAt(parts, x, y) === i) hits.push({ x, y });
+    if (!hits.length) return null;
+    const mx = hits.reduce((a, h) => a + h.x, 0) / hits.length, my = hits.reduce((a, h) => a + h.y, 0) / hits.length;
+    return hits.reduce((best, h) => (Math.hypot(h.x - mx, h.y - my) < Math.hypot(best.x - mx, best.y - my) ? h : best));
+  }
+
+  /** The next move that solves each board, for the New Skill demo's hand (and its pointing when a child waits). */
+  demoNext(q, st, demo) {
+    if (q.sail) { const o = q.sail.orders[st.leg]; return o ? { from: `dir:${o.d}`, run: () => this.sailStep(o.d) } : null; }
+    if (q.needle) {
+      const n = q.needle, off = Math.abs(((((st.angle - n.target) % 360) + 540) % 360) - 180);
+      return off > n.tolerance ? { from: 'needle', to: 'target', run: () => { st.angle = n.target; this.rebuild(); } } : { from: 'check', run: () => this.needleCheck() };
+    }
+    if (q.call) return st.driving ? null : { from: `building:${q.call.to}`, run: () => this.callTap(q.call.to) };
+    if (q.kit) { const i = q.kit.shelf.findIndex((t, k) => t.owner === q.kit.helper.name && !st.packed.includes(k)); return i < 0 ? null : { from: `shelf:${i}`, to: 'bag', run: () => this.kitDrop(i) }; }
+    if (q.budget) { const i = q.budget.items.findIndex((t, k) => t.pub && !st.paid.includes(k)); return i < 0 ? null : { from: 'coin', to: `box:${i}`, run: () => this.budgetPay(i) }; }
+    if (q.paint) {
+      const parts = q.paint.parts, i = parts.findIndex((p, k) => st.filled[k] !== p.paint);
+      if (i < 0) return { from: 'check', run: () => this.paintCheck() };
+      const want = parts[i].paint;
+      return st.paint !== want ? { from: `pot:${want}`, run: () => this.paintPot(want) } : { from: `part:${i}`, run: () => this.paintPart(i) };
+    }
+    if (q.fly) return { from: 'flag', to: `land:${q.fly.where}`, run: () => this.flyDrop(q.fly.where) };
+    if (q.pairs) {
+      // The demo matches two pairs and leaves the rest; a waiting child is shown the partner of the card they turned.
+      if (st.busy || (demo && st.matched.length >= 2)) return null;
+      const cards = q.pairs.cards;
+      if (st.open.length === 1) { const c = cards[st.open[0]], j = cards.findIndex((x, k) => x.code === c.code && k !== st.open[0]); return { from: `card:${j}`, run: () => this.pairsTap(j) }; }
+      if (!demo) return null;
+      const k = cards.findIndex((x) => !st.matched.includes(x.code));
+      return k < 0 ? null : { from: `card:${k}`, run: () => this.pairsTap(k) };
+    }
+    return null;
+  }
+
   /** The sea round Barbados: the island, its ports, the rocks, the ship and the treasure, with a compass to steer by. */
   buildSail(board, q, answered) {
     const ui = this.ui, st = this.interState(), sail = q.sail;
@@ -133,6 +172,7 @@ export class HistoryQuiz extends PictureQuiz {
     button(this, cx - bw - gap, by, bw, bh, '◀ west', { ...opts, onClick: () => this.sailStep('west') });
     button(this, cx, by, bw, bh, '▼ south', { ...opts, onClick: () => this.sailStep('south') });
     button(this, cx + bw + gap, by, bw, bh, 'east ▶', { ...opts, onClick: () => this.sailStep('east') });
+    this.mark('dir:north', cx, by - bh - gap); this.mark('dir:west', cx - bw - gap, by); this.mark('dir:south', cx, by); this.mark('dir:east', cx + bw + gap, by);
   }
 
   /** One square in the direction tapped: the right way moves the ship, the wrong way runs it onto the rocks. */
@@ -171,6 +211,7 @@ export class HistoryQuiz extends PictureQuiz {
     const nameStyle = { fontFamily: FONT, fontSize: Math.round(Math.max(9, 11 * ui)) + 'px', color: hex(THEME.ink), fontStyle: WEIGHT.bold, backgroundColor: '#ffffffb0', padding: { x: 3, y: 1 } };
     c.buildings.forEach((b, i) => {
       const p = spots[i];
+      this.mark(`building:${b.id}`, p.x, p.y);
       this.add.text(p.x, p.y, b.pic, { fontSize: Math.round(size) + 'px' }).setOrigin(0.5);
       this.add.text(p.x, p.y + size * 0.62, b.name, nameStyle).setOrigin(0.5, 0);
       if (!answered && !st.driving) this.add.zone(p.x, p.y + size * 0.35, size * 2.6, size * 2).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.callTap(b.id));
@@ -223,10 +264,12 @@ export class HistoryQuiz extends PictureQuiz {
     const is = Math.max(22, Math.min(36 * ui, (shelf.w / shelf.cols) * 0.55, ((shelf.h - 26 * ui) / shelf.rows) * 0.6));
     st.packed.forEach((i, n) => this.add.text(bag.x - bag.w / 4 + (n * bag.w) / 2, bag.y, k.shelf[i].pic, { fontSize: Math.round(is) + 'px' }).setOrigin(0.5));
     this.bagRect = bag;
+    this.mark('bag', bag.x, bag.y);
     k.shelf.forEach((item, i) => {
       if (st.packed.includes(i)) return;
       const col = i % shelf.cols, row = Math.floor(i / shelf.cols);
       const t = this.add.text(shelf.x + (shelf.w * (col + 0.5)) / shelf.cols, shelf.y + 24 * ui + ((shelf.h - 28 * ui) * (row + 0.5)) / shelf.rows, item.pic, { fontSize: Math.round(is) + 'px' }).setOrigin(0.5);
+      this.mark(`shelf:${i}`, t.x, t.y);
       if (answered) return;
       const over = (x, y) => Math.abs(x - bag.x) < bag.w / 2 + 12 && Math.abs(y - bag.y) < bag.h / 2 + 12;
       draggable(this, t, { onTap: () => this.kitDrop(i), onDrop: (x, y) => { if (!over(x, y)) return false; this.kitDrop(i); return true; } });
@@ -253,6 +296,7 @@ export class HistoryQuiz extends PictureQuiz {
     const hintH = 34 * ui, chestH = Math.max(48, Math.min(72 * ui, board.h * 0.2)), gridH = board.h - hintH - chestH - 8;
     const cols = 3, cw = (board.w - 8) / cols, ch = gridH / 2;
     const boxes = b.items.map((it, i) => ({ x: board.x + 4 + cw * (i % cols) + cw / 2, y: board.y + ch * Math.floor(i / cols) + ch / 2, w: cw - 8, h: ch - 8 }));
+    boxes.forEach((bx, i) => this.mark(`box:${i}`, bx.x, bx.y));
     const g = this.add.graphics();
     const ps = Math.max(18, Math.min(30 * ui, ch * 0.4)), ns = Math.round(Math.max(9, Math.min(12 * ui, cw / 11)));
     b.items.forEach((it, i) => {
@@ -270,6 +314,7 @@ export class HistoryQuiz extends PictureQuiz {
     const left = b.coins - st.paid.length, cs = Math.max(22, Math.min(34 * ui, chestH * 0.6));
     for (let n = 0; n < left; n++) {
       const coin = this.add.text(board.x + 24 * ui + cs / 2 + n * cs * 1.5, cy, '🪙', { fontSize: Math.round(cs) + 'px' }).setOrigin(0.5);
+      if (n === 0) this.mark('coin', coin.x, coin.y);
       if (answered) continue;
       draggable(this, coin, { onDrop: (x, y) => { const i = nearestTarget(boxes, x, y, Math.max(boxes[0].w, boxes[0].h) * 0.6); if (i < 0) return false; this.budgetPay(i); return true; } });
     }
@@ -334,15 +379,18 @@ export class HistoryQuiz extends PictureQuiz {
         if (i >= 0) this.paintPart(i);
       });
     }
+    if (this.introRound) P.parts.forEach((part, i) => { const pt = this.partPoint(P.parts, i); if (pt) this.mark(`part:${i}`, fx + pt.x * k, fy + pt.y * k); });
     // The pots.
     const py = fy + fh + 14 * ui + potR, gap = potR * 2.6, px0 = board.x + board.w / 2 - ((P.pots.length - 1) * gap) / 2;
     P.pots.forEach((name, i) => {
       const x = px0 + i * gap, on = st.paint === name && !answered;
+      this.mark(`pot:${name}`, x, py);
       g.fillStyle(PAINTS[name], 1); g.fillCircle(x, py, on ? potR * 1.12 : potR);
       g.lineStyle(on ? 4 : 2, on ? THEME.ink : 0xd6d2c8, 1); g.strokeCircle(x, py, on ? potR * 1.12 : potR);
       if (!answered) this.add.zone(x, py, potR * 2.4, potR * 2.4).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.paintPot(name));
     });
     const by = py + potR + 10 * ui + btnH / 2;
+    this.mark('check', board.x + board.w / 2, by);
     button(this, board.x + board.w / 2, by, Math.min(board.w - 24, 200 * ui), btnH, answered ? (s.right ? '⭐ Just right!' : `The flag of ${P.name}`) : 'Check ✓',
       { variant: answered ? (s.right ? 'success' : 'secondary') : 'go', fontSize: 16, disabled: answered, onClick: () => this.paintCheck() });
     const line = answered ? (s.right ? `That is the flag of ${P.name}! ⭐` : `This is the flag of ${P.name}.`) : st.hint || 'Pick a paint pot, then tap a part of the flag.';
@@ -400,6 +448,8 @@ export class HistoryQuiz extends PictureQuiz {
     const dotR = Math.max(1.6, mw / 360);
     CARIB_MAP.dots.forEach(([lon, lat], i) => { const p = at(lon, lat); g.fillStyle(i === CARIB_MAP.dots.length - 1 ? 0xe5383b : 0x63c765, 1); g.fillCircle(p.x, p.y, i === CARIB_MAP.dots.length - 1 ? dotR * 1.6 : dotR); });
     const fs = Math.round(Math.max(9, Math.min(12 * ui, mw / 48))) + 'px';
+    this.mark(`land:${CARIB_MAP.name}`, (b0.x + b1.x) / 2, (b0.y + b1.y) / 2);
+    for (const land of LANDS) { const lp = at(land.label[0], land.label[1]); this.mark(`land:${land.name}`, lp.x, lp.y + 14 * ui); }
     for (const land of [...LANDS, CARIB_MAP]) { const p = at(land.label[0], land.label[1]); this.add.text(p.x, p.y, land.name, { fontFamily: FONT, fontSize: fs, color: hex(THEME.ink), fontStyle: WEIGHT.bold, backgroundColor: '#ffffffa0', padding: { x: 2, y: 1 } }).setOrigin(0.5); }
     const tw = Math.max(40, Math.min(64 * ui, mw * 0.13)), th = (tw * 2) / 3;
     if (show) {
@@ -413,6 +463,7 @@ export class HistoryQuiz extends PictureQuiz {
       const home = at(-118, -40);
       this.add.text(home.x, home.y + th / 2 + 4, 'drag me', { fontFamily: FONT, fontSize: fs, color: hex(THEME.ink), fontStyle: WEIGHT.bold }).setOrigin(0.5, 0);
       const flag = flagImage(this, home.x, home.y, tw, th, F.code);
+      this.mark('flag', home.x, home.y);
       if (!answered) draggable(this, flag, { onDrop: (x, y) => { const name = this.flyRegionAt(x, y); if (!name) return false; this.flyDrop(name); return true; } });
     }
     const line = answered ? (s.right ? `Yes! ${cap(F.name)} is in ${F.where}. Its capital is ${F.capital}. ⭐` : `${cap(F.name)} is in ${F.where}, where it lit up.`) : st.hint || `Drag the flag onto ${F.name}'s part of the world.`;
@@ -450,6 +501,7 @@ export class HistoryQuiz extends PictureQuiz {
     P.cards.forEach((card, i) => {
       const x = x0 + (i % cols) * (cw + gap), y = y0 + Math.floor(i / cols) * (ch + gap), cx = x + cw / 2, cy = y + ch / 2;
       const matched = st.matched.includes(card.code), up = answered || matched || st.open.includes(i);
+      this.mark(`card:${i}`, cx, cy);
       g.fillStyle(matched ? 0xd7f3df : up ? 0xffffff : this.subject.accent, 1); g.fillRoundedRect(x, y, cw, ch, 10);
       g.lineStyle(2, matched ? THEME.successDark : 0xc7d0e0, 1); g.strokeRoundedRect(x, y, cw, ch, 10);
       if (!up) {
@@ -478,7 +530,7 @@ export class HistoryQuiz extends PictureQuiz {
       const word = (P.cards.find((c) => c.code === a.code && c.kind === 'word') || {}).text;
       st.hint = `A pair! ${word}.`;
       if (st.matched.length < P.cards.length / 2) return this.rebuild();
-      if (st.turns <= P.limit) return this.pick(0);
+      if (st.turns <= P.limit || this.introRound) return this.pick(0);
       // Finished, but with too many turns: counted as a miss, with the explanation.
       this.pick(1);
       if (!this.state.locked) this.pick(1);
@@ -494,6 +546,8 @@ export class HistoryQuiz extends PictureQuiz {
     const ui = this.ui, n = q.needle;
     const bh = 44 * ui, R = Math.max(40, Math.min(board.w, board.h - bh - 40 * ui) / 2 - 14 * ui), cx = board.x + board.w / 2, cy = board.y + R + 12 * ui;
     this.rose = { cx, cy, R };
+    const tipAt = (deg) => { const a = ((deg - 90) * Math.PI) / 180; return [cx + Math.cos(a) * (R - 26), cy + Math.sin(a) * (R - 26)]; };
+    this.mark('needle', ...tipAt(this.interState().angle)); this.mark('target', ...tipAt(n.target));
     const g = this.add.graphics();
     g.fillStyle(0xeef2f8, 1); g.fillCircle(cx, cy, R + 8); g.lineStyle(3, this.subject.accent, 1); g.strokeCircle(cx, cy, R + 8);
     g.fillStyle(0xffffff, 1); g.fillCircle(cx, cy, R - 2);
@@ -505,6 +559,7 @@ export class HistoryQuiz extends PictureQuiz {
     this.degText = this.add.text(cx, cy + R + 14 * ui, '', { fontFamily: FONT, fontSize: Math.round(13 * ui) + 'px', color: hex(THEME.ink2), fontStyle: WEIGHT.bold }).setOrigin(0.5, 0);
     this.showDegrees = q.skill === 'compass-degrees' || this.payload.grade >= 4;
     this.drawNeedle();
+    this.mark('check', cx, Math.min(board.y + board.h - bh / 2 - 4, cy + R + 44 * ui + bh / 2));
     button(this, cx, Math.min(board.y + board.h - bh / 2 - 4, cy + R + 44 * ui + bh / 2), Math.min(board.w - 24, 200 * ui), bh, answered ? (this.state.right ? '⭐ Spot on!' : 'Not that way') : 'Check ✓', { variant: answered ? (this.state.right ? 'success' : 'danger') : 'go', fontSize: 16, disabled: answered, onClick: () => this.needleCheck() });
   }
 
