@@ -4,6 +4,7 @@
 
 export const HUB_PROPS = [
   { key: 'tree-big', w: 2.1, kind: 'tree', weight: 3 },
+  { key: 'tree-oak', w: 2.6, kind: 'tree', weight: 3 },
   { key: 'tree-round', w: 1.7, kind: 'tree', weight: 5 },
   { key: 'tree-tall', w: 1.5, kind: 'tree', weight: 3 },
   { key: 'tree-young', w: 1.1, kind: 'tree', weight: 1 },
@@ -37,7 +38,10 @@ export const HUB_PROPS = [
 ];
 
 /** Which lands have drawn scenery, and where its files live. */
-export const PROP_SETS = { hub: { props: HUB_PROPS, folder: 'sprites/world/hub/' } };
+export const PROP_SETS = {
+  hub: { props: HUB_PROPS, folder: 'sprites/world/hub/' },
+  science: { props: HUB_PROPS, folder: 'sprites/world/hub/' }   // the springs share the hub's trees, bushes and flowers
+};
 export const propKey = (land, key) => `prop-${land}-${key}`;
 
 /** How thickly each kind is scattered over a land's open grass (chance per grass square). */

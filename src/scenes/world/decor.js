@@ -1,6 +1,7 @@
 // Static dressing of the overworld: shoreline foam, path edges and building shadows baked into one texture,
 // the hub signpost, the player's house name plate and the star rows above villagers' houses.
-import { bakeGraphics } from '../../ui/Bake.js';
+import { bakeGraphics, bakeRegion } from '../../ui/Bake.js';
+import { footDepth } from './depth.js';
 import { TILE } from '../../constants.js';
 import * as Store from '../../systems/Store.js';
 import { signpost } from '../../ui/Signpost.js';
@@ -343,6 +344,50 @@ export function createChurch(w) {
   // Warm light spilling out of the doorway, gently pulsing.
   const glow = w.add.ellipse(cx, bottom + 2, 26, 9, 0xffc86b, 0.35).setDepth(3);
   w.tweens.add({ targets: glow, alpha: 0.12, duration: 1100, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
+}
+
+/**
+ * Science Springs' glass houses, drawn whole over their squares: a sloping roof of solar glass, white panels with
+ * porthole windows, an arched door in a stone frame and pipes down the sides. The tile roof and walls underneath
+ * are taken away; the squares still block the way.
+ */
+export function createScienceHouses(w) {
+  for (const b of (w.map.buildings || []).filter((x) => x.style === 'science')) {
+    for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) if (w.structureLayer) w.structureLayer.removeTileAt(x, y);
+    const x0 = b.x * TILE, y0 = b.y * TILE, bw = b.w * TILE, bh = b.h * TILE;
+    bakeRegion(w, (g) => drawScienceHouse(g, x0, y0, bw, bh), x0 - 12, y0 - 14, bw + 24, bh + 20, footDepth(y0 + bh - 6));
+  }
+}
+
+function drawScienceHouse(g, x, y, w, h) {
+  const roofH = h * 0.42, wallTop = y + roofH, wallH = h - roofH;
+  g.fillStyle(0x1e2a3a, 0.14); g.fillEllipse(x + w / 2 + 3, y + h + 2, w + 12, 12);
+  // Walls: white panels, grey seams.
+  g.fillStyle(0xf2f4f6, 1); g.fillRect(x, wallTop, w, wallH);
+  g.fillStyle(0xaeb7c0, 1); for (const px of [x + w / 3, x + (2 * w) / 3]) g.fillRect(px - 1, wallTop, 2, wallH); g.fillRect(x, wallTop + wallH / 2 - 1, w, 2);
+  const port = (cx, cy) => { g.fillStyle(0x7f8c99, 1); g.fillCircle(cx, cy, 8.5); g.fillStyle(0xbfe3f2, 1); g.fillCircle(cx, cy, 6.5); g.fillStyle(0xffffff, 0.6); g.fillCircle(cx - 2.2, cy - 2.2, 2); g.lineStyle(1.2, 0x5f6a78, 1); g.strokeCircle(cx, cy, 8.5); };
+  const r1 = wallTop + wallH * 0.27, r2 = wallTop + wallH * 0.73;
+  for (let i = 0; i < 3; i++) port(x + (w * (i + 0.5)) / 3, r1);
+  port(x + w / 6, r2); port(x + (5 * w) / 6, r2);
+  // The arched door in its stone frame, with a brass handle.
+  const dw = 22, dh = 30, dx = x + w / 2, dy = y + h;
+  g.fillStyle(0x8e969e, 1); g.fillRoundedRect(dx - dw / 2 - 4, dy - dh - 4, dw + 8, dh + 4, { tl: dw / 2 + 4, tr: dw / 2 + 4, bl: 0, br: 0 });
+  g.fillStyle(0x8a5a2b, 1); g.fillRoundedRect(dx - dw / 2, dy - dh, dw, dh, { tl: dw / 2, tr: dw / 2, bl: 0, br: 0 });
+  g.fillStyle(0x5a3a22, 1); g.fillRect(dx - 1, dy - dh + 7, 2, dh - 7); g.fillStyle(0xffc531, 1); g.fillCircle(dx + 5, dy - 12, 1.8);
+  g.lineStyle(1.2, 0x5a3a22, 1); g.strokeRoundedRect(dx - dw / 2, dy - dh, dw, dh, { tl: dw / 2, tr: dw / 2, bl: 0, br: 0 });
+  // Pipes down the sides.
+  g.fillStyle(0x7f8c99, 1); g.fillRect(x - 5, wallTop + 6, 4, wallH - 6); g.fillRect(x + w + 1, wallTop + 6, 4, wallH - 6);
+  g.fillStyle(0x5f6a78, 1); g.fillRect(x - 7, wallTop + 10, 7, 3); g.fillRect(x + w, wallTop + 10, 7, 3); g.fillRect(x - 7, wallTop + wallH - 10, 7, 3); g.fillRect(x + w, wallTop + wallH - 10, 7, 3);
+  // The roof: a slope of solar glass, overhanging the walls, lighter towards the ridge, with its panel lines.
+  const ox = 9, top = y - 6, ridgeL = x + 4, ridgeR = x + w - 4;
+  g.fillStyle(0x3f5a7a, 1); g.fillPoints([{ x: x - ox - 2, y: wallTop + 3 }, { x: x + w + ox + 2, y: wallTop + 3 }, { x: ridgeR + 1, y: top - 1 }, { x: ridgeL - 1, y: top - 1 }], true);
+  g.fillStyle(0x8fb8e8, 1); g.fillPoints([{ x: x - ox, y: wallTop }, { x: x + w + ox, y: wallTop }, { x: ridgeR, y: top + 1 }, { x: ridgeL, y: top + 1 }], true);
+  g.fillStyle(0xcfe9f5, 0.55); g.fillPoints([{ x: x - ox + 6, y: wallTop - 5 }, { x: x + w / 2, y: wallTop - 5 }, { x: x + w / 2 - 4, y: top + 5 }, { x: ridgeL + 3, y: top + 5 }], true);
+  g.lineStyle(1.2, 0x4a6b9a, 0.9);
+  for (let i = 1; i < 4; i++) { const t = i / 4; g.lineBetween(ridgeL + (x - ox - ridgeL) * t, top + 1 + (wallTop - top - 1) * t, ridgeR + (x + w + ox - ridgeR) * t, top + 1 + (wallTop - top - 1) * t); }
+  for (let i = 1; i < 6; i++) { const t = i / 6; g.lineBetween(ridgeL + (ridgeR - ridgeL) * t, top + 1, x - ox + (w + 2 * ox) * t, wallTop); }
+  g.lineStyle(2, 0x3f5a7a, 1); g.strokePoints([{ x: x - ox, y: wallTop }, { x: x + w + ox, y: wallTop }, { x: ridgeR, y: top + 1 }, { x: ridgeL, y: top + 1 }], true, true);
+  g.lineStyle(1.5, 0x7f8c99, 1); g.strokeRect(x, wallTop, w, wallH);
 }
 
 /** Three small stars above every villager's house, lit as the game's levels are passed. */

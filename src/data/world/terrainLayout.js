@@ -10,7 +10,7 @@ const STRUCTURE = new Set([...ROOF_TILES, ...WALL_TILES, ...DOOR_TILES]);
 const UNDER = new Set([...ROADLIKE, TID.water, TID.tree, TID.cliff, ...ROOF_TILES, ...WALL_TILES]);   // cliff: the summit's rock is in its picture; grass shows round it
 
 const KIND_OF_GROUND = {
-  [TID.meadow]: 'meadow', [TID.woods]: 'woods', [TID.springs]: 'springs', [TID.cove]: 'cove', [TID.village]: 'village',
+  [TID.meadow]: 'meadow', [TID.woods]: 'woods', [TID.springs]: 'grass', [TID.cove]: 'cove', [TID.village]: 'village',
   [TID.quay]: 'quay', [TID.quayStone]: 'quay'
 };
 const kindIndex = (groundId) => Math.max(0, ROAD_KINDS.findIndex((k) => k.id === (KIND_OF_GROUND[groundId] || 'grass')));

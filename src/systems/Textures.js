@@ -571,7 +571,7 @@ export function tilesTexture(scene) {
   tile(T.castleTop, (c) => castleTop(c, 0)); tile(T.castleWall, (c) => castleWall(c, 0)); tile(T.castleDoor, (c) => castleDoor(c, 0));
   tile(T.village, (c) => villageTile(c, 0, rnd));
   // Science Springs (after every older tile, so the shared random stream leaves them as they were).
-  tile(T.springs, (c) => grassTile(c, 0, rnd, '#7fd9c7', '#58bda9', '#b5f0e3', 6));
+  tile(T.springs, (c) => paintedGrass(c, 0, prnd, 4));   // Science Springs: the hub's green grass (its drawn scenery sits on it)
   tile(T.roofScience, (c) => glassRoof(c, 0)); tile(T.wallScience, (c) => labWall(c, 0)); tile(T.doorScience, (c) => doorTile(c, 0, (cc, x) => labWall(cc, x, false)));
   // History Harbor (newest, so again after the rest).
   tile(T.quay, (c) => quayTile(c, 0, rnd));
