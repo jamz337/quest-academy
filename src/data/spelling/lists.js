@@ -86,6 +86,41 @@ export const SPELLING_LISTS = {
       { w: 'nu-tri-tious', pic: '🥗', s: 'Fruit and vegetables are nutritious foods.' },
       { w: 'ven-dors', pic: '🧺', s: 'The vendors sell mangoes at the market.' },
       { w: 'de-ter-gents', pic: '🧼', s: 'We use detergents to wash our clothes.' }
+    ] },
+    // The fish-farming list: everyday words first, then the words of the hatchery.
+    { id: 'g4-3', title: 'Fish farm words 1–15', words: [
+      { w: 'a-bout', pic: '📖', s: 'This story is about a fish farm.' },
+      { w: 'be-come', pic: '🐟', s: 'The tiny fish will become big ones.' },
+      { w: 'big-ger', pic: '📏', s: 'Every week the fish grow bigger.' },
+      { w: 'bring', pic: '🪣', s: 'Please bring a bucket of water.' },
+      { w: 'called', pic: '🏷️', s: 'Baby fish are called fry.' },
+      { w: 'liv-ing', pic: '🌊', s: 'Fish are living things that need clean water.' },
+      { w: 'moth-er', pic: '👩', s: 'The mother fish lays hundreds of eggs.' },
+      { w: 'mon-ey', pic: '💵', s: 'The farmer earns money by selling fish.' },
+      { w: 'peo-ple', pic: '🧑‍🤝‍🧑', s: 'Many people in Barbados eat fish.' },
+      { w: 'start', pic: '🏁', s: 'We start the farm with a few fish.' },
+      { w: 'through', pic: '🚪', s: 'Water flows through the pipe into the pond.' },
+      { w: 'to-geth-er', pic: '🤝', s: 'The fish swim together in a shoal.' },
+      { w: 'types', pic: '🐠', s: 'Tilapia and catfish are two types of farm fish.' },
+      { w: 'which', pic: '❓', s: 'Which fish grows fastest?' },
+      { w: 'where', pic: '📍', s: 'Where is the hatchery?' }
+    ] },
+    { id: 'g4-4', title: 'Fish farm words 16–30', words: [
+      { w: 'ba-sic', pic: '🧱', s: 'A pond and clean water are the basic needs of a fish farm.' },
+      { w: 'or-na-men-tal', pic: '🐡', s: 'Ornamental fish are kept for their beauty, not for food.' },
+      { w: 'pop-u-lar', pic: '⭐', s: 'Tilapia is a popular fish to farm.' },
+      { w: 'breed-ing', pic: '🥚', s: 'The breeding fish are kept in their own tank.' },
+      { w: 'a-vail-a-ble', pic: '🛒', s: 'Fresh fish are available at the market on Fridays.' },
+      { w: 'reared', pic: '🐣', s: 'The young fish are reared in warm, clean water.' },
+      { w: 'spawn', pic: '🫧', s: 'Fish spawn when they lay their eggs.' },
+      { w: 'hatch', pic: '🐥', s: 'The eggs hatch after a few days.' },
+      { w: 'pur-chas-ing', pic: '🧾', s: 'Purchasing good feed keeps the fish healthy.' },
+      { w: 'se-lect', pic: '✅', s: 'We select the strongest fish for breeding.' },
+      { w: 'a-quar-i-um', pic: '🐠', s: 'The ornamental fish live in a glass aquarium.' },
+      { w: 'hatch-er-y', pic: '🏭', s: 'A hatchery is where fish eggs are kept until they hatch.' },
+      { w: 'pro-tein', pic: '🍽️', s: 'Fish is a good source of protein.' },
+      { w: 'va-ri-e-ty', pic: '🌈', s: 'The farm keeps a variety of fish.' },
+      { w: 'fin-ger-lings', pic: '🐟', s: 'Fingerlings are young fish about as long as a finger.' }
     ] }
   ]
 };
