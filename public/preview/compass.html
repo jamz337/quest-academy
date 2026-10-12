@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Compass Quest mock-ups</title>
+<style>
+  :root { --ink: #1e1b4b; --paper: #f6f1e7; --card: #fff; --sea: #8fb8e8; --sand: #f1dfb0; --accent: #30589c; --gold: #ffc531; }
+  body { margin: 0; font-family: Fredoka, 'Segoe UI', sans-serif; background: var(--paper); color: var(--ink); padding: 14px; }
+  h1 { font-size: 22px; margin: 0 0 4px; } p.note { margin: 0 0 14px; color: #5a5570; font-size: 14px; }
+  .wrap { display: grid; grid-template-columns: 1fr; gap: 16px; } @media (min-width: 1000px) { .wrap { grid-template-columns: 1fr 1fr 1fr; } }
+  .card { background: var(--card); border-radius: 18px; padding: 14px; box-shadow: 0 6px 20px rgba(30,27,75,.08); }
+  .card h2 { font-size: 18px; margin: 0 0 4px; } .card p { font-size: 13px; color: #5a5570; margin: 0 0 10px; }
+  canvas { width: 100%; height: auto; border-radius: 14px; display: block; touch-action: none; }
+  .ask { font-weight: 700; font-size: 15px; margin: 8px 0; min-height: 22px; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+  button { font-family: inherit; font-size: 15px; font-weight: 700; padding: 8px 14px; border-radius: 999px; border: 2px solid var(--accent); background: #fff; color: var(--accent); cursor: pointer; }
+  button.go { background: var(--accent); color: #fff; }
+  .ok { color: #17694a; } .bad { color: #b02a3d; }
+</style>
+</head>
+<body>
+<h1>Compass Quest, three ways to make it hands-on</h1>
+<p class="note">Rough mock-ups you can try with a mouse or finger. Same questions as today, but answered by doing rather than by picking a button.</p>
+<div class="wrap">
+  <div class="card">
+    <h2>A. Sail the ship</h2>
+    <p>The map is a grid. Orders come in ("Sail 2 north, then 3 east"); tap the compass to move the ship and reach the treasure. Wrong way and you hit rocks.</p>
+    <canvas id="sea" width="360" height="300"></canvas>
+    <div class="ask" id="seaAsk"></div>
+    <div class="row"><button data-d="N">▲ North</button></div>
+    <div class="row"><button data-d="W">◀ West</button><button data-d="S">▼ South</button><button data-d="E">East ▶</button></div>
+  </div>
+  <div class="card">
+    <h2>B. Turn the needle</h2>
+    <p>Drag the needle round the rose to point where the question says: south-west, or 90°, or towards the sunrise. Older grades get degrees.</p>
+    <canvas id="rose" width="360" height="300"></canvas>
+    <div class="ask" id="roseAsk"></div>
+    <div class="row"><button class="go" id="roseCheck">Check</button><button id="roseNext">Next ▶</button></div>
+  </div>
+  <div class="card">
+    <h2>C. Read the harbour map</h2>
+    <p>A little map of History Harbor. "The lighthouse is which way from the fort?" Tap the place, or tap the direction word, and the answer walks there.</p>
+    <canvas id="map" width="360" height="300"></canvas>
+    <div class="ask" id="mapAsk"></div>
+    <div class="row" id="mapRow"></div>
+  </div>
+</div>
+<script>
+const DIRS = { N: [0, -1], S: [0, 1], E: [1, 0], W: [-1, 0] };
+// ---- A. Sail the ship ---------------------------------------------------------------------------------
+(() => {
+  const c = document.getElementById('sea'), x = c.getContext('2d'), ask = document.getElementById('seaAsk');
+  const COLS = 8, ROWS = 6, S = 40, OX = 20, OY = 20;
+  let ship, treasure, rocks, orders, step, done;
+  const rnd = (n) => Math.floor(Math.random() * n);
+  function reset() {
+    ship = { x: 1, y: ROWS - 2 }; orders = [];
+    let p = { ...ship }; const legs = 2 + rnd(2);
+    for (let i = 0; i < legs; i++) { const dirs = Object.keys(DIRS).filter((d) => { const [dx, dy] = DIRS[d]; return p.x + dx * 2 >= 0 && p.x + dx * 2 < COLS && p.y + dy * 2 >= 0 && p.y + dy * 2 < ROWS; }); const d = dirs[rnd(dirs.length)], n = 1 + rnd(2); orders.push({ d, n }); p = { x: p.x + DIRS[d][0] * n, y: p.y + DIRS[d][1] * n }; }
+    treasure = p; rocks = []; for (let i = 0; i < 6; i++) { const r = { x: rnd(COLS), y: rnd(ROWS) }; if ((r.x !== ship.x || r.y !== ship.y) && (r.x !== treasure.x || r.y !== treasure.y)) rocks.push(r); }
+    step = 0; done = false; say(); draw();
+  }
+  const NAMES = { N: 'north', S: 'south', E: 'east', W: 'west' };
+  function say(extra = '') { ask.innerHTML = done ? '<span class="ok">Treasure! ⭐</span>' : `Orders: ${orders.map((o, i) => (i < step ? '<s>' : '') + o.n + ' ' + NAMES[o.d] + (i < step ? '</s>' : '')).join(', then ')} ${extra}`; }
+  function draw() {
+    x.fillStyle = '#8fb8e8'; x.fillRect(0, 0, c.width, c.height);
+    x.strokeStyle = 'rgba(255,255,255,.5)'; for (let i = 0; i <= COLS; i++) { x.beginPath(); x.moveTo(OX + i * S, OY); x.lineTo(OX + i * S, OY + ROWS * S); x.stroke(); } for (let j = 0; j <= ROWS; j++) { x.beginPath(); x.moveTo(OX, OY + j * S); x.lineTo(OX + COLS * S, OY + j * S); x.stroke(); }
+    x.font = '22px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    for (const r of rocks) x.fillText('🪨', OX + r.x * S + S / 2, OY + r.y * S + S / 2);
+    x.fillText('💰', OX + treasure.x * S + S / 2, OY + treasure.y * S + S / 2);
+    x.font = '26px sans-serif'; x.fillText('⛵', OX + ship.x * S + S / 2, OY + ship.y * S + S / 2);
+    x.fillStyle = '#1e1b4b'; x.font = '700 13px sans-serif'; x.fillText('N ▲', c.width - 30, 14);
+  }
+  let left = null;
+  document.querySelectorAll('#sea ~ .row button, .card:first-child .row button').forEach((b) => b.onclick = () => {
+    if (done) return;
+    const d = b.dataset.d, o = orders[step]; if (!o) return;
+    if (left === null) left = o.n;
+    if (d !== o.d) { say('<span class="bad">That is ' + NAMES[d] + '. Hit the rocks! Try again.</span>'); return; }
+    const [dx, dy] = DIRS[d]; ship = { x: ship.x + dx, y: ship.y + dy }; left -= 1;
+    if (left === 0) { step += 1; left = null; }
+    if (ship.x === treasure.x && ship.y === treasure.y) done = true;
+    say(); draw(); if (done) setTimeout(reset, 1800);
+  });
+  reset();
+})();
+// ---- B. Turn the needle -------------------------------------------------------------------------------
+(() => {
+  const c = document.getElementById('rose'), x = c.getContext('2d'), ask = document.getElementById('roseAsk');
+  const cx = 180, cy = 150, R = 110; let angle = 0, target, label, dragging = false;
+  const POINTS = [['north', 0], ['north-east', 45], ['east', 90], ['south-east', 135], ['south', 180], ['south-west', 225], ['west', 270], ['north-west', 315]];
+  const EXTRA = [['the sunrise', 90], ['the sunset', 270], ['90°', 90], ['225°', 225], ['a bearing of 45°', 45]];
+  function next() { const all = [...POINTS, ...EXTRA]; const pick = all[Math.floor(Math.random() * all.length)]; label = pick[0]; target = pick[1]; angle = Math.floor(Math.random() * 360); ask.textContent = `Point the needle to ${label}.`; draw(); }
+  function draw() {
+    x.fillStyle = '#fff8ef'; x.fillRect(0, 0, c.width, c.height);
+    x.beginPath(); x.arc(cx, cy, R + 8, 0, Math.PI * 2); x.fillStyle = '#e9ecf5'; x.fill(); x.strokeStyle = '#30589c'; x.lineWidth = 3; x.stroke();
+    x.fillStyle = '#1e1b4b'; x.font = '700 14px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    for (const [name, deg] of POINTS) { const a = (deg - 90) * Math.PI / 180, big = deg % 90 === 0; x.font = (big ? '800 16px' : '600 11px') + ' sans-serif'; x.fillText(big ? name[0].toUpperCase() : name.split('-').map((w) => w[0].toUpperCase()).join(''), cx + Math.cos(a) * (R - 16), cy + Math.sin(a) * (R - 16)); }
+    for (let d = 0; d < 360; d += 15) { const a = (d - 90) * Math.PI / 180; x.beginPath(); x.moveTo(cx + Math.cos(a) * R, cy + Math.sin(a) * R); x.lineTo(cx + Math.cos(a) * (R + 6), cy + Math.sin(a) * (R + 6)); x.strokeStyle = '#30589c'; x.lineWidth = d % 90 === 0 ? 3 : 1; x.stroke(); }
+    const a = (angle - 90) * Math.PI / 180;
+    x.beginPath(); x.moveTo(cx + Math.cos(a) * (R - 30), cy + Math.sin(a) * (R - 30)); x.lineTo(cx + Math.cos(a + 2.6) * 14, cy + Math.sin(a + 2.6) * 14); x.lineTo(cx + Math.cos(a - 2.6) * 14, cy + Math.sin(a - 2.6) * 14); x.closePath(); x.fillStyle = '#e5383b'; x.fill();
+    x.beginPath(); x.moveTo(cx - Math.cos(a) * (R - 30), cy - Math.sin(a) * (R - 30)); x.lineTo(cx + Math.cos(a + 2.6) * 14, cy + Math.sin(a + 2.6) * 14); x.lineTo(cx + Math.cos(a - 2.6) * 14, cy + Math.sin(a - 2.6) * 14); x.closePath(); x.fillStyle = '#9aa0a8'; x.fill();
+    x.beginPath(); x.arc(cx, cy, 7, 0, Math.PI * 2); x.fillStyle = '#ffc531'; x.fill();
+    x.fillStyle = '#5a5570'; x.font = '700 13px sans-serif'; x.fillText(Math.round(angle) + '°', cx, cy + R + 28);
+  }
+  const pos = (e) => { const r = c.getBoundingClientRect(), t = e.touches ? e.touches[0] : e; return { x: (t.clientX - r.left) * c.width / r.width, y: (t.clientY - r.top) * c.height / r.height }; };
+  const turn = (e) => { const p = pos(e); angle = ((Math.atan2(p.y - cy, p.x - cx) * 180 / Math.PI) + 90 + 360) % 360; draw(); };
+  c.addEventListener('pointerdown', (e) => { dragging = true; turn(e); }); c.addEventListener('pointermove', (e) => { if (dragging) turn(e); }); window.addEventListener('pointerup', () => { dragging = false; });
+  document.getElementById('roseCheck').onclick = () => { const diff = Math.abs(((angle - target + 540) % 360) - 180); ask.innerHTML = diff <= 12 ? '<span class="ok">Spot on! ⭐</span>' : `<span class="bad">Not quite: ${label} is ${target}°, you pointed ${Math.round(angle)}°.</span>`; };
+  document.getElementById('roseNext').onclick = next;
+  next();
+})();
+// ---- C. Read the harbour map --------------------------------------------------------------------------
+(() => {
+  const c = document.getElementById('map'), x = c.getContext('2d'), ask = document.getElementById('mapAsk'), row = document.getElementById('mapRow');
+  const PLACES = [{ n: 'fort', pic: '🏰', x: 290, y: 90 }, { n: 'lighthouse', pic: '🗼', x: 250, y: 220 }, { n: 'pier', pic: '⚓', x: 120, y: 240 }, { n: 'church', pic: '⛪', x: 90, y: 90 }, { n: 'market', pic: '🧺', x: 180, y: 150 }];
+  let q;
+  function dirBetween(a, b) { const dx = b.x - a.x, dy = b.y - a.y; const v = Math.abs(dy) > Math.abs(dx) * 1.3 ? (dy < 0 ? 'north' : 'south') : Math.abs(dx) > Math.abs(dy) * 1.3 ? (dx > 0 ? 'east' : 'west') : (dy < 0 ? 'north' : 'south') + '-' + (dx > 0 ? 'east' : 'west'); return v; }
+  function next() { const a = PLACES[Math.floor(Math.random() * PLACES.length)]; let b; do { b = PLACES[Math.floor(Math.random() * PLACES.length)]; } while (b === a); q = { from: a, to: b, answer: dirBetween(a, b) }; ask.textContent = `The ${b.n} is which way from the ${a.n}?`; row.innerHTML = ''; ['north', 'south', 'east', 'west', 'north-east', 'north-west', 'south-east', 'south-west'].forEach((d) => { const btn = document.createElement('button'); btn.textContent = d; btn.onclick = () => check(d); row.appendChild(btn); }); draw(); }
+  function draw(walk) {
+    x.fillStyle = '#8fb8e8'; x.fillRect(0, 0, c.width, c.height);
+    x.fillStyle = '#f1dfb0'; x.beginPath(); x.ellipse(190, 150, 160, 110, 0, 0, Math.PI * 2); x.fill();
+    x.fillStyle = '#63c765'; x.beginPath(); x.ellipse(190, 150, 140, 90, 0, 0, Math.PI * 2); x.fill();
+    x.font = '26px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle';
+    for (const p of PLACES) { x.fillText(p.pic, p.x, p.y); x.fillStyle = '#1e1b4b'; x.font = '700 11px sans-serif'; x.fillText(p.n, p.x, p.y + 22); x.font = '26px sans-serif'; }
+    x.fillStyle = '#1e1b4b'; x.font = '700 13px sans-serif'; x.fillText('N ▲', c.width - 30, 14);
+    if (walk) { x.strokeStyle = '#ffc531'; x.lineWidth = 4; x.setLineDash([6, 6]); x.beginPath(); x.moveTo(q.from.x, q.from.y); x.lineTo(q.to.x, q.to.y); x.stroke(); x.setLineDash([]); x.font = '22px sans-serif'; x.fillText('🚶', (q.from.x + q.to.x) / 2, (q.from.y + q.to.y) / 2 - 10); }
+  }
+  function check(d) { const ok = d === q.answer; ask.innerHTML = ok ? `<span class="ok">Yes! The ${q.to.n} is ${q.answer} of the ${q.from.n}. ⭐</span>` : `<span class="bad">Not ${d}: look at the N arrow. It is ${q.answer}.</span>`; draw(true); if (ok) setTimeout(next, 1800); }
+  next();
+})();
+</script>
+</body>
+</html>
