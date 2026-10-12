@@ -1,4 +1,4 @@
-// Science Springs for Pre-K: touch-and-learn sets, one per game. Six things to touch; each is named and told
+// Science Springs for Pre-K: touch-and-learn sets for Plant Power, Sink or Float and States of Matter (Habitat Match has no touch version: Pre-K takes animals home in the lab). Six things to touch; each is named and told
 // about, then floats to its home panel. When all are home come a few gentle asks, answered by touching a thing
 // in its panel. Pure data (see scenes/minigames/TouchPlay.js); the helpers every subject shares live in data/touchPlay.js.
 import { targetOf, makePlayAsks, playFoundLine, playOtherLine } from '../touchPlay.js';
@@ -6,23 +6,6 @@ import { targetOf, makePlayAsks, playFoundLine, playOtherLine } from '../touchPl
 export { targetOf, makePlayAsks, playFoundLine, playOtherLine };
 
 export const PLAY_SETS = {
-  'sci-habitat': {
-    title: 'Where do they live?', intro: 'Touch an animal to hear where it lives!',
-    targets: [
-      { id: 'ocean', pic: '🌊', name: 'the sea', ask: 'Which animal lives in the sea?' },
-      { id: 'desert', pic: '🏜️', name: 'the desert', ask: 'Which animal lives in the hot desert?' },
-      { id: 'polar', pic: '❄️', name: 'the ice', ask: 'Which animal lives on the ice?' },
-      { id: 'forest', pic: '🌲', name: 'the woods', ask: 'Which animal lives in the woods?' }
-    ],
-    items: [
-      { pic: '🐟', name: 'fish', target: 'ocean', line: 'A fish. It swims in the sea.' },
-      { pic: '🐙', name: 'octopus', target: 'ocean', line: 'An octopus. It lives deep in the sea.' },
-      { pic: '🐪', name: 'camel', target: 'desert', line: 'A camel. It lives in the hot, dry desert.' },
-      { pic: '🦎', name: 'lizard', target: 'desert', line: 'A lizard. It warms itself on desert rocks.' },
-      { pic: '🐧', name: 'penguin', target: 'polar', line: 'A penguin. It slides on the ice.' },
-      { pic: '🦊', name: 'fox', target: 'forest', line: 'A fox. It lives in the woods.' }
-    ]
-  },
   'sci-plants': {
     title: 'What a plant needs', intro: 'Touch something to learn about plants!',
     targets: [
@@ -71,4 +54,4 @@ export const PLAY_SETS = {
   }
 };
 
-export const playSet = (gameId) => PLAY_SETS[gameId] || PLAY_SETS['sci-habitat'];
+export const playSet = (gameId) => PLAY_SETS[gameId] || PLAY_SETS['sci-plants'];

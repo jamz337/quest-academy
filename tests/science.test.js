@@ -66,7 +66,7 @@ describe('Science Springs facts', () => {
     expect(THEME.subjects.science.accent).toBeTruthy();
     expect(MINIGAMES.filter((g) => g.subject === 'science').map((g) => g.id)).toEqual(SCIENCE_GAMES);
     for (const g of [-1, 0, 3, 8]) expect(gamesForGrade('science', g).map((x) => x.id)).toEqual(SCIENCE_GAMES);
-    for (const id of SCIENCE_GAMES) { expect(getGame(id)).toBeTruthy(); expect(ALL_GAMES.some((x) => x.id === id)).toBe(true); expect(getGame(id).playSceneKey).toBe('MG_SciencePlay'); }
+    for (const id of SCIENCE_GAMES) { expect(getGame(id)).toBeTruthy(); expect(ALL_GAMES.some((x) => x.id === id)).toBe(true); expect(getGame(id).playSceneKey).toBe(id === 'sci-habitat' ? undefined : 'MG_SciencePlay'); }   // Pre-K takes animals home in the lab
   });
 });
 
@@ -113,9 +113,82 @@ describe('the Science Lab (headless)', () => {
   });
 });
 
+describe('Habitat Match, hands on (headless)', () => {
+  it('release boards show each animal\'s own home (Pre-K: three easy homes); survive trays hold the animal\'s two needs and none that look the same; chains run from a producer; duels and bosses get no boards', async () => {
+    const { SURVIVAL, HABITATS, ANIMALS: ANIMALS_ALL } = await import('../src/data/science/facts.js');
+    for (const a of SURVIVAL) expect(HABITATS.some((h) => h.id === a.habitat), a.name).toBe(true);
+    let releases = 0, survives = 0, chains = 0;
+    for (const grade of [-1, 0, 2, 4, 6, 8]) for (let seed = 1; seed <= 8; seed++) {
+      for (const q of scienceSet('sci-habitat', grade, new Rng(seed * 7 + grade), 10)) {
+        if (q.release) {
+          releases++;
+          const R = q.release, ids = R.homes.map((h) => h.id);
+          for (const a of R.animals) { expect(ids).toContain(a.home); expect(ANIMALS_ALL.every((x) => x.pic !== a.pic || x.habitat === a.home), a.name).toBe(true); }
+          expect(new Set(R.animals.map((a) => a.home)).size).toBe(R.animals.length);
+          if (grade <= -1) { expect(R.animals).toHaveLength(3); expect(R.homes).toHaveLength(3); for (const id of ids) expect(['ocean', 'desert', 'polar', 'farm', 'forest']).toContain(id); }
+        }
+        if (q.survive) {
+          survives++;
+          const T = q.survive.tray;
+          expect(T).toHaveLength(6);
+          expect(T.filter((t) => t.owner === q.survive.name)).toHaveLength(2);
+          expect(new Set(T.map((t) => t.pic)).size).toBe(6); expect(new Set(T.map((t) => t.text)).size).toBe(6);
+          const me = SURVIVAL.find((x) => x.name === q.survive.name), its = new Set([...me.needs.map((n) => n[2]), ...me.also]);
+          for (const t of T.filter((x) => x.owner !== q.survive.name)) expect(its.has(t.tag), `${t.text} for a ${q.survive.name}`).toBe(false);
+        }
+        if (q.chain) { chains++; expect(q.chain.links[0].role).toBe('producer'); expect(new Set(q.chain.links.map((l) => l.pic)).size).toBe(q.chain.links.length); expect([...q.chain.cards].sort()).toEqual(q.chain.links.map((_, i) => i)); expect(grade).toBeGreaterThanOrEqual(4); }
+        if (grade <= -1) expect(!!q.release).toBe(true);
+      }
+    }
+    expect(releases).toBeGreaterThan(80); expect(survives).toBeGreaterThan(20); expect(chains).toBeGreaterThan(8);
+    for (let seed = 1; seed <= 6; seed++) for (const grade of [-1, 2, 6]) for (const q of scienceSet('sci-habitat', grade, new Rng(seed), 10, null, { drawn: false })) expect(!!(q.release || q.survive || q.chain)).toBe(false);
+    expect(getGame('sci-habitat').playSceneKey).toBeUndefined();
+  });
+
+  it('release: a wrong home is a try again, tapping then a home works, all home wins; survive: the wrong thing is a try again, two right things win; chain: blanks are pointed out, a wrong order is outlined, the right order wins', () => {
+    const find = (grade, keys) => { for (let seed = 1; ; seed++) { const sc = makeScene(ScienceLab, { gameId: 'sci-habitat', grade, band: grade >= 4 ? 'B' : 'A', seed }); if (keys.every((k) => sc.state.questions.some((q) => q[k]))) return sc; } };
+    let s = find(2, ['release', 'survive']);
+    const go = (k) => { s.state.idx = s.state.questions.findIndex((q) => q[k]); s.state.locked = false; s.state.picked = null; s.state.right = null; s.rebuild(); return s.round[k]; };
+    const st = () => s.state.inter[s.state.idx];
+    const R = go('release'), a0 = R.animals[0], wrongHome = R.homes.find((h) => h.id !== a0.home);
+    s.releaseDrop(0, wrongHome.id);
+    expect(s.state.picked).toBe(null); expect(st().hint).toContain(wrongHome.name); expect(s.state.missed.habitats).toBe(1);
+    s.releasePick(0); expect(st().sel).toBe(0);
+    s.releaseDrop(st().sel, a0.home);
+    expect(st().home[0]).toBe(true); expect(st().sel).toBe(null);
+    R.animals.forEach((a, i) => { if (i) s.releaseDrop(i, a.home); });
+    expect(s.state.right).toBe(true); expect(s.state.bench.at(-1).pic).toBe(a0.pic);
+    flushTimers(s);
+
+    const S = go('survive'), mine = S.tray.map((t, i) => (t.owner === S.name ? i : -1)).filter((i) => i >= 0), other = S.tray.findIndex((t) => t.owner !== S.name);
+    s.surviveGive(other);
+    expect(s.state.picked).toBe(null); expect(st().hint).toContain(S.tray[other].owner);
+    s.surviveGive(mine[0]); s.surviveGive(mine[0]);
+    expect(st().given).toEqual([mine[0]]);
+    s.surviveGive(mine[1]);
+    expect(s.state.right).toBe(true); expect(s.state.bench.at(-1).pic).toBe(S.pic);
+    flushTimers(s);
+
+    s = find(5, ['chain']);
+    const C = go('chain'), n = C.links.length;
+    s.chainCheck();
+    expect(st().hint).toContain('Fill'); expect(s.state.picked).toBe(null);
+    // Wrong order: the first two swapped.
+    s.chainSelect(1); s.chainPlace(st().sel, 0); s.chainPlace(0, 1);
+    for (let i = 2; i < n; i++) s.chainPlace(i, i);
+    s.chainCheck();
+    expect(s.state.picked).toBe(null); expect(st().wrong).toEqual([0, 1]);
+    s.chainPlace(0, 0);   // moves card 0 out of box 1 into box 0
+    expect(st().slots[1]).toBe(null);
+    s.chainPlace(1, 1);
+    s.chainCheck();
+    expect(s.state.right).toBe(true);
+  });
+});
+
 describe('Science Springs for Pre-K (headless)', () => {
   it('each set has six things with homes and asks that can be answered', () => {
-    for (const id of SCIENCE_GAMES) {
+    for (const id of Object.keys(PLAY_SETS)) {
       const set = playSet(id);
       expect(set.items).toHaveLength(6);
       for (const it of set.items) expect(targetOf(set, it), it.name).toBeTruthy();
@@ -124,7 +197,7 @@ describe('Science Springs for Pre-K (headless)', () => {
       expect(new Set(asks.map((a) => a.item.name)).size).toBe(3);
       asks.forEach((a) => expect(a.line.length).toBeGreaterThan(5));
     }
-    expect(Object.keys(PLAY_SETS)).toEqual(SCIENCE_GAMES);
+    expect(Object.keys(PLAY_SETS)).toEqual(SCIENCE_GAMES.filter((id) => getGame(id).playSceneKey));
   });
 
   it('Pre-K launches the play version; touching sends each thing home, then the asks are answered at the panels', () => {

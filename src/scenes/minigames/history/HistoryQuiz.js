@@ -3,12 +3,7 @@ import { historySet, historyQuestion, countryOfLabel, flagCode, SEA as SEA_MAP, 
 import { COUNTRIES, DIRECTIONS, HARBOUR_MAP } from '../../../data/history/facts.js';
 import { THEME, hex } from '../../../ui/theme.js';
 import { FONT, WEIGHT } from '../../../ui/TextStyles.js';
-import { button, speakButton } from '../../../ui/Button.js';
-import { readable } from '../../../ui/ReadableText.js';
-import { card } from '../../../ui/Card.js';
-import { stripe } from '../../../ui/Panel.js';
-import { plainTheme } from '../../../ui/Explain.js';
-import { T } from '../../../ui/TextStyles.js';
+import { button } from '../../../ui/Button.js';
 import { pointerPos } from '../../../systems/Layout.js';
 import { Sfx } from '../../../systems/Audio.js';
 import { draggable, nearestTarget } from '../../../ui/Drag.js';
@@ -89,45 +84,17 @@ export class HistoryQuiz extends PictureQuiz {
     }
   }
 
-  /** Where this question's ship is, or which way its needle points: kept across rebuilds, per question. */
-  interState() {
-    const s = this.state, q = this.round;
-    s.inter ||= {};
-    if (!s.inter[s.idx]) s.inter[s.idx] = q.sail ? { x: q.sail.start.x, y: q.sail.start.y, leg: 0, left: q.sail.orders[0].n } : q.needle ? { angle: q.needle.start }
+  /** Where this question's ship is, which way its needle points, what is painted...: kept across rebuilds, per question. */
+  newInter(q) {
+    return q.sail ? { x: q.sail.start.x, y: q.sail.start.y, leg: 0, left: q.sail.orders[0].n } : q.needle ? { angle: q.needle.start }
       : q.call ? { driving: false, hint: null } : q.kit ? { packed: [], hint: null } : q.budget ? { paid: [], hint: null }
       : q.paint ? { filled: q.paint.parts.map(() => null), paint: q.paint.pots[0], wrong: [], hint: null }
       : q.fly ? { hint: null } : { open: [], matched: [], turns: 0, busy: false, hint: null };
-    return s.inter[s.idx];
   }
 
-  buildGame(area) {
-    const q = this.round;
-    if (q && (q.sail || q.needle || q.call || q.kit || q.budget || q.paint || q.fly || q.pairs) && !this.inReview) return this.buildInteractive(area, q);
-    return super.buildGame(area);
-  }
-
-  buildInteractive(area, q) {
-    const s = this.state, ui = this.ui;
-    if (this.skillIntroFor(area, q.skill, (k) => this.exampleFor(k), plainTheme)) return;
-    const cx = area.x + area.w / 2;
-    if (this.hasBench) {
-      const benchH = Math.min(96 * ui, area.h * 0.17);
-      this.drawBench({ x: area.x, y: area.y, w: area.w, h: benchH });
-      area = { x: area.x, y: area.y + benchH + 8, w: area.w, h: area.h - benchH - 8 };
-    }
-    const answered = s.picked !== null;
-    const promptH = Math.min(area.h * 0.26, 92 * ui);
-    card(this, cx, area.y + promptH / 2, area.w, promptH);
-    stripe(this, cx - 24 * ui, area.y + 10 * ui, 48 * ui, this.subject.accent, 5 * ui);
-    const colour = answered ? (s.right ? THEME.successDark : THEME.danger) : THEME.ink;
-    const said = readable(this, cx, area.y + promptH / 2 + 4 * ui, q.text, T.at(this, q.text.length > 54 ? 15 : 18, colour, { fontStyle: '700' }), { width: area.w - 90 * ui, align: 'center' });
-    speakButton(this, area.x + area.w - 30 * ui, area.y + 26 * ui, 40 * ui, said, { rate: this.speechRate });
-    this.autoRead(said, null);
-    const board = { x: area.x, y: area.y + promptH + 10, w: area.w, h: area.h - promptH - 10 };
-    if (q.sail) this.buildSail(board, q, answered); else if (q.needle) this.buildNeedle(board, q, answered);
-    else if (q.call) this.buildCall(board, q, answered); else if (q.kit) this.buildKit(board, q, answered); else if (q.budget) this.buildBudget(board, q, answered);
-    else if (q.paint) this.buildPaint(board, q, answered); else if (q.fly) this.buildFly(board, q, answered); else this.buildPairs(board, q, answered);
-    if (answered && !s.right) this.explanationPanel(area, q, () => this.next());
+  boardFor(q) {
+    return q.sail ? this.buildSail : q.needle ? this.buildNeedle : q.call ? this.buildCall : q.kit ? this.buildKit : q.budget ? this.buildBudget
+      : q.paint ? this.buildPaint : q.fly ? this.buildFly : q.pairs ? this.buildPairs : null;
   }
 
   /** The sea round Barbados: the island, its ports, the rocks, the ship and the treasure, with a compass to steer by. */
@@ -185,12 +152,6 @@ export class HistoryQuiz extends PictureQuiz {
     if (st.leg >= sail.orders.length) { Sfx.pop(); return this.pick(0); }
     Sfx.pop();
     this.rebuild();
-  }
-
-  /** The line under a helpers board: what to do, the last mistake, or the outcome. */
-  hintLine(board, y, text, good = null) {
-    const ui = this.ui, colour = good === true ? THEME.successDark : good === false ? THEME.danger : THEME.ink2;
-    this.add.text(board.x + board.w / 2, y, text, { fontFamily: FONT, fontSize: Math.round(13 * ui) + 'px', color: hex(colour), fontStyle: WEIGHT.bold, wordWrap: { width: board.w - 16 }, align: 'center' }).setOrigin(0.5, 0);
   }
 
   /** Who do you call? A little town: trouble at the house in the middle, the helpers' workplaces around it. */
@@ -331,8 +292,6 @@ export class HistoryQuiz extends PictureQuiz {
 
   // ---- Flag Finder, hands on ---------------------------------------------------------------------------------
 
-  /** Read a hint aloud for the youngest, who cannot read it. */
-  sayHint(text) { if (text && this.payload.grade <= 0) speak(text, { rate: this.speechRate }); }
 
   /** Paint the flag: the flag's parts outlined on white, paint pots below, and Check. Pre-K has the real flag to copy. */
   buildPaint(board, q, answered) {

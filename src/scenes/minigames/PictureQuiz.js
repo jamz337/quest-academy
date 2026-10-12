@@ -1,16 +1,17 @@
 import { MinigameScene } from './MinigameScene.js';
-import { THEME } from '../../ui/theme.js';
+import { THEME, hex } from '../../ui/theme.js';
 import { tuningFor } from '../../data/grades.js';
 import { weakSkills, prioritiseWeak } from '../../systems/Practice.js';
 import { byDifficulty } from '../../systems/Ramp.js';
 import { grid } from '../../systems/Layout.js';
-import { T } from '../../ui/TextStyles.js';
+import { T, FONT, WEIGHT } from '../../ui/TextStyles.js';
 import { button, speakButton } from '../../ui/Button.js';
 import { readable } from '../../ui/ReadableText.js';
 import { card } from '../../ui/Card.js';
 import { stripe } from '../../ui/Panel.js';
 import { enter } from '../../ui/motion.js';
 import { plainTheme } from '../../ui/Explain.js';
+import { speak } from '../../systems/Speech.js';
 
 /**
  * A picture quiz: ten questions with big answer buttons, each read aloud, a second try on a miss and an
@@ -61,7 +62,55 @@ export class PictureQuiz extends MinigameScene {
   benchItem(q) { return { pic: (q.pics && q.pics[0]) || null }; }
   afterRight() {}
 
+  // ---- Hands-on boards ------------------------------------------------------------------------------------
+  // A question can be played on a board instead of picked from buttons (sail the ship, paint the flag...). Its two
+  // "choices" are the outcomes (answer first), so a board wins with pick(0) and misses with pick(1), and the second
+  // try, explanation, bench and log all work as for any question. Subclasses say which questions have a board.
+
+  /** The function that draws this question's board, (board, q, answered) => void, or null for a button question. */
+  boardFor() { return null; }
+  /** A board's starting state (kept per question across rebuilds, in state.inter). */
+  newInter() { return { hint: null }; }
+  interState() {
+    const s = this.state;
+    s.inter ||= {};
+    if (!s.inter[s.idx]) s.inter[s.idx] = this.newInter(this.round);
+    return s.inter[s.idx];
+  }
+
+  /** A board question: the bench, the prompt card read aloud, then the board below. */
+  buildInteractive(area, q, build) {
+    const s = this.state, ui = this.ui;
+    if (this.skillIntroFor(area, q.skill, (k) => this.exampleFor(k), plainTheme)) return;
+    const cx = area.x + area.w / 2;
+    if (this.hasBench) {
+      const benchH = Math.min(96 * ui, area.h * 0.17);
+      this.drawBench({ x: area.x, y: area.y, w: area.w, h: benchH });
+      area = { x: area.x, y: area.y + benchH + 8, w: area.w, h: area.h - benchH - 8 };
+    }
+    const answered = s.picked !== null;
+    const promptH = Math.min(area.h * 0.26, 92 * ui);
+    card(this, cx, area.y + promptH / 2, area.w, promptH);
+    stripe(this, cx - 24 * ui, area.y + 10 * ui, 48 * ui, this.subject.accent, 5 * ui);
+    const colour = answered ? (s.right ? THEME.successDark : THEME.danger) : THEME.ink;
+    const said = readable(this, cx, area.y + promptH / 2 + 4 * ui, q.text, T.at(this, q.text.length > 54 ? 15 : 18, colour, { fontStyle: '700' }), { width: area.w - 90 * ui, align: 'center' });
+    speakButton(this, area.x + area.w - 30 * ui, area.y + 26 * ui, 40 * ui, said, { rate: this.speechRate });
+    this.autoRead(said, null);
+    build.call(this, { x: area.x, y: area.y + promptH + 10, w: area.w, h: area.h - promptH - 10 }, q, answered);
+    if (answered && !s.right) this.explanationPanel(area, q, () => this.next());
+  }
+
+  /** The line under a board: what to do, the last mistake, or the outcome. */
+  hintLine(board, y, text, good = null) {
+    const ui = this.ui, colour = good === true ? THEME.successDark : good === false ? THEME.danger : THEME.ink2;
+    this.add.text(board.x + board.w / 2, y, text, { fontFamily: FONT, fontSize: Math.round(13 * ui) + 'px', color: hex(colour), fontStyle: WEIGHT.bold, wordWrap: { width: board.w - 16 }, align: 'center' }).setOrigin(0.5, 0);
+  }
+  /** Read a hint aloud for the youngest, who cannot read it. */
+  sayHint(text) { if (text && this.payload.grade <= 0) speak(text, { rate: this.speechRate }); }
+
   buildGame(area) {
+    const boardQ = this.round, build = boardQ && !this.inReview ? this.boardFor(boardQ) : null;
+    if (build) return this.buildInteractive(area, boardQ, build);
     const s = this.state, ui = this.ui, q = this.round;
     if (!q) return;
     if (this.skillIntroFor(area, q.skill, (k) => this.exampleFor(k), plainTheme)) return;

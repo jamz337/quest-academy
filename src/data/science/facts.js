@@ -72,6 +72,37 @@ export const ANIMALS = [
   { name: 'horse', pic: '🐴', habitat: 'farm', adapt: 'strong legs and hooves for running', eats: 'plants' },
   { name: 'goat', pic: '🐐', habitat: 'farm', adapt: 'sure feet for climbing rocky places', eats: 'plants' }
 ];
+/** How each animal moves about once it is home (Habitat Match's release board). Anything not listed walks. */
+export const MOVES = {
+  fish: 'swim', whale: 'swim', octopus: 'swim', dolphin: 'swim', shark: 'swim', 'sea turtle': 'swim', seal: 'swim', goldfish: 'swim', duck: 'swim', beaver: 'swim',
+  parrot: 'fly', butterfly: 'fly', 'snowy owl': 'fly', dragonfly: 'fly', heron: 'fly', owl: 'fly', woodpecker: 'fly',
+  monkey: 'swing', sloth: 'swing', frog: 'hop', 'tree frog': 'hop', rabbit: 'hop', squirrel: 'hop', crab: 'walk'
+};
+
+/** A home's usual temperature in °C, for the thermometer on the survive board. */
+export const HOME_TEMP = { ocean: 22, desert: 45, rainforest: 30, polar: -30, savanna: 33, pond: 18, forest: 10, farm: 20 };
+
+/**
+ * Two things that help each animal live in its home (Habitat Match's survive board): [picture, words, tag]. The tag
+ * says what kind of thing it is, and `also` lists kinds the animal has besides, so no wrong answer offered is
+ * secretly true (a penguin's feathers are oily too, and its feet are webbed).
+ */
+export const SURVIVAL = [
+  { name: 'polar bear', pic: '🐻‍❄️', habitat: 'polar', needs: [['🧥', 'thick white fur', 'fur'], ['🥓', 'a layer of fat', 'fat']], also: ['swim', 'claws'] },
+  { name: 'penguin', pic: '🐧', habitat: 'polar', needs: [['🪶', 'waterproof feathers', 'feathers'], ['🫂', 'huddling together', 'group']], also: ['swim', 'fat'] },
+  { name: 'camel', pic: '🐪', habitat: 'desert', needs: [['🐫', 'a hump that stores fat', 'hump'], ['👁️', 'long eyelashes against sand', 'sand']], also: [] },
+  { name: 'fennec fox', pic: '🦊', habitat: 'desert', needs: [['👂', 'huge ears that let out heat', 'ears'], ['🌙', 'hunting in the cool night', 'night']], also: ['fur'] },
+  { name: 'fish', pic: '🐟', habitat: 'ocean', needs: [['🫧', 'gills to breathe under water', 'gills'], ['🪭', 'fins for swimming', 'swim']], also: ['colours', 'group'] },
+  { name: 'whale', pic: '🐳', habitat: 'ocean', needs: [['🧈', 'thick blubber', 'fat'], ['💨', 'a blowhole to breathe air', 'breathe']], also: ['swim', 'group'] },
+  { name: 'monkey', pic: '🐒', habitat: 'rainforest', needs: [['🪢', 'a long gripping tail', 'climb'], ['💪', 'strong arms for swinging', 'climb']], also: ['group', 'fur'] },
+  { name: 'tree frog', pic: '🐸', habitat: 'rainforest', needs: [['🧲', 'sticky toes for climbing', 'climb'], ['🌈', 'bright warning colours', 'colours']], also: ['night', 'swim'] },
+  { name: 'giraffe', pic: '🦒', habitat: 'savanna', needs: [['📏', 'a long neck for high leaves', 'neck'], ['👅', 'a long tongue to pull leaves', 'tongue']], also: ['group', 'run'] },
+  { name: 'zebra', pic: '🦓', habitat: 'savanna', needs: [['🏃', 'fast legs to run from lions', 'run'], ['👥', 'living in a big herd', 'group']], also: [] },
+  { name: 'duck', pic: '🦆', habitat: 'pond', needs: [['🦶', 'webbed feet', 'swim'], ['☔', 'oily feathers that shed water', 'feathers']], also: ['group'] },
+  { name: 'squirrel', pic: '🐿️', habitat: 'forest', needs: [['🌰', 'storing nuts for winter', 'store'], ['🐾', 'sharp claws for climbing', 'climb']], also: ['fur', 'claws'] },
+  { name: 'owl', pic: '🦉', habitat: 'forest', needs: [['👀', 'big eyes for seeing at night', 'night'], ['🤫', 'silent wings', 'wings']], also: ['feathers', 'claws'] }
+];
+
 export const animalsIn = (habitatId) => ANIMALS.filter((a) => a.habitat === habitatId);
 export const habitatOf = (animal) => HABITATS.find((h) => h.id === animal.habitat);
 

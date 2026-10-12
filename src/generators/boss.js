@@ -76,7 +76,7 @@ export function codeQuestion(grade, rng) {
   return { prompt: start + programText(r.program.main) + '\n\nWhich way does it face at the end?', choices: rng.shuffle(Object.values(DIR_WORD)), answer, skill: band === 'B' ? 'repeat' : 'sequence_code' };
 }
 
-const BY_SUBJECT = { math: mathQuestion, words: wordsQuestion, code: codeQuestion, bible: bibleQuestion, science: scienceMix, history: (grade, rng) => historyMix(grade, rng, { drawn: false }), music: (grade, rng) => musicMix(grade, rng, { drawn: false }), studio: (grade, rng) => artMix(grade, rng, { drawn: false }), health: (grade, rng) => healthMix(grade, rng, { drawn: false }) };
+const BY_SUBJECT = { math: mathQuestion, words: wordsQuestion, code: codeQuestion, bible: bibleQuestion, science: (grade, rng) => scienceMix(grade, rng, { drawn: false }), history: (grade, rng) => historyMix(grade, rng, { drawn: false }), music: (grade, rng) => musicMix(grade, rng, { drawn: false }), studio: (grade, rng) => artMix(grade, rng, { drawn: false }), health: (grade, rng) => healthMix(grade, rng, { drawn: false }) };
 
 /** n questions for a subject at a grade, with no repeated prompts. */
 export function bossQuestions(subject, grade, rng, n = 20) {

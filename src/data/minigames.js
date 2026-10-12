@@ -38,8 +38,8 @@ export const MINIGAMES = [
     description: 'Match each Bible person to their story.' },
   { id: 'bible-ark', subject: 'bible', title: 'All Aboard the Ark', sceneKey: 'MG_ArkAnimals', playSceneKey: 'MG_ArkPlay', icon: '🛶', npc: 'ark-builder',
     description: 'Answer questions to bring the animals aboard two by two.', playDescription: 'Touch the animals, hear their real calls, and bring them aboard two by two.' },
-  { id: 'sci-habitat', subject: 'science', title: 'Habitat Match', sceneKey: 'MG_ScienceLab', playSceneKey: 'MG_SciencePlay', icon: '🌴', npc: 'ranger-rio',
-    description: 'Match each animal to the place it calls home, and learn what helps it live there.', playDescription: 'Touch an animal to hear where it lives.' },
+  { id: 'sci-habitat', subject: 'science', title: 'Habitat Match', sceneKey: 'MG_ScienceLab', icon: '🌴', npc: 'ranger-rio',   // Pre-K takes animals home in the lab, so no touch version
+    description: 'Match each animal to the place it calls home, and learn what helps it live there.' },
   { id: 'sci-plants', subject: 'science', title: 'Plant Power', sceneKey: 'MG_ScienceLab', playSceneKey: 'MG_SciencePlay', icon: '🌱', npc: 'botanist',
     description: 'What a plant needs, its parts and its life, from seed to fruit.', playDescription: 'Touch the sun, the water and the leaves to learn about plants.' },
   { id: 'sci-float', subject: 'science', title: 'Sink or Float', sceneKey: 'MG_ScienceLab', playSceneKey: 'MG_SciencePlay', icon: '🛟', npc: 'captain-cork',

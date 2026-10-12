@@ -4,7 +4,7 @@
 // carry a word with every picture so they can be read aloud. Pure functions of (gameId, grade, rng).
 import { bandFor, gradeOf } from '../../data/grades.js';
 import {
-  HABITATS, ANIMALS, animalsIn, habitatOf, FOOD_CHAINS, DECOMPOSERS, ECOLOGY_WORDS, BIOME_FACTS,
+  HABITATS, ANIMALS, animalsIn, habitatOf, MOVES, HOME_TEMP, SURVIVAL, FOOD_CHAINS, DECOMPOSERS, ECOLOGY_WORDS, BIOME_FACTS,
   PLANT_NEEDS, NOT_PLANT_NEEDS, PLANT_PARTS, LIFE_CYCLE, SEED_TRAVEL, PLANT_FACTS,
   OBJECTS, FLOAT_FACTS, STATES, MATTER_ITEMS, CHANGES, MATTER_FACTS
 } from '../../data/science/facts.js';
@@ -250,32 +250,91 @@ function changeQ(grade, rng, d) {
 }
 const matterFactQ = factQ(MATTER_FACTS, 'matter-facts');
 
+// ---- Hands-on habitat work: release rescued animals, help one survive, build a food chain ---------------------
+// Drawn and played by the scene (ScienceLab); the two "choices" are the outcomes so second tries and explanations work.
+
+const homeOf = (id) => { const h = HABITATS.find((x) => x.id === id); return { id: h.id, name: h.name, pic: h.pic, desc: h.desc }; };
+
+function releaseQ(grade, rng, d) {
+  const n = grade <= -1 ? 3 : 4, extra = bandFor(grade) === 'A' ? 2 : 0;
+  // Pre-K's homes are the easy ones: the sea, the desert, the ice, the farm and the woods.
+  const pool = grade <= -1 ? ['ocean', 'desert', 'polar', 'farm', 'forest'] : HABITATS.map((h) => h.id);
+  const homes = rng.sample(pool, n);
+  // Only animals whose picture belongs to one home (the snowy owl and the forest owl look the same).
+  const clear = (a) => ANIMALS.every((x) => x.pic !== a.pic || x.habitat === a.habitat);
+  const animals = homes.map((id) => { const a = rng.pick(animalsIn(id).filter(clear)); return { name: a.name, pic: a.pic, home: id, move: MOVES[a.name] || 'walk' }; });
+  const shown = rng.shuffle([...homes, ...rng.sample(HABITATS.map((h) => h.id).filter((id) => !homes.includes(id)), extra)]).map(homeOf);
+  const text = n === 3 ? 'Take each animal home: drag it to where it lives.' : 'Ranger Rio has rescued these animals. Drag each one home.';
+  return done({ prompt: `${text} ${animals.map((a) => a.name).join(', ')}`, text, pics: [], answer: 'Took them all home', skill: 'habitats', choices: ['Took them all home', 'Took one to the wrong home'],
+    release: { animals: rng.shuffle(animals), homes: shown },
+    explain: animals.map((a) => `The ${a.name} lives in ${homeOf(a.home).name}.`).concat(['Each animal lives where it can find its food and stay safe.']) }, d);
+}
+releaseQ.drawn = true;
+
+function surviveQ(grade, rng, d) {
+  const a = rng.pick(SURVIVAL), h = homeOf(a.habitat);
+  const mine = a.needs.map(([pic, text]) => ({ pic, text, owner: a.name }));
+  // Wrong answers come from animals elsewhere, and are never a kind of thing this animal has too.
+  const its = new Set([...a.needs.map((n) => n[2]), ...a.also]);
+  const others = [];
+  for (const o of rng.shuffle(SURVIVAL.filter((x) => x.habitat !== a.habitat))) {
+    if (others.length >= 4) break;
+    const allowed = o.needs.filter((n) => !its.has(n[2]));
+    if (!allowed.length) continue;
+    const [pic, text, tag] = rng.pick(allowed);
+    if ([...mine, ...others].some((m) => m.pic === pic || m.text === text || m.tag === tag)) continue;
+    others.push({ pic, text, tag, owner: o.name, home: homeOf(o.habitat).name });
+  }
+  const text = `Help the ${a.name} live in ${h.name}: give it the two things it needs.`;
+  return done({ prompt: text, text, pics: [a.pic], answer: 'Gave it what it needs', skill: 'adaptations', choices: ['Gave it what it needs', 'Gave it the wrong thing'],
+    survive: { name: a.name, pic: a.pic, home: h, temp: HOME_TEMP[a.habitat], tray: rng.shuffle([...mine, ...others]) },
+    explain: [`${cap(h.name)} is ${h.desc}.`, `To live there, a ${a.name} has ${a.needs[0][1]} and ${a.needs[1][1]}.`] }, d);
+}
+surviveQ.drawn = true;
+
+function buildChainQ(grade, rng, d) {
+  const chain = rng.pick(FOOD_CHAINS), withDecomposer = bandFor(grade) === 'C' && rng.chance(0.6);
+  const links = chain.links.map((l) => ({ name: l.name, pic: l.pic, role: l.role === 'herbivore' ? 'plant eater' : l.role === 'carnivore' ? 'meat eater' : 'producer' }));
+  // A decomposer that doesn't share a picture with the chain (the ocean's plankton and bacteria look alike).
+  if (withDecomposer) { const dc = rng.pick(DECOMPOSERS.filter((x) => !links.some((l) => l.pic === x.pic))); links.push({ name: dc.name, pic: dc.pic, role: 'decomposer' }); }
+  const place = chain.where === 'ocean' ? 'the ocean' : `the ${chain.where}`;
+  const text = withDecomposer ? `Build a food chain from ${place}, from the sun to the decomposer.` : `Build a food chain from ${place}, from the sun to the top hunter.`;
+  return done({ prompt: text, text, pics: [], answer: 'Built the chain', skill: 'food-chains', choices: ['Built the chain', 'Put them in the wrong order'],
+    chain: { links, cards: rng.shuffle(links.map((_, i) => i)), where: chain.where },
+    explain: ['A food chain starts with a plant, which makes food from sunlight. A plant eater eats it, and a meat eater eats the plant eater.',
+      `Here: the sun, then ${links.map((l) => `the ${l.name}`).join(', then ')}.`].concat(withDecomposer ? ['Decomposers break down dead things and give the goodness back to the soil.'] : []) }, d);
+}
+buildChainQ.drawn = true;
+
 // ---- Picking by game, grade and difficulty ---------------------------------------------------------------------
 
 /** Kinds per band, gentlest first; difficulty 0..1 reaches further down the list. */
 const KINDS = {
-  'sci-habitat': { E: [whereQ, whoLivesQ], A: [whereQ, whoLivesQ, adaptQ], B: [whoLivesQ, adaptQ, chainQ, wordQ], C: [adaptQ, chainQ, wordQ, biomeQ] },
+  // P is Pre-K's own list; boards (kind.drawn) are left out for duels and bosses, which show plain text.
+  'sci-habitat': { P: [releaseQ], E: [whereQ, releaseQ, whoLivesQ], A: [whereQ, releaseQ, whoLivesQ, surviveQ, adaptQ], B: [whoLivesQ, surviveQ, buildChainQ, adaptQ, chainQ, wordQ], C: [adaptQ, buildChainQ, surviveQ, chainQ, wordQ, biomeQ] },
   'sci-plants': { E: [needQ, partQ], A: [needQ, partQ, cycleQ], B: [partQ, cycleQ, seedQ, plantFactQ], C: [cycleQ, seedQ, plantFactQ] },
   'sci-float': { E: [sinkFloatQ], A: [sinkFloatQ, whichFloatsQ], B: [whichFloatsQ, whyFloatQ, floatFactQ], C: [whyFloatQ, floatFactQ] },
   'sci-matter': { E: [stateQ, whichStateQ], A: [stateQ, whichStateQ, changeQ], B: [whichStateQ, propertyQ, changeQ, matterFactQ], C: [propertyQ, changeQ, matterFactQ] }
 };
 
 /** One question for a game at a grade; d (0..1) is how hard, reaching the later kinds of its band. */
-export function scienceQuestion(gameId, grade, rng, d = 0.5) {
-  const g = gradeOf(grade), kinds = (KINDS[gameId] || KINDS['sci-habitat'])[bandFor(g)];
+export function scienceQuestion(gameId, grade, rng, d = 0.5, opts = {}) {
+  const g = gradeOf(grade), table = KINDS[gameId] || KINDS['sci-habitat'];
+  let kinds = g <= -1 && table.P && opts.drawn !== false ? table.P : table[bandFor(g)];
+  if (opts.drawn === false) kinds = kinds.filter((k) => !k.drawn);
   const reach = Math.max(1, Math.round(1 + d * (kinds.length - 1)));
   const kind = kinds[rng.int(0, reach - 1)];
   return kind(g, rng, d);
 }
 
 /** n questions with no repeated prompts, each as hard as `targets[i]` (easiest first when no targets are given). */
-export function scienceSet(gameId, grade, rng, n = 10, targets = null) {
+export function scienceSet(gameId, grade, rng, n = 10, targets = null, opts = {}) {
   const out = [], seen = new Set();
   let guard = 0, repeats = 0;
   while (out.length < n && guard++ < n * 12) {
     const want = targets ? targets[out.length] : out.length / Math.max(1, n - 1);
     const d = Math.min(1, (want ?? 0.5) + repeats * 0.12);   // a kind that keeps repeating its prompt gives way to the next
-    const q = scienceQuestion(gameId, grade, rng, d);
+    const q = scienceQuestion(gameId, grade, rng, d, opts);
     if (seen.has(q.prompt)) { repeats += 1; continue; }
     repeats = 0; seen.add(q.prompt); out.push(q);
   }
@@ -283,4 +342,4 @@ export function scienceSet(gameId, grade, rng, n = 10, targets = null) {
 }
 
 /** The whole subject's mix (bosses and reviews): a random game's question. */
-export const scienceMix = (grade, rng) => scienceQuestion(rng.pick(SCIENCE_GAMES), grade, rng, rng.float());
+export const scienceMix = (grade, rng, opts = {}) => scienceQuestion(rng.pick(SCIENCE_GAMES), grade, rng, rng.float(), opts);

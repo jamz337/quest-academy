@@ -213,7 +213,7 @@ const historyOf = (id) => (grade, rng) => { let q = historyQuestion(id, grade, r
 const musicOf = (id) => (grade, rng) => { let q = musicQuestion(id, grade, rng, rng.float(), { drawn: false }); for (let i = 0; i < 40 && q.choices.length < 3; i++) q = musicQuestion(id, grade, rng, 1, { drawn: false }); return q; };
 const artOf = (id) => (grade, rng) => { let q = artQuestion(id, grade, rng, rng.float(), { drawn: false }); for (let i = 0; i < 40 && q.choices.length < 3; i++) q = artQuestion(id, grade, rng, 1, { drawn: false }); return q; };
 const healthOf = (id) => (grade, rng) => { let q = healthQuestion(id, grade, rng, rng.float(), { drawn: false }); for (let i = 0; i < 40 && q.choices.length < 3; i++) q = healthQuestion(id, grade, rng, 1, { drawn: false }); return q; };
-const scienceOf = (id) => (grade, rng) => { let q = scienceQuestion(id, grade, rng, rng.float()); for (let i = 0; i < 40 && q.choices.length < 3; i++) q = scienceQuestion(id, grade, rng, 1); return q; };
+const scienceOf = (id) => (grade, rng) => { let q = scienceQuestion(id, grade, rng, rng.float(), { drawn: false }); for (let i = 0; i < 40 && q.choices.length < 3; i++) q = scienceQuestion(id, grade, rng, 1, { drawn: false }); return q; };
 
 /** Generator per game id; anything unknown falls back to the subject mix. */
 export const BY_GAME = {
