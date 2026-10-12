@@ -199,8 +199,84 @@ const historyFactQ = factQ(HISTORY_FACTS, 'history-facts');
 
 // ---- Picking by game, grade and difficulty ---------------------------------------------------------------------
 
+
+// ---- Hands-on compass work: sailing round Barbados by orders, and turning a needle -------------------------------
+// Both are drawn and played by the scene (HistoryQuiz); the generator decides the orders and the targets. Their two
+// "choices" are the outcomes (reached / wrecked, pointed right / wrong) so the quiz's second try and explanations work.
+
+/** The sea round Barbados on an 8 x 6 grid: the island's squares, and the ports round its coast (all at sea). */
+export const SEA = {
+  cols: 8, rows: 6,
+  land: [[3, 1], [4, 1], [2, 2], [3, 2], [4, 2], [5, 2], [2, 3], [3, 3], [4, 3], [5, 3], [3, 4], [4, 4]],
+  ports: [
+    { name: 'Speightstown', x: 1, y: 1 }, { name: 'North Point', x: 3, y: 0 }, { name: 'Bathsheba', x: 6, y: 2 },
+    { name: 'the airport', x: 6, y: 4 }, { name: 'Oistins', x: 4, y: 5 }, { name: 'Bridgetown', x: 1, y: 3 }
+  ]
+};
+const DIR_MOVES = { north: [0, -1], south: [0, 1], east: [1, 0], west: [-1, 0] };
+const OPPOSITE = { north: 'south', south: 'north', east: 'west', west: 'east' };
+export const isLand = (x, y) => SEA.land.some(([lx, ly]) => lx === x && ly === y);
+export const atSea = (x, y) => x >= 0 && y >= 0 && x < SEA.cols && y < SEA.rows && !isLand(x, y);
+export const portAt = (x, y) => SEA.ports.find((p) => p.x === x && p.y === y) || null;
+
+/** Follow orders from a start over the sea; null if any step runs onto land or off the map. */
+export function sailPath(start, orders) {
+  const path = [{ x: start.x, y: start.y }];
+  let { x, y } = start;
+  for (const o of orders) {
+    const [dx, dy] = DIR_MOVES[o.d];
+    for (let i = 0; i < o.n; i++) { x += dx; y += dy; if (!atSea(x, y)) return null; path.push({ x, y }); }
+  }
+  return path;
+}
+
+function sailQ(grade, rng, d) {
+  const legs = grade <= -1 ? 1 : grade <= 1 ? 2 : 3, maxN = grade <= -1 ? 2 : 3;
+  for (let tries = 0; tries < 60; tries++) {
+    const start = rng.pick(SEA.ports), orders = [];
+    let prev = null;
+    for (let i = 0; i < legs; i++) {
+      const dirs = Object.keys(DIR_MOVES).filter((k) => k !== prev && k !== (prev && OPPOSITE[prev]));
+      orders.push({ d: rng.pick(dirs), n: rng.int(1, maxN) }); prev = orders[i].d;
+    }
+    const path = sailPath(start, orders);
+    if (!path || path.length < 2) continue;
+    const end = path[path.length - 1];
+    if (end.x === start.x && end.y === start.y) continue;
+    const onPath = new Set(path.map((p) => `${p.x},${p.y}`));
+    const rocks = [];
+    if (grade >= 2) {
+      let guard = 0;
+      while (rocks.length < 4 && guard++ < 80) { const x = rng.int(0, SEA.cols - 1), y = rng.int(0, SEA.rows - 1); if (atSea(x, y) && !onPath.has(`${x},${y}`) && !portAt(x, y) && !rocks.some((r) => r.x === x && r.y === y)) rocks.push({ x, y }); }
+    }
+    const port = portAt(end.x, end.y), dest = port ? port.name : 'the treasure';
+    const words = orders.map((o) => `${o.n} ${o.d}`).join(', then ');
+    const text = `Sail from ${start.name}: ${words}.`;
+    return done({ prompt: text, text, pics: [], answer: 'Reached the treasure', skill: 'directions', choices: ['Reached the treasure', 'Hit the rocks'],
+      sail: { start: { x: start.x, y: start.y, name: start.name }, orders, rocks, dest: { x: end.x, y: end.y, name: dest } }, dir: orders[orders.length - 1].d,
+      explain: ['North is at the top of the map, south at the bottom, east to the right and west to the left.', `From ${start.name}, ${words} brings the ship to ${dest}.`] }, d);
+  }
+  return arrowQ(grade, rng, d);
+}
+sailQ.drawn = true;
+
+const POINTS8 = [['north', 0], ['north-east', 45], ['east', 90], ['south-east', 135], ['south', 180], ['south-west', 225], ['west', 270], ['north-west', 315]];
+function needleQ(grade, rng, d) {
+  const band = bandFor(grade);
+  let label, target, skill = 'directions', tolerance = band === 'E' || band === 'A' ? 20 : 12;
+  const extras = [['the sunrise', 90], ['the sunset', 270]];
+  if (band === 'C' && rng.chance(0.5)) { target = rng.int(0, 23) * 15; label = `a bearing of ${target}°`; skill = 'compass-degrees'; }
+  else { const pool = band === 'E' || band === 'A' ? [...POINTS8.filter((p) => p[1] % 90 === 0), ...extras] : [...POINTS8, ...extras]; [label, target] = rng.pick(pool); }
+  const text = `Turn the needle to point to ${label}.`;
+  const card = POINTS8.find((p) => p[1] === target);
+  return done({ prompt: text, text, pics: [], answer: 'Pointed the right way', skill, choices: ['Pointed the right way', 'Pointed the wrong way'],
+    needle: { target, label, tolerance, start: rng.int(0, 359) }, dir: card && card[1] % 90 === 0 ? card[0] : null,
+    explain: ['North is at the top of the compass. Going clockwise: east at a quarter turn, south at half, west at three quarters.', `${label.charAt(0).toUpperCase() + label.slice(1)} is at ${target}°${card ? ` (${card[0]})` : ''}.`] }, d);
+}
+needleQ.drawn = true;
+
 const KINDS = {
-  'his-compass': { E: [arrowQ, clueQ], A: [arrowQ, clueQ, letterQ, mapQ], B: [mapQ, turnQ, betweenQ, mapWordQ], C: [turnQ, betweenQ, degreesQ, mapWordQ] },
+  'his-compass': { E: [sailQ, arrowQ], A: [sailQ, needleQ, arrowQ, clueQ, letterQ, mapQ], B: [sailQ, needleQ, mapQ, turnQ, betweenQ, mapWordQ], C: [needleQ, sailQ, turnQ, betweenQ, degreesQ, mapWordQ] },
   'his-helpers': { E: [whoHelpsQ, placeQ], A: [whoHelpsQ, placeQ, toolQ], B: [toolQ, whatDoesQ, communityQ], C: [whatDoesQ, communityQ] },
   'his-flags': { E: [whichFlagQ, whoseFlagQ], A: [whichFlagQ, whoseFlagQ, continentQ], B: [whoseFlagQ, continentQ, capitalQ, worldQ], C: [capitalQ, continentQ, worldQ] },
   'his-time': { E: [thenNowQ], A: [thenNowQ, firstQ], B: [firstQ, historyWordQ, historyFactQ, yearQ], C: [yearQ, historyWordQ, historyFactQ] }

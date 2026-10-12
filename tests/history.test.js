@@ -5,7 +5,7 @@ import { installPhaserMock, fakeSystems, findButton, click, flushTimers } from '
 installPhaserMock();
 vi.mock('../src/systems/Speech.js', async (importOriginal) => ({ ...(await importOriginal()), canSpeak: () => true, speak: vi.fn(), speakWords: () => null, stop: () => {} }));
 
-const { historyQuestion, historySet, historyMix, HISTORY_GAMES, countryOfLabel, flagCode, MAP_PIC } = await import('../src/generators/history/questions.js');
+const { historyQuestion, historySet, historyMix, HISTORY_GAMES, countryOfLabel, flagCode, MAP_PIC, SEA, sailPath, atSea, portAt } = await import('../src/generators/history/questions.js');
 const F = await import('../src/data/history/facts.js');
 const { HISTORY_PLAY_SETS } = await import('../src/data/history/play.js');
 const { targetOf, makePlayAsks, playFoundLine, playOtherLine } = await import('../src/data/touchPlay.js');
@@ -105,7 +105,7 @@ describe('History Harbor facts', () => {
     expect(Object.keys(SUBJECTS).length).toBeGreaterThanOrEqual(6);
     expect(MINIGAMES.filter((g) => g.subject === 'history').map((g) => g.id)).toEqual(HISTORY_GAMES);
     for (const g of [-1, 0, 3, 8]) expect(gamesForGrade('history', g).map((x) => x.id)).toEqual(HISTORY_GAMES);
-    for (const id of HISTORY_GAMES) { expect(getGame(id).sceneKey).toBe('MG_HistoryQuiz'); expect(getGame(id).playSceneKey).toBe('MG_HistoryPlay'); }
+    for (const id of HISTORY_GAMES) { expect(getGame(id).sceneKey).toBe('MG_HistoryQuiz'); expect(getGame(id).playSceneKey).toBe(id === 'his-compass' ? undefined : 'MG_HistoryPlay'); }   // Compass Quest's Pre-K sails
   });
 });
 
@@ -158,6 +158,62 @@ describe('the History quiz (headless)', () => {
     expect(logged.answer).toBe(countryOfLabel(q.answer).name.replace(/^the /, (m) => m.charAt(0).toUpperCase() + m.slice(1)));
     expect(logged.prompt).toMatch(/flag is/);
     expect(s.state.bench[0].flag).toBe(countryOfLabel(q.answer).code);
+  });
+});
+
+describe('Compass Quest, hands on (headless)', () => {
+  it('sailing orders stay at sea and end where they say; Pre-K gets one order and no rocks; needles have a target; bosses and duels get neither', () => {
+    for (const p of SEA.ports) expect(atSea(p.x, p.y)).toBe(true);
+    let sails = 0, needles = 0;
+    for (const grade of [-1, 0, 1, 2, 4, 6, 8]) for (let seed = 1; seed <= 8; seed++) {
+      for (const q of historySet('his-compass', grade, new Rng(seed * 7 + grade), 10)) {
+        if (q.sail) {
+          sails++;
+          const path = sailPath(q.sail.start, q.sail.orders);
+          expect(path).not.toBeNull();
+          expect(path.at(-1)).toEqual({ x: q.sail.dest.x, y: q.sail.dest.y });
+          expect(q.sail.dest.name).toBe(portAt(q.sail.dest.x, q.sail.dest.y) ? portAt(q.sail.dest.x, q.sail.dest.y).name : 'the treasure');
+          for (const r of q.sail.rocks) { expect(atSea(r.x, r.y)).toBe(true); expect(path.some((c) => c.x === r.x && c.y === r.y)).toBe(false); }
+          if (grade <= -1) { expect(q.sail.orders).toHaveLength(1); expect(q.sail.rocks).toHaveLength(0); }
+          if (grade <= 1) expect(q.sail.rocks).toHaveLength(0);
+          expect(q.text).toContain(`Sail from ${q.sail.start.name}`);
+        }
+        if (q.needle) { needles++; expect(q.needle.target).toBeGreaterThanOrEqual(0); expect(q.needle.target).toBeLessThan(360); expect(q.text).toContain(q.needle.label); }
+      }
+    }
+    expect(sails).toBeGreaterThan(100);
+    expect(needles).toBeGreaterThan(30);
+    for (let seed = 1; seed <= 6; seed++) for (const q of historySet('his-compass', 4, new Rng(seed), 10, null, { drawn: false })) expect(!!(q.sail || q.needle)).toBe(false);
+    expect(getGame('his-compass').playSceneKey).toBeUndefined();   // Pre-K plays the quiz: it sails with one order at a time
+  });
+
+  it('the compass buttons steer the ship: a wrong turn is a try again back at port, the right orders reach the treasure; the needle is checked within its tolerance', () => {
+    const s = makeScene(HistoryQuiz, { gameId: 'his-compass', grade: 4, band: 'B', seed: 4 });
+    const sailIdx = s.state.questions.findIndex((q) => q.sail), needleIdx = s.state.questions.findIndex((q) => q.needle);
+    expect(sailIdx).toBeGreaterThanOrEqual(0); expect(needleIdx).toBeGreaterThanOrEqual(0);
+    s.state.idx = sailIdx; s.rebuild();
+    const sail = s.round.sail, st = () => s.state.inter[sailIdx];
+    expect(st()).toEqual({ x: sail.start.x, y: sail.start.y, leg: 0, left: sail.orders[0].n });
+    const wrong = ['north', 'east', 'south', 'west'].find((d) => d !== sail.orders[0].d);
+    const arrows = { north: '▲ north', west: '◀ west', south: '▼ south', east: 'east ▶' };
+    click(findButton(s, arrows[wrong]));
+    expect(s.state.picked).toBe(null);   // second try
+    expect(s.state.missed.directions).toBe(1);
+    expect(st()).toEqual({ x: sail.start.x, y: sail.start.y, leg: 0, left: sail.orders[0].n });
+    for (const o of sail.orders) for (let i = 0; i < o.n; i++) click(findButton(s, arrows[o.d]));
+    expect(s.state.right).toBe(true);
+    expect(st()).toMatchObject({ x: sail.dest.x, y: sail.dest.y, leg: sail.orders.length });
+    expect(s.state.bench.at(-1)).toMatchObject({ pic: '⛵' });
+    flushTimers(s);
+    s.state.idx = needleIdx; s.state.locked = false; s.state.picked = null; s.state.right = null; s.rebuild();
+    const n = s.round.needle;
+    s.state.inter[needleIdx].angle = (n.target + n.tolerance + 5) % 360;
+    click(findButton(s, 'Check ✓'));
+    expect(s.state.picked).toBe(null);   // a second try
+    s.state.inter[needleIdx].angle = (n.target - n.tolerance + 1 + 360) % 360;
+    click(findButton(s, 'Check ✓'));
+    expect(s.state.right).toBe(true);
+    expect(s.state.bench.at(-1)).toMatchObject({ pic: '🧭' });
   });
 });
 
