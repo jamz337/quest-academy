@@ -77,9 +77,11 @@ describe('History Harbor facts', () => {
   });
 
   it('flag questions: the flags-only kind names nothing, the text kind describes the flag, and flag letters are never read aloud', () => {
-    const q = historyQuestion('his-flags', -1, new Rng(1), 0);
+    // Kindergarten's "which flag" kind (Pre-K paints flags instead).
+    let q = null;
+    for (let i = 1; !q || !q.flagChoices; i++) q = historyQuestion('his-flags', 0, new Rng(i), 1);
     expect(q.flagChoices).toBe(true);
-    expect(q.choices).toHaveLength(3);
+    expect(q.choices).toHaveLength(4);
     for (const c of q.choices) { expect(countryOfLabel(c)).toBeTruthy(); expect(c).toBe(flagCode(countryOfLabel(c))); }
     expect(q.text).toMatch(/^Which flag is /);
     for (let i = 0; i < 30; i++) {
@@ -105,7 +107,7 @@ describe('History Harbor facts', () => {
     expect(Object.keys(SUBJECTS).length).toBeGreaterThanOrEqual(6);
     expect(MINIGAMES.filter((g) => g.subject === 'history').map((g) => g.id)).toEqual(HISTORY_GAMES);
     for (const g of [-1, 0, 3, 8]) expect(gamesForGrade('history', g).map((x) => x.id)).toEqual(HISTORY_GAMES);
-    for (const id of HISTORY_GAMES) { expect(getGame(id).sceneKey).toBe('MG_HistoryQuiz'); expect(getGame(id).playSceneKey).toBe(id === 'his-compass' || id === 'his-helpers' ? undefined : 'MG_HistoryPlay'); }   // Pre-K sails and calls for help in the quiz itself
+    for (const id of HISTORY_GAMES) { expect(getGame(id).sceneKey).toBe('MG_HistoryQuiz'); expect(getGame(id).playSceneKey).toBe(id === 'his-time' ? 'MG_HistoryPlay' : undefined); }   // Pre-K sails, calls for help and paints flags in the quiz itself
   });
 });
 
@@ -149,7 +151,8 @@ describe('the History quiz (headless)', () => {
   });
 
   it('shows flag-only choices as drawn flags with their labels hidden, and logs them as a worded question', () => {
-    const s = makeScene(HistoryQuiz, { gameId: 'his-flags', grade: -1, band: 'E', early: true, timers: false, seed: 1 });
+    const s = makeScene(HistoryQuiz, { gameId: 'his-flags', grade: 0, band: 'E', early: true, timers: false, seed: 1 });
+    s.state.idx = s.state.questions.findIndex((x) => x.flagChoices); s.rebuild();
     const q = s.round;
     expect(q.flagChoices).toBe(true);
     for (const c of q.choices) { const b = findButton(s, c); expect(b).toBeTruthy(); expect(b.label.visible).toBe(false); }
@@ -280,6 +283,91 @@ describe('Community Helpers, hands on (headless)', () => {
   });
 });
 
+describe('Flag Finder, hands on (headless)', () => {
+  it('paint flags have parts with pots for every colour (Pre-K: Caribbean and Japan, with the flag to copy); fly flags know their part of the world and spot; pairs hold each flag and its word once', async () => {
+    const { FLAG_PARTS, PREK_PAINT, partAt } = await import('../src/data/history/flagParts.js');
+    const { COUNTRY_AT, landAt } = await import('../src/data/history/worldMap.js');
+    // Every country's spot is in its own part of the world, and every part of every paintable flag can be tapped.
+    for (const c of F.COUNTRIES) expect(landAt(...COUNTRY_AT[c.code]), c.code).toBe(c.continent);
+    for (const [code, parts] of Object.entries(FLAG_PARTS)) {
+      expect(F.COUNTRIES.some((c) => c.code === code), code).toBe(true);
+      parts.forEach((p, i) => { let hit = false; for (let x = 1; x < 150 && !hit; x += 2) for (let y = 1; y < 100 && !hit; y += 2) hit = partAt(parts, x, y) === i; expect(hit, `${code} part ${i}`).toBe(true); });
+    }
+    let paints = 0, flies = 0, pairs = 0;
+    for (const grade of [-1, 0, 1, 3, 5, 8]) for (let seed = 1; seed <= 8; seed++) {
+      for (const q of historySet('his-flags', grade, new Rng(seed * 3 + grade), 10)) {
+        if (q.paint) {
+          paints++;
+          for (const p of q.paint.parts) expect(q.paint.pots).toContain(p.paint);
+          if (grade <= -1) { expect(PREK_PAINT).toContain(q.paint.code); expect(q.paint.model).toBe(true); expect(q.paint.pots.length).toBe(new Set(q.paint.parts.map((p) => p.paint)).size + 1); }
+          else expect(q.paint.model).toBe(false);
+        }
+        if (q.fly) { flies++; expect(landAt(...q.fly.at)).toBe(q.fly.where); }
+        if (q.pairs) {
+          pairs++;
+          const codes = q.pairs.cards.map((c) => c.code);
+          expect(q.pairs.cards).toHaveLength(grade <= 0 ? 8 : 12);
+          for (const code of new Set(codes)) { expect(q.pairs.cards.filter((c) => c.code === code && c.kind === 'flag')).toHaveLength(1); expect(q.pairs.cards.filter((c) => c.code === code && c.kind === 'word')).toHaveLength(1); }
+        }
+        if (grade <= -1) expect(!!q.paint).toBe(true);
+      }
+    }
+    expect(paints).toBeGreaterThan(80); expect(flies).toBeGreaterThan(30); expect(pairs).toBeGreaterThan(20);
+    for (let seed = 1; seed <= 6; seed++) for (const grade of [-1, 2, 6]) for (const q of historySet('his-flags', grade, new Rng(seed), 10, null, { drawn: false })) expect(!!(q.paint || q.fly || q.pairs)).toBe(false);
+    expect(getGame('his-flags').playSceneKey).toBeUndefined();
+  });
+
+  it('painting: blank parts are pointed out, wrong colours are a second try, right colours win; flying: the wrong part of the world is a try again; pairs: a match stays, a miss turns back, finishing wins', () => {
+    // A game that holds all three boards.
+    let s = null;
+    for (let seed = 1; !s || !['paint', 'fly', 'pairs'].every((k) => s.state.questions.some((q) => q[k])); seed++) s = makeScene(HistoryQuiz, { gameId: 'his-flags', grade: 3, band: 'A', seed });
+    const go = (k) => { s.state.idx = s.state.questions.findIndex((q) => q[k]); s.state.locked = false; s.state.picked = null; s.state.right = null; s.rebuild(); return s.round[k]; };
+    const P = go('paint'), st = () => s.state.inter[s.state.idx];
+    s.paintCheck();
+    expect(st().hint).toContain('blank'); expect(s.state.picked).toBe(null); expect(s.state.missed.flags).toBeUndefined();
+    const wrongPot = P.pots.find((k) => k !== P.parts[0].paint);
+    P.parts.forEach((p, i) => { s.paintPot(i === 0 ? wrongPot : p.paint); s.paintPart(i); });
+    s.paintCheck();
+    expect(s.state.picked).toBe(null); expect(st().wrong).toEqual([0]); expect(s.state.missed.flags).toBe(1);
+    s.paintPot(P.parts[0].paint); s.paintPart(0);
+    expect(st().wrong).toEqual([]);
+    s.paintCheck();
+    expect(s.state.right).toBe(true); expect(s.state.bench.at(-1).flag).toBe(P.code);
+    flushTimers(s);
+
+    const Fq = go('fly'), other = ['Asia', 'Europe', 'Africa'].find((w) => w !== Fq.where);
+    s.flyDrop(other);
+    expect(s.state.picked).toBe(null); expect(s.state.inter[s.state.idx].hint).toContain(other);
+    s.flyDrop(Fq.where);
+    expect(s.state.right).toBe(true); expect(s.state.bench.at(-1).flag).toBe(Fq.code);
+    flushTimers(s);
+
+    const Pq = go('pairs'), cards = Pq.cards, idxOf = (code, kind) => cards.findIndex((c) => c.code === code && c.kind === kind);
+    const a = cards[0].code, b = cards.find((c) => c.code !== a).code;
+    s.pairsTap(idxOf(a, 'flag')); s.pairsTap(idxOf(b, 'word'));
+    expect(st().busy).toBe(true); expect(st().turns).toBe(1);
+    s.pairsTap(idxOf(a, 'word'));   // ignored while the miss is showing
+    expect(st().open).toHaveLength(2);
+    flushTimers(s);
+    expect(st().open).toEqual([]); expect(st().busy).toBe(false);
+    for (const code of new Set(cards.map((c) => c.code))) { s.pairsTap(idxOf(code, 'flag')); s.pairsTap(idxOf(code, 'word')); }
+    expect(st().matched).toHaveLength(cards.length / 2);
+    expect(s.state.right).toBe(true);
+  });
+
+  it('pairs finished with too many turns count as a miss and are explained', () => {
+    let s = null;
+    for (let seed = 1; !s || !s.state.questions.some((q) => q.pairs); seed++) s = makeScene(HistoryQuiz, { gameId: 'his-flags', grade: 3, band: 'A', seed });
+    s.state.idx = s.state.questions.findIndex((q) => q.pairs); s.rebuild();
+    const P = s.round.pairs, st = s.state.inter[s.state.idx];
+    st.turns = P.limit;   // pretend many misses already
+    const idxOf = (code, kind) => P.cards.findIndex((c) => c.code === code && c.kind === kind);
+    for (const code of new Set(P.cards.map((c) => c.code))) { s.pairsTap(idxOf(code, 'flag')); s.pairsTap(idxOf(code, 'word')); }
+    expect(s.state.right).toBe(false); expect(s.state.locked).toBe(true);
+    expect(findButton(s, 'Next ▶')).toBeTruthy();
+  });
+});
+
 describe('History Harbor for Pre-K (headless)', () => {
   it('each set has six things with homes and asks that can be answered; proper names take no article', () => {
     for (const id of Object.keys(HISTORY_PLAY_SETS)) {
@@ -291,10 +379,6 @@ describe('History Harbor for Pre-K (headless)', () => {
       expect(new Set(asks.map((a) => a.item.name)).size).toBe(3);
     }
     expect(Object.keys(HISTORY_PLAY_SETS)).toEqual(HISTORY_GAMES.filter((id) => getGame(id).playSceneKey));
-    const flags = HISTORY_PLAY_SETS['his-flags'];
-    const bb = flags.items.find((i) => i.flag === 'bb');
-    expect(playFoundLine(flags, bb)).toBe('Yes! Barbados. Island countries!');
-    expect(playOtherLine(flags, bb, { line: 'Which flag is from a big country?' })).toBe('That is Barbados. Which flag is from a big country?');
     const time = HISTORY_PLAY_SETS['his-time'];
     expect(playFoundLine(time, time.items[0])).toBe('Yes! The candle. Long ago!');
   });
@@ -302,11 +386,12 @@ describe('History Harbor for Pre-K (headless)', () => {
   it('Pre-K launches the play version; touching sends each thing home, then the asks are answered at the panels', () => {
     Store.updateProfile((p) => { p.grade = -1; });
     const from = { scene: { key: 'ChallengeMenu', pause() {}, launch() {} } };
-    expect(launch(from, 'his-flags', {}).sceneKey).toBe('MG_HistoryPlay');
+    expect(launch(from, 'his-time', {}).sceneKey).toBe('MG_HistoryPlay');
+    expect(launch(from, 'his-flags', {}).sceneKey).toBe('MG_HistoryQuiz');   // Pre-K paints flags in the quiz
     Store.updateProfile((p) => { p.grade = 3; });
-    expect(launch(from, 'his-flags', {}).sceneKey).toBe('MG_HistoryQuiz');
+    expect(launch(from, 'his-time', {}).sceneKey).toBe('MG_HistoryQuiz');
 
-    for (const id of ['his-flags', 'his-time']) {
+    for (const id of ['his-time']) {
       const s = makeScene(HistoryPlay, { gameId: id, grade: -1, band: 'E', early: true, timers: false, seed: 2 });
       const st = s.state;
       expect(st.phase).toBe('explore');

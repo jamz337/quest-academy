@@ -12,6 +12,9 @@ import { T } from '../../../ui/TextStyles.js';
 import { pointerPos } from '../../../systems/Layout.js';
 import { Sfx } from '../../../systems/Audio.js';
 import { draggable, nearestTarget } from '../../../ui/Drag.js';
+import { PAINTS, partAt } from '../../../data/history/flagParts.js';
+import { LANDS, CARIBBEAN as CARIB_MAP, toMap, fromMap, landAt } from '../../../data/history/worldMap.js';
+import { speak } from '../../../systems/Speech.js';
 
 const cap = (str) => str.charAt(0).toUpperCase() + str.slice(1);
 import { flagImage } from '../../../ui/Flags.js';
@@ -91,13 +94,15 @@ export class HistoryQuiz extends PictureQuiz {
     const s = this.state, q = this.round;
     s.inter ||= {};
     if (!s.inter[s.idx]) s.inter[s.idx] = q.sail ? { x: q.sail.start.x, y: q.sail.start.y, leg: 0, left: q.sail.orders[0].n } : q.needle ? { angle: q.needle.start }
-      : q.call ? { driving: false, hint: null } : q.kit ? { packed: [], hint: null } : { paid: [], hint: null };
+      : q.call ? { driving: false, hint: null } : q.kit ? { packed: [], hint: null } : q.budget ? { paid: [], hint: null }
+      : q.paint ? { filled: q.paint.parts.map(() => null), paint: q.paint.pots[0], wrong: [], hint: null }
+      : q.fly ? { hint: null } : { open: [], matched: [], turns: 0, busy: false, hint: null };
     return s.inter[s.idx];
   }
 
   buildGame(area) {
     const q = this.round;
-    if (q && (q.sail || q.needle || q.call || q.kit || q.budget) && !this.inReview) return this.buildInteractive(area, q);
+    if (q && (q.sail || q.needle || q.call || q.kit || q.budget || q.paint || q.fly || q.pairs) && !this.inReview) return this.buildInteractive(area, q);
     return super.buildGame(area);
   }
 
@@ -120,7 +125,8 @@ export class HistoryQuiz extends PictureQuiz {
     this.autoRead(said, null);
     const board = { x: area.x, y: area.y + promptH + 10, w: area.w, h: area.h - promptH - 10 };
     if (q.sail) this.buildSail(board, q, answered); else if (q.needle) this.buildNeedle(board, q, answered);
-    else if (q.call) this.buildCall(board, q, answered); else if (q.kit) this.buildKit(board, q, answered); else this.buildBudget(board, q, answered);
+    else if (q.call) this.buildCall(board, q, answered); else if (q.kit) this.buildKit(board, q, answered); else if (q.budget) this.buildBudget(board, q, answered);
+    else if (q.paint) this.buildPaint(board, q, answered); else if (q.fly) this.buildFly(board, q, answered); else this.buildPairs(board, q, answered);
     if (answered && !s.right) this.explanationPanel(area, q, () => this.next());
   }
 
@@ -170,7 +176,6 @@ export class HistoryQuiz extends PictureQuiz {
     if (!o) return;
     const moves = { north: [0, -1], south: [0, 1], east: [1, 0], west: [-1, 0] };
     if (d !== o.d) {
-      Sfx.wrong && Sfx.wrong();
       if (this.cameras && this.cameras.main && this.cameras.main.shake) this.cameras.main.shake(150, 0.004);
       st.x = sail.start.x; st.y = sail.start.y; st.leg = 0; st.left = sail.orders[0].n;   // back to port for the second try
       return this.pick(1);
@@ -223,7 +228,7 @@ export class HistoryQuiz extends PictureQuiz {
     if (!q || !q.call || s.locked || s.picked !== null) return;
     const st = this.interState(), c = q.call, b = c.buildings.find((x) => x.id === id);
     if (!b || st.driving) return;
-    if (b.id !== c.to) { Sfx.wrong(); st.hint = `The ${b.who} can't help with that. Who can?`; return this.pick(1); }
+    if (b.id !== c.to) { st.hint = `The ${b.who} can't help with that. Who can?`; return this.pick(1); }
     st.hint = null; st.driving = true; Sfx.pop();
     const sp = this.callSpots, from = sp.spots[c.buildings.indexOf(b)];
     const car = this.add.text(from.x, from.y + sp.size * 0.3, b.car, { fontSize: Math.round(sp.size * 0.85) + 'px' }).setOrigin(0.5).setDepth(50);
@@ -275,7 +280,7 @@ export class HistoryQuiz extends PictureQuiz {
     if (!q || !q.kit || s.locked || s.picked !== null) return;
     const st = this.interState(), k = q.kit, item = k.shelf[i];
     if (!item || st.packed.includes(i)) return;
-    if (item.owner !== k.helper.name) { Sfx.wrong(); st.hint = `${cap(item.name)}? That is what a ${item.owner} uses.`; return this.pick(1); }
+    if (item.owner !== k.helper.name) { st.hint = `${cap(item.name)}? That is what a ${item.owner} uses.`; return this.pick(1); }
     st.packed.push(i); st.hint = null; Sfx.pop();
     if (st.packed.length >= 2) return this.pick(0);
     this.rebuild();
@@ -318,10 +323,211 @@ export class HistoryQuiz extends PictureQuiz {
     if (!q || !q.budget || s.locked || s.picked !== null) return;
     const st = this.interState(), b = q.budget, it = b.items[i];
     if (!it || st.paid.includes(i)) return;
-    if (!it.pub) { Sfx.wrong(); st.hint = `Not ${it.name}. ${it.why}`; return this.pick(1); }
+    if (!it.pub) { st.hint = `Not ${it.name}. ${it.why}`; return this.pick(1); }
     st.paid.push(i); st.hint = null; Sfx.pop();
     if (st.paid.length >= b.items.filter((x) => x.pub).length) return this.pick(0);
     this.rebuild();
+  }
+
+  // ---- Flag Finder, hands on ---------------------------------------------------------------------------------
+
+  /** Read a hint aloud for the youngest, who cannot read it. */
+  sayHint(text) { if (text && this.payload.grade <= 0) speak(text, { rate: this.speechRate }); }
+
+  /** Paint the flag: the flag's parts outlined on white, paint pots below, and Check. Pre-K has the real flag to copy. */
+  buildPaint(board, q, answered) {
+    const ui = this.ui, st = this.interState(), P = q.paint, s = this.state;
+    const hintH = 34 * ui, potR = Math.max(16, Math.min(22 * ui, (board.w - 16) / (P.pots.length * 2.7))), btnH = 42 * ui;
+    const avail = board.h - hintH - potR * 2 - btnH - 30 * ui;
+    // Pre-K's flag to copy sits beside the flag on a wide screen, above it on a tall one.
+    const tall = board.h > board.w * 1.1;
+    const modelW = P.model ? Math.min(board.w * (tall ? 0.34 : 0.28), 120 * ui) : 0, modelRow = P.model && tall ? (modelW * 2) / 3 + 22 * ui : 0, side = P.model && !tall ? modelW + 12 : 0;
+    const fw = Math.max(120, Math.min(board.w - 16 - side, (avail - modelRow) * 1.5, 420 * ui)), fh = (fw * 2) / 3, k = fw / 150;
+    const fx = board.x + (board.w - fw - side) / 2 + side, fy = board.y + 4 + modelRow;
+    if (P.model) {
+      const mx = tall ? board.x + board.w / 2 : fx - 12 - modelW / 2, my = tall ? board.y + 2 : fy;
+      this.add.text(mx, my, 'copy me', { fontFamily: FONT, fontSize: Math.round(12 * ui) + 'px', color: hex(THEME.ink2), fontStyle: WEIGHT.bold }).setOrigin(0.5, 0);
+      flagImage(this, mx, my + 16 * ui + modelW / 3, modelW, (modelW * 2) / 3, P.code);
+    }
+    const g = this.add.graphics();
+    const shape = (sh, fill) => {
+      if (sh.r) { if (fill) g.fillRect(fx + sh.r[0] * k, fy + sh.r[1] * k, sh.r[2] * k, sh.r[3] * k); else g.strokeRect(fx + sh.r[0] * k, fy + sh.r[1] * k, sh.r[2] * k, sh.r[3] * k); }
+      else if (sh.c) { if (fill) g.fillCircle(fx + sh.c[0] * k, fy + sh.c[1] * k, sh.c[2] * k); else g.strokeCircle(fx + sh.c[0] * k, fy + sh.c[1] * k, sh.c[2] * k); }
+      else { const pts = []; for (let i = 0; i < sh.p.length; i += 2) pts.push({ x: fx + sh.p[i] * k, y: fy + sh.p[i + 1] * k }); if (fill) g.fillPoints(pts, true); else g.strokePoints(pts, true); }
+    };
+    P.parts.forEach((part, i) => {
+      // Once answered the flag shows its true colours; until then each part shows the pot put on it.
+      const got = answered ? part.paint : st.filled[i];
+      g.fillStyle(got ? (got === part.paint ? part.colour : PAINTS[got]) : 0xf4f4f4, 1);
+      part.shapes.forEach((sh) => shape(sh, true));
+    });
+    // Outlines on the parts still blank, and red ones on the parts painted the wrong colour.
+    P.parts.forEach((part, i) => {
+      const bad = !answered && st.wrong.includes(i);
+      if (!bad && (answered || st.filled[i])) return;
+      g.lineStyle(bad ? 4 : 1.5, bad ? THEME.danger : 0x9aa3ad, 1);
+      part.shapes.forEach((sh) => shape(sh, false));
+    });
+    g.lineStyle(2, 0x9aa3ad, 1); g.strokeRect(fx, fy, fw, fh);
+    if (!answered) {
+      this.add.zone(fx + fw / 2, fy + fh / 2, fw, fh).setInteractive({ useHandCursor: true }).on('pointerdown', (pointer) => {
+        const { x, y } = pointerPos(this, pointer), i = partAt(P.parts, (x - fx) / k, (y - fy) / k);
+        if (i >= 0) this.paintPart(i);
+      });
+    }
+    // The pots.
+    const py = fy + fh + 14 * ui + potR, gap = potR * 2.6, px0 = board.x + board.w / 2 - ((P.pots.length - 1) * gap) / 2;
+    P.pots.forEach((name, i) => {
+      const x = px0 + i * gap, on = st.paint === name && !answered;
+      g.fillStyle(PAINTS[name], 1); g.fillCircle(x, py, on ? potR * 1.12 : potR);
+      g.lineStyle(on ? 4 : 2, on ? THEME.ink : 0xd6d2c8, 1); g.strokeCircle(x, py, on ? potR * 1.12 : potR);
+      if (!answered) this.add.zone(x, py, potR * 2.4, potR * 2.4).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.paintPot(name));
+    });
+    const by = py + potR + 10 * ui + btnH / 2;
+    button(this, board.x + board.w / 2, by, Math.min(board.w - 24, 200 * ui), btnH, answered ? (s.right ? '⭐ Just right!' : `The flag of ${P.name}`) : 'Check ✓',
+      { variant: answered ? (s.right ? 'success' : 'secondary') : 'go', fontSize: 16, disabled: answered, onClick: () => this.paintCheck() });
+    const line = answered ? (s.right ? `That is the flag of ${P.name}! ⭐` : `This is the flag of ${P.name}.`) : st.hint || 'Pick a paint pot, then tap a part of the flag.';
+    this.hintLine(board, by + btnH / 2 + 6 * ui, line, answered ? s.right : st.hint ? false : null);
+  }
+
+  paintPot(name) {
+    const s = this.state, q = this.round;
+    if (!q || !q.paint || s.locked || s.picked !== null) return;
+    this.interState().paint = name; Sfx.lift(); this.rebuild();
+  }
+
+  paintPart(i) {
+    const s = this.state, q = this.round;
+    if (!q || !q.paint || s.locked || s.picked !== null) return;
+    const st = this.interState();
+    if (!st.paint) return;
+    st.filled[i] = st.paint; st.wrong = st.wrong.filter((j) => j !== i); st.hint = null;
+    Sfx.pop(); this.rebuild();
+  }
+
+  /** Check the painting: every part the right colour wins; otherwise the wrong parts are outlined for a second try. */
+  paintCheck() {
+    const s = this.state, q = this.round;
+    if (!q || !q.paint || s.locked || s.picked !== null) return;
+    const st = this.interState(), parts = q.paint.parts;
+    if (st.filled.some((f) => !f)) { st.hint = 'Some parts are still blank.'; this.sayHint(st.hint); return this.rebuild(); }
+    const wrong = parts.map((p, i) => (st.filled[i] !== p.paint ? i : -1)).filter((i) => i >= 0);
+    if (!wrong.length) { Sfx.pop(); return this.pick(0); }
+    st.wrong = wrong;
+    st.hint = this.payload.grade <= -1 ? `Look at the flag to copy. The parts in red need ${[...new Set(wrong.map((i) => parts[i].paint))].join(' and ')}.` : 'The parts outlined in red are the wrong colour.';
+    this.sayHint(st.hint);
+    this.pick(1);
+  }
+
+  /** Fly it where it belongs: a drawn world map; drag the flag onto its country's part of the world. */
+  buildFly(board, q, answered) {
+    const ui = this.ui, st = this.interState(), F = q.fly, s = this.state;
+    const hintH = 44 * ui, mw = board.w - 8, mh = Math.min(board.h - hintH - 6, mw * (board.h > board.w * 1.1 ? 0.85 : 0.68)), mx = board.x + 4, my = board.y;   // a little taller on a phone
+    const at = (lon, lat) => { const { u, v } = toMap(lon, lat); return { x: mx + u * mw, y: my + v * mh }; };
+    this.flyMap = { mx, my, mw, mh };
+    const g = this.add.graphics();
+    g.fillStyle(0x8fb8e8, 1); g.fillRoundedRect(mx, my, mw, mh, 12);
+    const show = answered || st.placed;
+    const fillLand = (name, polys) => {
+      g.fillStyle(show && name === F.where ? 0xffd75e : 0x63c765, 1);
+      for (const poly of polys) g.fillPoints(poly.map(([lon, lat]) => at(lon, lat)), true);
+    };
+    for (const land of LANDS) fillLand(land.name, land.polys);
+    // The Caribbean: its islands, the little islands as dots, and a box round them to drop into.
+    const [w, so, e, n] = CARIB_MAP.box, b0 = at(w, n), b1 = at(e, so);
+    g.lineStyle(2, show && F.where === CARIB_MAP.name ? 0xb37400 : 0xffffff, 0.9); g.strokeRoundedRect(b0.x, b0.y, b1.x - b0.x, b1.y - b0.y, 6);
+    if (show && F.where === CARIB_MAP.name) { g.fillStyle(0xffd75e, 0.45); g.fillRoundedRect(b0.x, b0.y, b1.x - b0.x, b1.y - b0.y, 6); }
+    fillLand(CARIB_MAP.name, CARIB_MAP.islands);
+    const dotR = Math.max(1.6, mw / 360);
+    CARIB_MAP.dots.forEach(([lon, lat], i) => { const p = at(lon, lat); g.fillStyle(i === CARIB_MAP.dots.length - 1 ? 0xe5383b : 0x63c765, 1); g.fillCircle(p.x, p.y, i === CARIB_MAP.dots.length - 1 ? dotR * 1.6 : dotR); });
+    const fs = Math.round(Math.max(9, Math.min(12 * ui, mw / 48))) + 'px';
+    for (const land of [...LANDS, CARIB_MAP]) { const p = at(land.label[0], land.label[1]); this.add.text(p.x, p.y, land.name, { fontFamily: FONT, fontSize: fs, color: hex(THEME.ink), fontStyle: WEIGHT.bold, backgroundColor: '#ffffffa0', padding: { x: 2, y: 1 } }).setOrigin(0.5); }
+    const tw = Math.max(40, Math.min(64 * ui, mw * 0.13)), th = (tw * 2) / 3;
+    if (show) {
+      // The flag pinned where the country is, with its capital.
+      const p = at(F.at[0], F.at[1]);
+      g.lineStyle(2, 0x5b4630, 1); g.lineBetween(p.x, p.y, p.x, p.y - th * 1.1);
+      flagImage(this, p.x + tw * 0.32, p.y - th * 1.1 + th * 0.32, tw * 0.64, th * 0.64, F.code);
+      g.fillStyle(0xe5383b, 1); g.fillCircle(p.x, p.y, 3);
+    } else {
+      // The flag to drag waits in the ocean off South America.
+      const home = at(-118, -40);
+      this.add.text(home.x, home.y + th / 2 + 4, 'drag me', { fontFamily: FONT, fontSize: fs, color: hex(THEME.ink), fontStyle: WEIGHT.bold }).setOrigin(0.5, 0);
+      const flag = flagImage(this, home.x, home.y, tw, th, F.code);
+      if (!answered) draggable(this, flag, { onDrop: (x, y) => { const name = this.flyRegionAt(x, y); if (!name) return false; this.flyDrop(name); return true; } });
+    }
+    const line = answered ? (s.right ? `Yes! ${cap(F.name)} is in ${F.where}. Its capital is ${F.capital}. ⭐` : `${cap(F.name)} is in ${F.where}, where it lit up.`) : st.hint || `Drag the flag onto ${F.name}'s part of the world.`;
+    this.hintLine(board, my + mh + 6 * ui, line, answered ? s.right : st.hint ? false : null);
+  }
+
+  /** The part of the world under a point on the board, allowing a near miss of a few pixels for small fingers. */
+  flyRegionAt(x, y) {
+    const m = this.flyMap;
+    if (!m) return null;
+    const look = (px, py) => { const { lon, lat } = fromMap((px - m.mx) / m.mw, (py - m.my) / m.mh); return landAt(lon, lat); };
+    const here = look(x, y);
+    if (here) return here;
+    for (let a = 0; a < 8; a++) { const r = 12 * this.ui, got = look(x + Math.cos((a * Math.PI) / 4) * r, y + Math.sin((a * Math.PI) / 4) * r); if (got) return got; }
+    return null;
+  }
+
+  flyDrop(name) {
+    const s = this.state, q = this.round;
+    if (!q || !q.fly || s.locked || s.picked !== null) return;
+    const st = this.interState();
+    if (name === q.fly.where) { st.placed = true; st.hint = null; Sfx.pop(); return this.pick(0); }
+    st.hint = `Not ${name}. Where is ${q.fly.name}? Try again.`;
+    this.sayHint(st.hint);
+    this.pick(1);
+  }
+
+  /** Flag pairs: cards face down; turn two at a time to match each flag with its country (or capital). */
+  buildPairs(board, q, answered) {
+    const ui = this.ui, st = this.interState(), P = q.pairs, s = this.state;
+    const n = P.cards.length, cols = 4, rows = Math.ceil(n / cols), gap = 6 * ui, hintH = 34 * ui;
+    const cw = (board.w - 8 - gap * (cols - 1)) / cols, ch = Math.min((board.h - hintH - gap * (rows - 1)) / rows, cw * (board.h > board.w * 1.1 ? 1.3 : 0.95));
+    const x0 = board.x + 4, y0 = board.y + Math.max(0, (board.h - hintH - rows * ch - (rows - 1) * gap) / 2);
+    const g = this.add.graphics();
+    P.cards.forEach((card, i) => {
+      const x = x0 + (i % cols) * (cw + gap), y = y0 + Math.floor(i / cols) * (ch + gap), cx = x + cw / 2, cy = y + ch / 2;
+      const matched = st.matched.includes(card.code), up = answered || matched || st.open.includes(i);
+      g.fillStyle(matched ? 0xd7f3df : up ? 0xffffff : this.subject.accent, 1); g.fillRoundedRect(x, y, cw, ch, 10);
+      g.lineStyle(2, matched ? THEME.successDark : 0xc7d0e0, 1); g.strokeRoundedRect(x, y, cw, ch, 10);
+      if (!up) {
+        this.add.text(cx, cy, '🏁', { fontSize: Math.round(Math.min(cw, ch) * 0.34) + 'px' }).setOrigin(0.5);
+        if (!answered && !st.busy) this.add.zone(cx, cy, cw, ch).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.pairsTap(i));
+      } else if (card.kind === 'flag') flagImage(this, cx, cy, cw - 14 * ui, ch - 14 * ui, card.code);
+      else this.add.text(cx, cy, card.text, { fontFamily: FONT, fontSize: Math.round(Math.max(10, Math.min(15 * ui, cw / 7))) + 'px', color: hex(THEME.ink), fontStyle: WEIGHT.bold, wordWrap: { width: cw - 10 }, align: 'center' }).setOrigin(0.5);
+    });
+    const left = n / 2 - st.matched.length;
+    const line = answered ? (s.right ? `All the pairs in ${st.turns} turns! ⭐` : `All found, but it took ${st.turns} turns.`) : st.hint || `Turn two cards. ${left} pairs to find.`;
+    this.hintLine(board, y0 + rows * ch + (rows - 1) * gap + 6 * ui, line, answered ? s.right : null);
+  }
+
+  pairsTap(i) {
+    const s = this.state, q = this.round;
+    if (!q || !q.pairs || s.locked || s.picked !== null) return;
+    const st = this.interState(), P = q.pairs, card = P.cards[i];
+    if (!card || st.busy || st.open.includes(i) || st.matched.includes(card.code)) return;
+    st.open.push(i); Sfx.pop();
+    if (card.kind === 'word' && this.payload.grade <= 1) speak(card.text, { rate: this.speechRate });
+    if (st.open.length < 2) return this.rebuild();
+    st.turns += 1;
+    const [a, b] = st.open.map((k) => P.cards[k]);
+    if (a.code === b.code) {
+      st.matched.push(a.code); st.open = [];
+      const word = (P.cards.find((c) => c.code === a.code && c.kind === 'word') || {}).text;
+      st.hint = `A pair! ${word}.`;
+      if (st.matched.length < P.cards.length / 2) return this.rebuild();
+      if (st.turns <= P.limit) return this.pick(0);
+      // Finished, but with too many turns: counted as a miss, with the explanation.
+      this.pick(1);
+      if (!this.state.locked) this.pick(1);
+      return;
+    }
+    st.busy = true; st.hint = 'Not a pair. Remember where they were!';
+    this.rebuild();
+    this.time.delayedCall(900, () => { if (this.round !== q || this.state.picked !== null) return; st.open = []; st.busy = false; st.hint = null; this.rebuild(); });
   }
 
   /** A compass rose with a needle to drag; Check tells whether it points the way the question asked. */
@@ -375,7 +581,6 @@ export class HistoryQuiz extends PictureQuiz {
     if (!q || !q.needle || s.locked || s.picked !== null) return;
     const st = this.interState(), diff = Math.abs((((st.angle - q.needle.target) % 360) + 540) % 360 - 180);
     if (diff <= q.needle.tolerance) { Sfx.pop(); return this.pick(0); }
-    Sfx.wrong && Sfx.wrong();
     this.pick(1);
   }
 
@@ -436,6 +641,8 @@ export class HistoryQuiz extends PictureQuiz {
   /** What a right answer adds to the bench: its picture, the flag it was about, the direction it found. */
   benchItem(q) {
     if (q.sail || q.needle) return { pic: q.sail ? '⛵' : '🧭', flag: null, dir: q.dir || null };
+    if (q.paint || q.fly) return { pic: null, flag: (q.paint || q.fly).code, dir: null };
+    if (q.pairs) return { pic: null, flag: q.pairs.cards[0].code, dir: null };
     if (q.call || q.kit || q.budget) return { pic: q.call ? q.call.buildings.find((b) => b.id === q.call.to).car : q.kit ? q.kit.helper.pic : '🪙', flag: null, dir: null };
     const first = q.answer.split(' ')[0];
     const emoji = /\p{Extended_Pictographic}/u.test(first) ? first : null;

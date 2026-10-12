@@ -1,22 +1,7 @@
-// History Harbor for Pre-K: touch-and-learn sets for Flag Finder and Past & Present (see scenes/minigames/TouchPlay.js); Compass Quest and
-// Community Helpers have no touch version, Pre-K sails and calls for help in the quiz itself. Pure data.
+// History Harbor for Pre-K: the touch-and-learn set for Past & Present (see scenes/minigames/TouchPlay.js). Compass Quest, Community
+// Helpers and Flag Finder have no touch version: Pre-K sails, calls for help and paints flags in the quiz itself. Pure data.
 
 export const HISTORY_PLAY_SETS = {
-  'his-flags': {
-    title: 'Flags', intro: 'Touch a flag to hear its country!',
-    targets: [
-      { id: 'island', pic: '🏝️', name: 'island countries', ask: 'Which flag is from an island?' },
-      { id: 'big', pic: '🌎', name: 'big countries', ask: 'Which flag is from a big country?' }
-    ],
-    items: [
-      { pic: '🇧🇧', flag: 'bb', name: 'Barbados', proper: true, target: 'island', line: 'Barbados! Our flag: blue, gold and the trident.' },
-      { pic: '🇯🇲', flag: 'jm', name: 'Jamaica', proper: true, target: 'island', line: 'Jamaica! Green, black and gold.' },
-      { pic: '🇹🇹', flag: 'tt', name: 'Trinidad and Tobago', proper: true, target: 'island', line: 'Trinidad and Tobago! Red with a black stripe.' },
-      { pic: '🇺🇸', flag: 'us', name: 'the United States', proper: true, target: 'big', line: 'The United States! Stars and stripes.' },
-      { pic: '🇨🇦', flag: 'ca', name: 'Canada', proper: true, target: 'big', line: 'Canada! A red maple leaf.' },
-      { pic: '🇧🇷', flag: 'br', name: 'Brazil', proper: true, target: 'big', line: 'Brazil! Green and yellow.' }
-    ]
-  },
   'his-time': {
     title: 'Long ago and today', intro: 'Touch something to find out if it is from long ago or today!',
     targets: [

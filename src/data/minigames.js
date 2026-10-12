@@ -50,8 +50,8 @@ export const MINIGAMES = [
     description: 'North, south, east and west: reading maps and turning the right way.', playDescription: 'Touch the sunrise, the compass and the penguin to find their directions.' },
   { id: 'his-helpers', subject: 'history', title: 'Community Helpers', sceneKey: 'MG_HistoryQuiz', icon: '🚒', npc: 'mayor-marigold',   // Pre-K calls for help with pictures, so no touch version
     description: 'Who helps in a town, what they use, and how a community runs.' },
-  { id: 'his-flags', subject: 'history', title: 'Flag Finder', sceneKey: 'MG_HistoryQuiz', playSceneKey: 'MG_HistoryPlay', icon: '🏁', npc: 'flora',
-    description: 'Flags, capitals and continents, from Barbados to the whole world.', playDescription: 'Touch a flag to hear its country.' },
+  { id: 'his-flags', subject: 'history', title: 'Flag Finder', sceneKey: 'MG_HistoryQuiz', icon: '🏁', npc: 'flora',   // Pre-K paints Caribbean flags, so no touch version
+    description: 'Flags, capitals and continents, from Barbados to the whole world.' },
   { id: 'his-time', subject: 'history', title: 'Past & Present', sceneKey: 'MG_HistoryQuiz', playSceneKey: 'MG_HistoryPlay', icon: '🕰️', npc: 'old-tom',
     description: 'Then and now, what came first, and the story of Barbados.', playDescription: 'Touch something to find out if it is from long ago or today.' },
   { id: 'mus-rhythm', subject: 'music', title: 'Rhythm Repeat', sceneKey: 'MG_MusicQuiz', playSceneKey: 'MG_MusicPlay', icon: '🥁', npc: 'drummer',

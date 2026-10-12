@@ -7,6 +7,8 @@ import {
   DIRECTIONS, BETWEEN, dirOf, DIRECTION_CLUES, HARBOUR_MAP, MAP_WORDS,
   HELPERS, CALLS, TOWN_SPEND, COMMUNITY_FACTS, COUNTRIES, CONTINENTS, WORLD_FACTS, THEN_NOW, EVENTS, HISTORY_WORDS, HISTORY_FACTS
 } from '../../data/history/facts.js';
+import { FLAG_PARTS, PAINT_ORDER, PREK_PAINT } from '../../data/history/flagParts.js';
+import { COUNTRY_AT } from '../../data/history/worldMap.js';
 
 export const HISTORY_GAMES = ['his-compass', 'his-helpers', 'his-flags', 'his-time'];
 
@@ -318,11 +320,54 @@ function budgetQ(grade, rng, d) {
 }
 budgetQ.drawn = true;
 
+// ---- Hands-on flag work: paint a flag, fly it to its part of the world, match flags in pairs ----------------
+// Drawn and played by the scene (HistoryQuiz); the two "choices" are the outcomes so second tries and explanations work.
+
+function paintQ(grade, rng, d) {
+  const pool = grade <= -1 ? PREK_PAINT : Object.keys(FLAG_PARTS);
+  const code = rng.pick(pool), c = COUNTRIES.find((x) => x.code === code), parts = FLAG_PARTS[code];
+  const needed = [...new Set(parts.map((p) => p.paint))];
+  // Pre-K gets the colours it needs and one more; everyone else gets every pot.
+  const extra = rng.pick(PAINT_ORDER.filter((k) => !needed.includes(k)));
+  const pots = grade <= -1 ? PAINT_ORDER.filter((k) => needed.includes(k) || k === extra) : PAINT_ORDER.slice();
+  // Two wordings, so Pre-K's six flags can fill a set of ten.
+  const text = grade <= -1 && rng.chance(0.5) ? `Colour in the flag of ${c.name}.` : `Paint the flag of ${c.name}.`;
+  return done({ prompt: text, text, pics: [], answer: 'Painted it right', skill: 'flags', choices: ['Painted it right', 'Painted it wrong'],
+    paint: { code, name: c.name, parts, pots, model: grade <= -1 },
+    explain: [`The flag of ${c.name} is ${c.look}.`, c.fact] }, d);
+}
+paintQ.drawn = true;
+
+function flyQ(grade, rng, d) {
+  const c = pickCountry(grade, rng);
+  const text = `Drag the flag of ${c.name} to its part of the world.`;
+  return done({ prompt: text, text, pics: [], answer: 'Flew it to the right place', skill: 'continents', choices: ['Flew it to the right place', 'Flew it to the wrong place'],
+    fly: { code: c.code, name: c.name, where: c.continent, capital: c.capital, at: COUNTRY_AT[c.code] },
+    explain: [`${cap(c.name)} is in ${c.continent}. Its capital is ${c.capital}.`, c.fact] }, d);
+}
+flyQ.drawn = true;
+
+function pairsQ(grade, rng, d) {
+  const n = grade <= 0 ? 4 : 6, capitals = bandFor(grade) === 'C';
+  const carib = grade <= 1 ? rng.sample(CARIBBEAN, 2) : [];
+  const picked = [...carib, ...rng.sample(COUNTRIES.filter((c) => !carib.includes(c)), n - carib.length)];
+  const word = (c) => (capitals ? c.capital : cap(shortName(c)));
+  const cards = rng.shuffle([...picked.map((c) => ({ code: c.code, kind: 'flag' })), ...picked.map((c) => ({ code: c.code, kind: 'word', text: word(c) }))]);
+  const what = capitals ? 'its capital city' : 'its country';
+  // Two prompt spellings, so a set (which skips repeated prompts) holds at most two of these longer rounds.
+  const text = `Turn two cards at a time: match each flag with ${what}.` + (rng.chance(0.5) ? '' : ' ');
+  return done({ prompt: text, text: text.trim(), pics: [], answer: 'Matched them all', skill: capitals ? 'capitals' : 'flags', choices: ['Matched them all', 'Took too many turns'],
+    pairs: { cards, limit: n * 3 + 2, capitals },
+    explain: [`The pairs were: ${picked.map((c) => (capitals ? `${cap(c.name)} and ${c.capital}` : cap(c.name))).join(', ')}.`, 'Try to remember where each card was, so you can turn its partner straight away.'] }, d);
+}
+pairsQ.drawn = true;
+
 const KINDS = {
   'his-compass': { E: [sailQ, arrowQ], A: [sailQ, needleQ, arrowQ, clueQ, letterQ, mapQ], B: [sailQ, needleQ, mapQ, turnQ, betweenQ, mapWordQ], C: [needleQ, sailQ, turnQ, betweenQ, degreesQ, mapWordQ] },
   // P is Pre-K's own list (pictures and a read-aloud line, nothing to read); bosses and duels (drawn: false) fall back to the band.
   'his-helpers': { P: [callQ], E: [callQ, kitQ, whoHelpsQ, placeQ], A: [callQ, kitQ, whoHelpsQ, placeQ, toolQ], B: [kitQ, budgetQ, toolQ, whatDoesQ, communityQ], C: [budgetQ, kitQ, whatDoesQ, communityQ] },
-  'his-flags': { E: [whichFlagQ, whoseFlagQ], A: [whichFlagQ, whoseFlagQ, continentQ], B: [whoseFlagQ, continentQ, capitalQ, worldQ], C: [capitalQ, continentQ, worldQ] },
+  // Hands-on boards interleaved with the worded kinds, so no one board crowds the start of a game.
+  'his-flags': { P: [paintQ], E: [whichFlagQ, paintQ, pairsQ, whoseFlagQ], A: [whichFlagQ, paintQ, pairsQ, whoseFlagQ, flyQ, continentQ], B: [whoseFlagQ, flyQ, pairsQ, continentQ, paintQ, capitalQ, worldQ], C: [continentQ, flyQ, pairsQ, capitalQ, paintQ, worldQ] },
   'his-time': { E: [thenNowQ], A: [thenNowQ, firstQ], B: [firstQ, historyWordQ, historyFactQ, yearQ], C: [yearQ, historyWordQ, historyFactQ] }
 };
 
