@@ -278,7 +278,8 @@ export class WorldScene extends Phaser.Scene {
     const key = SCENES.Hud;
     if (!this.scene.get(key)) { console.warn('HudScene is not registered; world runs without UI'); return; }
     if (this.scene.isSleeping(key)) this.scene.wake(key);
-    else if (!this.scene.isActive(key) && !this.scene.isPaused(key)) this.scene.launch(key);
+    else if (this.scene.isPaused(key)) this.scene.resume(key);
+    else if (!this.scene.isActive(key)) this.scene.launch(key);
     this.scene.bringToTop(key);
   }
 
@@ -720,6 +721,7 @@ export class WorldScene extends Phaser.Scene {
   fightBoss(boss) {
     this.stopPlayer();
     this.savePosition();
+    this.closeHudDialog();
     if (this.scene.isActive(SCENES.Hud)) this.scene.sleep(SCENES.Hud);
     Launcher.launch(this, boss.id, { source: 'roam', context: { bossId: boss.id, zoneId: boss.zone } });
   }
@@ -734,6 +736,7 @@ export class WorldScene extends Phaser.Scene {
     }
     this.stopPlayer();
     this.savePosition();
+    this.closeHudDialog();
     if (this.scene.isActive(SCENES.Hud)) this.scene.sleep(SCENES.Hud);
     Launcher.launch(this, duelId(npc.id), { source: 'roam', context: { npcId: npc.id, zoneId: npc.zone, duel: true } });
   }
@@ -751,6 +754,7 @@ export class WorldScene extends Phaser.Scene {
     try { extra = npc.pickContext ? npc.pickContext(profile, bandFor(gameGrade(profile, npc.gameId))) || {} : {}; } catch { extra = {}; }
     const context = { npcId: npc.id, zoneId: npc.zone };
     for (const [k, v] of Object.entries(extra)) if (v !== undefined) context[k] = v;
+    this.closeHudDialog();
     if (this.scene.isActive(SCENES.Hud)) this.scene.sleep(SCENES.Hud);
     Launcher.launch(this, npc.gameId, { source: 'roam', context });
   }
@@ -824,7 +828,13 @@ export class WorldScene extends Phaser.Scene {
     this.stopPlayer();
     this.wasBlocked = true;            // swallow the click/key that brought us back
     const hud = this.hud();
-    if (hud) hud.setCoins(profile.coins);
+    if (hud) { hud.setCoins(profile.coins); if (hud.dialogOpen) hud.closeDialog(); }
+  }
+
+  /** Close whatever the Hud is saying, so a game launched from a dialog never comes back to a stuck world. */
+  closeHudDialog() {
+    const hud = this.hud();
+    if (hud && hud.dialogOpen) hud.closeDialog();
   }
 
   savePosition() {

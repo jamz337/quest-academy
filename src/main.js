@@ -30,7 +30,8 @@ if (keepRunningHidden) { game.events.off('hidden'); game.events.off('blur'); }
 // Keep the canvas at DPR times the window size, shown at window size (rotation, on-screen keyboard, resize).
 const fit = () => {
   if (!game.canvas) return;   // not booted yet
-  const d = dpr(), w = Math.max(1, window.innerWidth), h = Math.max(1, window.innerHeight);
+  const vv = window.visualViewport;
+  const d = dpr(), w = Math.max(1, Math.round(vv ? vv.width : window.innerWidth)), h = Math.max(1, Math.round(vv ? vv.height : window.innerHeight));
   game.scale.setZoom(1 / d);
   game.scale.resize(Math.round(w * d), Math.round(h * d));
   game.canvas.style.width = w + 'px'; game.canvas.style.height = h + 'px';
@@ -38,6 +39,7 @@ const fit = () => {
   try { matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`).addEventListener('change', fit, { once: true }); } catch { /* not supported */ }
 };
 window.addEventListener('resize', fit);
+if (window.visualViewport) { window.visualViewport.addEventListener('resize', fit); window.visualViewport.addEventListener('scroll', fit); }
 window.addEventListener('orientationchange', () => setTimeout(fit, 100));
 game.events.once('ready', fit);
 setTimeout(fit, 0);   // in case 'ready' already fired during construction

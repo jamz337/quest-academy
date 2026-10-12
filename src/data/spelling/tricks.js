@@ -92,7 +92,35 @@ export const TRICKS = {
   different: { tricky: 'ff', trick: 'Double f, and say every beat: dif-fer-ent.' },
   across: { tricky: 'c', trick: 'One c, two s\'s: a-cross.' },
   until: { tricky: 'l', trick: 'Until has one l at the end.' },
-  always: { tricky: 'al', trick: 'One l: al-ways.' }
+  always: { tricky: 'al', trick: 'One l: al-ways.' },
+  // Grade 4: the fish-farm list
+  about: { tricky: 'ou', trick: 'A-b-ou-t: the ou says "ow".' },
+  become: { tricky: 'e', trick: 'Be + come, with a silent e at the end.' },
+  bigger: { tricky: 'gg', trick: 'Big gets a second g before -er: big-ger.' },
+  bring: { tricky: 'ng', trick: 'Br-i-ng: the n and g ring together at the end.' },
+  called: { tricky: 'll', trick: 'Call has two l\'s, then add -ed.' },
+  living: { tricky: 'v', trick: 'Live drops its e before -ing: liv-ing.' },
+  mother: { tricky: 'o', trick: 'Mother sounds like "muther", but it is spelt with an o.' },
+  money: { tricky: 'ey', trick: 'Money ends with -ey, like key.' },
+  start: { tricky: 'ar', trick: 'St-ar-t: the ar in the middle.' },
+  through: { tricky: 'ough', trick: 'Th + rough with a t: t-h-r-o-u-g-h, four silent letters at the end!' },
+  types: { tricky: 'y', trick: 'Type has a y that says "eye": t-y-pes.' },
+  which: { tricky: 'wh', trick: 'Which starts with wh, like what and when.' },
+  basic: { tricky: 'c', trick: 'Base + ic: it ends in c, not k.' },
+  ornamental: { tricky: 'al', trick: 'Ornament + al: or-na-men-tal.' },
+  popular: { tricky: 'ar', trick: 'Pop-u-lar ends in -ar, not -er.' },
+  breeding: { tricky: 'ee', trick: 'Breed has two e\'s, then add -ing.' },
+  available: { tricky: 'ai', trick: 'A-vail-a-ble: ai in the middle, -able at the end.' },
+  reared: { tricky: 'ea', trick: 'Rear has ea, like hear, then add -ed.' },
+  spawn: { tricky: 'aw', trick: 'Sp-aw-n: aw as in paw.' },
+  hatch: { tricky: 'tch', trick: 'Hatch ends in -tch, like catch.' },
+  purchasing: { tricky: 'ur', trick: 'Pur-chase drops its e before -ing: pur-chas-ing.' },
+  select: { tricky: 'c', trick: 'Se-lect: the c in the middle says "k".' },
+  aquarium: { tricky: 'qu', trick: 'Aqua means water: a-qu-a-ri-um.' },
+  hatchery: { tricky: 'ery', trick: 'Hatch + ery: where eggs hatch.' },
+  protein: { tricky: 'ei', trick: 'Protein breaks the rule: e before i.' },
+  variety: { tricky: 'ie', trick: 'Va-ri-e-ty: the i and e both say their sounds.' },
+  fingerlings: { tricky: 'ling', trick: 'Finger + ling + s: little fish as long as a finger.' }
 };
 
 /** Index of a tricky part inside the word (case ignored), or -1. */
