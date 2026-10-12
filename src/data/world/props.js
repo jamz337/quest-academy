@@ -40,7 +40,7 @@ export const HUB_PROPS = [
 /** Which lands have drawn scenery, and where its files live. */
 export const PROP_SETS = {
   hub: { props: HUB_PROPS, folder: 'sprites/world/hub/' },
-  science: { props: HUB_PROPS, folder: 'sprites/world/hub/' }   // the springs share the hub's trees, bushes and flowers
+  science: { props: HUB_PROPS, folder: 'sprites/world/hub/', edgeStones: 0.45 }   // the springs share the hub's scenery, with stones along the paths
 };
 export const propKey = (land, key) => `prop-${land}-${key}`;
 

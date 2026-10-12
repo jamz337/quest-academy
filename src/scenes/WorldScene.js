@@ -247,7 +247,8 @@ export class WorldScene extends Phaser.Scene {
    */
   placeDrawnHouse() {
     this.drawnBuildings = {};
-    for (const [key, b] of [['hub-house', this.map.home], ['hub-hospital', this.map.hospital], ['studio-summit', this.map.summit]]) {
+    const scienceCastle = (this.map.buildings || []).find((b) => b.zone === 'science' && b.style === 'castle');
+    for (const [key, b] of [['hub-house', this.map.home], ['hub-hospital', this.map.hospital], ['studio-summit', this.map.summit], ['science-castle', scienceCastle]]) {
       if (!b || !this.textures.exists(key)) continue;
       for (let y = b.y; y < b.y + b.h; y++) for (let x = b.x; x < b.x + b.w; x++) this.structureLayer.removeTileAt(x, y);
       const tex = this.textures.get(key).getSourceImage();

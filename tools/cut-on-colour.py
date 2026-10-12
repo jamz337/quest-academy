@@ -2,20 +2,23 @@
 corners, everything near it that touches the picture's edge becomes transparent, and only the biggest piece left
 (the thing itself, with its ground shadow) is kept, so scattered tufts and flowers fall away.
 
-Usage: python tools/cut-on-colour.py <image> <out png> [out width] [tolerance]
+Usage: python tools/cut-on-colour.py <image> <out png> [out width] [tolerance] [bg=r,g,b] [crop=x0,y0,x1,y1]
 """
 import os, sys
 from collections import deque
 from PIL import Image
 
-src, out = sys.argv[1], sys.argv[2]
-OUT_W = int(sys.argv[3]) if len(sys.argv) > 3 else 0
-TOL = int(sys.argv[4]) if len(sys.argv) > 4 else 42
+args = [a for a in sys.argv[1:] if '=' not in a]
+opts = dict(a.split('=', 1) for a in sys.argv[1:] if '=' in a)
+src, out = args[0], args[1]
+OUT_W = int(args[2]) if len(args) > 2 else 0
+TOL = int(args[3]) if len(args) > 3 else 42
 im = Image.open(src).convert('RGB')
+if 'crop' in opts: im = im.crop(tuple(int(v) for v in opts['crop'].split(',')))
 W, H = im.size
 px = im.load()
 corners = [px[2, 2], px[W - 3, 2], px[2, H - 3], px[W - 3, H - 3]]
-bg = tuple(sum(c[i] for c in corners) // 4 for i in range(3))
+bg = tuple(int(v) for v in opts['bg'].split(',')) if 'bg' in opts else tuple(sum(c[i] for c in corners) // 4 for i in range(3))
 dist = lambda c: abs(c[0] - bg[0]) + abs(c[1] - bg[1]) + abs(c[2] - bg[2])
 near = lambda c: dist(c) <= TOL * 3
 

@@ -33,6 +33,14 @@ export function createProps(w) {
     const id = map.data[ty][tx], cx = (tx + 0.5) * TILE, bottom = (ty + 1) * TILE;
     const land = landFor(tx, ty, id === TID.tree), set = land && PROP_SETS[land];
     if (!set) continue;
+    // Stones along the edge of the paths: on the grass beside a road, pushed up against it, small and flat on the ground.
+    if (set.edgeStones && id !== TID.tree && !roadlike(tx, ty) && isWalkable(id) && !taken.has(key(tx, ty)) && hashAt(tx, ty, 6) < set.edgeStones) {
+      const side = [[1, 0], [-1, 0], [0, 1], [0, -1]].find(([dx, dy]) => map.data[ty + dy] && map.data[ty + dy][tx + dx] === TID.path);
+      if (side) {
+        const p = pickProp(set.props, 'rock', hashAt(tx, ty, 7));
+        if (p && w.textures.exists(propKey(land, p.key))) { const [dx, dy] = side; w.props.push(place(w, land, { ...p, w: 0.45 + hashAt(tx, ty, 8) * 0.2 }, cx + dx * 11 + (hashAt(tx, ty, 9) - 0.5) * 8, bottom - 8 + dy * 11 + (hashAt(tx, ty, 10) - 0.5) * 6, 1.35)); }
+      }
+    }
     if (id === TID.tree) {
       // A drawn tree over the tile tree: the tile keeps the player out, the picture does the looking.
       const tile = w.treeLayer && w.treeLayer.getTileAt(tx, ty);
