@@ -4,7 +4,7 @@
 import { TILE } from '../../constants.js';
 import { THEME } from '../../ui/theme.js';
 import * as Store from '../../systems/Store.js';
-import { TID, isWalkable, zoneAt } from '../../data/world/map.js';
+import { TID, DOOR_TILES, isWalkable, zoneAt } from '../../data/world/map.js';
 import { GATEWAYS, landStars } from './guide.js';
 import { bakeTexture } from '../../ui/Bake.js';
 
@@ -37,7 +37,7 @@ export function lampSpots(map, zone, max = 12) {
     if (inside && steps++ % SPACING === 0) {
       for (const [dx, dy] of [[0, -1], [-1, 0], [1, 0], [0, 1]]) {
         const lx = x + dx, ly = y + dy, id = map.data[ly] && map.data[ly][lx];
-        if (id === undefined || road(lx, ly) || !isWalkable(id) || id === TID.plinth || taken.has(key(lx, ly)) || zoneAt(map, lx, ly) !== zone) continue;
+        if (id === undefined || road(lx, ly) || !isWalkable(id) || id === TID.plinth || DOOR_TILES.includes(id) || taken.has(key(lx, ly)) || zoneAt(map, lx, ly) !== zone) continue;   // never in a doorway
         // Not right in front of a door or a villager's spot.
         if ([[0, -1], [0, 1], [-1, 0], [1, 0]].some(([ax, ay]) => taken.has(key(lx + ax, ly + ay)) && !road(lx + ax, ly + ay))) continue;
         taken.add(key(lx, ly)); out.push({ tx: lx, ty: ly });

@@ -193,7 +193,8 @@ export class WorldScene extends Phaser.Scene {
   }
 
   createNpcs() {
-    this.npcGroup = this.physics.add.staticGroup();
+    this.npcGroup = this.physics.add.staticGroup();   // villagers: talked to, never bumped into
+    this.bossGroup = this.physics.add.staticGroup();  // bosses hold their doorways
     this.npcs = [];
     for (const def of NPCS) {
       const spot = this.map.npcSpots[def.id];
@@ -212,7 +213,7 @@ export class WorldScene extends Phaser.Scene {
     for (const boss of BOSSES) {
       const spot = this.map.bossSpots[boss.zone];
       if (!spot) continue;
-      const s = this.npcGroup.create((spot.tx + 0.5) * TILE, (spot.ty + 0.5) * TILE, lookSpriteTexture(this, boss.look), IDLE_FRAME.down);
+      const s = this.bossGroup.create((spot.tx + 0.5) * TILE, (spot.ty + 0.5) * TILE, lookSpriteTexture(this, boss.look), IDLE_FRAME.down);
       s.setScale(CHAR_SCALE * (boss.scale || 1.3)).setDepth(5).refreshBody();
       s.body.setSize(26, 26);
       s.boss = boss;
@@ -221,7 +222,7 @@ export class WorldScene extends Phaser.Scene {
       this.npcs.push(s);
       this.tweens.add({ targets: s, y: s.y - 3, duration: 700, yoyo: true, repeat: -1, ease: 'Sine.InOut' });
     }
-    this.physics.add.collider(this.player, this.npcGroup);
+    this.physics.add.collider(this.player, this.bossGroup);   // villagers are walked past, not into
   }
 
   createCoins(profile) {

@@ -1,4 +1,5 @@
 // The pause menu and its pages: the zone's quest checklist and the full map. `hud` is the HudScene.
+import { updateGame } from '../../systems/Update.js';
 import { SCENES } from '../../constants.js';
 import { THEME } from '../../ui/theme.js';
 import { T, text } from '../../ui/TextStyles.js';
@@ -38,7 +39,8 @@ export function buildMenu(hud) {
   button(hud, w / 2, y, bw, bh, '🎒 My bag', { ...opts, variant: 'secondary', onClick: () => page('bag') }).setDepth(603); y += bh + gap;
   button(hud, w / 2, y, bw, bh, 'Challenge Mode', { ...opts, variant: 'subject', subject: 'code', onClick: () => hud.leaveTo(SCENES.ChallengeMenu) }).setDepth(603); y += bh + gap;
   button(hud, w / 2, y, bw, bh, 'Home', { ...opts, variant: 'secondary', onClick: () => hud.leaveTo(SCENES.ModeSelect) }).setDepth(603); y += bh / 2 + 4;
-  button(hud, w / 2, y + 16 * ui, bw, 30 * ui, 'Art credits', { variant: 'ghost', fontSize: 13, compact: true, onClick: () => page('credits') }).setDepth(603);
+  button(hud, w / 2 - bw / 4 - 4, y + 16 * ui, bw / 2 - 8, 30 * ui, 'Art credits', { variant: 'ghost', fontSize: 13, compact: true, onClick: () => page('credits') }).setDepth(603);
+  button(hud, w / 2 + bw / 4 + 4, y + 16 * ui, bw / 2 - 8, 30 * ui, '🔄 Update game', { variant: 'ghost', fontSize: 13, compact: true, onClick: () => { Sfx.click(); hud.notify('Checking for a new version…', { accent: THEME.brand }); updateGame((line) => hud.notify(line, { accent: THEME.brand })); } }).setDepth(603);
 }
 
 /** The bag: the snacks the player carries (drinks can be drunk here), and what else they own. */

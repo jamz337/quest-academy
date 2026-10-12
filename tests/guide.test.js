@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('phaser', () => ({ default: {} }));
 const { GATEWAYS, landStars, nextGame, routeField, stepsFrom, gameSpot } = await import('../src/scenes/world/guide.js');
-const { buildMap, TID, isWalkable, zoneAt } = await import('../src/data/world/map.js');
+const { buildMap, TID, DOOR_TILES, isWalkable, zoneAt } = await import('../src/data/world/map.js');
 const { MINIGAMES } = await import('../src/data/minigames.js');
 
 const map = buildMap();
@@ -76,6 +76,7 @@ describe('lamps along the roads', () => {
         expect(zoneAt(map, s.tx, s.ty)).toBe(g.zone);
         expect(isWalkable(map.data[s.ty][s.tx])).toBe(true);
         expect(map.data[s.ty][s.tx]).not.toBe(TID.path);
+        expect(DOOR_TILES).not.toContain(map.data[s.ty][s.tx]);   // never in a doorway
         expect(Object.values(map.npcSpots).some((n) => n.tx === s.tx && n.ty === s.ty)).toBe(false);
       }
     }
