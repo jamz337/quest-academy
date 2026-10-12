@@ -55,6 +55,7 @@ describe('duel questions follow the villager\'s own game', () => {
   };
   it('every villager game has a generator whose questions are well formed and on topic', () => {
     for (const g of MINIGAMES) {
+      if (g.station) continue;   // a station game (splinter surgery) has no villager to duel
       expect(BY_GAME[g.id], g.id).toBeTypeOf('function');
       for (const grade of [2, 4, 7]) {
         const qs = duelQuestions(g.id, grade, new Rng(grade * 31 + g.id.length), 6);

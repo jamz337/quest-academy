@@ -60,13 +60,11 @@ which covers a box with clean floor copied from elsewhere in the same picture.
 For a land done this way, give its villagers spots on the floor near the things they talk about: the painter by
 the easels, the sculptor in front of his stones, Mirror Mia by the big mosaic, the curator on the lower terrace.
 
-## Sheet 4: inside the hospital (done)
+## The hospital's inside: drawn in code
 
-Health Heights lives inside the hub's hospital. The interior is one drawn picture, `public/sprites/world/hospital/inside.png`,
-made from the generated isometric cutaway with `tools/cut-outside.py`, which makes only the white *outside* the building
-transparent (the floors inside are nearly white too, so a plain white cut would have eaten them). The game lays it over
-twenty by twenty squares; `FLOOR` in `src/data/health/hospital.js` says where the corridors and room floors are, where the
-four staff stand and where the door mat is. A new picture goes through the same tool, then the rows are checked against it.
+The inside of the hospital is not a picture: it is drawn in code like the house and the church (`src/scenes/HospitalScene.js`,
+layout in `src/data/health/hospital.js`), white and teal, with the rooms, beds, X-ray machine and stethoscope painted
+from shapes. Change the layout there, not with a generator.
 
 ## Sheet 5: the hero, in a style the kids can edit (in progress)
 

@@ -46,6 +46,7 @@ import { ArtQuiz } from './minigames/art/ArtQuiz.js';
 import { ArtPlay } from './minigames/art/ArtPlay.js';
 import { HealthQuiz } from './minigames/health/HealthQuiz.js';
 import { HealthPlay } from './minigames/health/HealthPlay.js';
+import { Splinter } from './minigames/health/Splinter.js';
 import { HospitalScene } from './HospitalScene.js';
 import { CountIt } from './minigames/math/CountIt.js';
 import { LetterTrace } from './minigames/english/LetterTrace.js';
@@ -54,6 +55,6 @@ import { LetterTrace } from './minigames/english/LetterTrace.js';
 export const scenes = [
   BootScene, ProfileScene, ModeSelectScene, WorldScene, HouseScene, ChurchScene, HospitalScene, HudScene, ChallengeMenuScene, LevelSelectScene,
   NumberDash, FractionPizza, PatternBridge, BalloonPop, CountIt, WordBuilder, GrammarGate, WordMatch, FrogHop, LetterTrace,
-  RoboMaze, BugHunt, PredictRobot, RobotDance, DuelScene, BibleQuiz, ArkAnimals, ArkPlay, ScienceLab, SciencePlay, HistoryQuiz, HistoryPlay, MusicQuiz, MusicPlay, ArtQuiz, ArtPlay, HealthQuiz, HealthPlay,
+  RoboMaze, BugHunt, PredictRobot, RobotDance, DuelScene, BibleQuiz, ArkAnimals, ArkPlay, ScienceLab, SciencePlay, HistoryQuiz, HistoryPlay, MusicQuiz, MusicPlay, ArtQuiz, ArtPlay, HealthQuiz, HealthPlay, Splinter,
   ResultsScene, PauseScene, AccountScene, LeaderboardScene, SkillsScene, SpellingScene, SpellingLearnScene, SpellingGameScene, HouseRoomScene, ChurchLessonScene, MarketScene, CreditsScene, FxScene   // last: celebrations draw over everything
 ];

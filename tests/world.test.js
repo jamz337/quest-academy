@@ -33,7 +33,7 @@ describe('world map', () => {
       expect(zoneAt(map, s.tx, s.ty)).toBe(npc.zone);
       if (npc.gameId) expect(MINIGAMES.find((g) => g.id === npc.gameId)?.npc).toBe(npc.id);
     }
-    for (const g of MINIGAMES) expect((NPCS.find((n) => n.id === g.npc) || STAFF.find((n) => n.id === g.npc))?.gameId, g.id).toBe(g.id);   // the hospital's staff live inside
+    for (const g of MINIGAMES) if (!g.station) expect((NPCS.find((n) => n.id === g.npc) || STAFF.find((n) => n.id === g.npc))?.gameId, g.id).toBe(g.id);   // the hospital's staff live inside; a station game has no villager
   });
 
   it('every village is open: all NPC spots, boss arenas and coins are reachable from spawn', () => {

@@ -77,7 +77,9 @@ export const MINIGAMES = [
   { id: 'hea-germs', subject: 'health', title: 'Germ Zapper', sceneKey: 'MG_HealthQuiz', playSceneKey: 'MG_HealthPlay', icon: '🧼', npc: 'pharmacist',
     description: 'Hand washing, teeth, sneezes and germs, the people who help, medicines and first aid.', playDescription: 'Touch something to hear if it zaps germs or spreads them.' },
   { id: 'hea-feel', subject: 'health', title: 'Feel Good', sceneKey: 'MG_HealthQuiz', playSceneKey: 'MG_HealthPlay', icon: '😊', npc: 'physio',
-    description: 'Feelings and calming down, sleep, exercise, and staying safe in the sun, the sea and the road.', playDescription: 'Touch something to hear how it makes you feel.' }
+    description: 'Feelings and calming down, sleep, exercise, and staying safe in the sun, the sea and the road.', playDescription: 'Touch something to hear how it makes you feel.' },
+  { id: 'hea-splinter', subject: 'health', title: 'Splinter Surgery', sceneKey: 'MG_Splinter', icon: '🩹', station: 'surgery',
+    description: 'Steady hands: guide the tweezers along the cut, pick up the splinter and bring it out without touching the sides.' }
 ];
 
 /** Games only for the youngest players (Pre-K to Grade 1), shown first in their Challenge menu. */

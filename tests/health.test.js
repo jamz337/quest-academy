@@ -70,28 +70,31 @@ describe('Hospital facts', () => {
     expect(SUBJECTS.health).toMatchObject({ id: 'health', title: 'Health', zone: 'The Hospital' });
     expect(THEME.subjects.health.accent).toBeTruthy();
     expect(Object.keys(SUBJECTS)).toHaveLength(9);
-    expect(MINIGAMES.filter((g) => g.subject === 'health').map((g) => g.id)).toEqual(HEALTH_GAMES);
-    for (const g of [-1, 0, 3, 8]) expect(gamesForGrade('health', g).map((x) => x.id)).toEqual(HEALTH_GAMES);
+    expect(MINIGAMES.filter((g) => g.subject === 'health').map((g) => g.id)).toEqual([...HEALTH_GAMES, 'hea-splinter']);
+    for (const g of [-1, 0, 3, 8]) expect(gamesForGrade('health', g).map((x) => x.id)).toEqual([...HEALTH_GAMES, 'hea-splinter']);
+    expect(getGame('hea-splinter')).toMatchObject({ sceneKey: 'MG_Splinter', station: 'surgery' });
     for (const id of HEALTH_GAMES) { expect(getGame(id).sceneKey).toBe('MG_HealthQuiz'); expect(getGame(id).playSceneKey).toBe('MG_HealthPlay'); }
   });
 });
 
 describe('the hospital building', () => {
-  it('has a member of staff for each game, standing on the floor, all reachable from the door mat', () => {
-    expect(H.STAFF.map((s) => s.gameId)).toEqual(HEALTH_GAMES);
+  it('has a member of staff for each game and Nurse Nia at the desk, all on the floor and reachable from the door mat, and four stations in their rooms', () => {
+    expect([...H.staffGames()].sort()).toEqual([...HEALTH_GAMES].sort());
     for (const s of H.STAFF) {
-      expect(MINIGAMES.find((g) => g.npc === s.id)?.id).toBe(s.gameId);
+      if (s.gameId) expect(MINIGAMES.find((g) => g.npc === s.id)?.id).toBe(s.gameId);
       expect(H.isFloor(s.at.tx, s.at.ty), s.id).toBe(true);
       expect(Number(s.sprite.slice(3))).toBeLessThan(NPC_STYLES.length);   // a look exists for the sprite
     }
     const floor = H.reachableFloor();
     for (const s of H.STAFF) expect([[0, 1], [0, -1], [1, 0], [-1, 0]].some(([dx, dy]) => floor.has(`${s.at.tx + dx},${s.at.ty + dy}`)), s.id).toBe(true);
+    for (const st of H.STATIONS) { expect(floor.has(`${st.at.tx},${st.at.ty}`), st.id).toBe(true); expect(H.roomAt(st.at.tx, st.at.ty), st.id).toBeTruthy(); }
+    expect(H.STATIONS.map((s) => s.id).sort()).toEqual(['bed', 'stetho', 'surgery', 'xray']);
+    expect(H.STATIONS.find((s) => s.id === 'surgery').gameId).toBe('hea-splinter');
     expect(floor.has(`${H.EXIT.tx},${H.EXIT.ty}`)).toBe(true);
     expect(H.onExit(H.EXIT.tx, H.EXIT.ty)).toBe(true);
     expect(H.onExit(Math.floor(H.SPAWN.tx), Math.floor(H.SPAWN.ty))).toBe(false);   // arriving does not walk straight back out
-    expect(H.FLOOR).toHaveLength(H.HOSPITAL_H);
-    H.FLOOR.forEach((row) => expect(row).toHaveLength(H.HOSPITAL_W));
-    // Staff voices differ from one another.
+    for (const r of H.ROOMS) { expect(H.isWall(r.door.tx, r.door.ty)).toBe(false); expect(floor.has(`${r.x},${r.y + r.h - 1}`) || floor.has(`${r.x + r.w - 1},${r.y + r.h - 1}`), r.id).toBe(true); }
+    // Voices differ from one another.
     expect(new Set(H.STAFF.map((s) => `${s.voice}:${s.pitch}:${s.rate}`)).size).toBe(H.STAFF.length);
   });
 });

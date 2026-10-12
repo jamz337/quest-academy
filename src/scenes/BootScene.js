@@ -31,7 +31,6 @@ export class BootScene extends Phaser.Scene {
     this.load.json('hub-house-note', 'sprites/world/hub/house.json');
     this.load.image('hub-hospital', 'sprites/world/hub/hospital.png');   // the hospital above it (tools/cut-building.py)
     this.load.json('hub-hospital-note', 'sprites/world/hub/hospital.json');
-    this.load.image('hospital-inside', 'sprites/world/hospital/inside.png');   // inside the hospital, one drawn picture (tools/cut-outside.py)
     this.load.image('studio-summit', 'sprites/world/studio/summit.png');   // the whole of Studio Summit, one drawn picture
     this.load.json('studio-summit-note', 'sprites/world/studio/summit.json');
     loadProps(this);   // drawn trees, bushes and flowers for the lands that have them

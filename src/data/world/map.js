@@ -406,7 +406,6 @@ export function buildMap() {
   buildings.push({ zone: 'hub', style: 'hospital', x: 16, y: 23, w: 5, h: 4, door: hospitalDoor });
   const hospital = { door: hospitalDoor, front: { tx: hospitalDoor.tx, ty: hospitalDoor.ty + 1 }, x: 16, y: 23, w: 5, h: 4 };
   hline(data, hospitalDoor.tx, 22, hospitalDoor.ty + 1, TID.path);         // from the door across to the springs road
-  npcSpots.nurse = { tx: hospitalDoor.tx + 1, ty: hospitalDoor.ty + 1 };  // the nurse waits beside the door
 
   return {
     width: W, height: H, data, spawn: down(old.spawn), zones, gates, npcSpots, bossSpots, buildings, coins,
