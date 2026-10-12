@@ -15,6 +15,9 @@ import { grid } from '../../systems/Layout.js';
 import { readable } from '../../ui/ReadableText.js';
 import { answerSpeaker, readQuestionThenAnswers } from '../../ui/AnswerSpeech.js';
 import { introState, skillIntro } from '../../ui/SkillIntro.js';
+import { lessonFor } from '../../data/lessons.js';
+import { getGame } from '../../data/minigames.js';
+import { getNpc } from '../../data/world/npcs.js';
 import { explainState, explainPanel } from '../../ui/Explain.js';
 import { button, iconButton, speakButton } from '../../ui/Button.js';
 import { card } from '../../ui/Card.js';
@@ -165,7 +168,9 @@ export class MinigameScene extends BaseScene {
     if (!s.intro && !s.introduced[skill] && this.needsIntro(skill)) {
       s.introduced[skill] = true;
       const ex = makeExample(skill);
-      s.intro = ex ? introState(skill, ex) : null;
+      // The youngest get a hands-on lesson for counting, adding and taking away; the villager teaches.
+      const lesson = ex && ex.source ? lessonFor(ex.source, this.payload.grade) : null;
+      s.intro = ex ? introState(skill, lesson ? { ...ex, lesson } : ex, { grade: this.payload.grade, guide: this.guide }) : null;
     }
     if (!s.intro) return false;
     skillIntro(this, area, s.intro, theme, {
@@ -181,6 +186,12 @@ export class MinigameScene extends BaseScene {
     return true;
   }
   markIntroduced(skill) { Store.updateProfile((p) => markIntroduced(p, skill)); }
+
+  /** The villager who teaches this game on its New Skill page (their name, world sprite and voice), or null. */
+  get guide() {
+    const game = getGame(this.payload.gameId), npc = game && game.npc ? getNpc(game.npc) : null;
+    return npc ? { name: npc.name, sprite: npc.sprite, voice: npc.voice, pitch: npc.pitch } : null;
+  }
 
   /** The game's look for its New Skill page and "Let's see why" panel (see ui/SkillIntro.js); null = the plain look. */
   get lessonTheme() { return null; }

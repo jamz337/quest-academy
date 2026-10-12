@@ -48,7 +48,7 @@ export class CountIt extends MinigameScene {
     const [q, t] = found;
     if (!q) return null;
     const line = (x) => x.prompt.replace('\n', '  ');
-    return { problem: `${line(q)}  →  ${q.answer}`, steps: this.steps(q), practice: t ? { prompt: line(t), choices: t.choices, answer: t.answer, solved: `${line(t)}  →  ${t.answer}` } : null };
+    return { problem: `${line(q)}  →  ${q.answer}`, steps: this.steps(q), source: q, practice: t ? { prompt: line(t), choices: t.choices, answer: t.answer, solved: `${line(t)}  →  ${t.answer}`, steps: this.steps(t) } : null };
   }
 
   buildGame(area) {

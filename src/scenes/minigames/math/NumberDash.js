@@ -93,8 +93,8 @@ export class NumberDash extends MinigameScene {
     // A question ("How many mangoes?") shows its answer after an arrow; a sum after an equals sign.
     const solved = (x) => (x.ask ? `${line(x)}  →  ${x.answer}` : `${line(x)} = ${x.answer}`);
     return {
-      problem: solved(q), steps: this.steps(q),
-      practice: t && t.choices ? { prompt: t.ask ? line(t) : `${line(t)} = ?`, choices: t.choices, answer: t.answer, solved: solved(t) } : null
+      problem: solved(q), steps: this.steps(q), source: q,
+      practice: t && t.choices ? { prompt: t.ask ? line(t) : `${line(t)} = ?`, choices: t.choices, answer: t.answer, solved: solved(t), steps: this.steps(t) } : null
     };
   }
 
