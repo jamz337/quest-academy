@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Habitat Match mock-ups</title>
+<style>
+  :root { --ink: #1e1b4b; --paper: #f6f1e7; --card: #fff; --accent: #2e8b57; --gold: #ffc531; }
+  body { margin: 0; font-family: Fredoka, 'Segoe UI', sans-serif; background: var(--paper); color: var(--ink); padding: 14px; }
+  h1 { font-size: 22px; margin: 0 0 4px; } p.note { margin: 0 0 14px; color: #5a5570; font-size: 14px; }
+  .wrap { display: grid; grid-template-columns: 1fr; gap: 16px; } @media (min-width: 1000px) { .wrap { grid-template-columns: 1fr 1fr 1fr; } }
+  .card { background: var(--card); border-radius: 18px; padding: 14px; box-shadow: 0 6px 20px rgba(30,27,75,.08); }
+  .card h2 { font-size: 18px; margin: 0 0 4px; } .card p { font-size: 13px; color: #5a5570; margin: 0 0 10px; }
+  canvas { width: 100%; height: auto; border-radius: 14px; display: block; touch-action: none; }
+  .ask { font-weight: 700; font-size: 15px; margin: 8px 0; min-height: 44px; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+  button { font-family: inherit; font-size: 15px; font-weight: 700; padding: 8px 14px; border-radius: 999px; border: 2px solid var(--accent); background: #fff; color: var(--accent); cursor: pointer; }
+  button.go { background: var(--accent); color: #fff; }
+  .ok { color: #17694a; } .bad { color: #b02a3d; }
+</style>
+</head>
+<body>
+<h1>Habitat Match, three ways to make it hands-on</h1>
+<p class="note">Rough mock-ups you can try with a mouse or finger. The same animals, homes, adaptations and food chains as today, answered by doing.</p>
+<div class="wrap">
+  <div class="card">
+    <h2>A. Rescue and release</h2>
+    <p>Ranger Rio's truck has rescued animals. Drag each one into its home. It settles in and moves about (the fish swims, the monkey swings). A wrong home sends it back with a reason.</p>
+    <canvas id="release" width="360" height="300"></canvas>
+    <div class="ask" id="releaseAsk"></div>
+    <div class="row"><button id="releaseNext">New truck ▶</button></div>
+  </div>
+  <div class="card">
+    <h2>B. Help it survive</h2>
+    <p>An animal is moving to a new home. Drag the two body parts or habits it needs there onto it. The thermometer and the weather show why: thick fur on the ice, a hump in the desert.</p>
+    <canvas id="survive" width="360" height="300"></canvas>
+    <div class="ask" id="surviveAsk"></div>
+    <div class="row"><button id="surviveNext">Next ▶</button></div>
+  </div>
+  <div class="card">
+    <h2>C. Build the food chain (Grades 4 to 8)</h2>
+    <p>Drag the living things into the arrows, from the sun to the top hunter. When it is right, energy flows along the chain. Harder rounds add a decomposer at the end.</p>
+    <canvas id="chain" width="360" height="300"></canvas>
+    <div class="ask" id="chainAsk"></div>
+    <div class="row"><button class="go" id="chainCheck">Check ✓</button><button id="chainNext">Next ▶</button></div>
+  </div>
+</div>
+<script>
+const rnd = (n) => Math.floor(Math.random() * n), pick = (a) => a[rnd(a.length)];
+const shuffle = (a) => a.map((v) => [Math.random(), v]).sort((p, q) => p[0] - q[0]).map((p) => p[1]);
+const posOf = (c, e) => { const r = c.getBoundingClientRect(); return { x: (e.clientX - r.left) * c.width / r.width, y: (e.clientY - r.top) * c.height / r.height }; };
+function emoji(x, s, size, px, py) { x.font = size + 'px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(s, px, py); }
+function label(x, s, px, py, color = '#1e1b4b', size = 11) { x.fillStyle = color; x.font = '700 ' + size + 'px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(s, px, py); }
+
+const HOMES = {
+  ocean: { name: 'the ocean', top: '#4f8fd6', bot: '#2c5f9e', deco: ['🪸', '🫧'] },
+  desert: { name: 'the desert', top: '#f7d58a', bot: '#e3a857', deco: ['🌵', '☀️'] },
+  rainforest: { name: 'the rainforest', top: '#3fae5a', bot: '#1f7a3a', deco: ['🌴', '🌺'] },
+  polar: { name: 'the icy poles', top: '#e6f3ff', bot: '#b9dcf5', deco: ['🧊', '❄️'] },
+  savanna: { name: 'the savanna', top: '#e8d37a', bot: '#b9a24a', deco: ['🌳', '🌾'] },
+  pond: { name: 'the pond', top: '#8fd4c3', bot: '#4fa894', deco: ['🪷', '🌿'] }
+};
+const ANIMALS = [
+  { name: 'fish', pic: '🐟', home: 'ocean', move: 'swim' }, { name: 'octopus', pic: '🐙', home: 'ocean', move: 'swim' }, { name: 'dolphin', pic: '🐬', home: 'ocean', move: 'swim' },
+  { name: 'camel', pic: '🐪', home: 'desert', move: 'walk' }, { name: 'lizard', pic: '🦎', home: 'desert', move: 'walk' }, { name: 'scorpion', pic: '🦂', home: 'desert', move: 'walk' },
+  { name: 'monkey', pic: '🐒', home: 'rainforest', move: 'swing' }, { name: 'parrot', pic: '🦜', home: 'rainforest', move: 'fly' }, { name: 'sloth', pic: '🦥', home: 'rainforest', move: 'swing' },
+  { name: 'penguin', pic: '🐧', home: 'polar', move: 'walk' }, { name: 'polar bear', pic: '🐻‍❄️', home: 'polar', move: 'walk' }, { name: 'seal', pic: '🦭', home: 'polar', move: 'swim' },
+  { name: 'lion', pic: '🦁', home: 'savanna', move: 'walk' }, { name: 'giraffe', pic: '🦒', home: 'savanna', move: 'walk' }, { name: 'zebra', pic: '🦓', home: 'savanna', move: 'walk' },
+  { name: 'frog', pic: '🐸', home: 'pond', move: 'hop' }, { name: 'duck', pic: '🦆', home: 'pond', move: 'swim' }, { name: 'dragonfly', pic: '🪰', home: 'pond', move: 'fly' }
+];
+const WHY_NOT = { ocean: 'is salty sea, for animals with gills or flippers', desert: 'is hot and dry, for animals that need little water', rainforest: 'is wet and full of trees, for climbers and fliers', polar: 'is icy cold, for animals with thick fur or fat', savanna: 'is wide dry grassland, for runners and grazers', pond: 'is fresh water, for swimmers and waders' };
+
+// ---- A. Rescue and release --------------------------------------------------------------------------------
+(() => {
+  const c = document.getElementById('release'), x = c.getContext('2d'), ask = document.getElementById('releaseAsk');
+  const ZONES = Object.keys(HOMES).map((id, i) => ({ id, x: 6 + (i % 3) * 117, y: 6 + Math.floor(i / 3) * 104, w: 112, h: 98 }));
+  let crate, settled, drag = null, t0 = performance.now();
+  function next() {
+    const homes = shuffle(Object.keys(HOMES)).slice(0, 4);
+    crate = homes.map((h, i) => { const a = pick(ANIMALS.filter((x) => x.home === h)); return { ...a, hx: 70 + i * 74, hy: 262, x: 70 + i * 74, y: 262 }; });
+    settled = []; ask.innerHTML = 'Drag each rescued animal into its home.';
+  }
+  function draw(t) {
+    x.fillStyle = '#fff8ef'; x.fillRect(0, 0, c.width, c.height);
+    for (const z of ZONES) {
+      const h = HOMES[z.id], g = x.createLinearGradient(0, z.y, 0, z.y + z.h); g.addColorStop(0, h.top); g.addColorStop(1, h.bot);
+      x.fillStyle = g; x.beginPath(); x.roundRect(z.x, z.y, z.w, z.h, 12); x.fill();
+      emoji(x, h.deco[0], 22, z.x + 18, z.y + z.h - 20); emoji(x, h.deco[1], 16, z.x + z.w - 16, z.y + 16);
+      label(x, h.name, z.x + z.w / 2, z.y + 12, z.id === 'polar' || z.id === 'desert' ? '#1e1b4b' : '#ffffff', 11);
+    }
+    // Settled animals move about in their homes.
+    for (const a of settled) {
+      const z = ZONES.find((q) => q.id === a.home), k = (t / 1000 + a.phase) % (Math.PI * 2);
+      let px = z.x + z.w / 2 + Math.sin(k) * 28, py = z.y + z.h / 2 + 8;
+      if (a.move === 'swim') py += Math.sin(k * 2) * 6; if (a.move === 'hop') py -= Math.abs(Math.sin(k * 2)) * 14; if (a.move === 'fly') py -= 18 + Math.sin(k * 3) * 8;
+      if (a.move === 'swing') { px = z.x + z.w / 2 + Math.sin(k) * 22; py = z.y + 40 + Math.cos(k) * 8; }
+      x.save(); x.translate(px, py); if (Math.cos(k) < 0 && a.move !== 'swing') x.scale(-1, 1); emoji(x, a.pic, 30, 0, 0); x.restore();
+    }
+    x.fillStyle = '#c9a26b'; x.beginPath(); x.roundRect(20, 232, 320, 60, 10); x.fill(); label(x, "Ranger Rio's truck", 70, 240, '#5b4630', 10);
+    for (const a of crate) if (!a.done) emoji(x, a.pic, 34, a.x, a.y);
+    requestAnimationFrame(draw);
+  }
+  c.addEventListener('pointerdown', (e) => { const p = posOf(c, e); drag = crate.find((a) => !a.done && Math.hypot(p.x - a.x, p.y - a.y) < 24) || null; if (drag) c.setPointerCapture(e.pointerId); });
+  c.addEventListener('pointermove', (e) => { if (!drag) return; const p = posOf(c, e); drag.x = p.x; drag.y = p.y; });
+  c.addEventListener('pointerup', () => {
+    if (!drag) return; const a = drag; drag = null;
+    const z = ZONES.find((q) => a.x > q.x && a.x < q.x + q.w && a.y > q.y && a.y < q.y + q.h);
+    if (z && z.id === a.home) { a.done = true; settled.push({ ...a, phase: Math.random() * 6 }); const left = crate.filter((q) => !q.done).length; ask.innerHTML = left ? `<span class="ok">The ${a.name} is home in ${HOMES[a.home].name}!</span> ${left} to go.` : '<span class="ok">Every animal is home! ⭐</span>'; }
+    else if (z) ask.innerHTML = `<span class="bad">Not ${HOMES[z.id].name}: it ${WHY_NOT[z.id]}. Where does a ${a.name} live?</span>`;
+    a.x = a.hx; a.y = a.hy;
+  });
+  document.getElementById('releaseNext').onclick = next;
+  next(); requestAnimationFrame(draw);
+})();
+
+// ---- B. Help it survive -----------------------------------------------------------------------------------
+(() => {
+  const c = document.getElementById('survive'), x = c.getContext('2d'), ask = document.getElementById('surviveAsk');
+  const CASES = [
+    { home: 'polar', who: '🐻‍❄️', name: 'polar bear', temp: -30, need: [['🧥', 'thick white fur'], ['🥓', 'a layer of fat']] },
+    { home: 'desert', who: '🐪', name: 'camel', temp: 45, need: [['🐫', 'a hump that stores fat'], ['👁️', 'long eyelashes against sand']] },
+    { home: 'ocean', who: '🐟', name: 'fish', temp: 22, need: [['🫁', 'gills to breathe under water'], ['🪭', 'fins for swimming']] },
+    { home: 'rainforest', who: '🐒', name: 'monkey', temp: 30, need: [['🪢', 'a long gripping tail'], ['💪', 'strong arms for swinging']] },
+    { home: 'pond', who: '🦆', name: 'duck', temp: 18, need: [['🦶', 'webbed feet'], ['🪶', 'waterproof feathers']] }
+  ];
+  const ALL = CASES.flatMap((k) => k.need.map((n) => ({ pic: n[0], text: n[1], home: k.home, owner: k.name })));
+  let k, tray, got, drag = null, bob = 0;
+  function next() {
+    k = pick(CASES); got = [];
+    const wrong = shuffle(ALL.filter((t) => t.home !== k.home)).slice(0, 4);
+    tray = shuffle([...k.need.map((n) => ({ pic: n[0], text: n[1], home: k.home })), ...wrong]).map((t, i) => ({ ...t, hx: 40 + (i % 3) * 140, hy: 236 + Math.floor(i / 3) * 36 }));
+    tray.forEach((t) => { t.hx = 64 + (i => (i % 3) * 116)(tray.indexOf(t)); t.x = t.hx; t.y = t.hy; });
+    ask.innerHTML = `The ${k.name} is moving to ${HOMES[k.home].name}. Drag on the two things it needs there.`;
+  }
+  function draw(t) {
+    const h = HOMES[k.home], g = x.createLinearGradient(0, 0, 0, 210); g.addColorStop(0, h.top); g.addColorStop(1, h.bot);
+    x.fillStyle = g; x.fillRect(0, 0, c.width, 210); x.fillStyle = '#fff8ef'; x.fillRect(0, 210, c.width, 90);
+    emoji(x, h.deco[0], 30, 40, 180); emoji(x, h.deco[1], 26, 320, 40);
+    if (k.home === 'polar') for (let i = 0; i < 14; i++) emoji(x, '❄️', 10, (i * 53 + t / 30) % 360, (i * 37 + t / 20) % 200);
+    // Thermometer.
+    x.fillStyle = '#fff'; x.beginPath(); x.roundRect(318, 70, 18, 110, 9); x.fill(); x.strokeStyle = '#9aa3ad'; x.stroke();
+    const f = Math.max(0.05, Math.min(1, (k.temp + 40) / 90)); x.fillStyle = k.temp < 0 ? '#3f8fe0' : k.temp > 35 ? '#e5383b' : '#f0a030';
+    x.beginPath(); x.roundRect(322, 176 - f * 100, 10, f * 100, 5); x.fill(); label(x, `${k.temp}°C`, 327, 192, '#1e1b4b', 11);
+    // The animal, happier as it gets what it needs.
+    bob = Math.sin(t / 300) * (got.length === 2 ? 6 : 2);
+    emoji(x, k.who, 74, 170, 110 + bob);
+    got.forEach((n, i) => { x.fillStyle = '#ffffffd0'; x.beginPath(); x.roundRect(98 + i * 90, 160, 84, 38, 10); x.fill(); emoji(x, n.pic, 18, 112 + i * 90, 179); label(x, n.text.split(' ').slice(0, 2).join(' '), 150 + i * 90, 179, '#1e1b4b', 9); });
+    emoji(x, got.length === 2 ? '😊' : k.temp < 0 ? '🥶' : k.temp > 35 ? '🥵' : '😟', 22, 215, 62 + bob);
+    label(x, 'the tray', 30, 220, '#8b6b3e', 10);
+    for (const it of tray) if (!it.used) { x.fillStyle = '#eef2f8'; x.beginPath(); x.roundRect(it.x - 54, it.y - 15, 108, 30, 10); x.fill(); emoji(x, it.pic, 16, it.x - 40, it.y); label(x, it.text.length > 18 ? it.text.slice(0, 17) + '…' : it.text, it.x + 8, it.y, '#1e1b4b', 9); }
+    requestAnimationFrame(draw);
+  }
+  c.addEventListener('pointerdown', (e) => { const p = posOf(c, e); drag = tray.find((it) => !it.used && Math.abs(p.x - it.x) < 54 && Math.abs(p.y - it.y) < 15) || null; if (drag) c.setPointerCapture(e.pointerId); });
+  c.addEventListener('pointermove', (e) => { if (!drag) return; const p = posOf(c, e); drag.x = p.x; drag.y = p.y; });
+  c.addEventListener('pointerup', () => {
+    if (!drag) return; const it = drag; drag = null;
+    const over = Math.abs(it.x - 170) < 80 && Math.abs(it.y - 110) < 80;
+    if (over && it.home === k.home) { it.used = true; got.push(it); ask.innerHTML = got.length === 2 ? `<span class="ok">The ${k.name} can live in ${HOMES[k.home].name} now! ⭐</span>` : `<span class="ok">Yes, ${it.text}. One more.</span>`; }
+    else if (over) ask.innerHTML = `<span class="bad">${it.text[0].toUpperCase() + it.text.slice(1)} helps a ${it.owner}, not here in ${HOMES[k.home].name}.</span>`;
+    it.x = it.hx; it.y = it.hy;
+  });
+  document.getElementById('surviveNext').onclick = next;
+  next(); requestAnimationFrame(draw);
+})();
+
+// ---- C. Build the food chain ------------------------------------------------------------------------------
+(() => {
+  const c = document.getElementById('chain'), x = c.getContext('2d'), ask = document.getElementById('chainAsk');
+  const CHAINS = [
+    { where: 'savanna', links: [['🌾', 'grass'], ['🦓', 'zebra'], ['🦁', 'lion']] },
+    { where: 'ocean', links: [['🦠', 'plankton'], ['🐟', 'small fish'], ['🦈', 'shark']] },
+    { where: 'pond', links: [['🌿', 'water plants'], ['🐸', 'tadpole'], ['🐦', 'heron']] },
+    { where: 'forest', links: [['🌰', 'acorns'], ['🐿️', 'squirrel'], ['🦉', 'owl']] }
+  ];
+  const ROLES = ['producer', 'herbivore', 'carnivore'];
+  const SLOTS = [0, 1, 2].map((i) => ({ x: 120 + i * 88, y: 110 }));
+  let ch, cards, placed, drag = null, flow = -1, t0 = 0;
+  function next() {
+    ch = pick(CHAINS); placed = [null, null, null]; flow = -1;
+    cards = shuffle(ch.links.map((l, i) => ({ pic: l[0], name: l[1], rank: i }))).map((cd, i) => ({ ...cd, hx: 80 + i * 100, hy: 240, x: 80 + i * 100, y: 240 }));
+    ask.innerHTML = `A food chain from ${ch.where === 'ocean' ? 'the ocean' : 'the ' + ch.where}. Drag each living thing into place, from the sun to the top hunter.`;
+  }
+  function draw(t) {
+    x.fillStyle = '#fff8ef'; x.fillRect(0, 0, c.width, c.height);
+    emoji(x, '☀️', 40, 40, 110); label(x, 'the sun', 40, 145, '#b37400', 11);
+    [{ x: 40 }, ...SLOTS].forEach((s, i) => {
+      if (i === 3) return;
+      const a = i === 0 ? 62 : SLOTS[i - 1].x + 32, b = SLOTS[i].x - 32;
+      x.strokeStyle = flow >= 0 && (t - t0) / 400 > i ? '#ffb000' : '#c7d0e0'; x.lineWidth = 6; x.beginPath(); x.moveTo(a, 110); x.lineTo(b - 8, 110); x.stroke();
+      x.fillStyle = x.strokeStyle; x.beginPath(); x.moveTo(b, 110); x.lineTo(b - 12, 102); x.lineTo(b - 12, 118); x.fill();
+    });
+    SLOTS.forEach((s, i) => {
+      x.fillStyle = placed[i] ? '#ffffff' : '#eef2f8'; x.strokeStyle = '#c7d0e0'; x.lineWidth = 2; x.setLineDash(placed[i] ? [] : [6, 5]);
+      x.beginPath(); x.roundRect(s.x - 32, s.y - 32, 64, 64, 12); x.fill(); x.stroke(); x.setLineDash([]);
+      label(x, ROLES[i], s.x, s.y + 44, '#5a5570', 10);
+      if (placed[i]) { emoji(x, placed[i].pic, 32, s.x, s.y - 4); label(x, placed[i].name, s.x, s.y + 22, '#1e1b4b', 9); }
+    });
+    if (flow >= 0) { const k = Math.min(3, (t - t0) / 400); const p = k < 1 ? { x: 62 + (SLOTS[0].x - 94) * k } : { x: SLOTS[Math.min(2, Math.floor(k) - 1)].x + (k < 3 ? (SLOTS[Math.floor(k)] ? (SLOTS[Math.floor(k)].x - SLOTS[Math.floor(k) - 1].x) * (k % 1) : 0) : 0) }; emoji(x, '⚡', 18, p.x, 86); }
+    for (const cd of cards) if (!placed.includes(cd)) { x.fillStyle = '#eef2f8'; x.beginPath(); x.roundRect(cd.x - 40, cd.y - 26, 80, 52, 12); x.fill(); emoji(x, cd.pic, 26, cd.x, cd.y - 6); label(x, cd.name, cd.x, cd.y + 16, '#1e1b4b', 9); }
+    requestAnimationFrame(draw);
+  }
+  c.addEventListener('pointerdown', (e) => {
+    const p = posOf(c, e);
+    // Tap a placed card to take it back out.
+    const si = SLOTS.findIndex((s, i) => placed[i] && Math.abs(p.x - s.x) < 32 && Math.abs(p.y - s.y) < 32);
+    if (si >= 0) { const cd = placed[si]; placed[si] = null; cd.x = cd.hx; cd.y = cd.hy; flow = -1; return; }
+    drag = cards.find((cd) => !placed.includes(cd) && Math.abs(p.x - cd.x) < 40 && Math.abs(p.y - cd.y) < 26) || null; if (drag) c.setPointerCapture(e.pointerId);
+  });
+  c.addEventListener('pointermove', (e) => { if (!drag) return; const p = posOf(c, e); drag.x = p.x; drag.y = p.y; });
+  c.addEventListener('pointerup', () => {
+    if (!drag) return; const cd = drag; drag = null;
+    const si = SLOTS.findIndex((s, i) => !placed[i] && Math.abs(cd.x - s.x) < 40 && Math.abs(cd.y - s.y) < 40);
+    if (si >= 0) placed[si] = cd; cd.x = cd.hx; cd.y = cd.hy;
+  });
+  document.getElementById('chainCheck').onclick = () => {
+    if (placed.some((p) => !p)) { ask.innerHTML = '<span class="bad">Fill every box first.</span>'; return; }
+    if (placed.every((p, i) => p.rank === i)) { flow = 0; t0 = performance.now(); ask.innerHTML = `<span class="ok">The sun feeds the ${placed[0].name}, the ${placed[1].name} eats it, and the ${placed[2].name} eats the ${placed[1].name}. Energy flows! ⭐</span>`; }
+    else ask.innerHTML = '<span class="bad">Not quite. Who makes food from sunlight? Who eats plants? Who hunts?</span>';
+  };
+  document.getElementById('chainNext').onclick = next;
+  next(); requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>
