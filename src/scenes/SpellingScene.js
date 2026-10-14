@@ -37,6 +37,7 @@ export class SpellingScene extends BaseScene {
     const grade = this.grade ?? spellingGradeFor(p.grade);
     const lists = SPELLING_LISTS[grade] || [];
     background(this, { accent: THEME.subjects.words.accent, accent2: THEME.gold });
+    const headFirst = this.children.list.length;
     const bar = topBar(this, { title: '🐝 Spelling Bee', onBack: () => this.go(SCENES.ModeSelect), subtitle: 'Learn it, cover it, write it, check it. A little every day!' });
 
     // Grade tabs (the lists are written per grade).
@@ -51,6 +52,11 @@ export class SpellingScene extends BaseScene {
     const learnedAll = all.filter((wd) => isLearned(p, wd)).length;
     const tricky = lists.flatMap((l) => listProgress(p, l).tricky);
     text(this, w / 2, y, `${learnedAll} of ${all.length} words learned`, T.small(this, THEME.ink2)); y += 20 * ui;
+    // The header sits above the list, so cards scrolled up under it never catch a tap meant for a grade tab.
+    this.children.list.slice(headFirst).forEach((o) => { if (typeof o.setDepth === 'function') o.setDepth(5); });
+    const areaTop = y - 6 * ui;
+    this.add.zone(w / 2, areaTop / 2, w, areaTop).setInteractive().setDepth(4);   // swallows taps on cards hidden under the header
+    const scroller = this.add.container(0, 0), firstChild = this.children.list.length;
     const cols = w >= 640 ? 2 : 1, gap = 12;
     const cw = Math.min((w - 24 - gap * (cols - 1)) / cols, 420 * ui), ch = 104 * ui;
     const left = (w - (cw * cols + gap * (cols - 1))) / 2;
@@ -62,7 +68,6 @@ export class SpellingScene extends BaseScene {
     const items = [...(review ? [{ review }] : []), ...lists.map((l) => ({ list: l })), ...(tricky.length ? [{ tricky }] : [])];
     items.forEach((it, i) => {
       const cx = left + (i % cols) * (cw + gap) + cw / 2, cy = y + Math.floor(i / cols) * (ch + gap) + ch / 2;
-      if (cy + ch / 2 > h - 8) return;
       if (it.review) {
         const due = it.review.due;
         const k = card(this, cx, cy, cw, ch, { stroke: THEME.success, color: THEME.successSoft, onTap: due ? () => this.review(due) : null });
@@ -98,6 +103,11 @@ export class SpellingScene extends BaseScene {
         cards.push(k);
       }
     });
+    // Every list shows: when they don't all fit (a phone, or a grade with many lists), the cards scroll.
+    scroller.add(this.children.list.slice(firstChild));
+    const rows = Math.ceil(items.length / cols), contentBottom = y + rows * (ch + gap) - gap, areaH = h - areaTop - 8;
+    const more = contentBottom > h - 8 ? text(this, w / 2, h - 14 * ui, '▼ scroll for more lists', { ...T.small(this, THEME.ink2), fontSize: Math.round(12 * ui) + 'px' }).setDepth(6) : null;
+    this.makeScrollable(scroller, { top: areaTop, h: areaH, w }, contentBottom - (h - 8) + 10 * ui, cards, (sy, max) => { if (more) more.setVisible(sy < max - 4); });
     enter(this, cards, { from: 'up', stagger: 40 });
   }
 

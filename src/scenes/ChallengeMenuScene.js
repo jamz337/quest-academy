@@ -79,27 +79,6 @@ export class ChallengeMenuScene extends BaseScene {
   }
 
   /** Drag or wheel the panels up and down when they run past the bottom; a drag never counts as a tap on a card. */
-  makeScrollable(scroller, area, maxScroll, cards) {
-    this.scroll = { scroller, max: Math.max(0, maxScroll), cards, y: 0, startY: 0, startScroll: 0, moved: false, down: false };
-    if (this.scroll.max <= 0 || !this.input || !this.make) return;   // (the headless tests have no input or factory)
-    const mask = this.make.graphics({ add: false });
-    mask.fillRect(0, area.top - 4, area.w, area.h + 8);
-    scroller.setMask(mask.createGeometryMask());
-    if (this.scrollWired) return;
-    this.scrollWired = true;
-    const setScroll = (v) => { const s = this.scroll; s.y = Math.max(0, Math.min(s.max, v)); s.scroller.y = -s.y; };
-    this.input.on('pointerdown', (p) => { const s = this.scroll; if (!s || s.max <= 0) return; s.down = true; s.moved = false; s.startY = p.y; s.startScroll = s.y; });
-    this.input.on('pointermove', (p) => {
-      const s = this.scroll;
-      if (!s || !s.down || !p.isDown) return;
-      const dy = p.y - s.startY;
-      if (!s.moved && Math.abs(dy) > 8) { s.moved = true; s.cards.forEach((c) => c.emit('pointerout')); }
-      if (s.moved) setScroll(s.startScroll - dy);
-    });
-    this.input.on('pointerup', () => { if (this.scroll) this.scroll.down = false; });
-    this.input.on('wheel', (p, objs, dx, dy) => { if (this.scroll && this.scroll.max > 0) setScroll(this.scroll.y + dy * 0.6); });
-  }
-
   card(g, c, subject, profile) {
     const { ui } = this;
     const rec = profile.games[g.id];

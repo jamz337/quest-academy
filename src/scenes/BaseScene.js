@@ -64,6 +64,34 @@ export class BaseScene extends Phaser.Scene {
     setTimeout(() => { if (this.sys && this.sys.isActive()) start(); }, THEME.motion.base + 250);
   }
 
+  /**
+   * Let a list longer than the screen scroll (drag or mouse wheel): `scroller` is a container of the list, `area`
+   * { top, h, w } the part of the screen it shows through, `maxScroll` how far it can go, `cards` the tappable things
+   * in it (a drag cancels their press, and any button inside them, so letting go after a drag taps nothing).
+   * `onScroll(y, max)` hears each move. Nothing happens when the list fits (or headless, without input).
+   */
+  makeScrollable(scroller, area, maxScroll, cards = [], onScroll = null) {
+    this.scroll = { scroller, max: Math.max(0, maxScroll), cards, y: 0, startY: 0, startScroll: 0, moved: false, down: false, onScroll };
+    if (this.scroll.max <= 0 || !this.input || !this.make) return;   // (the headless tests have no input or factory)
+    const mask = this.make.graphics({ add: false });
+    mask.fillRect(0, area.top - 4, area.w, area.h + 8);
+    scroller.setMask(mask.createGeometryMask());
+    if (this.scrollWired) return;
+    this.scrollWired = true;
+    const setScroll = (v) => { const s = this.scroll; s.y = Math.max(0, Math.min(s.max, v)); s.scroller.y = -s.y; if (s.onScroll) s.onScroll(s.y, s.max); };
+    const cancel = (o) => { o.emit('pointerout'); (o.list || []).forEach((c) => { if (c && c.pressed) c.emit('pointerout'); }); };
+    this.input.on('pointerdown', (p) => { const s = this.scroll; if (!s || s.max <= 0) return; s.down = true; s.moved = false; s.startY = p.y; s.startScroll = s.y; });
+    this.input.on('pointermove', (p) => {
+      const s = this.scroll;
+      if (!s || !s.down || !p.isDown) return;
+      const dy = p.y - s.startY;
+      if (!s.moved && Math.abs(dy) > 8) { s.moved = true; s.cards.forEach(cancel); }
+      if (s.moved) setScroll(s.startScroll - dy);
+    });
+    this.input.on('pointerup', () => { if (this.scroll) this.scroll.down = false; });
+    this.input.on('wheel', (p, objs, dx, dy) => { if (this.scroll && this.scroll.max > 0) setScroll(this.scroll.y + dy * 0.6); });
+  }
+
   /** Convenience: current viewport (refreshed on rebuild). */
   get w() { return this.scale.width / dpr(); }
   get h() { return this.scale.height / dpr(); }
