@@ -120,7 +120,27 @@ export const TRICKS = {
   hatchery: { tricky: 'ery', trick: 'Hatch + ery: where eggs hatch.' },
   protein: { tricky: 'ei', trick: 'Protein breaks the rule: e before i.' },
   variety: { tricky: 'ie', trick: 'Va-ri-e-ty: the i and e both say their sounds.' },
-  fingerlings: { tricky: 'ling', trick: 'Finger + ling + s: little fish as long as a finger.' }
+  fingerlings: { tricky: 'ling', trick: 'Finger + ling + s: little fish as long as a finger.' },
+  // Grade 4: the Rabbit story list (because is above)
+  rabbit: { tricky: 'bb', trick: 'Rabbit has two b\'s, like two long ears. A capital R: it is his name.' },
+  cleaned: { tricky: 'ea', trick: 'Clean has ea, then add -ed.' },
+  animals: { tricky: 'i', trick: 'An-i-mals: say the i in the middle.' },
+  hugged: { tricky: 'gg', trick: 'Hug doubles its g before -ed: hug-ged.' },
+  healthy: { tricky: 'ea', trick: 'Health has ea, like head, then add y.' },
+  happy: { tricky: 'pp', trick: 'Happy has two p\'s: hap-py.' },
+  biggest: { tricky: 'gg', trick: 'Big doubles its g before -est: big-gest.' },
+  perhaps: { tricky: 'per', trick: 'Per + haps: it starts with per, not pre.' },
+  share: { tricky: 'are', trick: 'Sh + are: share ends in -are, like care.' },
+  equally: { tricky: 'll', trick: 'Equal + ly makes two l\'s: e-qual-ly.' },
+  finish: { tricky: 'n', trick: 'Fin + ish: just one n.' },
+  noticed: { tricky: 'c', trick: 'Notice keeps its c, which says "s": no-ticed.' },
+  decided: { tricky: 'c', trick: 'De-cide: the c says "s". Drop the e, add -ed.' },
+  amount: { tricky: 'ou', trick: 'A + mount: the ou says "ow".' },
+  explained: { tricky: 'ai', trick: 'Ex-plain: ai says "ay", then add -ed.' },
+  nodded: { tricky: 'dd', trick: 'Nod doubles its d before -ed: nod-ded.' },
+  bowed: { tricky: 'ow', trick: 'Bow + ed: the ow says "ow", as in cow.' },
+  understood: { tricky: 'oo', trick: 'Under + stood: two words joined into one.' },
+  thinner: { tricky: 'nn', trick: 'Thin doubles its n before -er: thin-ner.' }
 };
 
 /** Index of a tricky part inside the word (case ignored), or -1. */

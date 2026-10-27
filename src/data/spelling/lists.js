@@ -121,6 +121,31 @@ export const SPELLING_LISTS = {
       { w: 'pro-tein', pic: '🍽️', s: 'Fish is a good source of protein.' },
       { w: 'va-ri-e-ty', pic: '🌈', s: 'The farm keeps a variety of fish.' },
       { w: 'fin-ger-lings', pic: '🐟', s: 'Fingerlings are young fish about as long as a finger.' }
+    ] },
+    // The Rabbit story list: Rabbit and his friends share a basket of carrots. Rabbit is a name, so it keeps its capital.
+    { id: 'g4-5', title: 'Rabbit story words 1–10', words: [
+      { w: 'Rab-bit', pic: '🐰', s: 'Rabbit lives in a burrow under the old tree.' },
+      { w: 'cleaned', pic: '🧹', s: 'Rabbit cleaned his burrow before his friends came.' },
+      { w: 'an-i-mals', pic: '🦔', s: 'All the animals came to Rabbit\'s party.' },
+      { w: 'hugged', pic: '🤗', s: 'Rabbit hugged each friend at the door.' },
+      { w: 'health-y', pic: '🥕', s: 'Carrots are a healthy snack.' },
+      { w: 'hap-py', pic: '😊', s: 'Everyone was happy to see the basket of carrots.' },
+      { w: 'be-cause', pic: '❓', s: 'They cheered because the carrots were sweet.' },
+      { w: 'big-gest', pic: '🥇', s: 'Hedgehog found the biggest carrot of all.' },
+      { w: 'per-haps', pic: '🤔', s: 'Perhaps there are enough carrots for everyone.' },
+      { w: 'share', pic: '🤝', s: 'Rabbit said, "Let us share the carrots."' }
+    ] },
+    { id: 'g4-6', title: 'Rabbit story words 11–20', words: [
+      { w: 'e-qual-ly', pic: '⚖️', s: 'They shared the carrots equally, three each.' },
+      { w: 'fin-ish', pic: '🏁', s: 'Tortoise was the last to finish his carrot.' },
+      { w: 'no-ticed', pic: '👀', s: 'Rabbit noticed that Mouse had none left.' },
+      { w: 'de-cid-ed', pic: '💡', s: 'Rabbit decided to give Mouse half of his.' },
+      { w: 'a-mount', pic: '🔢', s: 'Now every friend had the same amount.' },
+      { w: 'ex-plained', pic: '🗣️', s: 'Owl explained why sharing is kind.' },
+      { w: 'nod-ded', pic: '👍', s: 'The animals nodded and smiled.' },
+      { w: 'bowed', pic: '🙇', s: 'Rabbit bowed to thank his friends.' },
+      { w: 'un-der-stood', pic: '💭', s: 'Everyone understood that sharing makes friends.' },
+      { w: 'thin-ner', pic: '📏', s: 'The carrot was thinner at the end.' }
     ] }
   ]
 };
